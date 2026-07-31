@@ -20,6 +20,15 @@ namespace MyApi.Modules.Installations.Services
         {
             try
             {
+                // Hide notes belonging to soft-deleted installations so the
+                // detail/related tabs match the list view.
+                var installationVisible = await _context.Installations
+                    .AnyAsync(i => i.Id == installationId && !i.IsDeleted);
+                if (!installationVisible)
+                {
+                    return new InstallationNoteListResponseDto { Notes = new List<InstallationNoteDto>(), TotalCount = 0 };
+                }
+
                 var notes = await _context.InstallationNotes
                     .Where(n => n.InstallationId == installationId)
                     .OrderByDescending(n => n.CreatedDate)
@@ -63,7 +72,7 @@ namespace MyApi.Modules.Installations.Services
             {
                 // Verify installation exists
                 var installationExists = await _context.Installations
-                    .AnyAsync(i => i.Id == createDto.InstallationId);
+                    .AnyAsync(i => i.Id == createDto.InstallationId && !i.IsDeleted);
 
                 if (!installationExists)
                 {

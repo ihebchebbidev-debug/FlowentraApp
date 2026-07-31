@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useMemo, useState } from "react";
 import { ArticlesService, type InventoryArticle } from "../services/articles.service";
 import { Package, CheckCircle, AlertTriangle, DollarSign } from "lucide-react";
@@ -7,6 +8,7 @@ import { useEnforceListOnMobile } from "@/hooks/getInitialViewMode";
 export type ListViewMode = "grid" | "list";
 
 export function useArticlesList() {
+  const { current: currency } = useCurrency();
   const [searchTerm, setSearchTerm] = useState("");
 
   
@@ -70,9 +72,9 @@ export function useArticlesList() {
       { label: "stats.total_articles", value: allArticles.length, change: "+12%", icon: Package, color: "chart-1" },
       { label: "stats.available", value: allArticles.filter(a => a.status === "available").length, change: "+8%", icon: CheckCircle, color: "chart-2" },
       { label: "stats.low_stock", value: allArticles.filter(a => a.status === "low_stock").length, change: "+3%", icon: AlertTriangle, color: "chart-3" },
-      { label: "stats.total_value", value: `${totalValue.toLocaleString()} TND`, change: "+15%", icon: DollarSign, color: "chart-4" },
+      { label: "stats.total_value", value: `${totalValue.toLocaleString()} ${currency.code}`, change: "+15%", icon: DollarSign, color: "chart-4" },
     ];
-  }, [allArticles]);
+  }, [allArticles, currency.code]);
 
   return {
     // state

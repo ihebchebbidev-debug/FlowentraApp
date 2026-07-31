@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -25,10 +26,11 @@ export function DayEntriesModal({
   onClose, 
   date, 
   entries,
-  currency = 'TND',
+  currency: currencyProp,
   onEditEntry,
 }: DayEntriesModalProps) {
   const { t } = useTranslation();
+  const { current: currency } = useCurrency();
 
   const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
@@ -41,7 +43,7 @@ export function DayEntriesModal({
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('fr-TN', {
       style: 'currency',
-      currency: currency
+      currency: currencyProp || currency.code
     }).format(amount);
   };
 

@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { ArrowLeft, Save, Package, Wrench, Loader2, Settings2, X, GraduationCap } from "lucide-react";
@@ -40,6 +41,7 @@ const AddUnifiedArticle = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation('inventory-services');
+  const { current: currency } = useCurrency();
   const [articleType, setArticleType] = useState<'material' | 'service'>('material');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<LookupItem[]>([]);
@@ -518,7 +520,7 @@ const AddUnifiedArticle = () => {
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="costPrice">{t('addForm.cost_price')} *</Label>
+                    <Label htmlFor="costPrice">{t('addForm.cost_price', { currency: currency.code })} *</Label>
                     <Input
                       id="costPrice"
                       type="number"
@@ -563,7 +565,7 @@ const AddUnifiedArticle = () => {
                 <>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="basePrice">{t('addForm.price') || 'Prix HT'} *</Label>
+                    <Label htmlFor="basePrice">{t('addForm.price', { currency: currency.code }) || 'Prix HT'} *</Label>
                     <Input
                       id="basePrice"
                       type="number"

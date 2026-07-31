@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -25,6 +26,7 @@ interface AddOfferModalProps {
 
 export default function AddOfferModal({ open, onOpenChange, onAdd }: AddOfferModalProps) {
   const { t } = useTranslation('contacts');
+  const { current: currency, format: formatMoney } = useCurrency();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [status, setStatus] = useState<OfferStatus>("pending");
@@ -73,7 +75,7 @@ export default function AddOfferModal({ open, onOpenChange, onAdd }: AddOfferMod
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('detail.modal.new_offer')} (TND)</DialogTitle>
+          <DialogTitle>{t('detail.modal.new_offer')} ({currency.code})</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -88,7 +90,7 @@ export default function AddOfferModal({ open, onOpenChange, onAdd }: AddOfferMod
             <FieldError error={errors.title} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="offer-amount">{t('addPage.validation.amount_required').replace(/\s*est requis|is required/i, '')} (TND)</Label>
+            <Label htmlFor="offer-amount">{t('addPage.validation.amount_required').replace(/\s*est requis|is required/i, '')} ({currency.code})</Label>
             <Input
               id="offer-amount"
               type="number"

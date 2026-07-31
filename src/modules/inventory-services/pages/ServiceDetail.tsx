@@ -180,8 +180,8 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function ServiceDetail() {
-  const { current: currency } = useCurrency();
   const { t } = useTranslation('inventory-services');
+  const { current: currency } = useCurrency();
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -238,7 +238,7 @@ export default function ServiceDetail() {
 
     toast({
       title: t('toast.price_updated'),
-      description: t('toast.price_updated_desc', { price: adjustment }),
+      description: t('toast.price_updated_desc', { price: adjustment, currency: currency.code }),
     });
 
     setPriceAdjustment("");

@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -53,6 +54,7 @@ export function AddTimeExpenseDialog({
   editingEntry,
 }: AddTimeExpenseDialogProps) {
   const { t } = useTranslation();
+  const { current: currency } = useCurrency();
   const isEditing = !!editingEntry;
   const [activeTab, setActiveTab] = useState<'time' | 'expense'>('time');
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +83,7 @@ export function AddTimeExpenseDialog({
     technicianId: '',
     type: '',
     amount: 0,
-    currency: 'TND',
+    currency: '',
     description: '',
     date: new Date(),
     overrunReason: '',
@@ -107,7 +109,7 @@ export function AddTimeExpenseDialog({
         technicianId: editingEntry.userId || '',
         type: editingEntry.description || '',
         amount: editingEntry.expenses || 0,
-        currency: 'TND',
+        currency: '',
         description: editingEntry.description || '',
         date: new Date(editingEntry.date),
         overrunReason: '',
@@ -169,7 +171,7 @@ export function AddTimeExpenseDialog({
       technicianId: '',
       type: '',
       amount: 0,
-      currency: 'TND',
+      currency: '',
       description: '',
       date: new Date(),
       overrunReason: '',
@@ -280,7 +282,7 @@ export function AddTimeExpenseDialog({
         await dispatchesApi.updateExpense(Number(editingEntry.dispatchId), Number(editingEntry.id), {
           type: expenseForm.type,
           amount: expenseForm.amount,
-          currency: expenseForm.currency,
+          currency: expenseForm.currency || currency.code,
           description: expenseForm.description || undefined,
           date: format(expenseForm.date, "yyyy-MM-dd'T'HH:mm:ss"),
         });
@@ -300,7 +302,7 @@ export function AddTimeExpenseDialog({
           technicianName: selectedUser?.name,
           type: expenseForm.type,
           amount: expenseForm.amount,
-          currency: expenseForm.currency,
+          currency: expenseForm.currency || currency.code,
           description: expenseForm.description || undefined,
           date: format(expenseForm.date, "yyyy-MM-dd'T'HH:mm:ss"),
           overrunReason: expenseForm.overrunReason || undefined,
@@ -624,16 +626,8 @@ export function AddTimeExpenseDialog({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{t('time-expenses:add_entry.currency')}</Label>
-                  <Select value={expenseForm.currency} onValueChange={(v) => setExpenseForm(f => ({ ...f, currency: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TND">TND</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {/* Currency is a global setting (Settings > Preferences), not a per-entry choice */}
+                  <Input value={currency.code} readOnly disabled />
                 </div>
               </div>
 

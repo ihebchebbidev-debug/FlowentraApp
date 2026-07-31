@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Plus, Search, Filter, Package, AlertTriangle, CheckCircle, List, Grid, DollarSign, Clock, Warehouse, MoreVertical, Eye, Edit, Trash2, ChevronDown, Loader2, Lock, ShieldAlert, X } from "lucide-react";
@@ -55,6 +56,7 @@ const getStatusIcon = (status: string) => {
 
 export function ArticlesList() {
   const { t } = useTranslation('articles');
+  const { current: currency, format: formatMoney } = useCurrency();
   const navigate = useNavigate();
   const { canCreate, canRead, canUpdate, canDelete, isLoading: permissionsLoading, isMainAdmin } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
@@ -165,7 +167,7 @@ export function ArticlesList() {
     },
     { 
       label: t('stats.total_value'), 
-      value: `${articles.reduce((sum, a) => sum + ((a.stock || 0) * (a.sellPrice || 0)), 0).toLocaleString()} TND`, 
+      value: `${articles.reduce((sum, a) => sum + ((a.stock || 0) * (a.sellPrice || 0)), 0).toLocaleString()} ${currency.code}`, 
       change: "+15%", 
       icon: DollarSign, 
       color: "chart-4" 
@@ -411,7 +413,7 @@ export function ArticlesList() {
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <DollarSign className="h-3 w-3 flex-shrink-0" />
-                                  <span className="truncate">{article.sellPrice} TND</span>
+                                  <span className="truncate">{article.sellPrice} {currency.code}</span>
                                 </div>
                                 <div className="hidden sm:flex items-center gap-1">
                                   <Clock className="h-3 w-3 flex-shrink-0" />
@@ -487,7 +489,7 @@ export function ArticlesList() {
                         </div>
                         <div className="flex justify-between">
                           <span>Price:</span>
-                          <span className="list-row-amount">{article.sellPrice} TND</span>
+                          <span className="list-row-amount">{article.sellPrice} {currency.code}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Location:</span>

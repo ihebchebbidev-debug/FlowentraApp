@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,7 @@ interface InventoryTableViewProps {
 export function InventoryTableView({ items, onClick, selectedIds, onSelectionChange }: InventoryTableViewProps) {
   const navigate = useNavigate();
   const { t } = useTranslation('inventory-services');
+  const { current: currency } = useCurrency();
   const { deleteArticle, isDeleting } = useArticles();
   
   // Single item delete state
@@ -168,8 +170,8 @@ export function InventoryTableView({ items, onClick, selectedIds, onSelectionCha
                     <TableCell>
                       <span>
                         {item.type === 'material' 
-                          ? `${Math.floor((item as any).sellPrice || 0)} TND` 
-                          : `${Math.floor((item as any).basePrice || 0)} TND`}
+                          ? `${Math.floor((item as any).sellPrice || 0)} ${currency.code}` 
+                          : `${Math.floor((item as any).basePrice || 0)} ${currency.code}`}
                       </span>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>

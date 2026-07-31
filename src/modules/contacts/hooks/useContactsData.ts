@@ -8,15 +8,16 @@ export type ContactSearchRequest = ContactSearchParams & {
   pageSize?: number;
 };
 
-// Fetch contacts from static mock with transformed params
+// Fetch contacts from backend with correctly mapped params
 const fetchContacts = async (searchParams?: ContactSearchRequest) => {
   const apiParams: ContactSearchParams = {
-    search: searchParams?.searchTerm,
-    page: 1,
-    limit: searchParams?.pageSize ?? 100,
-    sortBy: undefined,
-    sortOrder: undefined,
+    searchTerm: searchParams?.searchTerm || undefined,
+    pageNumber: searchParams?.pageNumber ?? searchParams?.page ?? 1,
+    pageSize: searchParams?.pageSize ?? searchParams?.limit ?? 100,
+    sortBy: searchParams?.sortBy,
+    sortDirection: searchParams?.sortDirection ?? searchParams?.sortOrder,
   };
+
   const response = await contactsApi.getAllContacts(apiParams);
   let list = response.contacts;
 
@@ -47,13 +48,14 @@ export const useContactsData = (searchParams?: ContactSearchRequest) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const inFlight = useRef(0);
+  const paramsKey = JSON.stringify(searchParams ?? {});
 
   const load = useCallback(async () => {
     const myId = ++inFlight.current;
     try {
       setIsLoading(true);
       setError(null);
-      const result = await fetchContacts(searchParams);
+      const result = await fetchContacts(JSON.parse(paramsKey) as ContactSearchRequest);
       // Only apply latest result
       if (inFlight.current === myId) {
         setData(result);
@@ -67,7 +69,7 @@ export const useContactsData = (searchParams?: ContactSearchRequest) => {
         setIsLoading(false);
       }
     }
-  }, [searchParams]);
+  }, [paramsKey]);
 
   useEffect(() => {
     load();

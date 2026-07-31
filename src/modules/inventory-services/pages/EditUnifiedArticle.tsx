@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Package, Wrench, Minus, Loader2, X, GraduationCap, Settings2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -41,6 +42,7 @@ const EditUnifiedArticle = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation('inventory-services');
+  const { current: currency, format: formatMoney } = useCurrency();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -535,7 +537,7 @@ const EditUnifiedArticle = () => {
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="costPrice">Cost Price (TND)</Label>
+                  <Label htmlFor="costPrice">Cost Price ({currency.code})</Label>
                   <Input
                     id="costPrice"
                     type="number"
@@ -547,7 +549,7 @@ const EditUnifiedArticle = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sellPrice">Prix HT (TND) *</Label>
+                  <Label htmlFor="sellPrice">Prix HT ({currency.code}) *</Label>
                   <Input
                     id="sellPrice"
                     type="number"
@@ -591,7 +593,7 @@ const EditUnifiedArticle = () => {
               <>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Prix HT (TND) *</Label>
+                  <Label htmlFor="basePrice">Prix HT ({currency.code}) *</Label>
                   <Input
                     id="basePrice"
                     type="number"

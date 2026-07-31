@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -16,6 +17,7 @@ import { isViewAllMode } from '@/utils/tenant';
 
 export default function TimeExpensesPage() {
   const { t } = useTranslation();
+  const { current: currency, format: formatMoney } = useCurrency();
   const { hasPermission, canCreate, canUpdate, canDelete, isLoading: permissionsLoading, isMainAdmin } = usePermissions();
   
   // Permission checks (disabled in view-all mode)
@@ -78,7 +80,7 @@ export default function TimeExpensesPage() {
     if (amount === 0) return '-';
     return new Intl.NumberFormat('fr-TN', {
       style: 'currency',
-      currency: 'TND'
+      currency: currency.code
     }).format(amount);
   };
 

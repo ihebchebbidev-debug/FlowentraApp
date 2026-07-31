@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
@@ -11,6 +12,7 @@ interface SummaryCardsProps {
 
 export function SummaryCards({ entries, className }: SummaryCardsProps) {
   const { t } = useTranslation();
+  const { current: currency, format: formatMoney } = useCurrency();
 
   const stats = React.useMemo(() => {
     const totalTime = entries.reduce((sum, entry) => sum + entry.timeBooked, 0);
@@ -37,7 +39,7 @@ export function SummaryCards({ entries, className }: SummaryCardsProps) {
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('fr-CA', {
       style: 'currency',
-      currency: 'CAD'
+      currency: currency.code
     }).format(amount);
   };
 

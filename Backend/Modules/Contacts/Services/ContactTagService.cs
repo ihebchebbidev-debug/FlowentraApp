@@ -11,7 +11,8 @@ namespace MyApi.Modules.Contacts.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ContactTagService> _logger;
         private readonly ICacheService _cache;
-        private const string TagsCacheKey = "contact_tags_all";
+        // Tenant-scoped: a shared key leaked one tenant's tags to every other tenant.
+        private string TagsCacheKey => $"contact_tags_all:{_context.GetTenantId()}";
         private static readonly TimeSpan TagCacheDuration = TimeSpan.FromMinutes(30);
 
         public ContactTagService(ApplicationDbContext context, ILogger<ContactTagService> logger, ICacheService cache)
@@ -29,6 +30,7 @@ namespace MyApi.Modules.Contacts.Services
                 {
                     var tags = await _context.ContactTags
                         .AsNoTracking()
+                        .Where(t => !t.IsDeleted)
                         .Include(t => t.ContactAssignments)
                         .OrderBy(t => t.Name)
                         .ToListAsync();
@@ -56,7 +58,7 @@ namespace MyApi.Modules.Contacts.Services
                 var tag = await _context.ContactTags
                     .AsNoTracking()
                     .Include(t => t.ContactAssignments)
-                    .Where(t => t.Id == id)
+                    .Where(t => t.Id == id && !t.IsDeleted)
                     .FirstOrDefaultAsync();
 
                 return tag != null ? MapToTagDto(tag) : null;
@@ -73,7 +75,7 @@ namespace MyApi.Modules.Contacts.Services
             try
             {
                 var existingTag = await _context.ContactTags
-                    .Where(t => t.Name.ToLower() == createDto.Name.ToLower())
+                    .Where(t => t.Name.ToLower() == createDto.Name.ToLower() && !t.IsDeleted)
                     .FirstOrDefaultAsync();
 
                 if (existingTag != null)
@@ -110,7 +112,7 @@ namespace MyApi.Modules.Contacts.Services
             try
             {
                 var tag = await _context.ContactTags
-                    .Where(t => t.Id == id)
+                    .Where(t => t.Id == id && !t.IsDeleted)
                     .FirstOrDefaultAsync();
 
                 if (tag == null)
@@ -122,7 +124,7 @@ namespace MyApi.Modules.Contacts.Services
                     updateDto.Name.ToLower() != tag.Name.ToLower())
                 {
                     var existingTag = await _context.ContactTags
-                        .Where(t => t.Name.ToLower() == updateDto.Name.ToLower() && t.Id != id)
+                        .Where(t => t.Name.ToLower() == updateDto.Name.ToLower() && t.Id != id && !t.IsDeleted)
                         .FirstOrDefaultAsync();
 
                     if (existingTag != null)
@@ -158,7 +160,7 @@ namespace MyApi.Modules.Contacts.Services
             try
             {
                 var tag = await _context.ContactTags
-                    .Where(t => t.Id == id)
+                    .Where(t => t.Id == id && !t.IsDeleted)
                     .FirstOrDefaultAsync();
 
                 if (tag == null)
@@ -170,8 +172,10 @@ namespace MyApi.Modules.Contacts.Services
                     .Where(ta => ta.TagId == id)
                     .ToListAsync();
 
+                // Soft delete: keep the row so historical references (activity log,
+                // reports) can still resolve the tag name/colour.
                 _context.Set<ContactTagAssignment>().RemoveRange(assignments);
-                _context.ContactTags.Remove(tag);
+                tag.IsDeleted = true;
 
                 await _context.SaveChangesAsync();
 
@@ -193,7 +197,7 @@ namespace MyApi.Modules.Contacts.Services
             try
             {
                 return await _context.ContactTags
-                    .AnyAsync(t => t.Name.ToLower() == name.ToLower());
+                    .AnyAsync(t => t.Name.ToLower() == name.ToLower() && !t.IsDeleted);
             }
             catch (Exception ex)
             {

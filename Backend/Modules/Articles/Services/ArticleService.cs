@@ -270,7 +270,7 @@ namespace MyApi.Modules.Articles.Services
 
                 // Pessimistic row lock on the article to serialise concurrent updates.
                 var article = await _context.Set<Article>()
-                    .FromSqlInterpolated($"SELECT * FROM \"Articles\" WHERE \"Id\" = {dto.ArticleId} AND \"IsDeleted\" = false FOR UPDATE")
+                    .FromSqlInterpolated($"SELECT * FROM \"Articles\" WHERE \"Id\" = {dto.ArticleId} AND \"TenantId\" = {_context.GetTenantId()} AND \"IsDeleted\" = false FOR UPDATE")
                     .FirstOrDefaultAsync();
                 if (article == null)
                     throw new KeyNotFoundException($"Article {dto.ArticleId} not found");
@@ -287,7 +287,7 @@ namespace MyApi.Modules.Articles.Services
                 var newStock = article.StockQuantity + delta;
                 if (newStock < 0)
                     throw new InvalidOperationException(
-                        $"Insufficient stock for article {article.ArticleNumber}: have {article.StockQuantity}, requested {-delta}");
+                        $"Insufficient stock for article {article.ArticleNumber}: have {article.StockQuantity}, requested {Math.Abs(delta)}");
 
                 article.StockQuantity = newStock;
                 article.ModifiedDate = DateTime.UtcNow;
@@ -355,7 +355,7 @@ namespace MyApi.Modules.Articles.Services
 
                 // Lock all affected article rows in one round-trip.
                 var articles = await _context.Set<Article>()
-                    .FromSqlInterpolated($"SELECT * FROM \"Articles\" WHERE \"Id\" = ANY({ids}) AND \"IsDeleted\" = false FOR UPDATE")
+                    .FromSqlInterpolated($"SELECT * FROM \"Articles\" WHERE \"Id\" = ANY({ids}) AND \"TenantId\" = {_context.GetTenantId()} AND \"IsDeleted\" = false FOR UPDATE")
                     .ToDictionaryAsync(a => a.Id);
 
                 foreach (var item in dto.Items)

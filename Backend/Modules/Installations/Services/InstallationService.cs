@@ -305,6 +305,13 @@ namespace MyApi.Modules.Installations.Services
 
         public async Task<List<MaintenanceHistoryDto>> GetMaintenanceHistoryAsync(int installationId, int page = 1, int pageSize = 20)
         {
+            // Same visibility rule as every other read path: soft-deleted
+            // installations expose no maintenance history.
+            var installationVisible = await _context.Installations
+                .AnyAsync(i => i.Id == installationId && !i.IsDeleted);
+            if (!installationVisible)
+                return new List<MaintenanceHistoryDto>();
+
             var histories = await _context.MaintenanceHistories
                 .Where(m => m.InstallationId == installationId)
                 .OrderByDescending(m => m.MaintenanceDate)

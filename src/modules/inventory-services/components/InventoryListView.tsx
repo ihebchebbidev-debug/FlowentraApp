@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -11,6 +12,7 @@ import { useArticles } from "@/modules/articles/hooks/useArticles";
 export function InventoryListView({ items, onClick }: { items: any[]; onClick: (item: any) => void; }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { current: currency, format: formatMoney } = useCurrency();
   const { deleteArticle, isDeleting } = useArticles();
   const [deleteItem, setDeleteItem] = useState<any>(null);
 
@@ -92,7 +94,7 @@ export function InventoryListView({ items, onClick }: { items: any[]; onClick: (
               <div className="flex items-center justify-between pl-[52px]" onClick={e => e.stopPropagation()}>
                 <span className="list-row-amount inline-flex items-center gap-1">
                   <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  {Number(price).toFixed(2)} TND
+                  {Number(price).toFixed(2)} {currency.code}
                 </span>
                 <div className="ml-auto">
                   <TableRowActions actions={[

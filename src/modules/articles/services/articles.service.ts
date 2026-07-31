@@ -40,9 +40,11 @@ const mapToInventoryArticle = (article: Article): InventoryArticle => ({
   lastUsedBy: article.lastUsedBy,
 });
 
-// Cache for articles
+// Cache for articles — only ever holds the *unfiltered* list so that
+// getById() can never miss an article just because a filtered search ran.
 let articlesCache: InventoryArticle[] | null = null;
 let cacheTimestamp = 0;
+let inFlightRefresh: Promise<InventoryArticle[]> | null = null;
 const CACHE_TTL = 30000; // 30 seconds
 
 export const ArticlesService = {
@@ -50,22 +52,30 @@ export const ArticlesService = {
     try {
       const response = await articlesApi.getAll(params);
       const articles = (response.data || []).map(mapToInventoryArticle);
-      articlesCache = articles;
-      cacheTimestamp = Date.now();
+      const isUnfiltered = !params || Object.values(params).every(v => v === undefined || v === '' || v === null);
+      if (isUnfiltered) {
+        articlesCache = articles;
+        cacheTimestamp = Date.now();
+      }
       return articles;
     } catch (error) {
       console.error('Failed to fetch articles:', error);
+      // Never mask a failed refresh as fresh data: keep the old timestamp so
+      // the next call retries instead of serving stale data for the full TTL.
       return articlesCache || [];
     }
   },
 
   list(): InventoryArticle[] {
-    // Return cached data synchronously, trigger async refresh
-    if (!articlesCache || Date.now() - cacheTimestamp > CACHE_TTL) {
-      this.listAsync(); // Refresh in background
+    // Return cached data synchronously, trigger a single background refresh.
+    if (!inFlightRefresh && (!articlesCache || Date.now() - cacheTimestamp > CACHE_TTL)) {
+      inFlightRefresh = this.listAsync().finally(() => {
+        inFlightRefresh = null;
+      });
     }
     return articlesCache || [];
   },
+
 
   async getByIdAsync(id: string): Promise<InventoryArticle | undefined> {
     try {
@@ -112,6 +122,7 @@ export const ArticlesService = {
       
       // Invalidate cache
       articlesCache = null;
+      cacheTimestamp = 0;
       
       return mapToInventoryArticle(result);
     } catch (error) {
@@ -121,8 +132,9 @@ export const ArticlesService = {
   },
 
   upsert(item: InventoryArticle) {
-    // Fire and forget async operation
-    this.upsertAsync(item);
+    // Returns the promise so callers can await/handle failures instead of
+    // silently losing the write.
+    return this.upsertAsync(item);
   },
 
   async removeAsync(id: string): Promise<boolean> {
@@ -130,6 +142,7 @@ export const ArticlesService = {
       await articlesApi.delete(id);
       // Invalidate cache
       articlesCache = null;
+      cacheTimestamp = 0;
       return true;
     } catch (error) {
       console.error('Failed to delete article:', error);
@@ -138,8 +151,8 @@ export const ArticlesService = {
   },
 
   remove(id: string) {
-    // Fire and forget async operation
-    this.removeAsync(id);
+    // Returns the promise so callers can await/handle failures.
+    return this.removeAsync(id);
   },
 
   // Clear cache manually if needed

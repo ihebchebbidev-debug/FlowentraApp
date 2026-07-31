@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React, { useEffect, useState } from "react";
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { useNavigate, useParams } from "react-router-dom";
@@ -25,6 +26,7 @@ export function ArticleDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation('inventory-services');
+  const { current: currency, format: formatMoney } = useCurrency();
   const [categories, setCategories] = useState<LookupItem[]>([]);
   const [locations, setLocations] = useState<LookupItem[]>([]);
   const [groups, setGroups] = useState<LookupItem[]>([]);
@@ -364,11 +366,11 @@ export function ArticleDetails() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <dt className="text-sm font-medium text-muted-foreground">{t('detail.cost_price')}</dt>
-                          <dd className="text-sm">{article.costPrice} TND</dd>
+                          <dd className="text-sm">{article.costPrice} {currency.code}</dd>
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-muted-foreground">{t('detail.sell_price')}</dt>
-                          <dd className="text-lg font-semibold text-primary">{article.sellPrice} TND</dd>
+                          <dd className="text-lg font-semibold text-primary">{article.sellPrice} {currency.code}</dd>
                         </div>
                       </div>
                       <Separator />
@@ -404,7 +406,7 @@ export function ArticleDetails() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 bg-muted/50 rounded-lg">
                           <dt className="text-sm font-medium text-muted-foreground">{t('base_price')}</dt>
-                          <dd className="text-lg font-semibold text-primary">{article.basePrice} TND</dd>
+                          <dd className="text-lg font-semibold text-primary">{article.basePrice} {currency.code}</dd>
                         </div>
                         <div className="p-3 bg-muted/50 rounded-lg">
                           <dt className="text-sm font-medium text-muted-foreground">{t('duration')}</dt>

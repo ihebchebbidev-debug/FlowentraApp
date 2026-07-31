@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,7 @@ interface ArticleOverviewTabProps {
 
 export function ArticleOverviewTab({ article, getUserName }: ArticleOverviewTabProps) {
   const { t } = useTranslation('inventory-services');
+  const { current: currency } = useCurrency();
 
   // Computed values
   const stock = article.stockQuantity ?? article.stock ?? 0;
@@ -80,21 +82,21 @@ export function ArticleOverviewTab({ article, getUserName }: ArticleOverviewTabP
               <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">{t('detail.cost_price')}</p>
-                <p className="text-sm font-medium">{costPrice.toFixed(2)} TND</p>
+                <p className="text-sm font-medium">{costPrice.toFixed(2)} {currency.code}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">{t('detail.sell_price')}</p>
-                <p className="text-sm font-medium">{sellPrice.toFixed(2)} TND</p>
+                <p className="text-sm font-medium">{sellPrice.toFixed(2)} {currency.code}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">{t('detail.margin')}</p>
-                <p className="text-sm font-medium">{margin.toFixed(2)} TND ({marginPercentage}%)</p>
+                <p className="text-sm font-medium">{margin.toFixed(2)} {currency.code} ({marginPercentage}%)</p>
               </div>
             </div>
           </CardContent>

@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ export function ContactRelatedTab({
   isLoading 
 }: ContactRelatedTabProps) {
   const { t } = useTranslation('contacts');
+  const { format: formatMoney } = useCurrency();
   const navigate = useNavigate();
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -136,10 +138,7 @@ export function ContactRelatedTab({
                 {record.amount !== undefined && record.amount > 0 && (
                   <div className="text-right mr-4">
                     <span className="font-semibold">
-                      {new Intl.NumberFormat('fr-TN', { 
-                        style: 'currency', 
-                        currency: 'TND' 
-                      }).format(record.amount)}
+                      {formatMoney(record.amount)}
                     </span>
                   </div>
                 )}

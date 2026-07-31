@@ -486,15 +486,15 @@ export default function ModuleDocumentationPage() {
                 <CardContent>
                   {tables.length ? (
                     <ul className="space-y-2">
-                      {tables.map((t) => {
-                        const cols = getTableColumns(t);
+                      {tables.map((tbl) => {
+                        const cols = getTableColumns(tbl);
                         return (
-                          <li key={t} className="rounded-md border bg-muted/30 overflow-hidden">
+                          <li key={tbl} className="rounded-md border bg-muted/30 overflow-hidden">
                             {cols ? (
                               <Collapsible>
                                 <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 transition-colors text-left group">
                                   <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                                  <code className="text-xs font-mono font-semibold flex-1 truncate">{t}</code>
+                                  <code className="text-xs font-mono font-semibold flex-1 truncate">{tbl}</code>
                                   <Badge variant="outline" className="text-px-10 shrink-0">{t("docs.columnsCount", { count: cols.length })}</Badge>
                                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 shrink-0" />
                                 </CollapsibleTrigger>
@@ -521,7 +521,7 @@ export default function ModuleDocumentationPage() {
                             ) : (
                               <div className="flex items-center gap-2 px-2.5 py-2">
                                 <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                                <code className="text-xs font-mono flex-1 truncate">{t}</code>
+                                <code className="text-xs font-mono flex-1 truncate">{tbl}</code>
                                 <Badge variant="outline" className="text-px-10 text-muted-foreground shrink-0">{t("docs.schemaUnavailable")}</Badge>
                               </div>
                             )}

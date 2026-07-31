@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format, 
@@ -39,6 +40,8 @@ export function CustomCalendar({
   className 
 }: CustomCalendarProps) {
   const { t, i18n } = useTranslation();
+  const { current: currency } = useCurrency();
+
   const [currentMonth, setCurrentMonth] = useState(selectedDate);
   const [showDayModal, setShowDayModal] = useState(false);
   
@@ -89,7 +92,7 @@ export function CustomCalendar({
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('fr-TN', {
       style: 'currency',
-      currency: 'TND'
+      currency: currency.code
     }).format(amount);
   };
 

@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState } from "react";
 import { ArrowLeft, Save, Package, Zap, LinkIcon, Wrench } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -36,6 +37,7 @@ const locations = [
 
 const AddArticle = () => {
   const { t } = useTranslation('articles');
+  const { current: currency, format: formatMoney } = useCurrency();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -114,7 +116,7 @@ const AddArticle = () => {
             supplierId: linkedSupplierId,
             supplierRef: '',
             purchasePrice: formData.price ? Number(formData.price) : 0,
-            currency: 'TND',
+            currency: currency.code,
             minOrderQty: 0,
             leadTimeDays: 0,
             isPreferred: true,

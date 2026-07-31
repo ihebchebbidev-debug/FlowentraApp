@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -26,6 +27,7 @@ interface TimeExpenseTableProps {
 
 export function TimeExpenseTable({ entries, users, className }: TimeExpenseTableProps) {
   const { t } = useTranslation();
+  const { current: currency, format: formatMoney } = useCurrency();
 
   const getUserById = (userId: string) => {
     return users.find(user => user.id === userId);
@@ -42,7 +44,7 @@ export function TimeExpenseTable({ entries, users, className }: TimeExpenseTable
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('fr-CA', {
       style: 'currency',
-      currency: 'CAD'
+      currency: currency.code
     }).format(amount);
   };
 

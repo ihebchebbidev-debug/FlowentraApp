@@ -875,6 +875,18 @@ namespace MyApi.Modules.Contacts.Services
         {
             try
             {
+                // Validate both sides through tenant-filtered DbSets so a foreign
+                // contactId/tagId can never be linked across tenants.
+                var contactExists = await _context.Contacts
+                    .AnyAsync(c => c.Id == contactId && !c.IsDeleted);
+                if (!contactExists)
+                    throw new KeyNotFoundException($"Contact {contactId} not found");
+
+                var tagExists = await _context.ContactTags
+                    .AnyAsync(t => t.Id == tagId && !t.IsDeleted);
+                if (!tagExists)
+                    throw new KeyNotFoundException($"Tag {tagId} not found");
+
                 // Check if assignment already exists
                 var existingAssignment = await _context.Set<ContactTagAssignment>()
                     .Where(ta => ta.ContactId == contactId && ta.TagId == tagId)
@@ -884,6 +896,7 @@ namespace MyApi.Modules.Contacts.Services
                 {
                     return true; // Already assigned
                 }
+
 
                 var tagAssignment = new ContactTagAssignment
                 {

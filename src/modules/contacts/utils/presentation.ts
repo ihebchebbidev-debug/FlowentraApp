@@ -18,4 +18,3 @@ export const getStatusColor = (status: string) => {
   }
 };
 
-export const formatTND = (amount: number) => new Intl.NumberFormat("fr-TN", { style: "currency", currency: "TND", maximumFractionDigits: 0 }).format(amount);

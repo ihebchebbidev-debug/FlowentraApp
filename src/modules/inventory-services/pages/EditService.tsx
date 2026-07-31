@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Wrench, Minus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -124,6 +125,7 @@ const mockServices = [
 ];
 
 const EditService = () => {
+  const { current: currency } = useCurrency();
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -363,7 +365,7 @@ const EditService = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="basePrice">Base Price (TND) *</Label>
+                    <Label htmlFor="basePrice">Base Price ({currency.code}) *</Label>
                     <Input
                       id="basePrice"
                       type="number"

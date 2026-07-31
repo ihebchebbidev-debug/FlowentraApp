@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Wrench, Minus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -73,6 +74,7 @@ const AddService = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation('inventory-services');
+  const { current: currency, format: formatMoney } = useCurrency();
   const [addMode, setAddMode] = useState<'quick' | 'detailed'>('quick');
   const [formData, setFormData] = useState({
     name: "",
@@ -286,7 +288,7 @@ const AddService = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Base Price (TND) *</Label>
+                  <Label htmlFor="basePrice">Base Price ({currency.code}) *</Label>
                   <Input
                     id="basePrice"
                     type="number"
@@ -370,7 +372,7 @@ const AddService = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="basePrice">Base Price (TND) *</Label>
+                      <Label htmlFor="basePrice">Base Price ({currency.code}) *</Label>
                       <Input
                         id="basePrice"
                         type="number"
