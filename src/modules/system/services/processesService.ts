@@ -435,8 +435,11 @@ export function overlay(
     // "idle": an enabled, on-schedule job IS running, it is simply between ticks.
     status: isExecuting ? "running" :
             s.block_reason || s.has_handler === false || isOverdue ? "blocked" :
-            s.last_status === "failed" || s.consecutive_failures > 0 ? "failed" :
+            // Operator intent (paused / disabled) outranks a stale failure so
+            // pausing a failing job gives immediate, visible feedback instead of
+            // leaving it pinned on "Failing — will retry".
             !s.enabled || s.paused ? "paused" :
+            s.last_status === "failed" || s.consecutive_failures > 0 ? "failed" :
             "running",
     lastRunAt: s.last_run_at ?? undefined,
     nextRunAt: s.next_run_at ?? undefined,

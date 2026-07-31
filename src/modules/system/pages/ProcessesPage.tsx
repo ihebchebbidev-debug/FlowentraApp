@@ -891,7 +891,10 @@ export default function ProcessesPage() {
     const next = !p.isPaused;
     const prevPaused = p.isPaused;
     const prevStatus = p.status;
-    updateProcess(p.key, { isPaused: next, status: next ? "paused" : "running" });
+    updateProcess(p.key, {
+      isPaused: next,
+      status: next ? "paused" : prevStatus === "paused" ? "running" : prevStatus,
+    });
     try {
       if (schedules.has(p.key)) {
         await apiSetPaused(p.key, next);
@@ -956,13 +959,13 @@ export default function ProcessesPage() {
 
   const stopRun = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
-    // Optimistic flip: the row's "Stop" button turns back into "Run now"
-    // immediately instead of waiting for the next schedule refresh (which can
-    // take up to 2s). If the stop request fails we restore the prior state.
+    // Optimistic flip: clear the "executing" flag so the Stop button turns back
+    // into "Run now" immediately instead of waiting for the next schedule
+    // refresh. Stopping a run is NOT pausing the schedule, so the status itself
+    // is left to the refresh instead of being forced to "paused".
     const prevStatus = p.status;
-    const prevPaused = p.isPaused;
-    const optimistic: ProcessStatus = p.isEnabled && !p.isPaused ? "paused" : prevStatus;
-    updateProcess(p.key, { status: optimistic, isExecuting: false });
+    const prevExecuting = p.isExecuting;
+    updateProcess(p.key, { isExecuting: false });
     try {
       const res = await apiStopRun(p.key);
       await refreshSchedules();
@@ -981,7 +984,7 @@ export default function ProcessesPage() {
         toast({ title: t("toast.stop_nothing_running_title"), description: p.name });
       }
     } catch (e) {
-      updateProcess(p.key, { status: prevStatus, isPaused: prevPaused });
+      updateProcess(p.key, { status: prevStatus, isExecuting: prevExecuting });
       toast({ title: t("toast.could_not_stop_title"), description: (e as Error).message, variant: "destructive" });
     }
   };
@@ -1549,7 +1552,10 @@ function RowActions({
     defaultValue: "Only the main administrator can perform this action",
   });
 
-  if (p.status === "running") {
+  // Only an actually-executing run can be stopped. `status === "running"` also
+  // covers a healthy, enabled job that is merely *between* ticks — showing Stop
+  // there hid Run now / Pause entirely and made clicking Stop a no-op.
+  if (p.isExecuting) {
     return (
       <Button
         size="sm"
@@ -1759,7 +1765,7 @@ function ProcessDrawer({
       <BlockDetails t={t} p={p} onOpenLogs={onOpenLogs} />
 
       <div className="flex flex-wrap items-center gap-2 py-3">
-        {p.status === "running" ? (
+        {p.isExecuting ? (
           <Button
             size="sm"
             variant="destructive"
@@ -1776,7 +1782,7 @@ function ProcessDrawer({
           </Button>
         )}
 
-        {p.status !== "running" && (
+        {!p.isExecuting && (
           <Button
             size="sm"
             variant={p.isPaused ? "default" : "outline"}
