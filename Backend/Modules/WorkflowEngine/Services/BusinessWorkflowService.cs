@@ -733,7 +733,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 // Only update if not already in progress or beyond
                 if (serviceOrder.Status == "pending" || serviceOrder.Status == "scheduled")
                 {
-                    var oldStatus = serviceOrder.Status;
+                    var oldStatus = serviceOrder.Status ?? string.Empty;
                     serviceOrder.Status = "in_progress";
                     serviceOrder.ActualStartDate = DateTime.UtcNow;
                     serviceOrder.ModifiedBy = userId;
@@ -839,7 +839,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     return;
                 }
 
-                var oldStatus = serviceOrder.Status;
+                var oldStatus = serviceOrder.Status ?? string.Empty;
                 string newStatus;
 
                 // Never walk an order backwards: once it is invoiced/closed/cancelled, a late
