@@ -31,6 +31,15 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterTechnician, setFilterTechnician] = useState('all');
 
+  // Technician options are derived from the dispatches themselves — never hardcoded
+  const technicianOptions = Array.from(
+    new Set(
+      dispatches
+        .flatMap(d => d.assignedTechnicians || [])
+        .filter(name => !!name && name !== 'Unassigned')
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
   // Filter the dispatches based on current filters and search term
   const filteredDispatches = dispatches.filter(dispatch => {
     // Search filter
@@ -195,10 +204,9 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
                 </SelectTrigger>
                 <SelectContent className="bg-popover border shadow-md z-50">
                   <SelectItem value="all">All Technicians</SelectItem>
-                  <SelectItem value="tech-001">Alex Johnson</SelectItem>
-                  <SelectItem value="tech-002">Sarah Wilson</SelectItem>
-                  <SelectItem value="tech-003">Mike Chen</SelectItem>
-                  <SelectItem value="tech-004">Emma Davis</SelectItem>
+                  {technicianOptions.map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

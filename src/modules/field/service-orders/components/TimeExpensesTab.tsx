@@ -34,6 +34,7 @@ interface AggregatedExpenseEntry extends Omit<ExpenseEntry, 'dispatchId'> {
 
 import { DatePicker } from "@/components/ui/date-time-picker";
 import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
+import { PlanVsActualPanel } from "@/shared/components/planning/PlanVsActualPanel";
 import { PlanEditorDialog } from "@/shared/components/planning/PlanEditorDialog";
 import { PlannedEntryCard } from "@/shared/components/planning/PlannedEntryCard";
 import { usePlannedEntries } from "@/shared/components/planning/usePlannedEntries";
@@ -163,7 +164,8 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Planned entries (unified into the same list as actuals, tagged "Planned")
-  const soCurrency = (serviceOrder as any)?.currency || currencyInfo.code || 'TND';
+  // Currency always comes from the document, else the configured app preference.
+  const soCurrency = (serviceOrder as any)?.currency || currencyInfo.code;
   const { entries: plannedEntries, reload: reloadPlanned } = usePlannedEntries(
     'service_order_job',
     jobIds
@@ -1415,6 +1417,15 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
               )}
             </div>
           </div>
+
+          {/* Plan vs actual roll-up, one card per job of this service order */}
+          {normalizedJobIds.length > 0 && (
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {normalizedJobIds.map((jobId) => (
+                <PlanVsActualPanel key={jobId} serviceOrderJobId={jobId} currency={soCurrency} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

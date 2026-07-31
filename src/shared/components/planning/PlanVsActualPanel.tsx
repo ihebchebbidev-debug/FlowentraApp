@@ -4,6 +4,7 @@ import { Clock, Wallet, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { plannedEntriesApi, type PlanVsActual, formatPlannedMinutes } from '@/services/plannedEntriesService';
 
 interface Props {
@@ -14,8 +15,10 @@ interface Props {
 const colorFor = (pct: number) =>
   pct < 80 ? 'bg-emerald-500' : pct <= 100 ? 'bg-amber-500' : 'bg-destructive';
 
-export function PlanVsActualPanel({ serviceOrderJobId, currency = 'TND' }: Props) {
+export function PlanVsActualPanel({ serviceOrderJobId, currency }: Props) {
   const { t } = useTranslation();
+  const { current } = useCurrency();
+  const currencyCode = currency || current.code;
   const [data, setData] = useState<PlanVsActual | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +77,7 @@ export function PlanVsActualPanel({ serviceOrderJobId, currency = 'TND' }: Props
               <span>{t('planning.expenses', 'Expenses')}</span>
             </div>
             <span className="font-medium tabular-nums">
-              {data.actualExpenseTotal.toFixed(2)} / {data.plannedExpenseTotal.toFixed(2)} {currency}
+              {data.actualExpenseTotal.toFixed(2)} / {data.plannedExpenseTotal.toFixed(2)} {currencyCode}
               {data.plannedExpenseTotal > 0 && (
                 <Badge variant={expPct > 100 ? 'destructive' : 'secondary'} className="ml-2">
                   {expPct.toFixed(0)}%
@@ -96,7 +99,7 @@ export function PlanVsActualPanel({ serviceOrderJobId, currency = 'TND' }: Props
                 <div key={b.expenseType} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{t(`planning.expenseTypes.${b.expenseType}`, b.expenseType)}</span>
                   <span className={pct > 100 ? 'text-destructive font-medium' : ''}>
-                    {b.actual.toFixed(2)} / {b.planned.toFixed(2)} {currency}
+                    {b.actual.toFixed(2)} / {b.planned.toFixed(2)} {currencyCode}
                   </span>
                 </div>
               );

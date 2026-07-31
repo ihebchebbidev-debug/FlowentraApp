@@ -10,6 +10,7 @@ import {
   type PlannedParentType,
 } from '@/services/plannedEntriesService';
 import { usePlannedEntries } from './usePlannedEntries';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 /**
  * Visual overrun indicator for Plan vs Actual comparisons.
@@ -33,17 +34,19 @@ export function OverrunBadge({
   planned,
   actual,
   variant = 'money',
-  currency = 'TND',
+  currency,
   className,
 }: OverrunBadgeProps) {
   const { t } = useTranslation();
+  const { current } = useCurrency();
+  const currencyCode = currency || current.code;
 
   if (planned <= 0) return null;
 
   const fmt = (n: number) =>
     variant === 'time'
       ? formatPlannedMinutes(Math.max(0, Math.round(n)))
-      : `${(n || 0).toFixed(2)} ${currency}`;
+      : `${(n || 0).toFixed(2)} ${currencyCode}`;
 
   const ratio = actual / planned;
   const pct = Math.round(ratio * 100);

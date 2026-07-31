@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSubmitGuard } from '@/shared/hooks/useSubmitGuard';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Clock, Wallet, Users, AlertCircle, Pencil } from 'lucide-react';
+import { Plus, Trash2, Clock, Wallet, Users, AlertCircle, Pencil, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +36,7 @@ import {
   formatPlannedMinutes,
   sumPlannedMinutes,
   sumPlannedExpenses,
+  sumPlannedMaterials,
 } from '@/services/plannedEntriesService';
 import { useMemo as useMemoReact } from 'react';
 import { useExpenseTypes } from '@/modules/lookups/hooks/useLookups';
@@ -102,13 +103,16 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
 
   const totalMinutes = sumPlannedMinutes(entries);
   const totalExpenses = sumPlannedExpenses(entries);
+  const totalMaterials = sumPlannedMaterials(entries);
 
-  const openAdd = (kind: 'time' | 'expense') => {
+  const openAdd = (kind: 'time' | 'expense' | 'material') => {
     setEditing(null);
     setDraft(
       kind === 'time'
         ? { kind: 'time', technicianCount: 1, plannedMinutes: 60 }
-        : { kind: 'expense', expenseType: (expenseTypeOptions[0]?.value ?? 'travel') as PlannedExpenseType, plannedAmount: 0, currency: effectiveCurrency }
+        : kind === 'material'
+          ? { kind: 'material', quantity: 1, unitPrice: 0, currency: effectiveCurrency }
+          : { kind: 'expense', expenseType: (expenseTypeOptions[0]?.value ?? 'travel') as PlannedExpenseType, plannedAmount: 0, currency: effectiveCurrency }
     );
     setEditorOpen(true);
   };
@@ -124,6 +128,11 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
       plannedAmount: entry.plannedAmount ?? undefined,
       currency: entry.currency ?? effectiveCurrency,
       description: entry.description ?? undefined,
+      articleName: entry.articleName ?? undefined,
+      articleId: entry.articleId ?? undefined,
+      quantity: entry.quantity ?? undefined,
+      unitPrice: entry.unitPrice ?? undefined,
+      unit: entry.unit ?? undefined,
     });
     setEditorOpen(true);
   };
@@ -132,6 +141,13 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
     if (!idReady) {
       toast.error(t('planning.saveLineFirst', 'Save the line first, then plan time/expenses.'));
       return;
+    }
+    if (draft.kind === 'material') {
+      const qty = Number(draft.quantity ?? 0);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        toast.error(t('planning.quantityRequired', 'Planned quantity must be greater than 0.'));
+        return;
+      }
     }
     if (draft.kind === 'time') {
       const mins = Number(draft.plannedMinutes ?? 0);
@@ -174,6 +190,7 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
 
   const timeEntries = entries.filter(e => e.kind === 'time');
   const expenseEntries = entries.filter(e => e.kind === 'expense');
+  const materialEntries = entries.filter(e => e.kind === 'material');
 
   return (
     <div className="border rounded-lg p-4 bg-muted/20 space-y-4">
@@ -188,6 +205,9 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
           </Badge>
           <Badge variant="secondary" className="gap-1">
             <Wallet className="h-3 w-3" /> {totalExpenses.toFixed(2)} {effectiveCurrency}
+          </Badge>
+          <Badge variant="secondary" className="gap-1">
+            <Package className="h-3 w-3" /> {totalMaterials.toFixed(2)} {effectiveCurrency}
           </Badge>
         </div>
       </div>
@@ -274,6 +294,46 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
         )}
       </div>
 
+      {/* Materials */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs font-medium">{t('planning.plannedMaterials', 'Planned materials')}</Label>
+          {!readOnly && idReady && (
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openAdd('material')}>
+              <Plus className="h-3 w-3 mr-1" /> {t('add', 'Add')}
+            </Button>
+          )}
+        </div>
+        {materialEntries.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic">{t('planning.noMaterials', 'No planned materials')}</p>
+        ) : (
+          <ul className="space-y-1">
+            {materialEntries.map(e => (
+              <li key={e.id} className="flex items-center justify-between bg-background border rounded px-2 py-1.5 text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-medium truncate">{e.articleName || e.description || t('planning.material', 'Material')}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(e.quantity ?? 0)}{e.unit ? ` ${e.unit}` : ''} × {(e.unitPrice ?? 0).toFixed(2)} ={' '}
+                    {((e.quantity ?? 0) * (e.unitPrice ?? 0)).toFixed(2)} {e.currency ?? effectiveCurrency}
+                  </span>
+                </div>
+                {!readOnly && (
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => openEdit(e)}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => remove(e)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Editor dialog */}
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
         <DialogContent className="max-w-md">
@@ -283,7 +343,9 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
                 ? t('planning.editEntry', 'Edit planned entry')
                 : draft.kind === 'time'
                   ? t('planning.addTime', 'Add planned time')
-                  : t('planning.addExpense', 'Add planned expense')}
+                  : draft.kind === 'material'
+                    ? t('planning.addMaterial', 'Add planned material')
+                    : t('planning.addExpense', 'Add planned expense')}
             </DialogTitle>
           </DialogHeader>
 
@@ -326,6 +388,37 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
                   </div>
                 </div>
               </div>
+            </div>
+          ) : draft.kind === 'material' ? (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">{t('planning.materialName', 'Material')}</Label>
+                <Input
+                  value={draft.articleName ?? ''}
+                  onChange={e => setDraft({ ...draft, articleName: e.target.value })}
+                  placeholder={t('planning.materialPlaceholder', 'e.g. Copper pipe 15mm')}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">{t('planning.quantity', 'Qty')}</Label>
+                  <Input type="number" step="0.01" min={0} value={draft.quantity ?? 1}
+                    onChange={e => setDraft({ ...draft, quantity: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <Label className="text-xs">{t('planning.unit', 'Unit')}</Label>
+                  <Input value={draft.unit ?? ''}
+                    onChange={e => setDraft({ ...draft, unit: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">{t('planning.unitPrice', 'Unit price')}</Label>
+                  <Input type="number" step="0.01" min={0} value={draft.unitPrice ?? 0}
+                    onChange={e => setDraft({ ...draft, unitPrice: parseFloat(e.target.value) || 0, currency: effectiveCurrency })} />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t('planning.total', 'Total')}: {((draft.quantity ?? 0) * (draft.unitPrice ?? 0)).toFixed(2)} {effectiveCurrency}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
