@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, FileDown } from "lucide-react";
+import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, FileDown, Banknote } from "lucide-react";
 import { supplierInvoiceService } from "../services/purchaseService";
 import { contactsApi } from "@/services/api/contactsApi";
 import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
@@ -58,6 +58,11 @@ function SupplierInvoiceDetailContent() {
   const [savingSupplierFiscalInfo, setSavingSupplierFiscalInfo] = useState(false);
   const [felOpen, setFelOpen] = useState(false);
   const [felReference, setFelReference] = useState('');
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
+
 
   const fetchData = useCallback(() => {
     if (!id) return;
@@ -294,6 +299,50 @@ function SupplierInvoiceDetailContent() {
     }
   };
 
+  // ── Record a payment against the invoice ──
+  // The backend stores the cumulative amountPaid and derives partially_paid / paid,
+  // so we send the running total and let it recompute the status.
+  const openPaymentDialog = () => {
+    if (!inv) return;
+    const remaining = Math.max(0, inv.grandTotal - (inv.amountPaid || 0));
+    setPaymentAmount(remaining ? String(remaining) : '');
+    setPaymentMethod('bank_transfer');
+    setPaymentDate(new Date().toISOString().slice(0, 10));
+    setPaymentOpen(true);
+  };
+
+  const handleRecordPayment = async () => {
+    if (!id || !inv) return;
+    const amount = Number(paymentAmount);
+    const remaining = Math.max(0, inv.grandTotal - (inv.amountPaid || 0));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(t('payments.invalidAmount', 'Enter an amount greater than zero'));
+      return;
+    }
+    if (amount > remaining) {
+      toast.error(t('payments.overpayment', 'Amount exceeds the remaining balance'));
+      return;
+    }
+    setActionLoading('payment');
+    try {
+      const updated = await supplierInvoiceService.recordPayment(id, {
+        amountPaid: (inv.amountPaid || 0) + amount,
+        paymentMethod,
+        paymentDate,
+      });
+      setInv(updated);
+      setPaymentOpen(false);
+      toast.success(t('actions.paymentRecorded', 'Payment recorded'));
+      fetchData();
+    } catch (e: any) {
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to record the payment') as string });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+
+
   if (loading) return <DetailSkeleton />;
   if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/invoices" />;
   if (!inv) return <PurchaseErrorFallback error={t('invoices.notFound')} backTo="/dashboard/purchases/invoices" />;
@@ -391,7 +440,14 @@ function SupplierInvoiceDetailContent() {
                 {t('actions.recordFactureEnLigne', 'Record F.E.L')}
               </Button>
             )}
+            {inv.status !== 'draft' && inv.status !== 'cancelled' && inv.grandTotal - (inv.amountPaid || 0) > 0 && (
+              <Button size="sm" onClick={openPaymentDialog} disabled={actionLoading !== null}>
+                {actionLoading === 'payment' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Banknote className="h-3.5 w-3.5 mr-1" />}
+                {t('actions.recordPayment', 'Record Payment')}
+              </Button>
+            )}
           </div>
+
         }
       />
 
@@ -635,7 +691,76 @@ function SupplierInvoiceDetailContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Record Payment — cumulative amountPaid; the backend derives partially_paid / paid */}
+      <Dialog open={paymentOpen} onOpenChange={(o) => !o && setPaymentOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('actions.recordPayment', 'Record Payment')}</DialogTitle>
+            <DialogDescription>
+              {t('payments.help', 'Payments are cumulative — the invoice status moves to Partially Paid or Paid automatically.')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="payment-date">{t('fields.paymentDate', 'Payment date')}</Label>
+              <Input id="payment-date" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">{t('fields.paymentMethod', 'Method')}</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="payment-method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">{t('paymentMethods.bank_transfer', 'Bank transfer')}</SelectItem>
+                  <SelectItem value="cheque">{t('paymentMethods.cheque', 'Cheque')}</SelectItem>
+                  <SelectItem value="cash">{t('paymentMethods.cash', 'Cash')}</SelectItem>
+                  <SelectItem value="card">{t('paymentMethods.card', 'Card')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="payment-amount">{t('fields.amount', 'Amount')} ({inv.currency})</Label>
+            <Input
+              id="payment-amount"
+              type="number"
+              min={0}
+              max={inv.grandTotal - (inv.amountPaid || 0)}
+              step="0.001"
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('fields.balance')}: {fmt(inv.grandTotal - (inv.amountPaid || 0))}
+            </p>
+          </div>
+          <div className="rounded-md bg-muted/40 p-3 space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t('payments.afterPayment', 'After this payment')}</span>
+              <span className="font-medium">
+                {fmt(Math.min(inv.grandTotal, (inv.amountPaid || 0) + (Number(paymentAmount) || 0)))} / {fmt(inv.grandTotal)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t('payments.newStatus', 'New status')}</span>
+              <Badge className={STATUS_COLORS[(inv.amountPaid || 0) + (Number(paymentAmount) || 0) >= inv.grandTotal ? 'paid' : 'partially_paid']}>
+                {t(`invoiceStatus.${(inv.amountPaid || 0) + (Number(paymentAmount) || 0) >= inv.grandTotal ? 'paid' : 'partially_paid'}`)}
+              </Badge>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentOpen(false)} disabled={actionLoading === 'payment'}>
+              {t('actions.cancel', 'Cancel')}
+            </Button>
+            <Button onClick={handleRecordPayment} disabled={actionLoading === 'payment'}>
+              {actionLoading === 'payment' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 mr-1" />}
+              {t('actions.confirm', 'Confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 

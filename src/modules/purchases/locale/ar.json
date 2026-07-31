@@ -153,7 +153,10 @@
     "amountPaid": "المبلغ المدفوع",
     "balance": "الرصيد",
     "netPayable": "صافي المستحق",
-    "unit": "الوحدة"
+    "unit": "الوحدة",
+    "paymentDate": "تاريخ الدفع",
+    "paymentMethod": "الطريقة",
+    "amount": "المبلغ"
   },
   "filters": {
     "allStatuses": "جميع الحالات"
@@ -174,7 +177,9 @@
     "exportPdf": "تصدير PDF",
     "print": "طباعة",
     "recordPayment": "تسجيل دفعة",
-    "sendFactureEnLigne": "إرسال إلى FactureEnLigne"
+    "sendFactureEnLigne": "إرسال إلى FactureEnLigne",
+    "confirm": "تأكيد",
+    "paymentRecorded": "تم تسجيل الدفعة"
   },
   "detail": {
     "supplierInfo": "معلومات المورد",
@@ -348,7 +353,6 @@
       "totalTax": "إجمالي الضريبة"
     }
   },
-
   "confirm": {
     "deleteTitle": "حذف هذا العنصر؟",
     "deleteDesc": "لا يمكن التراجع عن هذا الإجراء.",
@@ -463,5 +467,18 @@
     "name": "المشتريات",
     "description": "طلبات الشراء، إيصالات الاستلام، وفواتير الموردين.",
     "category": "المالية"
+  },
+  "payments": {
+    "help": "الدفعات تراكمية — تتحوّل حالة الفاتورة تلقائيًا إلى مدفوعة جزئيًا أو مدفوعة.",
+    "afterPayment": "بعد هذه الدفعة",
+    "newStatus": "الحالة الجديدة",
+    "invalidAmount": "أدخل مبلغًا أكبر من صفر",
+    "overpayment": "المبلغ يتجاوز الرصيد المتبقي"
+  },
+  "paymentMethods": {
+    "bank_transfer": "تحويل بنكي",
+    "cheque": "شيك",
+    "cash": "نقدًا",
+    "card": "بطاقة"
   }
 }

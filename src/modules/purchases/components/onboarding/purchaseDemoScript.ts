@@ -470,24 +470,25 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-si-record-payment',
     caption:
-      'Payment progress is driven by the Supplier Invoice status flow — advancing it to Partially Paid or Paid updates the invoice, and the amount paid, payment date and method are captured on the header for full traceability.',
+      'Record Payment opens a dialog on the invoice header — available as soon as the invoice leaves draft and while a balance remains.',
     duration: 5500,
     apply: pure(() => ({ paymentStep: 1 })),
   },
   {
     target: 'po-demo-si-payment-dialog',
     caption:
-      'The financial summary shows amount paid vs. remaining balance and the linked Purchase Order\'s payment status stays in sync, so a three-way match between PO, receipt and invoice is always visible at a glance.',
+      'Enter the payment date, method and amount. Payments are cumulative: the dialog previews the new paid total and the resulting status (Partially Paid or Paid), and never lets you exceed the remaining balance.',
     duration: 5800,
     apply: pure(() => ({ paymentStep: 2 })),
   },
   {
     target: 'po-demo-si-fel-send',
     caption:
-      'Once the invoice is settled, use the Send F.E.L. action to mark it as submitted to Facture en Ligne. The status flips with a timestamp and your Compliance dashboard updates in real time so you always know what is still outstanding.',
+      'Facture en Ligne is filed on the TTN portal, then recorded here: paste the reference the portal returned and the invoice is marked as submitted with a timestamp, keeping the Compliance dashboard accurate.',
     duration: 5200,
     apply: pure(() => ({ paymentStep: 0, felSent: true })),
   },
+
 
   {
     target: 'po-demo-si-tej-xml-btn',

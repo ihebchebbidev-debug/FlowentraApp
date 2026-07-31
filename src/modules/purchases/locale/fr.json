@@ -171,7 +171,10 @@
     "netPayable": "Net à payer",
     "matriculeFiscale": "Matricule fiscale",
     "cin": "CIN",
-    "unit": "Unité"
+    "unit": "Unité",
+    "paymentDate": "Date de paiement",
+    "paymentMethod": "Moyen",
+    "amount": "Montant"
   },
   "filters": {
     "allStatuses": "Tous les statuts"
@@ -194,7 +197,9 @@
     "tejXmlDownloaded": "XML TEJ téléchargé",
     "sendFactureEnLigne": "Envoyer Facture en Ligne",
     "cancel": "Annuler",
-    "factureEnLigneSent": "Envoyé à FactureEnLigne"
+    "factureEnLigneSent": "Envoyé à FactureEnLigne",
+    "confirm": "Confirmer",
+    "paymentRecorded": "Paiement enregistré"
   },
   "tej": {
     "missingTitle": "Informations requises pour le XML TEJ",
@@ -431,7 +436,6 @@
       "totalTax": "Total taxe"
     }
   },
-
   "confirm": {
     "deleteTitle": "Supprimer cet élément ?",
     "deleteDesc": "Cette action est irréversible.",
@@ -498,5 +502,18 @@
     "name": "Achats",
     "description": "Commandes d'achat, bons de réception et factures fournisseurs.",
     "category": "Finance"
+  },
+  "payments": {
+    "help": "Les paiements sont cumulés — le statut de la facture passe automatiquement à Partiellement payée ou Payée.",
+    "afterPayment": "Après ce paiement",
+    "newStatus": "Nouveau statut",
+    "invalidAmount": "Saisissez un montant supérieur à zéro",
+    "overpayment": "Le montant dépasse le solde restant"
+  },
+  "paymentMethods": {
+    "bank_transfer": "Virement bancaire",
+    "cheque": "Chèque",
+    "cash": "Espèces",
+    "card": "Carte"
   }
 }

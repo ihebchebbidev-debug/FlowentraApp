@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import React, { useEffect, Suspense } from "react";
 import Login from "./modules/auth/pages/Login";
 import UserLogin from "./modules/auth/pages/UserLogin";
+import QaLogin from "./modules/auth/pages/QaLogin";
 // SSO callback route kept for OAuth callback page
 import ApiTestsPage from "./modules/testing/pages/ApiTestsPage";
 // Dashboard is gated to show a preloading screen and warm data/assets
@@ -336,6 +337,7 @@ const App = () => {
                      <Route path="/" element={<Login />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/user-login" element={<UserLogin />} />
+                    <Route path="/qa-login" element={<QaLogin />} />
                     {/* OAuth callback route for email/calendar */}
                    <Route path="/verify-email" element={<VerifyEmail />} />
                    <Route path="/two-factor" element={<TwoFactorChallenge />} />

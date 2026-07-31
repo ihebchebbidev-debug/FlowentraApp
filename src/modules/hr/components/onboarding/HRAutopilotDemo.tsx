@@ -6,7 +6,7 @@ import {
   Plus, ArrowRight, Clock, CheckCircle, FileText, Download,
   Search, Eye, Trash2, TrendingUp, Target,
   ShieldCheck, Gift, ChevronRight, UserPlus, Building2,
-  Settings, CheckCircle2, FileDown, Star,
+  Settings, CheckCircle2, FileDown, Star, UserCheck, Upload, Wand2,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from '@/modules/external/components/onboarding/narrationVoice';
@@ -26,18 +26,19 @@ interface Props {
 // Net = gross − CNSS_employee (9.18%) − IRPP (progressive brackets) − CSS (1% of taxable gross) + bonus
 // Backend reference: HrService.cs:421-524 (formula version "tn_v2")
 const DEMO_EMPLOYEES = [
-  { id: 'amira',   name: 'Amira Ben Ali',      email: 'amira@flowentra.tn',   dept: 'Engineering', title: 'HR Manager',         gross: 4500, net: 3679, contract: 'CDI', hireDate: '2022-03-15', init: 'AB', color: 'bg-violet-500' },
-  { id: 'khalil',  name: 'Khalil Mansouri',     email: 'khalil@flowentra.tn',  dept: 'Engineering', title: 'Software Developer', gross: 3800, net: 3105, contract: 'CDI', hireDate: '2023-01-10', init: 'KM', color: 'bg-blue-500'   },
-  { id: 'sonia',   name: 'Sonia Trabelsi',      email: 'sonia@flowentra.tn',   dept: 'Sales',       title: 'Sales Rep.',         gross: 2800, net: 2285, contract: 'CDD', hireDate: '2024-02-01', init: 'ST', color: 'bg-rose-500'   },
-  { id: 'mohamed', name: 'Mohamed Chaabane',    email: 'mohamed@flowentra.tn', dept: 'Finance',     title: 'Accountant',         gross: 3200, net: 2611, contract: 'CDI', hireDate: '2021-06-20', init: 'MC', color: 'bg-amber-500'  },
-  { id: 'fatma',   name: 'Fatma Rezgui',        email: 'fatma@flowentra.tn',   dept: 'Operations',  title: 'Operations Lead',    gross: 3600, net: 2942, contract: 'CDI', hireDate: '2022-09-05', init: 'FR', color: 'bg-teal-500'   },
+  { id: 'amira',   name: 'Amira Ben Ali',      email: 'amira@flowentra.tn',   dept: 'Engineering', title: 'HR Manager',         gross: 4500, net: 3679, contract: 'CDI', hireDate: '2022-03-15', cnss: '12345678-01', init: 'AB', color: 'bg-violet-500' },
+  { id: 'khalil',  name: 'Khalil Mansouri',     email: 'khalil@flowentra.tn',  dept: 'Engineering', title: 'Software Developer', gross: 3800, net: 3105, contract: 'CDI', hireDate: '2023-01-10', cnss: '12345678-02', init: 'KM', color: 'bg-blue-500'   },
+  { id: 'sonia',   name: 'Sonia Trabelsi',      email: 'sonia@flowentra.tn',   dept: 'Sales',       title: 'Sales Rep.',         gross: 2800, net: 2285, contract: 'CDD', hireDate: '2024-02-01', cnss: '12345678-03', init: 'ST', color: 'bg-rose-500'   },
+  { id: 'mohamed', name: 'Mohamed Chaabane',    email: 'mohamed@flowentra.tn', dept: 'Finance',     title: 'Accountant',         gross: 3200, net: 2611, contract: 'CDI', hireDate: '2021-06-20', cnss: '12345678-04', init: 'MC', color: 'bg-amber-500'  },
+  { id: 'fatma',   name: 'Fatma Rezgui',        email: 'fatma@flowentra.tn',   dept: 'Operations',  title: 'Operations Lead',    gross: 3600, net: 2942, contract: 'CDI', hireDate: '2022-09-05', cnss: '12345678-05', init: 'FR', color: 'bg-teal-500'   },
 ];
 
 const DEMO_DEPARTMENTS = [
-  { id: 'eng',  name: 'Engineering',     head: 'Amira Ben Ali',    count: 8, totalGross: 35000 },
-  { id: 'sal',  name: 'Sales',           head: 'Sonia Trabelsi',   count: 5, totalGross: 16000 },
-  { id: 'fin',  name: 'Finance',         head: 'Mohamed Chaabane', count: 3, totalGross: 10200 },
-  { id: 'ops',  name: 'Operations',      head: 'Fatma Rezgui',     count: 4, totalGross: 15400 },
+  { id: 'eng',  name: 'Engineering',     code: 'ENG', head: 'Amira Ben Ali',    count: 8, totalGross: 35000 },
+  { id: 'sal',  name: 'Sales',           code: 'SAL', head: 'Sonia Trabelsi',   count: 5, totalGross: 16000 },
+  { id: 'fin',  name: 'Finance',         code: 'FIN', head: 'Mohamed Chaabane', count: 3, totalGross: 10200 },
+  { id: 'ops',  name: 'Operations',      code: 'OPS', head: 'Fatma Rezgui',     count: 4, totalGross: 15400 },
+
   { id: 'hr',   name: 'Human Resources', head: 'Amira Ben Ali',    count: 2, totalGross: 8300  },
 ];
 
@@ -104,13 +105,15 @@ const DEMO_INTERVIEWS = [
 ];
 
 const ATT_DAYS = ['02','03','04','05','06','09','10','11','12','13'];
+// Monthly grid cells show hours worked ('—' when no record, '9+' when overtime)
 const ATT_GRID = [
-  { name: 'Amira B.',   days: ['P','P','P','P','P','P','LV','LV','LV','LV'] },
-  { name: 'Khalil M.',  days: ['P','P','P','P','L','P','P','P','P','P']     },
-  { name: 'Sonia T.',   days: ['P','L','P','P','P','P','P','A','P','P']     },
-  { name: 'Mohamed C.', days: ['P','P','P','P','P','P','P','P','P','P']     },
-  { name: 'Fatma R.',   days: ['P','P','L','P','P','P','P','P','P','P']     },
+  { name: 'Amira B.',   days: ['8','8','8','8','8','8','—','—','—','—'] },
+  { name: 'Khalil M.',  days: ['8','8','8','9','8','8','8','8','8','8'] },
+  { name: 'Sonia T.',   days: ['8','8','8','8','8','8','8','—','8','8'] },
+  { name: 'Mohamed C.', days: ['8','8','8','8','8','8','8','8','8','9'] },
+  { name: 'Fatma R.',   days: ['8','8','8','8','8','8','8','8','8','8'] },
 ];
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -217,38 +220,42 @@ function PageDashboard() {
           <h1 id="hr-demo-title" className="text-2xl font-bold text-foreground">Human Resources</h1>
           <p className="text-sm text-muted-foreground mt-1">Your complete HR management centre</p>
         </div>
-        <div className="flex gap-2">
-          <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div id="hr-demo-quick-links" className="flex gap-2">
+          <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
             <Users className="h-3.5 w-3.5" /> Employees
           </div>
-          <div className="h-8 px-3 rounded-md bg-primary flex items-center gap-1.5 text-xs text-primary-foreground font-medium">
-            <Plus className="h-3.5 w-3.5" /> Add Employee
+          <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
+            <Coins className="h-3.5 w-3.5" /> Payroll
+          </div>
+          <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
+            <ShieldCheck className="h-3.5 w-3.5" /> CNSS
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard id="hr-demo-stat-headcount" icon={<Users className="h-3.5 w-3.5 text-chart-1" />}      label="Headcount"          value={22}          />
-        <StatCard id="hr-demo-stat-on-leave"  icon={<Clock className="h-3.5 w-3.5 text-chart-2" />}      label="On Leave Today"     value={1}           />
-        <StatCard id="hr-demo-stat-pending"   icon={<FileText className="h-3.5 w-3.5 text-chart-3" />}   label="Pending Leaves"     value={2}           />
-        <StatCard id="hr-demo-stat-payroll"   icon={<Coins className="h-3.5 w-3.5 text-chart-4" />}      label="Monthly Payroll"    value="17,900 TND"  />
+        <StatCard id="hr-demo-stat-headcount" icon={<Users className="h-3.5 w-3.5 text-chart-1" />}       label="Headcount"         value={22}          />
+        <StatCard id="hr-demo-stat-on-leave"  icon={<CalendarDays className="h-3.5 w-3.5 text-chart-2" />} label="Absent Today"      value={1}           />
+        <StatCard id="hr-demo-stat-payroll"   icon={<Coins className="h-3.5 w-3.5 text-chart-4" />}        label="Payroll Estimate"  value="17,900 TND"  />
+        <StatCard id="hr-demo-stat-pending"   icon={<ShieldCheck className="h-3.5 w-3.5 text-chart-3" />}  label="CNSS Employer"     value="3,650 TND"   />
       </div>
 
       {/* Panels */}
-      <div className="grid md:grid-cols-2 gap-5">
-        {/* Leaves at a Glance */}
-        <div id="hr-demo-leave-alerts" className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="grid md:grid-cols-3 gap-5">
+        {/* Upcoming leaves */}
+        <div id="hr-demo-leave-alerts" className="md:col-span-2 bg-card border border-border rounded-lg overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
             <Clock className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium">Leaves at a Glance</span>
+            <span className="text-sm font-medium">Upcoming leaves</span>
+            <span className="ml-auto text-px-10 bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">3</span>
           </div>
           <div className="divide-y divide-border/40">
             {DEMO_LEAVES.filter(l => l.status !== 'rejected').map(l => (
               <div key={l.id} className="flex items-center justify-between px-4 py-2.5">
                 <div>
-                  <p className="text-xs font-medium">{l.employee}</p>
-                  <p className="text-px-10 text-muted-foreground">{l.type} · {l.start} → {l.end}</p>
+                  <p className="text-xs font-medium">{l.type}</p>
+                  <p className="text-px-10 text-muted-foreground">{l.start} → {l.end}</p>
                 </div>
                 <StatusBadge status={l.status} />
               </div>
@@ -256,45 +263,34 @@ function PageDashboard() {
           </div>
         </div>
 
-        {/* Contract Alerts */}
+        {/* Readiness alerts */}
         <div id="hr-demo-contract-alerts" className="bg-card border border-border rounded-lg overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
             <FileText className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium">Contract Expiry Alerts</span>
-            <span className="ml-auto text-px-10 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">1 expiring in 60d</span>
+            <span className="text-sm font-medium">Alerts</span>
           </div>
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-4 py-3 space-y-2">
+            <div className="rounded-lg border border-border p-2 text-px-10 text-muted-foreground">
+              2 employees are missing a salary configuration
+            </div>
+            <div className="rounded-lg border border-border p-2 text-px-10 text-muted-foreground">
+              1 employee is missing a CNSS number
+            </div>
+            <div className="rounded-lg border border-border p-2 text-px-10 text-muted-foreground">
+              2 leave requests are awaiting approval
+            </div>
             <div className="flex items-center justify-between p-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
               <div>
                 <p className="text-xs font-medium">Sonia Trabelsi</p>
-                <p className="text-px-10 text-muted-foreground">CDD · Expires 2025-08-01</p>
+                <p className="text-px-10 text-muted-foreground">CDD contract expiring</p>
               </div>
               <div className="text-px-10 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">56 days</div>
             </div>
-            <p className="text-px-10 text-muted-foreground">No other contracts expiring within 60 days.</p>
           </div>
         </div>
       </div>
-
-      {/* Quick Links */}
-      <div id="hr-demo-quick-links" className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { icon: CalendarDays, label: 'Attendance', color: 'text-blue-500'   },
-          { icon: Coins,        label: 'Payroll',    color: 'text-chart-1'    },
-          { icon: Gift,         label: 'Bonuses',    color: 'text-amber-500'  },
-          { icon: ShieldCheck,  label: 'CNSS',       color: 'text-green-500'  },
-          { icon: TrendingUp,   label: 'Reports',    color: 'text-purple-500' },
-          { icon: Settings,     label: 'Settings',   color: 'text-slate-500'  },
-          { icon: Building2,    label: 'Departments',color: 'text-teal-500'   },
-          { icon: UserPlus,     label: 'Recruitment',color: 'text-rose-500'   },
-        ].map(q => (
-          <div key={q.label} className="border border-border rounded-lg py-3 flex flex-col items-center gap-1.5 bg-card hover:bg-muted/40 cursor-default">
-            <q.icon className={`h-5 w-5 ${q.color}`} />
-            <span className="text-xs font-medium text-foreground">{q.label}</span>
-          </div>
-        ))}
-      </div>
     </div>
+
   );
 }
 
@@ -306,22 +302,15 @@ function PageEmployees({ state }: { state: HRDemoState }) {
           <h1 className="text-lg font-semibold">Employees</h1>
           <p className="text-xs text-muted-foreground">{DEMO_EMPLOYEES.length} employees</p>
         </div>
-        <div className="flex gap-2">
-          <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
-            <Download className="h-3.5 w-3.5" /> Export
-          </div>
-          <div className="h-8 px-3 rounded-md bg-primary flex items-center gap-1.5 text-xs text-primary-foreground font-medium cursor-default">
-            <Plus className="h-3.5 w-3.5" /> Add Employee
-          </div>
-        </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-3 gap-2 px-4 py-3 border-b border-border/60">
+      <div className="grid grid-cols-4 gap-2 px-4 py-3 border-b border-border/60">
         {[
-          { key: 'total',   label: 'Total',          value: DEMO_EMPLOYEES.length, icon: <Users className="h-3.5 w-3.5" />        },
-          { key: 'ready',   label: 'Payroll Ready',  value: 5,                     icon: <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> },
-          { key: 'onleave', label: 'On Leave Today', value: 1,                     icon: <Clock className="h-3.5 w-3.5 text-amber-500" /> },
+          { key: 'all',     label: 'All',             value: DEMO_EMPLOYEES.length, icon: <Users className="h-3.5 w-3.5" />        },
+          { key: 'ready',   label: 'Payroll Ready',   value: 5,                     icon: <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> },
+          { key: 'missing', label: 'Missing Salary',  value: 1,                     icon: <FileText className="h-3.5 w-3.5 text-amber-500" /> },
+          { key: 'active',  label: 'Active',          value: 5,                     icon: <UserCheck className="h-3.5 w-3.5 text-chart-2" /> },
         ].map(s => (
           <div
             key={s.key}
@@ -349,12 +338,12 @@ function PageEmployees({ state }: { state: HRDemoState }) {
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <table className="w-full text-xs">
             <thead><tr className="border-b border-border/60 bg-muted/30">
-              <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Employee</th>
+              <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Name</th>
+              <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Position</th>
               <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Department</th>
-              <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Contract</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Gross</th>
-              <th className="text-center px-4 py-2.5 text-muted-foreground font-medium">Payroll</th>
-              <th className="w-12 px-4 py-2.5" />
+              <th className="text-center px-4 py-2.5 text-muted-foreground font-medium">Status</th>
+              <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">CNSS no.</th>
+              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Gross salary</th>
             </tr></thead>
             <tbody>
               {DEMO_EMPLOYEES.map((emp, i) => (
@@ -372,23 +361,20 @@ function PageEmployees({ state }: { state: HRDemoState }) {
                       </div>
                     </div>
                   </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{emp.title}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{emp.dept}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${HR_STATUS_CLS[emp.contract] ?? 'bg-muted text-muted-foreground'}`}>{emp.contract}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right font-medium">{fmtTnd(emp.gross)} TND</td>
                   <td className="px-4 py-2.5 text-center">
-                    <span className="text-px-10 bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Ready</span>
+                    <span className="text-px-10 bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Active</span>
                   </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <Eye className="h-3.5 w-3.5 text-muted-foreground inline-block cursor-default" />
-                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{emp.cnss}</td>
+                  <td className="px-4 py-2.5 text-right font-medium">{fmtTnd(emp.gross)} TND</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
     </div>
   );
 }
@@ -421,11 +407,12 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
         {[
           { key: 'profile',   label: 'Profile'   },
           { key: 'salary',    label: 'Salary',    id: 'hr-demo-emp-tab-salary'   },
-          { key: 'documents', label: 'Documents', id: 'hr-demo-emp-tab-docs'     },
           { key: 'cnss',      label: 'CNSS',      id: 'hr-demo-emp-tab-cnss'     },
           { key: 'bonuses',   label: 'Bonuses',   id: 'hr-demo-emp-tab-bonuses'  },
           { key: 'leaves',    label: 'Leaves',    id: 'hr-demo-emp-tab-leaves'   },
+          { key: 'documents', label: 'Documents', id: 'hr-demo-emp-tab-docs'     },
           { key: 'history',   label: 'History',   id: 'hr-demo-emp-tab-history'  },
+
         ].map(t => (
           <div
             key={t.key}
@@ -634,33 +621,30 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
 }
 
 function PageAttendance() {
-  const attCls: Record<string, string> = {
-    P:  'bg-green-100 text-green-700',
-    L:  'bg-amber-100 text-amber-700',
-    A:  'bg-red-100 text-red-700',
-    LV: 'bg-blue-100 text-blue-700',
-  };
-  const attLabel: Record<string, string> = { P: 'P', L: 'L', A: 'A', LV: 'LV' };
-
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold">Attendance</h1>
-          <p className="text-xs text-muted-foreground">June 2025 · Monthly attendance grid</p>
+          <p className="text-xs text-muted-foreground">June 2025 · Records and monthly grid</p>
         </div>
-        <div id="hr-demo-att-export" className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
-          <Download className="h-3.5 w-3.5" /> Export Excel
+        <div className="flex gap-2">
+          <div id="hr-demo-att-export" className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
+            <Upload className="h-3.5 w-3.5" /> Import CSV
+          </div>
+          <div className="h-8 px-3 rounded-md bg-primary flex items-center gap-1.5 text-xs text-primary-foreground font-medium cursor-default">
+            <Plus className="h-3.5 w-3.5" /> Add entry
+          </div>
         </div>
       </div>
 
       {/* Summary strip */}
       <div id="hr-demo-att-stats" className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Attendance Rate', value: '94%',  color: 'text-green-600'  },
-          { label: 'Late Arrivals',   value: '4',    color: 'text-amber-600'  },
-          { label: 'Absences',        value: '1',    color: 'text-red-600'    },
-          { label: 'Avg Hours/Day',   value: '7.8h', color: 'text-foreground' },
+          { label: 'Total records',  value: '48',    color: 'text-foreground' },
+          { label: 'Hours worked',   value: '386.5', color: 'text-foreground' },
+          { label: 'Overtime hours', value: '12.0',  color: 'text-primary'    },
+          { label: 'Late arrivals',  value: '4',     color: 'text-amber-600'  },
         ].map(s => (
           <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
             <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
@@ -669,20 +653,23 @@ function PageAttendance() {
         ))}
       </div>
 
+      {/* View tabs */}
+      <div className="flex gap-0 border-b border-border/60 -mb-px">
+        <div className="px-4 py-2 text-xs font-medium border-b-2 border-transparent text-muted-foreground cursor-default">List</div>
+        <div className="px-4 py-2 text-xs font-medium border-b-2 border-primary text-foreground cursor-default">Monthly grid</div>
+      </div>
+
       {/* Grid */}
       <div id="hr-demo-att-grid" className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-4 py-2 border-b border-border/60 flex items-center gap-4 text-px-10 text-muted-foreground">
-          <span>Legend:</span>
-          {[['P','Present','bg-green-100 text-green-700'],['L','Late','bg-amber-100 text-amber-700'],['A','Absent','bg-red-100 text-red-700'],['LV','Leave','bg-blue-100 text-blue-700']].map(([k,label,cls]) => (
-            <span key={k} className={`px-1.5 py-0.5 rounded text-px-10 font-medium ${cls}`}>{k} = {label}</span>
-          ))}
+        <div className="px-4 py-2 border-b border-border/60 text-px-10 text-muted-foreground">
+          Hours worked per day · filled badge = overtime · — = no record
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead><tr className="border-b border-border/60 bg-muted/30">
               <th className="text-left px-4 py-2 text-muted-foreground font-medium w-32">Employee</th>
               {ATT_DAYS.map(d => (
-                <th key={d} className="text-center px-2 py-2 text-muted-foreground font-medium text-px-10">Jun {d}</th>
+                <th key={d} className="text-center px-2 py-2 text-muted-foreground font-medium text-px-10">{Number(d)}</th>
               ))}
             </tr></thead>
             <tbody>
@@ -691,7 +678,11 @@ function PageAttendance() {
                   <td className="px-4 py-2.5 font-medium text-foreground">{row.name}</td>
                   {row.days.map((d, i) => (
                     <td key={i} className="px-1 py-2 text-center">
-                      <span className={`inline-flex items-center justify-center h-6 w-7 rounded text-px-10 font-medium ${attCls[d]}`}>{attLabel[d]}</span>
+                      {d === '—' ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <span className={`inline-flex items-center justify-center h-6 w-8 rounded border text-px-10 font-medium ${d === '9' ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-foreground'}`}>{d}h</span>
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -703,6 +694,7 @@ function PageAttendance() {
     </div>
   );
 }
+
 
 function PageLeaves({ state }: { state: HRDemoState }) {
   const tab = state.leaveTab;
@@ -722,10 +714,10 @@ function PageLeaves({ state }: { state: HRDemoState }) {
       {/* Tab bar */}
       <div className="flex gap-0 border-b border-border/60 px-4">
         {[
-          { key: 'list',     label: 'List',     id: 'hr-demo-leave-list'     },
-          { key: 'calendar', label: 'Calendar', id: 'hr-demo-leave-calendar' },
-          { key: 'balances', label: 'Balances', id: 'hr-demo-leave-balances' },
-          { key: 'approval', label: 'Approval', id: 'hr-demo-leave-approval' },
+          { key: 'calendar',  label: 'Calendar',  id: 'hr-demo-leave-calendar' },
+          { key: 'list',      label: 'List',      id: 'hr-demo-leave-list'     },
+          { key: 'balances',  label: 'Balances',  id: 'hr-demo-leave-balances' },
+          { key: 'approvals', label: 'Approvals', id: 'hr-demo-leave-approval' },
         ].map(t => (
           <div
             key={t.key}
@@ -734,10 +726,11 @@ function PageLeaves({ state }: { state: HRDemoState }) {
               ${tab === t.key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'}`}
           >
             {t.label}
-            {t.key === 'approval' && (
+            {t.key === 'approvals' && (
               <span className="ml-1.5 h-4 w-4 rounded-full bg-amber-500 text-white text-px-9 inline-flex items-center justify-center">1</span>
             )}
           </div>
+
         ))}
       </div>
 
@@ -825,7 +818,7 @@ function PageLeaves({ state }: { state: HRDemoState }) {
           </div>
         )}
 
-        {tab === 'approval' && (
+        {tab === 'approvals' && (
           <div className="space-y-3">
             {DEMO_LEAVES.filter(l => l.status === 'pending').map(l => (
               <div key={l.id} className="bg-card border border-border rounded-lg p-4 flex items-start justify-between gap-4">
@@ -860,63 +853,39 @@ function PagePayroll({ state }: { state: HRDemoState }) {
         <div className="flex items-center gap-3">
           <Coins className="h-5 w-5 text-chart-1" />
           <div>
-            <h1 className="text-lg font-semibold">Run Payroll</h1>
+            <h1 className="text-lg font-semibold">Payroll</h1>
             <p className="text-xs text-muted-foreground">Automated Tunisian payroll calculation</p>
           </div>
           <div id="hr-demo-payroll-run-btn" className="ml-auto h-8 px-3 rounded-md border border-primary text-primary text-xs font-medium flex items-center gap-1.5 cursor-default">
-            Run Payroll
+            <Wand2 className="h-3.5 w-3.5" /> Generate payroll
           </div>
         </div>
 
+        {/* Generate payroll dialog — a single form: month + year */}
         <div className="bg-card border border-primary/30 rounded-xl shadow-lg overflow-hidden">
-          <div className="flex border-b border-border/60">
-            {['Select Period', 'Select Employees', 'Preview'].map((s, i) => (
-              <div key={s} className={`flex-1 text-center py-3 text-xs font-medium border-b-2 transition-colors
-                ${payrollStep > i ? 'border-primary text-primary' : payrollStep === i ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'}`}>
-                {i + 1}. {s}
-              </div>
-            ))}
+          <div className="px-5 py-3 border-b border-border/60">
+            <p className="text-sm font-semibold">Generate payroll run</p>
           </div>
 
           <div id="hr-demo-payroll-step-period" className="p-5 space-y-4">
-            <p className="text-sm font-medium">Select Payroll Period</p>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              The run computes every payroll-ready employee for the selected period. Re-generating a draft replaces its entries.
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Month</label>
-                <div className="h-9 px-3 rounded-md border border-primary bg-primary/5 text-sm flex items-center justify-between text-foreground">
-                  June <ChevronRight className="h-4 w-4 rotate-90 text-muted-foreground" />
-                </div>
+                <div className="h-9 px-3 rounded-md border border-primary bg-primary/5 text-sm flex items-center text-foreground">6</div>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Year</label>
-                <div className="h-9 px-3 rounded-md border border-border text-sm flex items-center justify-between text-foreground">
-                  2025 <ChevronRight className="h-4 w-4 rotate-90 text-muted-foreground" />
-                </div>
+                <div className="h-9 px-3 rounded-md border border-border text-sm flex items-center text-foreground">2025</div>
               </div>
             </div>
-            <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground">
-              22 working days in June 2025 · Pro-rata applied for new joiners
+            <div id="hr-demo-payroll-step-employees" className="flex justify-end gap-2 pt-1">
+              <div className="h-8 px-3 rounded-md border border-border flex items-center text-xs text-muted-foreground cursor-default">Cancel</div>
+              <div className="h-8 px-3 rounded-md bg-primary flex items-center text-xs text-primary-foreground font-medium cursor-default">Generate</div>
             </div>
           </div>
-
-          {payrollStep >= 1 && (
-            <div id="hr-demo-payroll-step-employees" className="border-t border-border/60 p-5 space-y-3">
-              <p className="text-sm font-medium">Select Employees</p>
-              {DEMO_EMPLOYEES.map(emp => (
-                <div key={emp.id} className="flex items-center gap-3 p-2 rounded-lg border border-border bg-background">
-                  <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 ${payrollStep >= 2 ? 'bg-primary border-primary' : 'border-border'}`}>
-                    {payrollStep >= 2 && <div className="h-2 w-2 rounded-sm bg-white" />}
-                  </div>
-                  <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium">{emp.name}</p>
-                    <p className="text-px-10 text-muted-foreground">{emp.dept}</p>
-                  </div>
-                  <span className="text-xs font-medium">{fmtTnd(emp.gross)} TND</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -928,46 +897,37 @@ function PagePayroll({ state }: { state: HRDemoState }) {
         <div className="flex items-center gap-3">
           <Coins className="h-5 w-5 text-chart-1" />
           <div>
-            <h1 className="text-lg font-semibold">Payroll Run — June 2025</h1>
-            <p className="text-xs text-muted-foreground">5 employees · Calculated automatically</p>
+            <h1 className="text-lg font-semibold">Payroll run — 6/2025</h1>
+            <p className="text-xs text-muted-foreground">5 entries · draft</p>
           </div>
           <div id="hr-demo-payslip-pdf" className="ml-auto h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
-            <FileDown className="h-3.5 w-3.5" /> Export All PDFs
+            <FileDown className="h-3.5 w-3.5" /> Export payslips
           </div>
         </div>
 
         <div id="hr-demo-payroll-step-preview" className="bg-card border border-border rounded-lg overflow-hidden">
           <table className="w-full text-xs">
             <thead><tr className="bg-muted/30 border-b border-border/60">
+              <th className="w-8 px-4 py-2.5" />
               <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Employee</th>
               <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Gross</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">CNSS Emp.</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">CNSS Er.</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">IRPP</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Bonus</th>
+              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Bonuses</th>
+              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">CNSS</th>
               <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Net</th>
+              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Details</th>
             </tr></thead>
             <tbody>
               {DEMO_PAYROLL.map(p => (
                 <tr key={p.name} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
+                  <td className="px-4 py-2.5"><div className="h-3.5 w-3.5 rounded border-2 border-primary bg-primary" /></td>
                   <td className="px-4 py-2.5 font-medium">{p.name}</td>
                   <td className="px-4 py-2.5 text-right">{fmtTnd(p.gross)}</td>
-                  <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(p.cnssEmp)}</td>
-                  <td className="px-4 py-2.5 text-right text-muted-foreground">{fmtTnd(p.cnssEr)}</td>
-                  <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(p.irpp)}</td>
                   <td className="px-4 py-2.5 text-right text-green-600">{p.bonus > 0 ? `+${fmtTnd(p.bonus)}` : '—'}</td>
+                  <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(p.cnssEmp)}</td>
                   <td className="px-4 py-2.5 text-right font-bold text-foreground">{fmtTnd(p.net)}</td>
+                  <td className="px-4 py-2.5 text-right"><Eye className="h-3.5 w-3.5 text-muted-foreground inline-block" /></td>
                 </tr>
               ))}
-              <tr className="bg-muted/20 font-semibold border-t border-border">
-                <td className="px-4 py-2.5">Total</td>
-                <td className="px-4 py-2.5 text-right">{fmtTnd(DEMO_PAYROLL.reduce((s,p) => s+p.gross,0))}</td>
-                <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(DEMO_PAYROLL.reduce((s,p) => s+p.cnssEmp,0))}</td>
-                <td className="px-4 py-2.5 text-right">{fmtTnd(DEMO_PAYROLL.reduce((s,p) => s+p.cnssEr,0))}</td>
-                <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(DEMO_PAYROLL.reduce((s,p) => s+p.irpp,0))}</td>
-                <td className="px-4 py-2.5 text-right text-green-600">+{fmtTnd(DEMO_PAYROLL.reduce((s,p) => s+p.bonus,0))}</td>
-                <td className="px-4 py-2.5 text-right font-bold">{fmtTnd(DEMO_PAYROLL.reduce((s,p) => s+p.net,0))}</td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -976,7 +936,7 @@ function PagePayroll({ state }: { state: HRDemoState }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm font-semibold">Payslip — Amira Ben Ali</p>
-              <p id="hr-demo-payslip-pdf-format" className="text-xs text-muted-foreground">Bilingual FR/AR · Company header · Net pay in words · Signature space</p>
+              <p id="hr-demo-payslip-pdf-format" className="text-xs text-muted-foreground">Company header · earnings and deductions · net pay in words · signature space</p>
             </div>
             <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
               <FileDown className="h-3.5 w-3.5" /> PDF
@@ -987,8 +947,9 @@ function PagePayroll({ state }: { state: HRDemoState }) {
               {[
                 ['Gross Salary',            '4,500 TND', ''],
                 ['CNSS Employee (9.18%)',   '−413 TND',  'text-red-600'],
-                ['IRPP (bracket 25%)',      '−367 TND',  'text-red-600'],
-                ['Net Salary',              '3,720 TND', 'text-green-700 font-semibold border-t border-border pt-2'],
+                ['IRPP (progressive)',      '−367 TND',  'text-red-600'],
+                ['CSS (1%)',                '−41 TND',   'text-red-600'],
+                ['Net Salary',              '3,679 TND', 'text-green-700 font-semibold border-t border-border pt-2'],
               ].map(([k, v, cls]) => (
                 <div key={k} className={`flex justify-between ${cls}`}>
                   <span className="text-muted-foreground">{k}</span><span className="font-medium">{v}</span>
@@ -997,10 +958,10 @@ function PagePayroll({ state }: { state: HRDemoState }) {
             </div>
             <div className="space-y-2">
               {[
-                ['CNSS Employer (16.57%)', '746 TND'],
-                ['Total Cost to Company',  '5,246 TND'],
-                ['Contract Type',          'CDI'],
-                ['Hire Date',              '2022-03-15'],
+                ['Total hours',     '176.0 h'],
+                ['Overtime hours',  '4.0 h'],
+                ['Paid leave days', '0'],
+                ['Unpaid days',     '0'],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between">
                   <span className="text-muted-foreground">{k}</span><span className="font-medium">{v}</span>
@@ -1018,56 +979,101 @@ function PagePayroll({ state }: { state: HRDemoState }) {
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/60">
         <div>
           <h1 className="text-lg font-semibold">Payroll</h1>
-          <p className="text-xs text-muted-foreground">Automated Tunisian payroll — CNSS, IRPP & net salary</p>
+          <p className="text-xs text-muted-foreground">Automated Tunisian payroll — CNSS, IRPP, CSS & net salary</p>
         </div>
-        <div id="hr-demo-payroll-run-btn" className="h-8 px-3 rounded-md bg-primary flex items-center gap-1.5 text-xs text-primary-foreground font-medium cursor-default">
-          Run Payroll
+        <div className="flex items-center gap-2">
+          <div className="h-8 px-2 rounded-md border border-border flex items-center text-xs text-muted-foreground cursor-default">2025</div>
+          <div id="hr-demo-payroll-run-btn" className="h-8 px-3 rounded-md bg-primary flex items-center gap-1.5 text-xs text-primary-foreground font-medium cursor-default">
+            <Wand2 className="h-3.5 w-3.5" /> Generate payroll
+          </div>
         </div>
       </div>
-      <div className="p-4 md:p-6">
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
-            <thead><tr className="bg-muted/30 border-b border-border/60">
-              <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Employee</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Gross</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">CNSS Emp.</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">IRPP</th>
-              <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Net</th>
-              <th className="text-center px-4 py-2.5 text-muted-foreground font-medium">Status</th>
-            </tr></thead>
-            <tbody>
-              {DEMO_PAYROLL.map((p, i) => {
-                const emp = DEMO_EMPLOYEES[i];
-                return (
-                  <tr key={p.name} className="border-b border-border/40 last:border-0 hover:bg-muted/20 cursor-default">
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
-                        <span className="font-medium">{p.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">{fmtTnd(p.gross)}</td>
-                    <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(p.cnssEmp)}</td>
-                    <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(p.irpp)}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-green-700">{fmtTnd(p.net)}</td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className="text-px-10 bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Ready</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <div className="p-4 md:p-6 space-y-4">
+        {/* Overview badges */}
+        <div className="bg-card border border-border rounded-lg p-4 flex flex-wrap items-center gap-2">
+          <div className="mr-auto">
+            <p className="text-sm font-semibold">Payroll overview</p>
+            <p className="text-px-10 text-muted-foreground">Totals for the selected run</p>
+          </div>
+          {[['Total net', '14,622 TND'], ['Total CNSS', '1,631 TND'], ['Total IRPP', '1,469 TND'], ['Period', '06/2025']].map(([k, v]) => (
+            <span key={k} className="text-px-11 bg-muted text-muted-foreground px-2 py-1 rounded-md font-medium">{k}: {v}</span>
+          ))}
         </div>
 
-        <div id="hr-demo-payroll-settings" className="mt-5 bg-card border border-border rounded-lg p-4 text-xs space-y-2">
-          <p className="text-sm font-semibold mb-2 flex items-center gap-2"><Settings className="h-3.5 w-3.5 text-slate-500" />Payroll Calculation Rules</p>
+        <div className="grid lg:grid-cols-2 gap-4">
+          {/* Runs */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+              <p className="text-sm font-semibold">Payroll runs</p>
+              <span className="text-px-10 bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">2</span>
+            </div>
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/30 border-b border-border/60">
+                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Month</th>
+                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Status</th>
+                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Total net</th>
+                <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Open</th>
+              </tr></thead>
+              <tbody>
+                {[['6/2025', 'draft', '14,622'], ['5/2025', 'paid', '14,480']].map(([m, s, n]) => (
+                  <tr key={m} className="border-b border-border/40 last:border-0">
+                    <td className="px-4 py-2.5 font-medium">{m}</td>
+                    <td className="px-4 py-2.5"><span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${s === 'draft' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{s}</span></td>
+                    <td className="px-4 py-2.5">{n} TND</td>
+                    <td className="px-4 py-2.5 text-right"><span className="text-px-10 border border-border rounded px-1.5 py-0.5 text-muted-foreground">Open</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Entries */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/60 flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold mr-auto">Entries</p>
+              <span className="text-px-10 border border-border rounded px-1.5 py-0.5 text-muted-foreground">Export payslips</span>
+              <span className="text-px-10 border border-border rounded px-1.5 py-0.5 text-muted-foreground">Confirm</span>
+              <span className="text-px-10 border border-border rounded px-1.5 py-0.5 text-muted-foreground">Mark paid</span>
+            </div>
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/30 border-b border-border/60">
+                <th className="w-8 px-3 py-2.5" />
+                <th className="text-left px-3 py-2.5 text-muted-foreground font-medium">Employee</th>
+                <th className="text-right px-3 py-2.5 text-muted-foreground font-medium">Gross</th>
+                <th className="text-right px-3 py-2.5 text-muted-foreground font-medium">CNSS</th>
+                <th className="text-right px-3 py-2.5 text-muted-foreground font-medium">Net</th>
+              </tr></thead>
+              <tbody>
+                {DEMO_PAYROLL.map((p, i) => {
+                  const emp = DEMO_EMPLOYEES[i];
+                  return (
+                    <tr key={p.name} className="border-b border-border/40 last:border-0 hover:bg-muted/20 cursor-default">
+                      <td className="px-3 py-2.5"><div className="h-3.5 w-3.5 rounded border border-border" /></td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
+                          <span className="font-medium">{p.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">{fmtTnd(p.gross)}</td>
+                      <td className="px-3 py-2.5 text-right text-red-600">−{fmtTnd(p.cnssEmp)}</td>
+                      <td className="px-3 py-2.5 text-right font-semibold text-green-700">{fmtTnd(p.net)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="hr-demo-payroll-settings" className="bg-card border border-border rounded-lg p-4 text-xs space-y-2">
+          <p className="text-sm font-semibold mb-2 flex items-center gap-2"><Settings className="h-3.5 w-3.5 text-slate-500" />Payroll parameters (active CNSS rate)</p>
           {[
-            ['Overtime multiplier',  '1.5×'],
-            ['Holiday-day rate',     '2.0×'],
-            ['Working-days base',    '22 days/month'],
-            ['Rounding policy',      'Nearest TND'],
-            ['Net rounding',         'Round half up'],
+            ['CNSS employee / employer', '9.18% / 16.57%'],
+            ['CSS rate',                 '1.00%'],
+            ['Abattement head of family','150 TND'],
+            ['Abattement per child',     '100 TND'],
+            ['IRPP brackets',            'Progressive · versioned by effective date'],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between">
               <span className="text-muted-foreground">{k}</span>
@@ -1079,6 +1085,7 @@ function PagePayroll({ state }: { state: HRDemoState }) {
     </div>
   );
 }
+
 
 function PageBonuses() {
   return (

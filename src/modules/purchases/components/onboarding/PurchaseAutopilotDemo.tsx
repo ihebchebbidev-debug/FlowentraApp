@@ -2054,8 +2054,8 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Tracking ID</span>
-                <span className="font-mono text-foreground">FEL-2025-0488213</span>
+                <span className="text-muted-foreground">TTN reference</span>
+                <span className="font-mono text-foreground">TTN-0488213</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Sent at</span>
@@ -2069,8 +2069,9 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
                 <span className="text-px-10 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
               </div>
               <div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 cursor-default w-fit">
-                <Send className="h-3.5 w-3.5" /> Send to FEL Platform
+                <Send className="h-3.5 w-3.5" /> Record F.E.L
               </div>
+
             </>
           )}
         </div>
@@ -2085,7 +2086,7 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
           </div>
         </div>
         <div className="h-8 px-3 rounded-md border border-border text-xs flex items-center gap-1.5 cursor-default">
-          <Download className="h-3.5 w-3.5" /> Generate TEJ XML
+          <Download className="h-3.5 w-3.5" /> Download TEJ XML
         </div>
       </div>
 
@@ -2114,8 +2115,9 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
                 <span className="text-px-10 text-muted-foreground">Max: {fmt(INV.total - 12000)}</span>
               </div>
               <p className="text-px-10 text-muted-foreground mt-1 flex items-center gap-1">
-                <AlertCircle className="h-2.5 w-2.5" /> Overpayment is blocked server-side under a row-level lock.
+                <AlertCircle className="h-2.5 w-2.5" /> The amount can never exceed the remaining balance.
               </p>
+
             </div>
             <div className="bg-muted/40 rounded p-2.5 text-px-11 space-y-1">
               <div className="flex justify-between"><span className="text-muted-foreground">After this payment</span><span className="font-medium">{fmt(state.paymentStep === 2 ? INV.total : 12000)} / {fmt(INV.total)}</span></div>
