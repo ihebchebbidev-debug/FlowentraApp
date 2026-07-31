@@ -1,4 +1,32 @@
 // Sales module types for CRM
+
+/** Canonical sale statuses, as defined in src/config/entity-statuses/sale.config.ts. */
+export type CanonicalSaleStatus =
+  | 'created'
+  | 'in_progress'
+  | 'ready_to_invoice'
+  | 'invoiced'
+  | 'partially_invoiced'
+  | 'closed'
+  | 'cancelled';
+
+/**
+ * Raw status strings the backend writes but that are not canonical IDs.
+ * These are declared as aliases in sale.config.ts and collapse onto the
+ * canonical set via normalizeStatus().
+ */
+export type BackendSaleStatusAlias =
+  | 'draft'
+  | 'new_offer'
+  | 'sent'
+  | 'accepted'
+  | 'won'
+  | 'completed'
+  | 'lost';
+
+export type SaleStatus = CanonicalSaleStatus | BackendSaleStatusAlias;
+
+
 export interface Sale {
   id: string;
   saleNumber?: string;
@@ -19,7 +47,14 @@ export interface Sale {
   contactHasLocation?: number;
   amount: number;
   currency: 'USD' | 'EUR' | 'GBP' | 'TND';
-  status: 'created' | 'in_progress' | 'ready_to_invoice' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
+  // Canonical statuses plus the raw values the backend actually writes.
+  // SaleService emits 'draft' | 'sent' | 'accepted' | 'won' | 'completed' | 'lost' |
+  // 'new_offer' as well, and the type union previously excluded them — which made
+  // any comparison against those values structurally impossible while the data was
+  // real. Always run a status through normalizeStatus(saleStatusConfig, s) before
+  // comparing; the aliases in sale.config.ts map these onto the canonical set.
+  status: SaleStatus;
+
 
   stage: 'offer' | 'negotiation' | 'closed' | 'converted';
   priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -98,7 +133,7 @@ export interface CreateSaleData {
   customerEmail: string;
   customerPhone: string;
   customerAddress: string;
-  status: 'created' | 'in_progress' | 'ready_to_invoice' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
+  status: SaleStatus;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category?: string;
   source?: string;

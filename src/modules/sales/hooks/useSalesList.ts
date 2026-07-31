@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
+import { normalizeStatus, saleStatusConfig } from '@/config/entity-statuses';
+
 
 export function useSalesList(sales: any[]) {
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
@@ -21,7 +23,11 @@ export function useSalesList(sales: any[]) {
         (sale.contactCompany || '').toLowerCase().includes(q) ||
         sale.id.toLowerCase().includes(q);
 
-      const matchesStatus = filterStatus === 'all' || sale.status === filterStatus;
+      // Backend still stores raw values ('won', 'accepted', 'completed'), so compare
+      // against the canonical status rather than the raw string.
+      const canonicalStatus = normalizeStatus(saleStatusConfig, String(sale.status ?? ''));
+      const matchesStatus = filterStatus === 'all' || canonicalStatus === filterStatus;
+
       const matchesStage = filterStage === 'all' || sale.stage === filterStage;
       const matchesPriority = filterPriority === 'all' || sale.priority === filterPriority;
       const matchesAssigned = filterAssigned === 'all' || (sale.assignedToName || '').toLowerCase() === (filterAssigned || '').toLowerCase();
@@ -36,7 +42,9 @@ export function useSalesList(sales: any[]) {
     setSelectedStat(stat.filter);
     // map stats to filters as before, keep simple defaults
     if (stat.filter === 'won') {
-      setFilterStatus('won');
+      // 'won' is a backend alias of the canonical 'in_progress' status.
+      setFilterStatus('in_progress');
+
     } else if (stat.filter === 'active') {
       setFilterStatus('all');
     } else {

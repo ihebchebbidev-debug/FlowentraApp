@@ -1028,7 +1028,25 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (serviceOrder == null)
                 throw new KeyNotFoundException($"Service order with ID {id} not found");
 
-            if (updateDto.Status != null) serviceOrder.Status = updateDto.Status;
+            // Fix #7: the generic PUT/PATCH path used to assign Status directly, bypassing
+            // the transition whitelist that UpdateStatusAsync enforces — so any caller could
+            // set an arbitrary or out-of-order status string. Validate here too. A no-op
+            // (same status resent as part of a wider update) stays allowed.
+            if (updateDto.Status != null && updateDto.Status != serviceOrder.Status)
+            {
+                var allowed = GetValidStatusTransitions(serviceOrder.Status);
+                if (!allowed.Contains(updateDto.Status))
+                    throw new InvalidOperationException(
+                        $"Cannot transition from '{serviceOrder.Status}' to '{updateDto.Status}'. " +
+                        (allowed.Count > 0
+                            ? $"Allowed next: {string.Join(", ", allowed)}."
+                            : $"'{serviceOrder.Status}' is a terminal status."));
+
+                serviceOrder.Status = updateDto.Status;
+                if (updateDto.Status == "in_progress" && !serviceOrder.ActualStartDate.HasValue)
+                    serviceOrder.ActualStartDate = DateTime.UtcNow;
+            }
+
             if (updateDto.ProjectId.HasValue) serviceOrder.ProjectId = updateDto.ProjectId.Value;
             if (updateDto.Priority != null) serviceOrder.Priority = updateDto.Priority;
             if (updateDto.Description != null) serviceOrder.Description = updateDto.Description;
@@ -1634,9 +1652,14 @@ namespace MyApi.Modules.ServiceOrders.Services
                 "planned" => new List<string> { "pending", "scheduled", "in_progress", "on_hold", "cancelled" },
                 "ready_for_planning" => new List<string> { "pending", "planned", "scheduled", "in_progress", "on_hold", "cancelled" },
                 "scheduled" => new List<string> { "pending", "planned", "ready_for_planning", "in_progress", "on_hold", "cancelled" },
-                "in_progress" => new List<string> { "on_hold", "technically_completed", "completed", "cancelled" },
+                // Fix #6: 'partially_completed' exists in the frontend SO config and type
+                // union but had no case here, so it was unreachable and, once set, a dead
+                // end. Wired into the natural in_progress → partially_completed → completion path.
+                "in_progress" => new List<string> { "on_hold", "partially_completed", "technically_completed", "completed", "cancelled" },
                 "on_hold" => new List<string> { "pending", "planned", "ready_for_planning", "in_progress", "cancelled" },
+                "partially_completed" => new List<string> { "in_progress", "on_hold", "technically_completed", "completed", "cancelled" },
                 "technically_completed" => new List<string> { "in_progress", "ready_for_invoice", "completed", "cancelled" },
+
                 "ready_for_invoice" => new List<string> { "technically_completed", "invoiced", "cancelled" },
                 "completed" => new List<string> { "ready_for_invoice", "invoiced", "closed" },
                 "invoiced" => new List<string> { "closed" },
@@ -3065,7 +3088,12 @@ namespace MyApi.Modules.ServiceOrders.Services
             });
 
             // Phase B: snapshot the sale into a draft invoice on the ledger.
-            // Best-effort — a failure here must not undo the transfer above.
+            //
+            // Fix #2: this used to swallow the exception. Phase A has already committed
+            // (items transferred, SO moved to ready_for_invoice), so we must NOT roll that
+            // back — but returning success while no invoice exists left the order silently
+            // stranded with zero visibility. The transfer is durable and re-runnable, so we
+            // surface the failure to the caller and let them retry Phase B.
             if (_invoiceService != null)
             {
                 try
@@ -3075,10 +3103,37 @@ namespace MyApi.Modules.ServiceOrders.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "PrepareForInvoice: draft invoice creation failed for SO {Id} / Sale {SaleId}", id, saleId);
+
+                    // Leave a trail on the service order so the stalled state is visible
+                    // even if the caller drops the error.
+                    try
+                    {
+                        var so = await _context.ServiceOrders.FindAsync(id);
+                        if (so != null)
+                        {
+                            so.Notes = string.Join("\n", new[]
+                            {
+                                so.Notes,
+                                $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC] Draft invoice generation FAILED: {ex.Message}. " +
+                                "Items were transferred to the sale; retry invoicing from the sale."
+                            }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    catch (Exception noteEx)
+                    {
+                        _logger.LogWarning(noteEx, "PrepareForInvoice: could not annotate SO {Id} after invoice failure", id);
+                    }
+
+                    throw new InvalidOperationException(
+                        $"Items were transferred to sale {saleId} and this order is now ready for invoicing, " +
+                        $"but the draft invoice could not be created: {ex.Message}. " +
+                        "Open the sale and generate the invoice from there.", ex);
                 }
             }
 
             return (await GetServiceOrderByIdAsync(id))!;
+
         }
 
         // =====================================================================

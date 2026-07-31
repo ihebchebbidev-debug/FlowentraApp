@@ -833,6 +833,39 @@ END $$;";
                 migrationLogger.LogWarning("⚠️ Invoices.Status constraint update failed (non-fatal): {Error}", invEx.Message);
             }
 
+            // ── sales.offer_id uniqueness: one sale per converted offer ──
+            // Backstop for the idempotency guard in SaleService.CreateSaleFromOfferAsync.
+            // Mirrors Backend/Migrations/20260731_sales_offer_id_unique.sql.
+            try
+            {
+                using var soCmd = probe.CreateCommand();
+                soCmd.CommandText = @"
+DO $$
+DECLARE dup_count INTEGER;
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sales') THEN
+        SELECT COUNT(*) INTO dup_count FROM (
+            SELECT offer_id FROM sales
+            WHERE offer_id IS NOT NULL AND offer_id <> ''
+            GROUP BY offer_id HAVING COUNT(*) > 1
+        ) d;
+
+        IF dup_count > 0 THEN
+            RAISE NOTICE 'Skipping unique index on sales(offer_id): % offer(s) already have duplicate sales. Merge them, then restart.', dup_count;
+        ELSE
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_sales_offer_id
+                ON sales(offer_id)
+                WHERE offer_id IS NOT NULL AND offer_id <> '';
+        END IF;
+    END IF;
+END $$;";
+                soCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ sales(offer_id) uniqueness verified");
+            }
+            catch (Exception soEx)
+            {
+                migrationLogger.LogWarning("⚠️ sales(offer_id) unique index failed (non-fatal): {Error}", soEx.Message);
+            }
 
 
             // ── Outbound email log (every send attempt, success or failure) ──

@@ -276,6 +276,25 @@ namespace MyApi.Modules.Sales.Services
             if (offer == null)
                 throw new KeyNotFoundException($"Offer with ID {offerId} not found");
 
+            // Fix #1: idempotency. This method is reachable from a public endpoint
+            // (POST /api/sales/from-offer/{id}) that a double-click or a client retry can
+            // fire twice. The workflow path (BusinessWorkflowService.HandleOfferAcceptedAsync)
+            // and OfferService.ConvertOfferAsync both guard already; this one did not, and
+            // sales.offer_id carries only a non-unique index. Return the existing sale
+            // instead of minting a duplicate.
+            var offerKey = offerId.ToString();
+            var preExisting = await _context.Sales
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.OfferId == offerKey);
+            if (preExisting != null)
+            {
+                _logger.LogInformation(
+                    "CreateSaleFromOffer: sale {SaleId} already exists for offer {OfferId}; returning it instead of creating a duplicate",
+                    preExisting.Id, offerId);
+                return (await GetSaleByIdAsync(preExisting.Id))!;
+            }
+
+
             // Get user name for sale and activity
             string createdByName = userId;
             var adminUser = await _context.MainAdminUsers.FirstOrDefaultAsync(u => u.Id.ToString() == userId);
@@ -313,9 +332,29 @@ namespace MyApi.Modules.Sales.Services
             // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
             int createdSaleId = 0;
             var strategy = _context.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            try
             {
-                using var tx = await _context.Database.BeginTransactionAsync();
+            await strategy.ExecuteAsync(async () =>
+
+            {
+                // Serializable so two concurrent conversions of the same offer cannot both
+                // pass the existence re-check below before either commits. The unique index
+                // on sales(offer_id) is the final backstop.
+                using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+                var raced = await _context.Sales
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.OfferId == offerKey);
+                if (raced != null)
+                {
+                    _logger.LogInformation(
+                        "CreateSaleFromOffer: concurrent conversion detected for offer {OfferId}; reusing sale {SaleId}",
+                        offerId, raced.Id);
+                    createdSaleId = raced.Id;
+                    return;
+                }
+
+
 
                 var sale = new Sale
                 {
@@ -451,8 +490,22 @@ namespace MyApi.Modules.Sales.Services
                 await tx.CommitAsync();
                 createdSaleId = sale.Id;
             });
+            }
+            catch (DbUpdateException ex) when (createdSaleId == 0)
+            {
+                // Final backstop: the unique index on sales(offer_id) rejected a racing
+                // insert. Surface the winning sale rather than a 500.
+                var winner = await _context.Sales.AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.OfferId == offerKey);
+                if (winner == null) throw;
+                _logger.LogWarning(ex,
+                    "CreateSaleFromOffer: unique-index race on offer {OfferId}; returning existing sale {SaleId}",
+                    offerId, winner.Id);
+                createdSaleId = winner.Id;
+            }
 
             var createdSale = await GetSaleByIdAsync(createdSaleId);
+
 
             if (_contactActivity != null && createdSale != null && createdSale.ContactId > 0)
             {
@@ -1163,16 +1216,25 @@ namespace MyApi.Modules.Sales.Services
 
         private async Task GuardSaleNotInvoicedAsync(int saleId, string action)
         {
-            var invoices = await GetActiveInvoicesForSaleAsync(saleId);
-            var blocking = invoices.Where(i => i.Status != "draft").ToList();
+            // Fix #3: draft invoices must block scope changes too. Invoice lines are
+            // value copies taken at generation time and PostAsync never re-derives them
+            // from the sale, while CreateDraftFromSaleAsync already treats a drafted
+            // item as consumed. Allowing edits while only a draft existed meant the
+            // posted invoice could carry stale quantities/prices with no resync path.
+            var blocking = await GetActiveInvoicesForSaleAsync(saleId);
             if (blocking.Count > 0)
             {
-                var numbers = string.Join(", ", blocking.Select(i => i.InvoiceNumber ?? $"#{i.Id}"));
+                var numbers = string.Join(", ", blocking.Select(i =>
+                    (i.InvoiceNumber ?? $"#{i.Id}") + (i.Status == "draft" ? " (draft)" : "")));
+                var hasDraftOnly = blocking.All(i => i.Status == "draft");
                 throw new InvalidOperationException(
                     $"Cannot {action}: this sale is already invoiced ({numbers}). " +
-                    "Void or credit the invoice first, then adjust the sale.");
+                    (hasDraftOnly
+                        ? "Delete or void the draft invoice first, then adjust the sale and regenerate it."
+                        : "Void the invoice first, then adjust the sale."));
             }
         }
+
 
         private async Task<string> ResolveUserNameAsync(string userId)
 

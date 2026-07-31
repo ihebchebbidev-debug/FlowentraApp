@@ -161,6 +161,47 @@ namespace MyApi.Modules.Invoices.Services
                             $"Fiscal stamp is already billed on a prior invoice for sale {sale.Id}; remove the fiscal-stamp line.");
                     }
 
+                    // Fix #4: item-level double-billing guard for the manual invoice path.
+                    // The money-total ceiling below is not enough — a caller could re-bill a
+                    // sale item that is already fully invoiced as long as the sale still had
+                    // headroom from some other un-invoiced item. CreateDraftFromSaleAsync
+                    // already de-duplicates by SourceId; this mirrors that here.
+                    var requestedSaleItemIds = dto.Lines
+                        .Where(l => string.Equals(l.SourceType, "sale_item", StringComparison.OrdinalIgnoreCase)
+                                    && !string.IsNullOrWhiteSpace(l.SourceId))
+                        .Select(l => l.SourceId!)
+                        .ToList();
+                    if (requestedSaleItemIds.Count > 0)
+                    {
+                        var billedSaleItemIds = await _context.Set<InvoiceLine>()
+                            .Where(l => l.SourceType == "sale_item"
+                                        && l.Invoice != null
+                                        && l.Invoice.SaleId == sale.Id
+                                        && l.Invoice.Status != "void"
+                                        && !l.Invoice.IsDeleted
+                                        && l.SourceId != null
+                                        && requestedSaleItemIds.Contains(l.SourceId))
+                            .Select(l => l.SourceId!)
+                            .Distinct()
+                            .ToListAsync();
+
+                        if (billedSaleItemIds.Count > 0)
+                        {
+                            var names = await _context.Set<Sales.Models.SaleItem>()
+                                .Where(si => si.SaleId == sale.Id)
+                                .Select(si => new { si.Id, si.ItemName })
+                                .ToListAsync();
+                            var labels = billedSaleItemIds
+                                .Select(id => names.FirstOrDefault(n => n.Id.ToString() == id)?.ItemName ?? $"#{id}")
+                                .ToList();
+                            throw new InvalidOperationException(
+                                $"These sale items are already billed on a live invoice for sale {sale.Id}: " +
+                                $"{string.Join(", ", labels)}. Remove them from this invoice, or void the invoice that carries them.");
+                        }
+                    }
+
+
+
                     invoice = new Invoice
                     {
                         ContactId = dto.ContactId,
@@ -315,6 +356,20 @@ namespace MyApi.Modules.Invoices.Services
                     var discounted = saleTotals.DiscountAmount > 0m;
 
                     var ordered = saleItems.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+
+                    // Fix #5: per-line VAT fidelity. SaleItem.TaxRate is carried over from
+                    // the offer but was previously ignored — every invoice line got one
+                    // blended EffectiveTaxRate, which is wrong for fiscal reporting as soon
+                    // as a sale mixes VAT rates. Only switch to per-item rates when the
+                    // items genuinely carry more than one distinct non-zero rate; otherwise
+                    // keep the header-derived rate so single-rate sales behave exactly as before.
+                    var distinctItemRates = ordered
+                        .Select(i => i.TaxRate)
+                        .Where(r => r > 0m)
+                        .Distinct()
+                        .ToList();
+                    var usePerItemRates = distinctItemRates.Count > 1;
+
                     lines = new List<InvoiceLine>();
                     var displayOrder = 0;
                     foreach (var i in ordered)
@@ -323,6 +378,9 @@ namespace MyApi.Modules.Invoices.Services
                             i.Quantity, i.UnitPrice, i.Discount, i.DiscountType);
                         var net = Round2(gross * scale);
                         var qty = i.Quantity != 0m ? i.Quantity : 1m;
+                        var lineRate = usePerItemRates
+                            ? (i.TaxRate > 0m ? i.TaxRate : taxRate)
+                            : taxRate;
                         lines.Add(new InvoiceLine
                         {
                             SourceType = "sale_item",
@@ -334,9 +392,9 @@ namespace MyApi.Modules.Invoices.Services
                             Quantity = i.Quantity,
                             Unit = null,
                             UnitPrice = Round2(net / qty),
-                            TaxRate = taxRate,
+                            TaxRate = lineRate,
                             LineTotal = net,
-                            TaxAmount = Round2(net * (taxRate / 100m)),
+                            TaxAmount = Round2(net * (lineRate / 100m)),
                             DisplayOrder = displayOrder++,
                             CreatedAt = DateTime.UtcNow,
                         });
@@ -349,8 +407,20 @@ namespace MyApi.Modules.Invoices.Services
                         var last = lines[^1];
                         last.LineTotal = Round2(last.LineTotal + (saleTotals.AfterDiscount - lines.Sum(l => l.LineTotal)));
                         if (last.Quantity != 0m) last.UnitPrice = Round2(last.LineTotal / last.Quantity);
-                        last.TaxAmount = Round2(last.TaxAmount + (saleTotals.TaxAmount - lines.Sum(l => l.TaxAmount)));
+
+                        if (usePerItemRates)
+                        {
+                            // With mixed rates the sale header's single tax figure is not the
+                            // correct target — each line's own rate is authoritative. Only
+                            // re-derive the adjusted line's tax; do not force the header total.
+                            last.TaxAmount = Round2(last.LineTotal * (last.TaxRate / 100m));
+                        }
+                        else
+                        {
+                            last.TaxAmount = Round2(last.TaxAmount + (saleTotals.TaxAmount - lines.Sum(l => l.TaxAmount)));
+                        }
                     }
+
 
                     // Fiscal stamp: a flat, untaxed line.
                     if (saleTotals.FiscalStamp > 0m)

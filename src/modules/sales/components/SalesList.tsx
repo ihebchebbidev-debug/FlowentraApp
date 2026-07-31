@@ -2,6 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { formatStatValue } from "@/lib/formatters";
+import { normalizeStatus, saleStatusConfig } from "@/config/entity-statuses";
+
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,14 +163,20 @@ export function SalesList() {
         (sale.saleNumber || '').toLowerCase().includes(q) ||
         String(sale.id).toLowerCase().includes(q);
 
-      const matchesStatus = filterStatus === 'all' || sale.status === filterStatus;
+      // Compare on the canonical status: the backend still stores raw values like
+      // 'won', 'accepted' and 'completed', so a direct === against a canonical
+      // filter value silently matched nothing.
+      const canonicalStatus = normalizeStatus(saleStatusConfig, String(sale.status ?? ''));
+
+      const matchesStatus = filterStatus === 'all' || canonicalStatus === filterStatus;
       const matchesStage = filterStage === 'all' || sale.stage === filterStage;
       const matchesPriority = filterPriority === 'all' || sale.priority === filterPriority;
       const matchesAssigned = filterAssigned === 'all' || (sale.assignedToName || '').toLowerCase() === (filterAssigned || '').toLowerCase();
       
       // Handle stat filters
-      if (selectedStat === 'closed') return matchesSearch && (sale.status === 'closed' || sale.status === 'invoiced');
-      if (selectedStat === 'active') return matchesSearch && ['created', 'in_progress', 'ready_to_invoice'].includes(sale.status);
+      if (selectedStat === 'closed') return matchesSearch && (canonicalStatus === 'closed' || canonicalStatus === 'invoiced');
+      if (selectedStat === 'active') return matchesSearch && ['created', 'in_progress', 'ready_to_invoice', 'partially_invoiced'].includes(canonicalStatus);
+
 
       return matchesSearch && matchesStatus && matchesStage && matchesPriority && matchesAssigned;
     });
@@ -228,7 +236,10 @@ export function SalesList() {
   const handleStatClick = (stat: any) => {
     setSelectedStat(stat.filter);
     if (stat.filter === 'won') {
-      setFilterStatus('won');
+      // 'won' is a backend alias, not a canonical status — filtering by it directly
+      // matched zero rows. Its canonical home is 'in_progress'.
+      setFilterStatus('in_progress');
+
     } else if (stat.filter === 'active') {
       setFilterStatus('all');
     } else {
