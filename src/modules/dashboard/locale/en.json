@@ -500,7 +500,7 @@
       "tasks": "Tasks",
       "articles": "Articles",
       "serviceOrders": "Service Orders",
-      "dispatches": "Dispatches",
+      "dispatches": "Operations",
       "timeExpenses": "Time & Expenses",
       "externalApi": "External API"
     },

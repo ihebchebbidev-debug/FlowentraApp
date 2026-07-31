@@ -328,7 +328,7 @@ const enTranslation = {
       installations: 'Installations',
       offers: 'Offers',
       articles: 'Articles',
-      dispatches: 'Dispatches'
+      dispatches: 'Operations'
     },
     filtersShort: {
       all: 'All',
@@ -337,7 +337,7 @@ const enTranslation = {
       installations: 'Install',
       offers: 'Offers',
       articles: 'Articles',
-      dispatches: 'Dispatch'
+      dispatches: 'Operation'
     },
     types: {
       serviceOrder: 'Service Order',

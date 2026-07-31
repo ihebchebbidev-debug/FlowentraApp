@@ -96,7 +96,7 @@ export const WORKSPACES: Workspace[] = [
     modules: [
       { key: "service-dash", label: "Service dashboard", url: "/dashboard/reporting/service", icon: "BarChart3" },
       { key: "service-orders", label: "Service orders", url: "/dashboard/field/service-orders/list", icon: "ClipboardList", pluginCode: "PL0016SERVICEORDERS" },
-      { key: "dispatches", label: "Dispatches", url: "/dashboard/field/dispatcher", icon: "Send", pluginCode: "PL0017DISPATCHES" },
+      { key: "dispatches", label: "Operations", url: "/dashboard/field/dispatcher", icon: "Send", pluginCode: "PL0017DISPATCHES" },
       { key: "installations", label: "Installations", url: "/dashboard/field/installations/list", icon: "Wrench", pluginCode: "PL0018INSTALLATIONS" },
       { key: "planning", label: "Planning board", url: "/dashboard/field/dispatcher/interface", icon: "CalendarDays", pluginCode: "PL0023SCHEDULING" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
