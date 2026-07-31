@@ -964,12 +964,22 @@ export default function ProcessesPage() {
     const optimistic: ProcessStatus = p.isEnabled && !p.isPaused ? "paused" : prevStatus;
     updateProcess(p.key, { status: optimistic, isExecuting: false });
     try {
-      const stopped = await apiStopRun(p.key);
+      const res = await apiStopRun(p.key);
       await refreshSchedules();
-      toast({
-        title: stopped ? t("toast.stop_requested_title") : t("toast.stop_nothing_running_title"),
-        description: p.name,
-      });
+      if (res.stopped) {
+        toast({
+          title: t("toast.stop_requested_title"),
+          description: res.signalled
+            ? p.name
+            : t("toast.stop_cleared_desc", {
+                name: p.name,
+                count: res.closedRuns,
+                defaultValue: `${p.name} — cleared ${res.closedRuns} stuck run(s) left by a restart.`,
+              }),
+        });
+      } else {
+        toast({ title: t("toast.stop_nothing_running_title"), description: p.name });
+      }
     } catch (e) {
       updateProcess(p.key, { status: prevStatus, isPaused: prevPaused });
       toast({ title: t("toast.could_not_stop_title"), description: (e as Error).message, variant: "destructive" });
@@ -1339,7 +1349,9 @@ export default function ProcessesPage() {
               onHardRefresh={() => hardRefreshRef.current()}
               historyError={historyError}
               hasSchedule={schedules.has(selected.key)}
-              stopEnabled={selected.status === "running"}
+              // Stop is always available: a process can be stuck as "running" from a
+              // previous instance, and the operator must be able to clear it.
+              stopEnabled={true}
               canManage={canManage}
               onRun={() => askConfirm("run", selected)}
               onPause={() => togglePause(selected)}

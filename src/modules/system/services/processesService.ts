@@ -235,14 +235,24 @@ export async function resetFailures(key: string): Promise<ProcessSchedule> {
  * handler's CancellationToken so it aborts at the next await point.
  * Returns whether a run was actually in flight.
  */
-export async function stopRun(key: string): Promise<boolean> {
+export async function stopRun(key: string): Promise<{
+  stopped: boolean;
+  /** True when a live in-process handler received the cancellation signal. */
+  signalled: boolean;
+  /** Orphan 'running' rows (restart / other replica) that were force-closed. */
+  closedRuns: number;
+}> {
   const res = unwrap(
-    await processesFetch<{ key: string; stopped: boolean }>(
+    await processesFetch<{ key: string; stopped: boolean; signalled?: boolean; closedRuns?: number }>(
       `/api/processes/schedules/${encodeURIComponent(key)}/stop`,
       { method: "POST" }
     )
   );
-  return res.stopped;
+  return {
+    stopped: !!res.stopped,
+    signalled: !!res.signalled,
+    closedRuns: res.closedRuns ?? 0,
+  };
 }
 
 

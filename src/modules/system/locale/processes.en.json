@@ -204,6 +204,7 @@
     "failures_cleared_title": "Failures cleared",
     "stop_requested_title": "Stop requested",
     "stop_nothing_running_title": "Nothing to stop",
+    "stop_cleared_desc": "{{name}} — cleared {{count}} stuck run(s) left by a restart.",
     "could_not_stop_title": "Could not stop the process",
     "config_saved_title": "Configuration saved",
     "config_saved_desc": "{{name}} will use the new settings on its next run."

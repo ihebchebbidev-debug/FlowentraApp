@@ -204,6 +204,7 @@
     "failures_cleared_title": "Échecs réinitialisés",
     "stop_requested_title": "Arrêt demandé",
     "stop_nothing_running_title": "Aucune exécution à arrêter",
+    "stop_cleared_desc": "{{name}} — {{count}} exécution(s) bloquée(s) après un redémarrage ont été libérées.",
     "could_not_stop_title": "Impossible d’arrêter le processus",
     "config_saved_title": "Configuration enregistrée",
     "config_saved_desc": "{{name}} utilisera les nouveaux paramètres lors de sa prochaine exécution."

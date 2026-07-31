@@ -414,15 +414,52 @@ namespace MyApi.Modules.Processes.Controllers
         /// <summary>
         /// Cooperatively stops the currently running execution for {key}, if any.
         /// The handler's CancellationToken is triggered so it aborts at its next
-        /// await point. Idempotent — returns 200 with running=false when nothing
-        /// was in flight.
+        /// await point.
+        ///
+        /// A signal only reaches runs owned by THIS instance's in-memory registry.
+        /// Runs started before a restart (or on another replica) leave a
+        /// 'running' ProcessRun row that the registry knows nothing about, so the
+        /// old implementation answered "nothing to stop" while the UI kept showing
+        /// the job as running forever. Those orphan rows are now force-closed as
+        /// 'cancelled' so an operator can always stop any process.
         /// </summary>
         [HttpPost("schedules/{key}/stop")]
-        public IActionResult StopRun(string key)
+        public async Task<IActionResult> StopRun(string key)
         {
             if (RequireAdmin() is { } deny) return deny;
-            var stopped = _running.RequestStop(key);
-            return Ok(new { key, stopped });
+            var signalled = _running.RequestStop(key);
+            var now = DateTime.UtcNow;
+
+            // Close any run row for this key that is still marked in-flight.
+            // When the signal landed, the executing handler writes the final row
+            // itself, so only touch the DB when nothing was cancellable in-process.
+            var closedRuns = 0;
+            if (!signalled)
+            {
+                closedRuns = await _db.Set<ProcessRun>()
+                    .Where(r => r.ProcessKey == key && r.Status == "running" && r.FinishedAt == null)
+                    .ExecuteUpdateAsync(u => u
+                        .SetProperty(r => r.Status, "cancelled")
+                        .SetProperty(r => r.FinishedAt, now)
+                        .SetProperty(r => r.Error, "Stopped by operator"));
+
+                if (closedRuns > 0)
+                {
+                    var sched = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key);
+                    if (sched != null)
+                    {
+                        sched.LastRunAt = now;
+                        sched.LastStatus = "cancelled";
+                        sched.ConsecutiveFailures = 0;
+                        sched.UpdatedAt = now;
+                        sched.NextRunAt = now.AddMinutes(Math.Max(1, sched.IntervalMinutes));
+                        await _db.SaveChangesAsync();
+                    }
+                    _logger.LogWarning("⚙️  Force-closed {Count} orphan running row(s) for '{Key}' on operator stop", closedRuns, key);
+                }
+            }
+
+            return Ok(new { key, stopped = signalled || closedRuns > 0, signalled, closedRuns });
         }
 
 
