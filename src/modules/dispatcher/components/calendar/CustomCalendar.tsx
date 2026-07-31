@@ -1007,7 +1007,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     
     // Check if already locked
     if (DispatcherService.isDispatchLocked(selectedJob.id)) {
-      toast.info("This dispatch is already locked");
+      toast.info(t('dispatcher.dispatch_already_locked', 'This operation is already locked'));
       return;
     }
     

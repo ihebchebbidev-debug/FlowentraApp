@@ -1,34 +1,33 @@
 {
   "dashboard": "Field Dashboard",
   "reports": "Reports",
-  "calendar": "Dispatch Calendar",
-  "kpis": {
-    "activeServiceOrders": "Active Service Orders",
-    "technicianWorking": "Technicians Working Today",
-    "todayDispatches": "Today's Dispatches",
-    "firstTimeFixRate": "First-Time Fix Rate"
-  },
-  "analytics": {
-    "technicianPerformance": "Technician Performance", 
-    "serviceOrdersWorked": "Service Orders Worked",
-    "timePostingsDone": "Time Postings Done",
-    "dispatchesTotal": "Total Dispatches",
-    "jobCompletionTimes": "Job Completion Times",
-    "revenueInsights": "Revenue & Cost Insights"
-  },
   "calendar": {
     "monthView": "Month View",
     "weekView": "Week View",
     "today": "Today",
     "thisWeek": "This Week",
     "thisMonth": "This Month",
-    "noDispatches": "No dispatches scheduled",
+    "noDispatches": "No operations scheduled",
     "viewDetails": "View Details"
+  },
+  "kpis": {
+    "activeServiceOrders": "Active Service Orders",
+    "technicianWorking": "Technicians Working Today",
+    "todayDispatches": "Today's Operations",
+    "firstTimeFixRate": "First-Time Fix Rate"
+  },
+  "analytics": {
+    "technicianPerformance": "Technician Performance",
+    "serviceOrdersWorked": "Service Orders Worked",
+    "timePostingsDone": "Time Postings Done",
+    "dispatchesTotal": "Total Operations",
+    "jobCompletionTimes": "Job Completion Times",
+    "revenueInsights": "Revenue & Cost Insights"
   },
   "status": {
     "pending": "Pending",
     "assigned": "Assigned",
-    "inProgress": "In Progress", 
+    "inProgress": "In Progress",
     "completed": "Completed",
     "cancelled": "Cancelled",
     "active": "Active",

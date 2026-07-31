@@ -212,6 +212,11 @@ export function MobileNavigation() {
   };
   const resolveDescription = (key: string, fallback?: string) => {
     if (!key) return fallback ?? '';
+    const descKey = `sidebarDescriptions.${key}`;
+    const descTranslation = t(descKey);
+    if (typeof descTranslation === 'string' && descTranslation !== descKey) {
+      return descTranslation;
+    }
     try {
       const nested = t(`${key}.description`);
       if (typeof nested === 'string' && nested.trim() !== '') return nested;

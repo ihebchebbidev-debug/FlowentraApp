@@ -6,7 +6,7 @@
     "calendarView": "Calendar view",
     "listView": "List view",
     "mapView": "Map view",
-    "createDispatch": "Create operation",
+    "createDispatch": "Create Operation",
     "assign": "Assign",
     "schedule": "Schedule",
     "start": "Start",
@@ -33,7 +33,7 @@
     "timeRange": "Time Range",
     "location": "Location",
     "infoNote": "This will create {{count}} operations for all jobs in this service order, assigned sequentially to the selected technician.",
-    "creating": "Creating dispatches...",
+    "creating": "Creating operations...",
     "confirmAll": "Assign All {{count}} Jobs",
     "success": "Successfully assigned {{count}} jobs!",
     "error": "Failed to assign some jobs"
@@ -97,7 +97,9 @@
     "not_working_today": "Not working today",
     "on_leave": "On Leave",
     "day_off": "Day off",
-    "leave_type": "Leave type"
+    "leave_type": "Leave type",
+    "operation": "Operation",
+    "dispatch_already_locked": "This operation is already locked"
   },
   "mapAssign": {
     "nearbyTechnicians": "Nearby Technicians",
@@ -115,7 +117,7 @@
   },
   "plugin": {
     "name": "Dispatcher",
-    "description": "Real-time dispatching and technician assignment.",
+    "description": "Real-time operations and technician assignment.",
     "category": "Field"
   }
 }

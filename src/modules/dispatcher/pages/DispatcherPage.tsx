@@ -461,7 +461,7 @@ useEffect(() => {
     },
     {
       key: 'dispatchNumber',
-      title: 'Dispatch',
+      title: t('dispatcher.operation', 'Operation'),
       render: (dispatch: DisplayDispatch) => (
         <div 
           className="cursor-pointer hover:text-primary"

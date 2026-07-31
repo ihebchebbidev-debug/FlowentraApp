@@ -1,35 +1,34 @@
 {
   "dashboard": "Tableau de Bord Terrain",
   "reports": "Rapports",
-  "calendar": "Calendrier des Interventions",
+  "calendar": {
+    "monthView": "Vue Mensuelle",
+    "weekView": "Vue Hebdomadaire",
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette Semaine",
+    "thisMonth": "Ce Mois",
+    "noDispatches": "Aucune opération planifiée",
+    "viewDetails": "Voir Détails"
+  },
   "kpis": {
     "activeServiceOrders": "Ordres de Service Actifs",
     "technicianWorking": "Techniciens Travaillant Aujourd'hui",
-    "todayDispatches": "Interventions d'Aujourd'hui",
+    "todayDispatches": "Opérations d'Aujourd'hui",
     "firstTimeFixRate": "Taux de Résolution au Premier Passage"
   },
   "analytics": {
     "technicianPerformance": "Performance des Techniciens",
     "serviceOrdersWorked": "Ordres de Service Traités",
     "timePostingsDone": "Pointages Effectués",
-    "dispatchesTotal": "Total des Interventions",
+    "dispatchesTotal": "Total des Opérations",
     "jobCompletionTimes": "Temps de Réalisation des Tâches",
     "revenueInsights": "Analyse des Revenus et Coûts"
-  },
-  "calendar": {
-    "monthView": "Vue Mensuelle",
-    "weekView": "Vue Hebdomadaire", 
-    "today": "Aujourd'hui",
-    "thisWeek": "Cette Semaine",
-    "thisMonth": "Ce Mois",
-    "noDispatches": "Aucune intervention planifiée",
-    "viewDetails": "Voir Détails"
   },
   "status": {
     "pending": "En Attente",
     "assigned": "Assigné",
     "inProgress": "En Cours",
-    "completed": "Terminé", 
+    "completed": "Terminé",
     "cancelled": "Annulé",
     "active": "Actif",
     "inactive": "Inactif"

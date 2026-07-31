@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MODULE_GUIDES, guideSearchText } from "./docs";
+import { useTranslation } from "react-i18next";
+import { useCategoryLabel, useLocalizedModules } from "./docs/locales/localize";
 
 export type ModuleRoute = { path: string; label: string };
 export type ModuleScreenshot = {
@@ -2881,13 +2883,16 @@ export const MODULE_ICON: Record<string, React.ComponentType<{ className?: strin
 export default function DocumentationPage() {
 
   const navigate = useNavigate();
+  const { t } = useTranslation("settings");
+  const catLabel = useCategoryLabel();
+  const modules = useLocalizedModules(MODULES);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MODULES.filter((m) => {
+    return modules.filter((m) => {
       if (activeCategory !== "all" && m.category !== activeCategory) return false;
       if (!q) return true;
       const guide = MODULE_GUIDES[m.key];
@@ -2900,7 +2905,7 @@ export default function DocumentationPage() {
         (guide ? guideSearchText(guide).includes(q) : false)
       );
     });
-  }, [query, activeCategory]);
+  }, [query, activeCategory, modules]);
 
   const grouped = useMemo(() => {
     const map: Record<string, ModuleDoc[]> = {};
@@ -2909,7 +2914,7 @@ export default function DocumentationPage() {
   }, [filtered]);
 
 
-  const totalRoutes = MODULES.reduce((acc, m) => acc + m.routes.length, 0);
+  const totalRoutes = modules.reduce((acc, m) => acc + m.routes.length, 0);
   const guides = Object.values(MODULE_GUIDES);
   const totalWorkflows = guides.reduce((acc, g) => acc + g.workflows.length, 0);
   const totalRules = guides.reduce((acc, g) => acc + g.rules.length, 0);
@@ -2923,27 +2928,25 @@ export default function DocumentationPage() {
       <div className="border-b bg-gradient-to-br from-primary/10 via-background to-background">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 pt-6 pb-8">
           <div className="flex items-center gap-2 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/settings")} aria-label="Back to settings">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/settings")} aria-label={t("docs.backToSettings")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Link to="/dashboard/settings" className="hover:text-foreground">Settings</Link>
+              <Link to="/dashboard/settings" className="hover:text-foreground">{t("docs.breadcrumbSettings")}</Link>
               <ChevronRight className="h-3 w-3" />
-              <span className="text-foreground font-medium">Documentation</span>
+              <span className="text-foreground font-medium">{t("docs.breadcrumbDocs")}</span>
             </div>
           </div>
 
           <div className="max-w-3xl">
             <Badge variant="secondary" className="mb-3 gap-1.5">
-              <Book className="h-3 w-3" /> Knowledge base
+              <Book className="h-3 w-3" /> {t("docs.knowledgeBase")}
             </Badge>
             <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
-              User guide &amp; know-how
+              {t("docs.heroTitle")}
             </h1>
             <p className="text-sm lg:text-base text-muted-foreground mt-3">
-              Practical guidance for every module in your workspace — what each screen does,
-              the day-to-day workflows your teams follow, the rules that keep data clean, and
-              where to find each feature in the sidebar.
+              {t("docs.heroSubtitle")}
             </p>
           </div>
 
@@ -2961,14 +2964,14 @@ export default function DocumentationPage() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search modules, workflows, rules, routes…"
+                placeholder={t("docs.searchPlaceholder")}
                 className="pl-9"
               />
               {query && (
                 <button
                   onClick={() => setQuery("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted"
-                  aria-label="Clear search"
+                  aria-label={t("docs.clearSearch")}
                 >
                   <X className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
@@ -2983,11 +2986,11 @@ export default function DocumentationPage() {
                 activeCategory === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
               }`}
             >
-              All ({MODULES.length})
+              {t("docs.all")} ({modules.length})
             </button>
             {CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-              const count = MODULES.filter((m) => m.category === cat).length;
+              const count = modules.filter((m) => m.category === cat).length;
               const active = activeCategory === cat;
               return (
                 <button
@@ -2998,7 +3001,7 @@ export default function DocumentationPage() {
                   }`}
                 >
                   <Icon className="h-3 w-3" />
-                  {cat} ({count})
+                  {catLabel(cat)} ({count})
                 </button>
               );
             })}
@@ -3013,7 +3016,7 @@ export default function DocumentationPage() {
           <aside className="hidden xl:block w-56 shrink-0">
             <div className="sticky top-32">
               <p className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
-                Categories
+                {t("docs.categories")}
               </p>
               <ScrollArea className="h-[calc(100vh-16rem)] pr-2">
                 {Object.entries(grouped).map(([cat, mods]) => {
@@ -3024,7 +3027,7 @@ export default function DocumentationPage() {
                         href={`#cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
                         className="flex items-center gap-1.5 text-xs font-semibold px-2 mb-1 hover:text-primary"
                       >
-                        <Icon className="h-3 w-3" /> {cat}
+                        <Icon className="h-3 w-3" /> {catLabel(cat)}
                       </a>
                       <ul className="space-y-0.5 border-l ml-3 pl-2">
                         {mods.map((m) => (
@@ -3050,9 +3053,9 @@ export default function DocumentationPage() {
               <Card>
                 <CardContent className="py-16 text-center text-muted-foreground">
                   <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                  <p className="text-sm">No module matches “{query}”.</p>
+                  <p className="text-sm">{t("docs.noMatch", { query })}</p>
                   <Button variant="link" onClick={() => { setQuery(""); setActiveCategory("all"); }}>
-                    Clear filters
+                    {t("docs.clearFilters")}
                   </Button>
                 </CardContent>
               </Card>
@@ -3067,7 +3070,7 @@ export default function DocumentationPage() {
                   >
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4 text-primary" />
-                      <h2 className="text-base font-semibold">{cat}</h2>
+                      <h2 className="text-base font-semibold">{catLabel(cat)}</h2>
                       <span className="text-xs text-muted-foreground">{mods.length}</span>
                       <Separator className="flex-1" />
                     </div>
@@ -3103,17 +3106,17 @@ export default function DocumentationPage() {
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   {guide?.workflows.length ? (
                                     <Badge variant="secondary" className="text-px-10 gap-1">
-                                      <GitBranch className="h-3 w-3" /> {guide.workflows.length} workflows
+                                      <GitBranch className="h-3 w-3" /> {t("docs.workflowsCount", { count: guide.workflows.length })}
                                     </Badge>
                                   ) : null}
                                   {guide?.rules.length ? (
                                     <Badge variant="secondary" className="text-px-10 gap-1">
-                                      <ShieldCheck className="h-3 w-3" /> {guide.rules.length} rules
+                                      <ShieldCheck className="h-3 w-3" /> {t("docs.rulesCount", { count: guide.rules.length })}
                                     </Badge>
                                   ) : null}
-                                  <Badge variant="outline" className="text-px-10">{m.routes.length} routes</Badge>
+                                  <Badge variant="outline" className="text-px-10">{t("docs.routesCount", { count: m.routes.length })}</Badge>
                                   {SHOTS[m.key]?.length ? (
-                                    <Badge variant="outline" className="text-px-10">{SHOTS[m.key].length} screens</Badge>
+                                    <Badge variant="outline" className="text-px-10">{t("docs.screensCount", { count: SHOTS[m.key].length })}</Badge>
                                   ) : null}
                                 </div>
                               </CardContent>

@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PdfSettings, updateNestedObject, colorThemes } from '../utils/pdfSettings.utils';
 import { PdfSettingsService } from '../services/pdfSettings.service';
 
 export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (settings: PdfSettings) => void) => {
+  const { t } = useTranslation();
   const [localSettings, setLocalSettings] = useState<PdfSettings>(initialSettings);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
@@ -33,18 +35,18 @@ export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (
       
       return updated;
     });
-  }, [onSettingsChange]);
+  }, [onSettingsChange, t]);
 
   const handleSave = useCallback(() => {
     try {
       PdfSettingsService.saveSettings(localSettings);
-      toast.success("PDF settings saved successfully");
+      toast.success(t('dispatches.pdfSettings.saved'));
       return true;
     } catch (error) {
-      toast.error("Failed to save PDF settings. Please try again.");
+      toast.error(t('dispatches.pdfSettings.save_error'));
       return false;
     }
-  }, [localSettings]);
+  }, [localSettings, t]);
 
   const handleReset = useCallback(async () => {
     try {
@@ -52,22 +54,22 @@ export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (
       const resetSettings = await PdfSettingsService.resetSettingsAsync();
       setLocalSettings(resetSettings);
       onSettingsChange(resetSettings);
-      toast.success("All settings have been reset to default values");
+      toast.success(t('dispatches.pdfSettings.reset'));
     } catch (error) {
-      toast.error("Failed to reset settings. Please try again.");
+      toast.error(t('dispatches.pdfSettings.reset_error'));
     } finally {
       setIsLoading(false);
     }
-  }, [onSettingsChange]);
+  }, [onSettingsChange, t]);
 
   const handleExportSettings = useCallback(() => {
     try {
       PdfSettingsService.exportSettings(localSettings);
-      toast.success("Settings have been exported successfully");
+      toast.success(t('dispatches.pdfSettings.exported'));
     } catch (error) {
-      toast.error("Failed to export settings. Please try again.");
+      toast.error(t('dispatches.pdfSettings.export_error'));
     }
-  }, [localSettings]);
+  }, [localSettings, t]);
 
   const handleImportSettings = useCallback(() => {
     const input = PdfSettingsService.createFileInput();
@@ -80,9 +82,9 @@ export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (
           const imported = await PdfSettingsService.importSettings(file);
           setLocalSettings(imported);
           onSettingsChange(imported);
-          toast.success("Settings have been imported and synced successfully");
+          toast.success(t('dispatches.pdfSettings.imported'));
         } catch (error) {
-          toast.error(error instanceof Error ? error.message : "Failed to import settings file");
+          toast.error(error instanceof Error ? error.message : t('dispatches.pdfSettings.import_error'));
         } finally {
           setIsLoading(false);
         }
@@ -92,7 +94,7 @@ export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (
     document.body.appendChild(input);
     input.click();
     document.body.removeChild(input);
-  }, [onSettingsChange]);
+  }, [onSettingsChange, t]);
 
   const applyColorTheme = useCallback((theme: typeof colorThemes[0]) => {
     const updatedSettings = updateNestedObject(localSettings, 'colors', {
@@ -106,8 +108,8 @@ export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (
     onSettingsChange(updatedSettings);
     PdfSettingsService.saveSettings(updatedSettings);
     
-    toast.success(`${theme.name} theme has been applied`);
-  }, [localSettings, onSettingsChange]);
+    toast.success(t('dispatches.pdfSettings.theme_applied', { theme: theme.name }));
+  }, [localSettings, onSettingsChange, t]);
 
   const refreshFromBackend = useCallback(async () => {
     try {
@@ -115,13 +117,13 @@ export const usePdfSettings = (initialSettings: PdfSettings, onSettingsChange: (
       const settings = await PdfSettingsService.refreshFromBackend();
       setLocalSettings(settings);
       onSettingsChange(settings);
-      toast.success("Settings refreshed from cloud");
+      toast.success(t('dispatches.pdfSettings.refreshed'));
     } catch (error) {
-      toast.error("Failed to refresh settings");
+      toast.error(t('dispatches.pdfSettings.refresh_error'));
     } finally {
       setIsLoading(false);
     }
-  }, [onSettingsChange]);
+  }, [onSettingsChange, t]);
 
   return {
     localSettings,

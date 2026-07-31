@@ -359,6 +359,13 @@ export function TopNavigation() {
 
   const resolveDescription = (key: string, fallback?: string) => {
     if (!key) return fallback ?? '';
+
+    const descKey = `sidebarDescriptions.${key}`;
+    const descTranslation = t(descKey);
+    if (typeof descTranslation === 'string' && descTranslation !== descKey) {
+      return descTranslation;
+    }
+
     
     const isLikelyRaw = (val: any) => {
       if (typeof val !== 'string') return false;

@@ -14,18 +14,18 @@
       "installations": "Installations",
       "tabs": {
         "serviceOrders": "Ordres de Service",
-        "dispatchCalendar": "Calendrier des Répartitions"
+        "dispatchCalendar": "Calendrier des Opérations"
       },
       "calendar": {
         "filterTitle": "Filtrer l'affichage du calendrier",
-        "plannedDispatches": "Répartitions planifiées",
+        "plannedDispatches": "Opérations planifiées",
         "technicianAbsences": "Absences des techniciens",
         "holidays": "Jours fériés",
         "summary": "Résumé",
         "byStatus": "Par Statut",
-        "noDispatches": "Aucune répartition ce mois-ci",
-        "dispatch": "répartition",
-        "dispatches": "répartitions"
+        "noDispatches": "Aucune opération ce mois-ci",
+        "dispatch": "opération",
+        "dispatches": "opérations"
       },
       "status": {
         "total": "Total",

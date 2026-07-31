@@ -233,14 +233,14 @@ interface DispatchPdfTranslations {
 
 const defaultTranslations: DispatchPdfTranslations = {
   customerInformation: 'Customer Information', email: 'Email:', phone: 'Phone:',
-  address: 'Address:', dispatchDetails: 'Dispatch Details',
+  address: 'Address:', dispatchDetails: 'Operation Details',
   serviceOrder: 'Service Order:', status: 'Status:', priority: 'Priority:',
   scheduled: 'Scheduled:', estDuration: 'Est. Duration:',
   actualDuration: 'Actual Duration:', assignmentDetails: 'Assignment Details',
   technicians: 'Technician(s):', requiredSkills: 'Required Skills:',
   installation: 'Installation:', model: 'Model:', serialNumber: 'Serial Number:',
   matricule: 'Matricule:', manufacturer: 'Manufacturer:',
-  location: 'Location:', dispatchedBy: 'Dispatched By:',
+  location: 'Location:', dispatchedBy: 'Assigned By:',
   jobDescription: 'Job Description', timeTracking: 'Time Tracking',
   type: 'Type', description: 'Description', duration: 'Duration',
   materialsArticles: 'Materials / Articles Used', sku: 'SKU', article: 'Article',

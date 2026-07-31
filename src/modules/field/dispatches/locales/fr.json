@@ -2,37 +2,37 @@
   "watchDemo": "Voir la démo",
   "updating": "Mise à jour...",
   "dispatches": {
-    "title": "Interventions",
-    "subtitle": "Gérer et suivre les interventions de terrain",
+    "title": "Opérations",
+    "subtitle": "Gérer et suivre les opérations de terrain",
     "job_number": "Numéro de Travail",
-    "delete_title": "Supprimer Définitivement l'Intervention",
-    "delete_description": "Êtes-vous sûr de vouloir supprimer définitivement l'intervention {{jobNumber}} ?",
-    "delete_warning_permanent": "Cela supprimera définitivement l'intervention et toutes les données associées (entrées de temps, frais, matériaux, notes).",
+    "delete_title": "Supprimer Définitivement l'Opération",
+    "delete_description": "Êtes-vous sûr de vouloir supprimer définitivement l'opération {{jobNumber}} ?",
+    "delete_warning_permanent": "Cela supprimera définitivement l'opération et toutes les données associées (entrées de temps, frais, matériaux, notes).",
     "delete_warning_job_reset": "Le travail associé sera réinitialisé au statut non planifié et pourra être replanifié.",
     "delete_warning_so_recalc": "Le statut de l'ordre de service sera automatiquement recalculé.",
-    "delete_success": "Intervention Supprimée",
-    "delete_success_description": "L'intervention a été définitivement supprimée. Le travail associé est maintenant non planifié.",
-    "delete_error": "Échec de la suppression de l'intervention",
+    "delete_success": "Opération Supprimée",
+    "delete_success_description": "L'opération a été définitivement supprimée. Le travail associé est maintenant non planifié.",
+    "delete_error": "Échec de la suppression de l'opération",
     "deleting": "Suppression...",
     "bulk": {
       "select_all": "Tout sélectionner",
       "select_item": "Sélectionner l'élément",
       "delete_selected": "Supprimer la Sélection",
-      "delete_title": "Supprimer Définitivement Plusieurs Interventions",
-      "delete_description": "Êtes-vous sûr de vouloir supprimer définitivement {{count}} intervention(s) ?",
-      "delete_warning_permanent": "Cela supprimera définitivement {{count}} intervention(s) et toutes les données associées (entrées de temps, frais, matériaux, notes).",
+      "delete_title": "Supprimer Définitivement Plusieurs Opérations",
+      "delete_description": "Êtes-vous sûr de vouloir supprimer définitivement {{count}} opération(s) ?",
+      "delete_warning_permanent": "Cela supprimera définitivement {{count}} opération(s) et toutes les données associées (entrées de temps, frais, matériaux, notes).",
       "delete_warning_jobs_reset": "Les {{count}} travail/travaux associé(s) seront réinitialisés au statut non planifié et pourront être replanifiés.",
       "delete_warning_so_recalc": "Les statuts des ordres de service concernés seront automatiquement recalculés.",
-      "deleting_progress": "Suppression des interventions...",
+      "deleting_progress": "Suppression des opérations...",
       "deleting": "Suppression...",
-      "delete_success": "Les interventions sélectionnées ont été supprimées",
-      "delete_success_description": "{{count}} intervention(s) supprimée(s) définitivement. Les travaux associés sont maintenant non planifiés."
+      "delete_success": "Les opérations sélectionnées ont été supprimées",
+      "delete_success_description": "{{count}} opération(s) supprimée(s) définitivement. Les travaux associés sont maintenant non planifiés."
     },
-    "job_details": "Détails de l'Intervention",
-    "dispatch_details": "Détails de l'Intervention",
+    "job_details": "Détails de l'Opération",
+    "dispatch_details": "Détails de l'Opération",
     "service_order": "Ordre de Service",
     "description": "Description",
-    "work_location": "Lieu d'Intervention",
+    "work_location": "Lieu de l'Opération",
     "site_location": "Emplacement du Site",
     "scheduled_start": "Début Planifié",
     "scheduled_end": "Fin Planifiée",
@@ -47,29 +47,28 @@
     "technicians": "Techniciens",
     "time_booked": "Temps Réservé",
     "expenses": "Frais",
-    "edit": "Modifier l'Intervention",
+    "edit": "Modifier l'Opération",
     "mark_complete": "Marquer Terminé",
-    "cancel_job": "Annuler l'Intervention",
+    "cancel_job": "Annuler l'Opération",
     "view": "Voir Détails",
-    "search_placeholder": "Rechercher interventions...",
+    "search_placeholder": "Rechercher opérations...",
     "all_statuses": "Tous les Statuts",
-    "no_dispatches": "Aucune Intervention Trouvée",
-    "no_dispatches_description": "Commencez par créer votre première intervention.",
-    "create_dispatch": "Créer une Intervention",
-    "no_articles_used": "Aucun article n'a été utilisé pour cette intervention",
+    "no_dispatches": "Aucune Opération Trouvée",
+    "no_dispatches_description": "Commencez par créer votre première opération.",
+    "create_dispatch": "Créer une Opération",
+    "no_articles_used": "Aucun article n'a été utilisé pour cette opération",
     "article_name": "Nom de l'Article",
     "sku": "Référence",
     "quantity": "Quantité",
     "unit_price": "Prix Unitaire",
     "total_price": "Prix Total",
     "used_at": "Utilisé le",
-
-"overview": {
-      "dispatch_id": "ID de l'Intervention",
+    "overview": {
+      "dispatch_id": "ID de l'Opération",
       "related_service_order": "Ordre de Service Associé",
       "priority_level": "Niveau de Priorité",
       "current_status": "Statut Actuel",
-      "dispatched_by": "Envoyé Par",
+      "dispatched_by": "Assigné Par",
       "created_date": "Date de Création",
       "assigned_technicians": "Techniciens Assignés",
       "none_assigned": "Aucun assigné",
@@ -79,7 +78,6 @@
       "address": "Adresse",
       "activity": "Activité"
     },
-
     "contact_info": {
       "title": "Informations de Contact",
       "contact_name": "Nom du Contact",
@@ -90,7 +88,6 @@
       "address": "Adresse",
       "not_specified": "Non spécifié"
     },
-
     "job_info": {
       "title": "Informations du Travail",
       "job_id": "ID du Travail",
@@ -105,7 +102,6 @@
       "notes": "Notes",
       "no_job_data": "Aucune donnée de travail disponible"
     },
-
     "installation_info": {
       "title": "Informations d'Installation",
       "installation_id": "ID de l'Installation",
@@ -113,7 +109,6 @@
       "site_address": "Adresse du Site",
       "no_installation": "Aucune installation liée"
     },
-
     "statuses": {
       "pending": "En Attente",
       "planned": "Planifié",
@@ -124,22 +119,19 @@
       "completed": "Terminé",
       "cancelled": "Annulé"
     },
-
     "cancel": {
-      "confirm_title": "Annuler cette intervention ?",
-      "confirm_body": "Cette action met fin à l'intervention et est irréversible.",
-      "confirm_action": "Annuler l'intervention",
-      "keep": "Conserver l'intervention",
-      "so_auto_cancelled": "Ordre de service annulé car toutes les interventions ont été annulées."
+      "confirm_title": "Annuler cette opération ?",
+      "confirm_body": "Cette action met fin à l'opération et est irréversible.",
+      "confirm_action": "Annuler l'opération",
+      "keep": "Conserver l'opération",
+      "so_auto_cancelled": "Ordre de service annulé car toutes les opérations ont été annulées."
     },
-
     "priorities": {
       "low": "Faible",
       "medium": "Moyenne",
       "high": "Élevée",
       "urgent": "Urgente"
     },
-
     "tabs": {
       "overview": "Aperçu",
       "time_expenses": "Temps & Frais",
@@ -152,7 +144,6 @@
       "jobs": "Tâches",
       "materials": "Matériaux"
     },
-
     "time_booking": {
       "title": "Réservation de Temps",
       "new_entry": "Nouvelle Entrée de Temps",
@@ -194,7 +185,6 @@
         "rejected": "Rejeté"
       }
     },
-
     "expense_booking": {
       "title": "Réservation de Frais",
       "new_expense": "Nouveau Frais",
@@ -209,7 +199,7 @@
       "types": {
         "travel": "Déplacement",
         "meal": "Repas",
-        "accommodation": "Hébergement", 
+        "accommodation": "Hébergement",
         "materials": "Matériaux",
         "other": "Autre"
       },
@@ -219,7 +209,6 @@
         "rejected": "Rejeté"
       }
     },
-
     "attachments": {
       "title": "Pièces Jointes & Photos",
       "upload_files": "Télécharger Fichiers",
@@ -241,7 +230,6 @@
         "other": "Autre"
       }
     },
-
     "notes": {
       "title": "Notes & Problèmes",
       "add_note": "Ajouter Note",
@@ -261,7 +249,6 @@
         "internal": "Interne"
       }
     },
-
     "technician_info": {
       "title": "Informations Technicien",
       "assigned_technicians": "Techniciens Assignés",
@@ -275,7 +262,6 @@
       "email_action": "Email",
       "locate": "Localiser"
     },
-
     "common": {
       "billable": "Facturable",
       "resolved": "Résolu",
@@ -296,17 +282,54 @@
       "file_description_placeholder": "Description du fichier...",
       "note_description_placeholder": "Décrivez la note, le problème ou l'observation..."
     },
-
     "back_to_dispatcher": "Retour au Répartiteur",
-    "loading": "Chargement de l'intervention..."
+    "loading": "Chargement de l'opération...",
+    "export": {
+      "job_number": "Numéro de travail",
+      "service_order_id": "ID ordre de service",
+      "service_order_number": "Numéro d'ordre de service",
+      "title": "Titre",
+      "description": "Description",
+      "status": "Statut",
+      "priority": "Priorité",
+      "customer_company": "Société du client",
+      "customer_contact": "Contact client",
+      "customer_phone": "Téléphone du client",
+      "customer_email": "E-mail du client",
+      "scheduled_start": "Début planifié",
+      "scheduled_end": "Fin planifiée",
+      "estimated_duration": "Durée estimée",
+      "assigned_technicians": "Techniciens assignés",
+      "created_date": "Date de création",
+      "updated_date": "Date de modification",
+      "categories": {
+        "basic": "Général",
+        "customer": "Client",
+        "schedule": "Planification",
+        "assignment": "Affectation",
+        "timeline": "Chronologie"
+      }
+    },
+    "pdfSettings": {
+      "saved": "Paramètres PDF enregistrés avec succès",
+      "save_error": "Échec de l'enregistrement des paramètres PDF. Veuillez réessayer.",
+      "reset": "Tous les paramètres ont été réinitialisés aux valeurs par défaut",
+      "reset_error": "Échec de la réinitialisation des paramètres. Veuillez réessayer.",
+      "exported": "Paramètres exportés avec succès",
+      "export_error": "Échec de l'exportation des paramètres. Veuillez réessayer.",
+      "imported": "Paramètres importés et synchronisés avec succès",
+      "import_error": "Échec de l'importation du fichier de paramètres",
+      "theme_applied": "Thème {{theme}} appliqué",
+      "refreshed": "Paramètres actualisés depuis le cloud",
+      "refresh_error": "Échec de l'actualisation des paramètres"
+    }
   },
-
   "pdf": {
     "customerInformation": "Informations Client",
     "email": "Email :",
     "phone": "Téléphone :",
     "address": "Adresse :",
-    "dispatchDetails": "Détails de l'Intervention",
+    "dispatchDetails": "Détails de l'Opération",
     "serviceOrder": "Ordre de Service :",
     "status": "Statut :",
     "priority": "Priorité :",
@@ -320,7 +343,7 @@
     "model": "Modèle :",
     "serialNumber": "Numéro de Série :",
     "location": "Localisation :",
-    "dispatchedBy": "Dispatché par :",
+    "dispatchedBy": "Assigné par :",
     "jobDescription": "Description du Travail",
     "timeTracking": "Suivi du Temps",
     "type": "Type",
@@ -341,10 +364,9 @@
     "page": "Page",
     "thankYouMessage": "Merci d'avoir choisi nos services."
   },
-
   "sendReport": {
     "title": "Envoyer le rapport par Email",
-    "description": "Envoyez ce rapport d'intervention en pièce jointe PDF via votre compte email connecté",
+    "description": "Envoyez ce rapport d'opération en pièce jointe PDF via votre compte email connecté",
     "sendFrom": "Envoyer depuis",
     "to": "À",
     "subject": "Objet",
@@ -367,7 +389,6 @@
     "deliveryOk": "OK",
     "sendViaEmail": "Envoyer par Email"
   },
-
   "materials_tab": {
     "materials_used": "Matériaux Utilisés",
     "add_materials": "Ajouter des Matériaux",

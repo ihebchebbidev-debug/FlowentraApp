@@ -2,34 +2,34 @@
   "watchDemo": "Watch Demo",
   "updating": "Updating...",
   "dispatches": {
-    "title": "Dispatch Jobs",
-    "subtitle": "Manage and track field service dispatches",
+    "title": "Operations",
+    "subtitle": "Manage and track field service operations",
     "job_number": "Job Number",
-    "delete_title": "Permanently Delete Dispatch",
-    "delete_description": "Are you sure you want to permanently delete dispatch {{jobNumber}}?",
-    "delete_warning_permanent": "This will permanently delete the dispatch and all associated data (time entries, expenses, materials, notes).",
+    "delete_title": "Permanently Delete Operation",
+    "delete_description": "Are you sure you want to permanently delete operation {{jobNumber}}?",
+    "delete_warning_permanent": "This will permanently delete the operation and all associated data (time entries, expenses, materials, notes).",
     "delete_warning_job_reset": "The associated job will be reset to unplanned status and can be re-scheduled.",
     "delete_warning_so_recalc": "The service order status will be automatically recalculated.",
-    "delete_success": "Dispatch Deleted",
-    "delete_success_description": "The dispatch has been permanently deleted. The associated job is now unplanned.",
-    "delete_error": "Failed to delete dispatch",
+    "delete_success": "Operation Deleted",
+    "delete_success_description": "The operation has been permanently deleted. The associated job is now unplanned.",
+    "delete_error": "Failed to delete operation",
     "deleting": "Deleting...",
     "bulk": {
       "select_all": "Select all",
       "select_item": "Select item",
       "delete_selected": "Delete Selected",
-      "delete_title": "Permanently Delete Multiple Dispatches",
-      "delete_description": "Are you sure you want to permanently delete {{count}} dispatch(es)?",
-      "delete_warning_permanent": "This will permanently delete {{count}} dispatch(es) and all associated data (time entries, expenses, materials, notes).",
+      "delete_title": "Permanently Delete Multiple Operations",
+      "delete_description": "Are you sure you want to permanently delete {{count}} operation(s)?",
+      "delete_warning_permanent": "This will permanently delete {{count}} operation(s) and all associated data (time entries, expenses, materials, notes).",
       "delete_warning_jobs_reset": "All {{count}} associated job(s) will be reset to unplanned status and can be re-scheduled.",
       "delete_warning_so_recalc": "The affected service order statuses will be automatically recalculated.",
-      "deleting_progress": "Deleting dispatches...",
+      "deleting_progress": "Deleting operations...",
       "deleting": "Deleting...",
-      "delete_success": "Selected dispatches have been deleted",
-      "delete_success_description": "{{count}} dispatch(es) permanently deleted. Associated jobs are now unplanned."
+      "delete_success": "Selected operations have been deleted",
+      "delete_success_description": "{{count}} operation(s) permanently deleted. Associated jobs are now unplanned."
     },
     "job_details": "Job Details",
-    "dispatch_details": "Dispatch Details",
+    "dispatch_details": "Operation Details",
     "service_order": "Service Order",
     "description": "Description",
     "work_location": "Work Location",
@@ -51,11 +51,11 @@
     "mark_complete": "Mark Complete",
     "cancel_job": "Cancel Job",
     "view": "View Details",
-    "search_placeholder": "Search dispatches...",
+    "search_placeholder": "Search operations...",
     "all_statuses": "All Statuses",
-    "no_dispatches": "No Dispatches Found",
-    "no_dispatches_description": "Get started by creating your first dispatch job.",
-    "create_dispatch": "Create Dispatch",
+    "no_dispatches": "No Operations Found",
+    "no_dispatches_description": "Get started by creating your first operation.",
+    "create_dispatch": "Create Operation",
     "no_articles_used": "No articles have been used for this job",
     "article_name": "Article Name",
     "sku": "Reference",
@@ -63,13 +63,12 @@
     "unit_price": "Unit Price",
     "total_price": "Total Price",
     "used_at": "Used At",
-
-"overview": {
-      "dispatch_id": "Dispatch ID",
+    "overview": {
+      "dispatch_id": "Operation ID",
       "related_service_order": "Related Service Order",
       "priority_level": "Priority Level",
       "current_status": "Current Status",
-      "dispatched_by": "Dispatched By",
+      "dispatched_by": "Assigned By",
       "created_date": "Created Date",
       "assigned_technicians": "Assigned Technicians",
       "none_assigned": "None assigned",
@@ -79,7 +78,6 @@
       "address": "Address",
       "activity": "Activity"
     },
-
     "contact_info": {
       "title": "Contact Information",
       "contact_name": "Contact Name",
@@ -90,7 +88,6 @@
       "address": "Address",
       "not_specified": "Not specified"
     },
-
     "job_info": {
       "title": "Job Information",
       "job_id": "Job ID",
@@ -105,7 +102,6 @@
       "notes": "Notes",
       "no_job_data": "No job data available"
     },
-
     "installation_info": {
       "title": "Installation Information",
       "installation_id": "Installation ID",
@@ -113,7 +109,6 @@
       "site_address": "Site Address",
       "no_installation": "No installation linked"
     },
-
     "statuses": {
       "pending": "Pending",
       "planned": "Planned",
@@ -124,22 +119,19 @@
       "completed": "Completed",
       "cancelled": "Cancelled"
     },
-
     "cancel": {
-      "confirm_title": "Cancel this dispatch?",
-      "confirm_body": "This will end the dispatch. This can't be undone.",
-      "confirm_action": "Cancel dispatch",
-      "keep": "Keep dispatch",
-      "so_auto_cancelled": "Service order cancelled because all dispatches were cancelled."
+      "confirm_title": "Cancel this operation?",
+      "confirm_body": "This will end the operation. This can't be undone.",
+      "confirm_action": "Cancel operation",
+      "keep": "Keep operation",
+      "so_auto_cancelled": "Service order cancelled because all operations were cancelled."
     },
-
     "priorities": {
       "low": "Low",
       "medium": "Medium",
       "high": "High",
       "urgent": "Urgent"
     },
-
     "tabs": {
       "overview": "Overview",
       "time_expenses": "Time & Expenses",
@@ -152,7 +144,6 @@
       "jobs": "Jobs",
       "materials": "Materials"
     },
-
     "time_booking": {
       "title": "Time Booking",
       "new_entry": "New Time Entry",
@@ -194,7 +185,6 @@
         "rejected": "Rejected"
       }
     },
-
     "expense_booking": {
       "title": "Expense Booking",
       "new_expense": "New Expense",
@@ -219,7 +209,6 @@
         "rejected": "Rejected"
       }
     },
-
     "attachments": {
       "title": "Attachments & Photos",
       "upload_files": "Upload Files",
@@ -241,7 +230,6 @@
         "other": "Other"
       }
     },
-
     "notes": {
       "title": "Notes & Issues",
       "add_note": "Add Note",
@@ -261,7 +249,6 @@
         "internal": "Internal"
       }
     },
-
     "technician_info": {
       "title": "Technician Information",
       "assigned_technicians": "Assigned Technicians",
@@ -275,7 +262,6 @@
       "email_action": "Email",
       "locate": "Locate"
     },
-
     "common": {
       "billable": "Billable",
       "resolved": "Resolved",
@@ -296,17 +282,54 @@
       "file_description_placeholder": "File description...",
       "note_description_placeholder": "Describe the note, issue or observation..."
     },
-
     "back_to_dispatcher": "Back to Dispatcher",
-    "loading": "Loading dispatch..."
+    "loading": "Loading operation...",
+    "export": {
+      "job_number": "Job Number",
+      "service_order_id": "Service Order ID",
+      "service_order_number": "Service Order Number",
+      "title": "Title",
+      "description": "Description",
+      "status": "Status",
+      "priority": "Priority",
+      "customer_company": "Customer Company",
+      "customer_contact": "Customer Contact",
+      "customer_phone": "Customer Phone",
+      "customer_email": "Customer Email",
+      "scheduled_start": "Scheduled Start",
+      "scheduled_end": "Scheduled End",
+      "estimated_duration": "Estimated Duration",
+      "assigned_technicians": "Assigned Technicians",
+      "created_date": "Created Date",
+      "updated_date": "Updated Date",
+      "categories": {
+        "basic": "Basic",
+        "customer": "Customer",
+        "schedule": "Schedule",
+        "assignment": "Assignment",
+        "timeline": "Timeline"
+      }
+    },
+    "pdfSettings": {
+      "saved": "PDF settings saved successfully",
+      "save_error": "Failed to save PDF settings. Please try again.",
+      "reset": "All settings have been reset to default values",
+      "reset_error": "Failed to reset settings. Please try again.",
+      "exported": "Settings have been exported successfully",
+      "export_error": "Failed to export settings. Please try again.",
+      "imported": "Settings have been imported and synced successfully",
+      "import_error": "Failed to import settings file",
+      "theme_applied": "{{theme}} theme has been applied",
+      "refreshed": "Settings refreshed from cloud",
+      "refresh_error": "Failed to refresh settings"
+    }
   },
-
   "pdf": {
     "customerInformation": "Customer Information",
     "email": "Email:",
     "phone": "Phone:",
     "address": "Address:",
-    "dispatchDetails": "Dispatch Details",
+    "dispatchDetails": "Operation Details",
     "serviceOrder": "Service Order:",
     "status": "Status:",
     "priority": "Priority:",
@@ -320,7 +343,7 @@
     "model": "Model:",
     "serialNumber": "Serial Number:",
     "location": "Location:",
-    "dispatchedBy": "Dispatched By:",
+    "dispatchedBy": "Assigned By:",
     "jobDescription": "Job Description",
     "timeTracking": "Time Tracking",
     "type": "Type",
@@ -341,10 +364,9 @@
     "page": "Page",
     "thankYouMessage": "Thank you for choosing our services."
   },
-
   "sendReport": {
     "title": "Send Report via Email",
-    "description": "Send this dispatch report as a PDF attachment via your connected email account",
+    "description": "Send this operation report as a PDF attachment via your connected email account",
     "sendFrom": "Send from",
     "to": "To",
     "subject": "Subject",
@@ -367,7 +389,6 @@
     "deliveryOk": "OK",
     "sendViaEmail": "Send via Email"
   },
-
   "materials_tab": {
     "materials_used": "Materials Used",
     "add_materials": "Add Materials",

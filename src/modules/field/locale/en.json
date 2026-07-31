@@ -14,18 +14,18 @@
       "installations": "Installations",
       "tabs": {
         "serviceOrders": "Service Orders",
-        "dispatchCalendar": "Dispatch Calendar"
+        "dispatchCalendar": "Operations Calendar"
       },
       "calendar": {
         "filterTitle": "Filter Calendar Display",
-        "plannedDispatches": "Planned Dispatches",
+        "plannedDispatches": "Planned Operations",
         "technicianAbsences": "Technician Absences",
         "holidays": "Holidays",
         "summary": "Summary",
         "byStatus": "By Status",
-        "noDispatches": "No dispatches this month",
-        "dispatch": "dispatch",
-        "dispatches": "dispatches"
+        "noDispatches": "No operations this month",
+        "dispatch": "operation",
+        "dispatches": "operations"
       },
       "status": {
         "total": "Total",

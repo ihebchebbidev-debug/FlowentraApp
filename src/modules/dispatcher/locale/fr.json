@@ -33,7 +33,7 @@
     "timeRange": "Plage Horaire",
     "location": "Emplacement",
     "infoNote": "Cela créera {{count}} opérations pour tous les travaux de cet ordre de service, assignés séquentiellement au technicien sélectionné.",
-    "creating": "Création des interventions...",
+    "creating": "Création des opérations...",
     "confirmAll": "Assigner les {{count}} Travaux",
     "success": "{{count}} travaux assignés avec succès !",
     "error": "Échec de l'assignation de certains travaux"
@@ -97,7 +97,9 @@
     "not_working_today": "Ne travaille pas aujourd'hui",
     "on_leave": "En congé",
     "day_off": "Jour de repos",
-    "leave_type": "Type de congé"
+    "leave_type": "Type de congé",
+    "operation": "Opération",
+    "dispatch_already_locked": "Cette opération est déjà verrouillée"
   },
   "mapAssign": {
     "nearbyTechnicians": "Techniciens à Proximité",
@@ -115,7 +117,7 @@
   },
   "plugin": {
     "name": "Dispatcheur",
-    "description": "Dispatch en temps réel et affectation des techniciens.",
+    "description": "Opérations en temps réel et affectation des techniciens.",
     "category": "Terrain"
   }
 }

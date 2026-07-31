@@ -16,6 +16,8 @@ import { MODULES, SHOTS, MODULE_ICON, CATEGORY_ICON } from "./DocumentationPage"
 import { MODULE_APIS, MODULE_TABLES } from "./moduleTechnicalRefs";
 import { getTableColumns } from "./tableSchemas";
 import { MODULE_GUIDES } from "./docs";
+import { useTranslation } from "react-i18next";
+import { useCategoryLabel, useLocalizedGuide, useLocalizedModules, useLocalizedShots } from "./docs/locales/localize";
 
 function typeBadgeColor(type: string): string {
   const t = type.toLowerCase();
@@ -47,11 +49,14 @@ function methodBadge(method: string) {
 export default function ModuleDocumentationPage() {
   const navigate = useNavigate();
   const { moduleKey } = useParams<{ moduleKey: string }>();
-  const mod = useMemo(() => MODULES.find((m) => m.key === moduleKey), [moduleKey]);
-  const guide = moduleKey ? MODULE_GUIDES[moduleKey] : undefined;
+  const { t } = useTranslation("settings");
+  const catLabel = useCategoryLabel();
+  const modules = useLocalizedModules(MODULES);
+  const mod = useMemo(() => modules.find((m) => m.key === moduleKey), [modules, moduleKey]);
+  const guide = useLocalizedGuide(moduleKey, moduleKey ? MODULE_GUIDES[moduleKey] : undefined);
 
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-  const shots = mod ? (SHOTS[mod.key] || []) : [];
+  const shots = useLocalizedShots(mod ? (SHOTS[mod.key] || []) : []);
   const currentShot = lightboxIdx != null ? shots[lightboxIdx] : null;
   const closeLightbox = useCallback(() => setLightboxIdx(null), []);
   const prevShot = useCallback(
@@ -74,7 +79,7 @@ export default function ModuleDocumentationPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [lightboxIdx, closeLightbox, prevShot, nextShot]);
 
-  const sortedModules = useMemo(() => MODULES, []);
+  const sortedModules = modules;
   const idx = sortedModules.findIndex((m) => m.key === moduleKey);
   const prevMod = idx > 0 ? sortedModules[idx - 1] : null;
   const nextMod = idx >= 0 && idx < sortedModules.length - 1 ? sortedModules[idx + 1] : null;
@@ -85,15 +90,15 @@ export default function ModuleDocumentationPage() {
         <Card className="max-w-md w-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Book className="h-5 w-5" /> Module not found
+              <Book className="h-5 w-5" /> {t("docs.moduleNotFound")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              The module “{moduleKey}” does not exist in the documentation.
+              {t("docs.moduleNotFoundBody", { key: moduleKey })}
             </p>
             <Button onClick={() => navigate("/dashboard/settings/documentation")}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to documentation
+              <ArrowLeft className="h-4 w-4 mr-2" /> {t("docs.backToDocs")}
             </Button>
           </CardContent>
         </Card>
@@ -115,15 +120,15 @@ export default function ModuleDocumentationPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 flex-1">
-            <Link to="/dashboard/settings/documentation" className="hover:text-foreground shrink-0">Docs</Link>
+            <Link to="/dashboard/settings/documentation" className="hover:text-foreground shrink-0">{t("docs.docsShort")}</Link>
             <ChevronRight className="h-3 w-3 shrink-0" />
-            <span className="hidden sm:inline shrink-0">{mod.category}</span>
+            <span className="hidden sm:inline shrink-0">{catLabel(mod.category)}</span>
             <ChevronRight className="h-3 w-3 hidden sm:inline shrink-0" />
             <span className="text-foreground font-medium truncate">{mod.name}</span>
           </div>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {prevMod && (
-              <Button variant="outline" size="sm" className="h-8" asChild aria-label={`Previous: ${prevMod.name}`}>
+              <Button variant="outline" size="sm" className="h-8" asChild aria-label={t("docs.previousModule", { name: prevMod.name })}>
                 <Link to={`/dashboard/settings/documentation/module/${prevMod.key}`}>
                   <ChevronLeft className="h-4 w-4" />
                   <span className="hidden lg:inline ml-1 max-w-[120px] truncate">{prevMod.name}</span>
@@ -131,7 +136,7 @@ export default function ModuleDocumentationPage() {
               </Button>
             )}
             {nextMod && (
-              <Button variant="outline" size="sm" className="h-8" asChild aria-label={`Next: ${nextMod.name}`}>
+              <Button variant="outline" size="sm" className="h-8" asChild aria-label={t("docs.nextModule", { name: nextMod.name })}>
                 <Link to={`/dashboard/settings/documentation/module/${nextMod.key}`}>
                   <span className="hidden lg:inline mr-1 max-w-[120px] truncate">{nextMod.name}</span>
                   <ChevronRight className="h-4 w-4" />
@@ -151,7 +156,7 @@ export default function ModuleDocumentationPage() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
-                <CIcon className="h-3.5 w-3.5" /> {mod.category}
+                <CIcon className="h-3.5 w-3.5" /> {catLabel(mod.category)}
               </div>
               <h1 className="text-2xl lg:text-3xl font-bold tracking-tight break-words">{mod.name}</h1>
               <p className="text-sm lg:text-base text-muted-foreground mt-2 max-w-3xl leading-relaxed">
@@ -159,15 +164,15 @@ export default function ModuleDocumentationPage() {
               </p>
               <div className="flex items-center gap-2 mt-4 flex-wrap">
                 {guide?.workflows.length ? (
-                  <Badge variant="secondary" className="gap-1"><Workflow className="h-3 w-3" /> {guide.workflows.length} workflows</Badge>
+                  <Badge variant="secondary" className="gap-1"><Workflow className="h-3 w-3" /> {t("docs.workflowsCount", { count: guide.workflows.length })}</Badge>
                 ) : null}
                 {guide?.rules.length ? (
-                  <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3 w-3" /> {guide.rules.length} rules</Badge>
+                  <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3 w-3" /> {t("docs.rulesCount", { count: guide.rules.length })}</Badge>
                 ) : null}
-                <Badge variant="outline" className="gap-1"><ListChecks className="h-3 w-3" /> {mod.features.length} features</Badge>
-                <Badge variant="outline" className="gap-1"><Layers className="h-3 w-3" /> {mod.routes.length} routes</Badge>
-                {apis.length ? <Badge variant="outline" className="gap-1"><Plug className="h-3 w-3" /> {apis.length} endpoints</Badge> : null}
-                {tables.length ? <Badge variant="outline" className="gap-1"><Database className="h-3 w-3" /> {tables.length} tables</Badge> : null}
+                <Badge variant="outline" className="gap-1"><ListChecks className="h-3 w-3" /> {t("docs.featuresCount", { count: mod.features.length })}</Badge>
+                <Badge variant="outline" className="gap-1"><Layers className="h-3 w-3" /> {t("docs.routesCount", { count: mod.routes.length })}</Badge>
+                {apis.length ? <Badge variant="outline" className="gap-1"><Plug className="h-3 w-3" /> {t("docs.endpointsCount", { count: apis.length })}</Badge> : null}
+                {tables.length ? <Badge variant="outline" className="gap-1"><Database className="h-3 w-3" /> {t("docs.tablesCount", { count: tables.length })}</Badge> : null}
               </div>
             </div>
           </div>
@@ -177,13 +182,13 @@ export default function ModuleDocumentationPage() {
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-6">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="mb-6 flex-wrap h-auto">
-            <TabsTrigger value="overview" className="gap-1.5"><Book className="h-3.5 w-3.5" /> Overview</TabsTrigger>
-            <TabsTrigger value="workflows" className="gap-1.5"><Workflow className="h-3.5 w-3.5" /> How it works</TabsTrigger>
-            <TabsTrigger value="rules" className="gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Business rules</TabsTrigger>
+            <TabsTrigger value="overview" className="gap-1.5"><Book className="h-3.5 w-3.5" /> {t("docs.tabOverview")}</TabsTrigger>
+            <TabsTrigger value="workflows" className="gap-1.5"><Workflow className="h-3.5 w-3.5" /> {t("docs.tabWorkflows")}</TabsTrigger>
+            <TabsTrigger value="rules" className="gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> {t("docs.tabRules")}</TabsTrigger>
             {shots.length > 0 && (
-              <TabsTrigger value="screens" className="gap-1.5"><ImageIcon className="h-3.5 w-3.5" /> Screens</TabsTrigger>
+              <TabsTrigger value="screens" className="gap-1.5"><ImageIcon className="h-3.5 w-3.5" /> {t("docs.tabScreens")}</TabsTrigger>
             )}
-            <TabsTrigger value="technical" className="gap-1.5"><FileCode2 className="h-3.5 w-3.5" /> API & data</TabsTrigger>
+            <TabsTrigger value="technical" className="gap-1.5"><FileCode2 className="h-3.5 w-3.5" /> {t("docs.tabTechnical")}</TabsTrigger>
           </TabsList>
 
           {/* ── Overview ── */}
@@ -192,7 +197,7 @@ export default function ModuleDocumentationPage() {
               <Card className="lg:col-span-2">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-primary" /> What this module does
+                    <ListChecks className="h-4 w-4 text-primary" /> {t("docs.whatItDoes")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -211,7 +216,7 @@ export default function ModuleDocumentationPage() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-primary" /> Screens & routes
+                      <Layers className="h-4 w-4 text-primary" /> {t("docs.screensAndRoutes")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -235,7 +240,7 @@ export default function ModuleDocumentationPage() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
-                        <CircleDot className="h-4 w-4 text-primary" /> Status vocabulary
+                        <CircleDot className="h-4 w-4 text-primary" /> {t("docs.statusVocabulary")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -257,7 +262,7 @@ export default function ModuleDocumentationPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Link2 className="h-4 w-4 text-primary" /> How it connects to other modules
+                    <Link2 className="h-4 w-4 text-primary" /> {t("docs.howItConnects")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -284,7 +289,7 @@ export default function ModuleDocumentationPage() {
                       <CardTitle className="text-base flex items-center gap-2">
                         <Workflow className="h-4 w-4 text-primary" /> {w.name}
                       </CardTitle>
-                      <CardDescription>{w.steps.length} steps</CardDescription>
+                      <CardDescription>{t("docs.stepsCount", { count: w.steps.length })}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ol className="space-y-3">
@@ -303,7 +308,7 @@ export default function ModuleDocumentationPage() {
               </div>
             ) : (
               <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
-                No written workflows for this module yet.
+                {t("docs.noWorkflows")}
               </CardContent></Card>
             )}
           </TabsContent>
@@ -314,7 +319,7 @@ export default function ModuleDocumentationPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-primary" /> Rules the system enforces
+                    <ShieldCheck className="h-4 w-4 text-primary" /> {t("docs.rulesEnforced")}
                   </CardTitle>
                   <CardDescription>
                     Validations, guards and calculations applied by the backend — not just UI hints.
@@ -333,7 +338,7 @@ export default function ModuleDocumentationPage() {
               </Card>
             ) : (
               <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
-                No documented rules for this module yet.
+                {t("docs.noRules")}
               </CardContent></Card>
             )}
 
@@ -341,7 +346,7 @@ export default function ModuleDocumentationPage() {
               <Card className="border-amber-500/30">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" /> Limitations & things to watch
+                    <AlertTriangle className="h-4 w-4 text-amber-500" /> {t("docs.limitations")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -361,7 +366,7 @@ export default function ModuleDocumentationPage() {
               <Card className="border-dashed">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <FileCode2 className="h-4 w-4 text-muted-foreground" /> Source of truth
+                    <FileCode2 className="h-4 w-4 text-muted-foreground" /> {t("docs.sourceOfTruth")}
                   </CardTitle>
                   <CardDescription className="text-xs">
                     This page was written from these files. If behaviour changes there, update the docs.
@@ -442,7 +447,7 @@ export default function ModuleDocumentationPage() {
               <Card className="lg:col-span-2">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Plug className="h-4 w-4 text-primary" /> Backend API endpoints
+                    <Plug className="h-4 w-4 text-primary" /> {t("docs.apiEndpoints")}
                   </CardTitle>
                   <CardDescription>
                     REST endpoints this module calls ({apis.length}). Path params appear as <code className="text-px-11">{"{id}"}</code>.
@@ -474,9 +479,9 @@ export default function ModuleDocumentationPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" /> Database tables
+                    <Database className="h-4 w-4 text-primary" /> {t("docs.dbTables")}
                   </CardTitle>
-                  <CardDescription>Tables this module reads & writes ({tables.length}).</CardDescription>
+                  <CardDescription>{t("docs.dbTablesDescription", { count: tables.length })}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {tables.length ? (
@@ -490,7 +495,7 @@ export default function ModuleDocumentationPage() {
                                 <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 transition-colors text-left group">
                                   <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                                   <code className="text-xs font-mono font-semibold flex-1 truncate">{t}</code>
-                                  <Badge variant="outline" className="text-px-10 shrink-0">{cols.length} cols</Badge>
+                                  <Badge variant="outline" className="text-px-10 shrink-0">{t("docs.columnsCount", { count: cols.length })}</Badge>
                                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 shrink-0" />
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
@@ -517,7 +522,7 @@ export default function ModuleDocumentationPage() {
                               <div className="flex items-center gap-2 px-2.5 py-2">
                                 <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                                 <code className="text-xs font-mono flex-1 truncate">{t}</code>
-                                <Badge variant="outline" className="text-px-10 text-muted-foreground shrink-0">schema n/a</Badge>
+                                <Badge variant="outline" className="text-px-10 text-muted-foreground shrink-0">{t("docs.schemaUnavailable")}</Badge>
                               </div>
                             )}
                           </li>
