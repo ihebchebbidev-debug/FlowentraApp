@@ -57,7 +57,12 @@ namespace MyApi.Modules.Installations.Services
                     .Where(n => n.Id == id)
                     .FirstOrDefaultAsync();
 
-                return note != null ? MapToNoteDto(note) : null;
+                if (note == null || !await ParentVisibleAsync(note.InstallationId))
+                {
+                    return null;
+                }
+
+                return MapToNoteDto(note);
             }
             catch (Exception ex)
             {
@@ -108,7 +113,7 @@ namespace MyApi.Modules.Installations.Services
                     .Where(n => n.Id == id)
                     .FirstOrDefaultAsync();
 
-                if (note == null)
+                if (note == null || !await ParentVisibleAsync(note.InstallationId))
                 {
                     return null;
                 }
@@ -135,7 +140,7 @@ namespace MyApi.Modules.Installations.Services
                     .Where(n => n.Id == id)
                     .FirstOrDefaultAsync();
 
-                if (note == null)
+                if (note == null || !await ParentVisibleAsync(note.InstallationId))
                 {
                     return false;
                 }
@@ -163,6 +168,13 @@ namespace MyApi.Modules.Installations.Services
                 CreatedDate = note.CreatedDate,
                 CreatedBy = note.CreatedBy
             };
+        }
+
+        // Notes of soft-deleted installations must stay invisible/immutable,
+        // matching the list view and create guard.
+        private Task<bool> ParentVisibleAsync(int installationId)
+        {
+            return _context.Installations.AnyAsync(i => i.Id == installationId && !i.IsDeleted);
         }
     }
 }

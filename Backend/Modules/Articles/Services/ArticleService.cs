@@ -142,7 +142,6 @@ namespace MyApi.Modules.Articles.Services
                 if (!explicitNumber)
                 {
                     var lastId = await _context.Set<Article>()
-                        .IgnoreQueryFilters()
                         .OrderByDescending(a => a.Id)
                         .Select(a => (int?)a.Id)
                         .FirstOrDefaultAsync() ?? 0;
@@ -592,7 +591,7 @@ namespace MyApi.Modules.Articles.Services
 
                 var existingArticleNumbers = await _context.Set<Article>()
                     .AsNoTracking()
-                    .Where(a => articleNumbersToCheck.Contains(a.ArticleNumber.ToLower()))
+                    .Where(a => !a.IsDeleted && articleNumbersToCheck.Contains(a.ArticleNumber.ToLower()))
                     .Select(a => new { a.Id, ArticleNumber = a.ArticleNumber.ToLower() })
                     .ToDictionaryAsync(a => a.ArticleNumber, a => a.Id);
 

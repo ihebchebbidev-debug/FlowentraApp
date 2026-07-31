@@ -168,7 +168,6 @@ namespace MyApi.Modules.Installations.Services
             for (int attempt = 1; ; attempt++)
             {
                 var lastInstallation = await _context.Installations
-                    .IgnoreQueryFilters()
                     .OrderByDescending(i => i.Id)
                     .Select(i => new { i.Id })
                     .FirstOrDefaultAsync();

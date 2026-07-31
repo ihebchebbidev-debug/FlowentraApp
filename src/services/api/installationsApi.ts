@@ -54,15 +54,13 @@ export const installationsApi = {
     if (filters?.createdFrom) params.append('created_from', filters.createdFrom);
     if (filters?.createdTo) params.append('created_to', filters.createdTo);
     if (filters?.page) params.append('page', String(filters.page));
-    if (filters?.pageSize) params.append('page_size', String(filters.pageSize));
-    if (filters?.sortBy) params.append('sort_by', filters.sortBy);
-    if (filters?.sortOrder) params.append('sort_order', filters.sortOrder);
+    if (filters?.pageSize) params.append('pageSize', String(filters.pageSize));
+    if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
 
     const response = await api.get(`/api/installations?${params.toString()}`);
 
     const rawData = response.data?.data || response.data;
-    
-    console.log('[installationsApi.getAll] Raw response:', response.data);
     
     let rawInstallations: any[] = [];
     
@@ -72,15 +70,38 @@ export const installationsApi = {
       rawInstallations = response.data.data;
     } else if (rawData?.installations) {
       rawInstallations = rawData.installations;
+    } else if (rawData?.Installations) {
+      rawInstallations = rawData.Installations;
     }
     
     const installations = rawInstallations.map(normalizeInstallation);
+
+    // Use the server pagination metadata when present so page 2+ is reachable.
+    const rawPagination = rawData?.pagination || rawData?.Pagination;
+    if (rawPagination) {
+      const page = rawPagination.page ?? rawPagination.Page ?? filters?.page ?? 1;
+      const pageSize = rawPagination.pageSize ?? rawPagination.PageSize ?? filters?.pageSize ?? installations.length;
+      const totalCount = rawPagination.totalCount ?? rawPagination.TotalCount ?? installations.length;
+      const totalPages = rawPagination.totalPages ?? rawPagination.TotalPages
+        ?? (pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1);
+      return {
+        installations,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage: rawPagination.hasNextPage ?? rawPagination.HasNextPage ?? page < totalPages,
+          hasPreviousPage: rawPagination.hasPreviousPage ?? rawPagination.HasPreviousPage ?? page > 1,
+        },
+      };
+    }
     
     return {
       installations,
       pagination: { 
-        page: 1, 
-        pageSize: installations.length || 20, 
+        page: filters?.page ?? 1,
+        pageSize: filters?.pageSize ?? installations.length ?? 20,
         totalCount: installations.length, 
         totalPages: 1, 
         hasNextPage: false, 
@@ -106,7 +127,7 @@ export const installationsApi = {
       ContactId: data.contactId,
       SiteAddress: data.siteAddress || data.name || 'Default Site',
       InstallationType: data.installationType || data.type || 'general',
-      InstallationDate: normalizeUtc(new Date().toISOString()),
+      InstallationDate: normalizeUtc(data.installationDate || new Date().toISOString()),
       Status: data.status || 'active',
       WarrantyExpiry: data.warranty?.hasWarranty ? normalizeUtc(data.warranty?.warrantyTo) : null,
       WarrantyFrom: data.warranty?.hasWarranty ? normalizeUtc(data.warranty?.warrantyFrom) : null,
@@ -148,7 +169,7 @@ export const installationsApi = {
     pageSize: number = 20
   ): Promise<MaintenanceHistoryDto[]> {
     const response = await api.get(
-      `/api/installations/${installationId}/maintenance-history?page=${page}&page_size=${pageSize}`
+      `/api/installations/${installationId}/maintenance-history?page=${page}&pageSize=${pageSize}`
     );
     return response.data.data;
   },
@@ -204,6 +225,7 @@ export interface InstallationBulkImportRequest {
     status?: string;
     siteAddress?: string;
     installationType?: string;
+    installationDate?: string;
     warrantyFrom?: string;
     warrantyTo?: string;
     notes?: string;
@@ -242,7 +264,7 @@ function mapInstallationRowForBulkImport(
       installation.installationType?.trim() ||
       installation.type?.trim() ||
       'general',
-    installationDate: new Date().toISOString(),
+    installationDate: installation.installationDate || new Date().toISOString(),
     status: installation.status?.trim() || 'active',
   };
 

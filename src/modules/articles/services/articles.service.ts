@@ -50,9 +50,13 @@ const CACHE_TTL = 30000; // 30 seconds
 export const ArticlesService = {
   async listAsync(params?: ArticleSearchParams): Promise<InventoryArticle[]> {
     try {
-      const response = await articlesApi.getAll(params);
-      const articles = (response.data || []).map(mapToInventoryArticle);
       const isUnfiltered = !params || Object.values(params).every(v => v === undefined || v === '' || v === null);
+      // The cached list backs client-side search/stats/getById, so an unfiltered
+      // fetch must not be truncated by the API's default page size.
+      const response = await articlesApi.getAll(
+        isUnfiltered ? { ...(params || {}), page: 1, limit: 10000 } : params,
+      );
+      const articles = (response.data || []).map(mapToInventoryArticle);
       if (isUnfiltered) {
         articlesCache = articles;
         cacheTimestamp = Date.now();

@@ -170,7 +170,7 @@ namespace MyApi.Modules.Articles.Services
 
                     // Lock the article row for update (prevents concurrent modifications)
                     var article = await _context.Set<Article>()
-                        .FromSqlRaw("SELECT * FROM \"Articles\" WHERE \"Id\" = {0} AND \"TenantId\" = {1} FOR UPDATE", dto.ArticleId, _context.GetTenantId())
+                        .FromSqlRaw("SELECT * FROM \"Articles\" WHERE \"Id\" = {0} AND \"TenantId\" = {1} AND \"IsDeleted\" = false FOR UPDATE", dto.ArticleId, _context.GetTenantId())
                         .FirstOrDefaultAsync();
 
                     if (article == null)

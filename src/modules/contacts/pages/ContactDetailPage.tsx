@@ -180,7 +180,7 @@ export default function ContactDetailPage() {
   const displayName = contact.name || 'Unknown';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -256,8 +256,8 @@ export default function ContactDetailPage() {
       </div>
 
       {/* Main Content with Tabs */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-card flex-1 flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-card p-4 rounded-md flex-1 flex flex-col">
           <div className="w-full">
             {isMobile ? (
               /* Mobile: styled dropdown select */
@@ -309,13 +309,13 @@ export default function ContactDetailPage() {
           </div>
 
           {/* Overview Tab */}
-          <TabsContent value="overview">
+          <TabsContent value="overview" className="bg-card rounded-md p-4 flex-1 flex flex-col">
             <ContactOverviewTab contact={contact} />
           </TabsContent>
 
           {!isSupplierRoute && (
             <>
-              <TabsContent value="installations">
+              <TabsContent value="installations" className="bg-card rounded-md p-4 flex-1 flex flex-col">
                 <ContactRelatedTab
                   contactId={contact.id}
                   type="installations"
@@ -324,7 +324,7 @@ export default function ContactDetailPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="offers">
+              <TabsContent value="offers" className="bg-card rounded-md p-4 flex-1 flex flex-col">
                 <ContactRelatedTab
                   contactId={contact.id}
                   type="offers"
@@ -333,7 +333,7 @@ export default function ContactDetailPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="sales">
+              <TabsContent value="sales" className="bg-card rounded-md p-4 flex-1 flex flex-col">
                 <ContactRelatedTab
                   contactId={contact.id}
                   type="sales"
@@ -342,7 +342,7 @@ export default function ContactDetailPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="serviceOrders">
+              <TabsContent value="serviceOrders" className="bg-card rounded-md p-4 flex-1 flex flex-col">
                 <ContactRelatedTab
                   contactId={contact.id}
                   type="serviceOrders"
@@ -354,20 +354,20 @@ export default function ContactDetailPage() {
           )}
 
           {isSupplierRoute && (
-            <TabsContent value="articles">
+            <TabsContent value="articles" className="bg-card rounded-md p-4 flex-1 flex flex-col">
               <SupplierArticlesTab supplierId={contact.id} supplierName={contact.name} />
             </TabsContent>
           )}
 
           {/* Purchases Tab — supplier-only */}
           {isSupplierRoute && (
-            <TabsContent value="purchases">
+            <TabsContent value="purchases" className="bg-card rounded-md p-4 flex-1 flex flex-col">
               <ContactPurchaseHistoryTab contactId={contact.id} contactName={contact.name || ''} />
             </TabsContent>
           )}
 
           {/* Timeline Tab — merged notes + activity feed */}
-          <TabsContent value="timeline">
+          <TabsContent value="timeline" className="bg-card rounded-md p-4 flex-1 flex flex-col">
             <ContactTimelineTab
               contactId={contact.id}
               notes={notes}

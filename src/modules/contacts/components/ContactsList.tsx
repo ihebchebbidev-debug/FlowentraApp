@@ -100,7 +100,9 @@ export function ContactsList() {
     searchTerm: searchTerm || undefined,
     status: filterStatus !== 'all' ? filterStatus : undefined,
     type: filterType !== 'all' ? filterType : undefined,
-    pageSize: 100, // Load more for local filtering
+    // The list filters/paginates locally, so fetch the full set instead of
+    // silently hiding every contact past the first 100.
+    pageSize: 5000,
   }), [searchTerm, filterStatus, filterType]);
 
   // Fetch contacts from API

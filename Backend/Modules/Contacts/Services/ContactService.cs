@@ -729,6 +729,13 @@ namespace MyApi.Modules.Contacts.Services
                                     {
                                         contactsToUpdate.Add((existingContact, contactDto));
                                     }
+                                    else
+                                    {
+                                        // Duplicate inside the same import batch (placeholder id 0):
+                                        // there is no persisted row to update yet, so count it as
+                                        // skipped instead of silently dropping it.
+                                        result.SkippedCount++;
+                                    }
                                 }
                                 else
                                 {

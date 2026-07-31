@@ -83,7 +83,6 @@ export const WORKSPACES: Workspace[] = [
       { key: "purchases", label: "Purchases", url: "/dashboard/purchases", icon: "ShoppingCart", pluginCode: "PL0025PURCHASES" },
       { key: "suppliers", label: "Suppliers", url: "/dashboard/suppliers", icon: "Truck", pluginCode: "PL0001CONTACTS" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
-      { key: "payments", label: "Payments", url: "/dashboard/payments", icon: "CreditCard", pluginCode: "PL0026PAYMENTS" },
       { key: "purchases-documents", label: "Documents", url: "/dashboard/documents?workspace=purchases", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
       { key: "purchases-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=purchases", icon: "Activity" },
     ],
