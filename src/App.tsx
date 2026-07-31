@@ -11,6 +11,7 @@ import QaLogin from "./modules/auth/pages/QaLogin";
 import ApiTestsPage from "./modules/testing/pages/ApiTestsPage";
 // Dashboard is gated to show a preloading screen and warm data/assets
 import DashboardGate from "./modules/dashboard/components/DashboardGate";
+import { HiddenDashboardPrefix } from "./components/HiddenDashboardPrefix";
 import Onboarding from "./modules/onboarding/pages/Onboarding";
 import VerifyEmail from "./pages/VerifyEmail";
 import TwoFactorChallenge from "./pages/TwoFactorChallenge";
@@ -327,6 +328,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <HiddenDashboardPrefix />
                 <OfflineSyncRedirector />
                 <OfflineSyncLoadingOverlay />
                 

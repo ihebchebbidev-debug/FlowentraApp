@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { applyTypography } from './config/typography.runtime'
 import App from './App.tsx'
+import { restoreDashboardPrefix } from './components/HiddenDashboardPrefix'
 
 // @react-pdf/renderer decodes fetched images through Node's Buffer. Vite does
 // not polyfill Node globals, so PDF rendering crashed with "Buffer is not
@@ -16,6 +17,10 @@ if (typeof globalThis.Buffer === 'undefined') {
 // BEFORE the first paint so Tailwind semantic tokens (text-body, text-h1,
 // font-heading, …) resolve consistently across every page.
 applyTypography()
+
+// Map bare URLs (/settings/system-config) back to their internal /dashboard/...
+// form before the router mounts. The prefix is hidden again after navigation.
+restoreDashboardPrefix()
 
 
 createRoot(document.getElementById('root')!).render(
