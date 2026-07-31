@@ -795,7 +795,15 @@ CREATE TABLE IF NOT EXISTS ""ProcessRuns"" (
   ""OutputJson""      JSONB NULL
 );
 CREATE INDEX IF NOT EXISTS ""IX_ProcessRuns_Key_StartedAt""
-  ON ""ProcessRuns"" (""ProcessKey"", ""StartedAt"" DESC);";
+  ON ""ProcessRuns"" (""ProcessKey"", ""StartedAt"" DESC);
+-- Key-agnostic scans (stale reconcile, history trim, running-keys) filter on
+-- ""StartedAt"" alone, which the composite index above cannot serve.
+-- Mirrors Backend/Migrations/20260730_process_runs_indexes.sql.
+CREATE INDEX IF NOT EXISTS ""IX_ProcessRuns_StartedAt""
+  ON ""ProcessRuns"" (""StartedAt"");
+CREATE INDEX IF NOT EXISTS ""IX_ProcessRuns_Running""
+  ON ""ProcessRuns"" (""StartedAt"")
+  WHERE ""Status"" = 'running' AND ""FinishedAt"" IS NULL;";
                 processesCmd.ExecuteNonQuery();
                 migrationLogger.LogInformation("✅ Processes module schema verified");
             }

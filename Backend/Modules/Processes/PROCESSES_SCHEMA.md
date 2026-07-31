@@ -48,7 +48,7 @@ Everything else below is owned by its own module migration; Processes only reads
 
 1. Add an `IProcessHandler` implementation + register it in `Program.cs`.
 2. Add a `BuiltInSchedules` entry with the same key.
-3. Add the key to `REAL_HANDLER_KEYS` in `src/modules/system/services/processesService.ts` and to `PROCESSES` in `processesMock.ts`.
+3. Add the key to `REAL_HANDLER_KEYS` in `src/modules/system/services/processesService.ts` and to `PROCESSES` in `processesCatalog.ts`.
 4. Add `items.<key>.name` / `.description` to `processes.en.json` and `processes.fr.json`.
 5. Add the new table/column rows to PART 2 of the verify script.
 

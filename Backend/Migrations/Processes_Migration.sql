@@ -43,6 +43,18 @@ CREATE TABLE IF NOT EXISTS "ProcessRuns" (
 CREATE INDEX IF NOT EXISTS "IX_ProcessRuns_Key_StartedAt"
   ON "ProcessRuns" ("ProcessKey", "StartedAt" DESC);
 
+-- Key-agnostic scans: stale-run reconcile, the run-history safety trim and the
+-- running-keys endpoint all filter on "StartedAt" alone, which the composite
+-- index above cannot serve. Same statements as
+-- Backend/Migrations/20260730_process_runs_indexes.sql (kept here so a fresh
+-- install gets them without running the follow-up migration).
+CREATE INDEX IF NOT EXISTS "IX_ProcessRuns_StartedAt"
+  ON "ProcessRuns" ("StartedAt");
+
+CREATE INDEX IF NOT EXISTS "IX_ProcessRuns_Running"
+  ON "ProcessRuns" ("StartedAt")
+  WHERE "Status" = 'running' AND "FinishedAt" IS NULL;
+
 -- Role grants. Other migrations in this repo grant the restricted application role
 -- explicitly; without this, enabling role separation makes every Processes query fail
 -- with "permission denied". Wrapped so the script still runs where app_user is absent.

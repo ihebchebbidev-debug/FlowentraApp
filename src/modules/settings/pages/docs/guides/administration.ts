@@ -349,7 +349,7 @@ export const ADMIN_GUIDES: ModuleGuideMap = {
       { title: "Startup reconciliation", detail: "On startup the scheduler reconciles stale/orphaned runs left 'running' from a prior crash before proceeding." },
       { title: "Built-in schedule seeding", detail: "SeedBuiltInSchedulesAsync seeds schedules from a static BuiltInSchedules array and logs a warning if a registered IProcessHandler has no corresponding built-in schedule entry." },
       { title: "Advisory-lock concurrency safety", detail: "Each schedule execution acquires a Postgres advisory lock so only one instance/replica executes a given schedule at a time." },
-      { title: "Handler pattern", detail: "Concrete jobs implement IProcessHandler (e.g. PurgeSystemLogsHandler, RetryFailedEmailsHandler, RetryUnsentEmailsHandler)." },
+      { title: "Handler pattern", detail: "Concrete jobs implement IProcessHandler (e.g. PurgeSystemLogsHandler, RetryFailedEmailsHandler, InvoicesMarkOverdueHandler)." },
       { title: "BlockReason field length", detail: "ProcessSchedule.BlockReason is capped at 500 characters, used to record why a schedule is paused or blocked." },
     ],
     statuses: [

@@ -9,8 +9,10 @@ const versionJsonPlugin = () => ({
   name: 'version-json',
   async buildStart() {
     const fs = await import('node:fs');
-    const versionPath = path.resolve(process.cwd(), 'public/version.json');
-    fs.writeFileSync(versionPath, JSON.stringify({ v: String(Date.now()) }));
+    const publicDir = path.resolve(process.cwd(), 'public');
+    // public/ may be absent in a fresh checkout — create it so the build never fails.
+    fs.mkdirSync(publicDir, { recursive: true });
+    fs.writeFileSync(path.join(publicDir, 'version.json'), JSON.stringify({ v: String(Date.now()) }));
   },
 });
 

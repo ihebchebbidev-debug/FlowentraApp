@@ -132,7 +132,27 @@ namespace MyApi.Modules.Processes.Services
                     .SetProperty(r => r.Error, "Interrupted — the application restarted while this run was in progress"), ct);
             if (fixedUp > 0)
                 _logger.LogWarning("⚙️  Reconciled {Count} interrupted process run(s) on boot", fixedUp);
+
+            // Hard safety floor for run history. Trimming ProcessRuns used to happen
+            // ONLY inside admin.purge-system-logs, so disabling/pausing/blocking that
+            // one schedule let the table grow without bound. This sweep is decoupled
+            // from any schedule row and keeps a generous 90-day window (well above the
+            // 30-day minimum the purge handler enforces), so the two never fight.
+            try
+            {
+                var historyCutoff = now.AddDays(-90);
+                var trimmed = await db.Set<ProcessRun>()
+                    .Where(r => r.StartedAt < historyCutoff)
+                    .ExecuteDeleteAsync(ct);
+                if (trimmed > 0)
+                    _logger.LogInformation("⚙️  Trimmed {Count} process run(s) older than 90 days", trimmed);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚙️  Process run-history safety trim failed");
+            }
         }
+
 
 
         private async Task SeedBuiltInSchedulesAsync(CancellationToken ct)
@@ -332,7 +352,14 @@ namespace MyApi.Modules.Processes.Services
             public static async Task<AdvisoryLock?> TryAcquireAsync(ApplicationDbContext db, long lockId, CancellationToken ct)
             {
                 var connectionString = db.Database.GetConnectionString();
-                if (string.IsNullOrWhiteSpace(connectionString)) return null;
+                // An unresolvable connection string is NOT contention. Returning null
+                // here made every run report "skipped — another execution in progress"
+                // forever, with no error anywhere. Fail loudly instead so the run is
+                // recorded as failed and the retry ladder / block reason kick in.
+                if (string.IsNullOrWhiteSpace(connectionString))
+                    throw new InvalidOperationException(
+                        "Cannot acquire the process advisory lock: no database connection string is available.");
+
 
                 var conn = new Npgsql.NpgsqlConnection(connectionString);
                 try
@@ -396,7 +423,48 @@ namespace MyApi.Modules.Processes.Services
             // Prevent duplicate execution across scheduler ticks, manual "Run now",
             // and multiple app instances all pointing at the same database.
             var lockId = AdvisoryLockKey(s.Key);
-            var advisoryLock = await AdvisoryLock.TryAcquireAsync(db, lockId, ct);
+            AdvisoryLock? advisoryLock;
+            try
+            {
+                advisoryLock = await AdvisoryLock.TryAcquireAsync(db, lockId, ct);
+            }
+            catch (Exception lockEx)
+            {
+                // Could not even attempt the lock (bad/absent connection string, DB
+                // unreachable). Record it as a real failure with the real reason —
+                // never as a silent "skipped".
+                var failAt = DateTime.UtcNow;
+                var failReason = Truncate("Could not acquire the execution lock: " + lockEx.Message);
+                try
+                {
+                    db.Set<ProcessRun>().Add(new ProcessRun
+                    {
+                        ProcessKey = s.Key,
+                        TriggeredBy = triggeredBy,
+                        Attempt = attempt,
+                        Status = "failed",
+                        StartedAt = failAt,
+                        FinishedAt = failAt,
+                        DurationMs = 0,
+                        ItemsProcessed = 0,
+                        Error = lockEx.Message,
+                        BlockReason = failReason,
+                    });
+                    await db.SaveChangesAsync(ct);
+                }
+                catch (Exception auditEx)
+                {
+                    logger?.LogWarning(auditEx, "⚙️  Process '{Key}': failed to persist lock-failure audit row", s.Key);
+                }
+                logger?.LogError(lockEx, "⚙️  Process '{Key}' could not acquire its execution lock", s.Key);
+                return new DTOs.RunNowResult
+                {
+                    Status = "failed",
+                    Error = lockEx.Message,
+                    BlockReason = failReason,
+                };
+            }
+
             if (advisoryLock == null)
             {
                 // Contention is a real outcome, not a silent no-op: persist it so the

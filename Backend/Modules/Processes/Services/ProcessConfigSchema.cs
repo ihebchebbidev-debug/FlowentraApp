@@ -288,7 +288,7 @@ namespace MyApi.Modules.Processes.Services
         /// Normalise an incoming config object against the schema:
         /// coerces types and clamps declared numbers to [min, max]. Keys the
         /// schema does not declare are preserved verbatim — some handlers read
-        /// free-form values (e.g. the "modules" array on retry-unsent-emails)
+        /// free-form values not declared by the schema
         /// and silently dropping them would erase admin configuration.
         /// Returns the sanitised JSON string ready for storage.
         /// </summary>

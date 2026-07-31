@@ -2076,15 +2076,22 @@ function ConfigurationPanel({
   });
 
   const save = () => {
-    // Build a full config object using the sanitised draft. Backend merges
-    // over any existing stored keys and drops anything unknown.
+    // Build a full config object using the sanitised draft.
+    //
+    // A field left at its default is REMOVED from the stored config instead of
+    // being written explicitly. Otherwise "Reset to defaults" saved the default
+    // as an override, so the field stayed badged "custom" forever and would not
+    // follow a future change to the handler's default.
     const next: Record<string, unknown> = { ...currentConfig };
     for (const f of fields) {
       const v = draft[f.key];
-      next[f.key] = clamp(Number.isFinite(v) ? v : f.fallback, f);
+      const resolved = clamp(Number.isFinite(v) ? v : f.fallback, f);
+      if (resolved === f.fallback) delete next[f.key];
+      else next[f.key] = resolved;
     }
     onSave(next);
   };
+
   const resetToDefaults = () => {
     const out: Record<string, number> = {};
     for (const f of fields) out[f.key] = f.fallback;
@@ -2135,14 +2142,29 @@ function ConfigurationPanel({
                 type="number"
                 min={f.min}
                 max={f.max}
-                value={draft[f.key] ?? f.fallback}
-                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: Number(e.target.value) }))}
+                value={Number.isFinite(draft[f.key]) ? draft[f.key] : ""}
+                onChange={(e) => {
+                  // An empty (or half-typed) input must clear the field, not
+                  // become 0 / NaN — Number("") is 0 and Number("-") is NaN,
+                  // which previously rendered a literal "NaN" in the box and
+                  // silently saved a bogus value.
+                  const raw = e.target.value;
+                  const n = raw.trim() === "" ? NaN : Number(raw);
+                  setDraft((d) => ({ ...d, [f.key]: n }));
+                }}
+                onBlur={() =>
+                  setDraft((d) => ({
+                    ...d,
+                    [f.key]: Number.isFinite(d[f.key]) ? clamp(d[f.key], f) : f.fallback,
+                  }))
+                }
                 disabled={!canManage}
                 className="h-9 flex-1"
               />
               {f.unit && (
                 <span className="text-xs text-muted-foreground w-16">{unitLabel(f.unit)}</span>
               )}
+
             </div>
             <div className="text-[11px] text-muted-foreground">
               {help && <span>{help} </span>}
