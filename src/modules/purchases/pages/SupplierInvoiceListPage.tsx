@@ -162,8 +162,11 @@ function SupplierInvoiceListContent() {
         return matchesRs && i.status !== "paid" && i.status !== "cancelled";
       if (selectedStat === "paid") return matchesRs && i.status === "paid";
       if (selectedStat === "overdue") {
-        const today = new Date().toISOString().split("T")[0];
-        return matchesRs && i.dueDate < today && i.status !== "paid" && i.status !== "cancelled";
+        // Compare parsed timestamps: dueDate may be a full ISO datetime, which
+        // makes a raw string comparison against a YYYY-MM-DD "today" unreliable.
+        const due = i.dueDate ? new Date(i.dueDate).getTime() : NaN;
+        const isOverdue = Number.isFinite(due) && due < Date.now();
+        return matchesRs && isOverdue && i.status !== "paid" && i.status !== "cancelled";
       }
       return matchesRs;
     });
@@ -186,13 +189,12 @@ function SupplierInvoiceListContent() {
     (async () => {
       try {
         const searchArg = debouncedSearch || undefined;
-        const today = new Date().toISOString().split("T")[0];
         const [pendingR, partialR, validatedR, paidR, overdueR] = await Promise.all([
           supplierInvoiceService.getAll({ search: searchArg, status: "pending" as any, limit: 1 }),
           supplierInvoiceService.getAll({ search: searchArg, status: "partially_paid" as any, limit: 1 }),
           supplierInvoiceService.getAll({ search: searchArg, status: "validated" as any, limit: 1 }),
           supplierInvoiceService.getAll({ search: searchArg, status: "paid" as any, limit: 1 }),
-          supplierInvoiceService.getAll({ search: searchArg, dateTo: today, limit: 1 } as any),
+          supplierInvoiceService.getAll({ search: searchArg, overdueOnly: true, limit: 1 } as any),
         ]);
         if (cancelled) return;
         const unpaid =
@@ -200,9 +202,7 @@ function SupplierInvoiceListContent() {
           (partialR.pagination?.total || 0) +
           (validatedR.pagination?.total || 0);
         const paid = paidR.pagination?.total || 0;
-        // "overdueR" is a coarse upper bound (due date on/before today across all
-        // statuses); an exact server-side "overdue AND unpaid" endpoint would be
-        // more accurate but this already beats reducing over the loaded window.
+        // Server-side overdue_only: past due date AND not paid/cancelled.
         const overdue = overdueR.pagination?.total || 0;
         setStats((prev) => ({ ...prev, unpaid, paid, overdue }));
       } catch {

@@ -101,6 +101,7 @@ const CAMEL_TO_SNAKE_KEYS: Record<string, string> = {
   goodsReceiptId: 'goods_receipt_id',
   sortBy: 'sort_by',
   sortOrder: 'sort_order',
+  overdueOnly: 'overdue_only',
 };
 
 const qs = (params?: Record<string, any>): string => {
@@ -243,8 +244,9 @@ export const purchaseOrderService = {
     ids: string[],
     patch: Partial<Pick<PurchaseOrder, 'status' | 'paymentStatus'>>,
     concurrency = 5,
-  ): Promise<{ succeeded: number; failed: number; failedIds: string[] }> => {
+  ): Promise<{ succeeded: number; failed: number; failedIds: string[]; firstError?: string }> => {
     const failedIds: string[] = [];
+    let firstError: string | undefined;
     let succeeded = 0;
     let cursor = 0;
     const body = JSON.stringify(patch);
@@ -257,13 +259,14 @@ export const purchaseOrderService = {
             'Failed',
           );
           succeeded++;
-        } catch {
+        } catch (e) {
+          firstError = firstError ?? (e instanceof Error ? e.message : String(e));
           failedIds.push(id);
         }
       }
     };
     await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, worker));
-    return { succeeded, failed: failedIds.length, failedIds };
+    return { succeeded, failed: failedIds.length, failedIds, firstError };
   },
 
   addItem: (orderId: string, data: Record<string, unknown>) => {
@@ -355,7 +358,7 @@ export const goodsReceiptService = {
 // ─── Supplier Invoices ───────────────────────────────────────────────────────
 
 export const supplierInvoiceService = {
-  getAll: (filters?: SupplierInvoiceFilters & { page?: number; limit?: number }) =>
+  getAll: (filters?: SupplierInvoiceFilters & { page?: number; limit?: number; overdueOnly?: boolean }) =>
     extract<{ invoices: SupplierInvoice[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
       apiFetch(`/api/supplier-invoices${qs(filters)}`), 'Failed to fetch invoices'),
 

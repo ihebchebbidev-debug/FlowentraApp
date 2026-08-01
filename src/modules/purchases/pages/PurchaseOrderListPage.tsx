@@ -346,16 +346,20 @@ function PurchaseOrderListContent() {
     if (ids.length === 0) return;
     setBusyAction(action);
     setOrders((prev) => prev.map((o) => (selectedIds.has(o.id) ? { ...o, ...patch } : o)));
-    const { succeeded, failed, failedIds } = await purchaseOrderService.bulkUpdate(ids, patch);
+    const { succeeded, failed, failedIds, firstError } = await purchaseOrderService.bulkUpdate(ids, patch);
     if (failed === 0) {
       toast.success(t("bulk.actionSuccess", "{{count}} order(s) updated", { count: succeeded }));
       setSelectedIds(new Set());
+      // Refetch: the server also mutates derived fields (activity, payment status,
+      // stats) that the optimistic patch above cannot know about.
+      fetchOrders(1);
     } else {
       toast.error(
         t("bulk.actionPartial", "{{success}} updated, {{failed}} failed", {
           success: succeeded,
           failed,
         }),
+        firstError ? { description: firstError } : undefined,
       );
       setSelectedIds(new Set(failedIds));
       fetchOrders(1); // reconcile optimistic rows that the server rejected

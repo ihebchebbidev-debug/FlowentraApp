@@ -108,6 +108,8 @@ function PurchaseOrderDetailPage() {
     try {
       const updated = await purchaseOrderService.validate(id);
       setPo(updated);
+      // Refresh so the activity timeline reflects the transition the server logged.
+      fetchData();
       toast.success(t('actions.validated'));
     } catch (e: any) { toastApiError(e, t, { fallback: t('common.error', 'Failed') as string }); }
   };
@@ -117,6 +119,8 @@ function PurchaseOrderDetailPage() {
     try {
       const updated = await purchaseOrderService.sendToSupplier(id);
       setPo(updated);
+      // Refresh so the activity timeline reflects the transition the server logged.
+      fetchData();
       toast.success(t('actions.sentToSupplier'));
     } catch (e: any) { toastApiError(e, t, { fallback: t('common.error', 'Failed') as string }); }
   };
@@ -265,6 +269,7 @@ function PurchaseOrderDetailPage() {
     try {
       const updated = await purchaseOrderService.update(id, { status: next as any });
       setPo(updated);
+      fetchData(); // keep the activity timeline in sync with the new status
       toast.success(t('status.updated', 'Status updated'));
     } catch (e: any) {
       toastApiError(e, t, { fallback: t('common.error', 'Failed') as string });

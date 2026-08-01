@@ -75,11 +75,12 @@ namespace MyApi.Modules.Purchases.Controllers
             [FromQuery] bool? rs_applicable = null, [FromQuery] DateTime? date_from = null,
             [FromQuery] DateTime? date_to = null, [FromQuery] string? search = null,
             [FromQuery] int page = 1, [FromQuery] int limit = 20,
-            [FromQuery] string sort_by = "created_date", [FromQuery] string sort_order = "desc")
+            [FromQuery] string sort_by = "created_date", [FromQuery] string sort_order = "desc",
+            [FromQuery] bool? overdue_only = null)
         {
             try
             {
-                var result = await _service.GetInvoicesAsync(status, supplier_id, rs_applicable, date_from, date_to, search, page, limit, sort_by, sort_order);
+                var result = await _service.GetInvoicesAsync(status, supplier_id, rs_applicable, date_from, date_to, search, page, limit, sort_by, sort_order, overdue_only);
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)

@@ -38,7 +38,8 @@ namespace MyApi.Modules.Purchases.Services
         Task<PaginatedSupplierInvoiceResponse> GetInvoicesAsync(
             string? status = null, string? supplierId = null, bool? rsApplicable = null,
             DateTime? dateFrom = null, DateTime? dateTo = null, string? search = null,
-            int page = 1, int limit = 20, string sortBy = "created_date", string sortOrder = "desc");
+            int page = 1, int limit = 20, string sortBy = "created_date", string sortOrder = "desc",
+            bool? overdueOnly = null);
         Task<SupplierInvoiceDto?> GetInvoiceByIdAsync(int id);
         Task<SupplierInvoiceDto> CreateInvoiceAsync(CreateSupplierInvoiceDto dto, string userId, string? userName = null, string? idempotencyKey = null);
         Task<SupplierInvoiceDto> UpdateInvoiceAsync(int id, UpdateSupplierInvoiceDto dto, string userId, string? userName = null);

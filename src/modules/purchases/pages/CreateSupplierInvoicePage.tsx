@@ -64,8 +64,12 @@ export default function CreateSupplierInvoicePage() {
   }, [targetTenantId]);
 
   const addItem = () => setItems([...items, { id: `i-${Date.now()}`, description: '', quantity: 1, unitPrice: 0, taxRate: 19, lineTotal: 0 }]);
+  // Sanitize numeric inputs: Number('') / Number('-') yields NaN, which would
+  // flow into lineTotal and serialize as null in the POST body.
+  const num = (v: any) => (Number.isFinite(v) ? (v as number) : 0);
   const updateItem = (i: number, f: string, v: any) => {
-    const u = [...items]; (u[i] as any)[f] = v;
+    const u = [...items];
+    (u[i] as any)[f] = f === 'description' ? v : num(v);
     const qty = u[i].quantity || 0;
     const price = u[i].unitPrice || 0;
     // Backend formula: LineTotal = quantity * unitPrice (tax-exclusive, no per-line discount).
@@ -103,6 +107,9 @@ export default function CreateSupplierInvoicePage() {
     if (!dueDate) { toast.error(t('validation.dueDateRequired', 'Due date is required')); return; }
     if (items.length === 0) { toast.error(t('validation.itemsRequired')); return; }
     if (items.some(i => !i.description?.trim())) { toast.error(t('validation.descriptionRequired', 'Each item needs a description')); return; }
+    if (items.some(i => !Number.isFinite(i.quantity) || i.quantity <= 0)) { toast.error(t('validation.quantityPositive', 'Each item needs a quantity greater than 0')); return; }
+    if (items.some(i => !Number.isFinite(i.unitPrice) || i.unitPrice < 0)) { toast.error(t('validation.pricePositive', 'Unit price cannot be negative')); return; }
+    if (items.some(i => !Number.isFinite(i.taxRate ?? 0) || (i.taxRate ?? 0) < 0 || (i.taxRate ?? 0) > 100)) { toast.error(t('validation.taxRateRange', 'Tax rate must be between 0 and 100')); return; }
     setSaving(true);
     try {
       await supplierInvoiceService.create({

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MyApi.Data;
 using MyApi.Modules.Articles.DTOs;
 using MyApi.Modules.Articles.Models;
@@ -116,13 +117,27 @@ namespace MyApi.Modules.Articles.Services
                 throw new ArgumentException("Quantity must be greater than zero");
             }
 
-            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            // AMBIENT TRANSACTION SUPPORT.
+            // Callers such as GoodsReceiptService (create/update/delete receipt) already
+            // hold an open serializable transaction on this SAME scoped DbContext when
+            // they call AddStockAsync/RemoveStockAsync. Npgsql has no nested transactions:
+            // calling BeginTransactionAsync again throws "A transaction is already
+            // started", and opening a nested retrying ExecutionStrategy rejects
+            // user-initiated transactions. Either one 500s the whole request and rolls
+            // back the receipt. So when a transaction is already open we JOIN it and let
+            // the caller own commit/rollback; only when there is none do we open our own
+            // under the execution strategy (required by EnableRetryOnFailure).
+            var ambientTx = _context.Database.CurrentTransaction;
+            if (ambientTx != null)
+                return await CoreAsync(ambientTx, ownsTx: false);
+
             var strategy = _context.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync(async () =>
-            {
-                // Use a transaction with row-level locking to prevent race conditions
-                using var dbTransaction = await _context.Database.BeginTransactionAsync();
+                await CoreAsync(await _context.Database.BeginTransactionAsync(), ownsTx: true));
 
+            // Uses a transaction with row-level locking to prevent race conditions.
+            async Task<StockTransactionDto> CoreAsync(IDbContextTransaction dbTransaction, bool ownsTx)
+            {
                 try
                 {
                     // ── Idempotency guard ─────────────────────────────────────────
@@ -163,7 +178,7 @@ namespace MyApi.Modules.Articles.Services
                             _logger.LogInformation(
                                 "Stock transaction is idempotent no-op: article {ArticleId} already has {Type} for {RefType}:{RefId} (txn {ExistingId})",
                                 dto.ArticleId, dto.TransactionType, dto.ReferenceType, dto.ReferenceId, existing.Id);
-                            await dbTransaction.CommitAsync();
+                            if (ownsTx) await dbTransaction.CommitAsync();
                             return MapToDto(existing);
                         }
                     }
@@ -258,6 +273,12 @@ namespace MyApi.Modules.Articles.Services
                         // between our SELECT and INSERT. Roll back the stock update
                         // we just applied in-memory and return the winning row so
                         // the API stays idempotent instead of failing the caller.
+                        //
+                        // When we're inside a caller's transaction we must NOT roll it
+                        // back (that would silently discard the caller's own writes).
+                        // Postgres has already aborted the enclosing transaction on the
+                        // unique violation anyway, so rethrow and let the owner unwind.
+                        if (!ownsTx) throw;
                         await dbTransaction.RollbackAsync();
 
                         // CRITICAL: the Article was loaded with FOR UPDATE and is
@@ -295,18 +316,23 @@ namespace MyApi.Modules.Articles.Services
                         throw;
                     }
 
-                    // Commit the transaction
-                    await dbTransaction.CommitAsync();
+                    // Commit only if we opened the transaction; otherwise the caller
+                    // commits once its own unit of work completes.
+                    if (ownsTx) await dbTransaction.CommitAsync();
 
                     transaction.Article = article;
                     return MapToDto(transaction);
                 }
                 catch
                 {
-                    await dbTransaction.RollbackAsync();
+                    if (ownsTx) await dbTransaction.RollbackAsync();
                     throw;
                 }
-            });
+                finally
+                {
+                    if (ownsTx) await dbTransaction.DisposeAsync();
+                }
+            }
         }
 
         /// <summary>

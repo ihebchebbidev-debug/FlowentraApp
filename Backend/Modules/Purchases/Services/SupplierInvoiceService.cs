@@ -19,6 +19,20 @@ namespace MyApi.Modules.Purchases.Services
             _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
         };
 
+        // Shared duplicate-reference guard: used both as a friendly pre-check and
+        // again inside the create transaction so concurrent submissions can't race
+        // past it and surface a raw 23505 unique-violation as a 500.
+        private async Task AssertNoDuplicateSupplierRefAsync(int supplierId, string? supplierInvoiceRef)
+        {
+            if (string.IsNullOrWhiteSpace(supplierInvoiceRef)) return;
+            var dupExists = await _context.SupplierInvoices.AsNoTracking()
+                .AnyAsync(i => i.SupplierId == supplierId
+                            && i.SupplierInvoiceRef == supplierInvoiceRef
+                            && !i.IsDeleted);
+            if (dupExists)
+                throw new InvalidOperationException($"[DUPLICATE_SUPPLIER_REF] An invoice with reference '{supplierInvoiceRef}' already exists for this supplier");
+        }
+
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SupplierInvoiceService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
@@ -36,7 +50,7 @@ namespace MyApi.Modules.Purchases.Services
         public async Task<PaginatedSupplierInvoiceResponse> GetInvoicesAsync(
             string? status, string? supplierId, bool? rsApplicable,
             DateTime? dateFrom, DateTime? dateTo, string? search,
-            int page, int limit, string sortBy, string sortOrder)
+            int page, int limit, string sortBy, string sortOrder, bool? overdueOnly)
         {
             var query = _context.SupplierInvoices.AsNoTracking().Where(i => !i.IsDeleted).AsQueryable();
             if (!string.IsNullOrEmpty(status)) query = query.Where(i => i.Status == status);
@@ -45,6 +59,14 @@ namespace MyApi.Modules.Purchases.Services
             if (rsApplicable.HasValue) query = query.Where(i => i.RsApplicable == rsApplicable.Value);
             if (dateFrom.HasValue) query = query.Where(i => i.InvoiceDate >= dateFrom.Value);
             if (dateTo.HasValue) query = query.Where(i => i.InvoiceDate <= dateTo.Value);
+            // Overdue = past its DUE date and still owed. Filtering on InvoiceDate
+            // (as the UI used to) counted every older invoice, including paid ones.
+            if (overdueOnly == true)
+            {
+                var nowUtc = DateTime.UtcNow;
+                query = query.Where(i => i.DueDate != null && i.DueDate < nowUtc
+                                      && i.Status != "paid" && i.Status != "cancelled");
+            }
             if (!string.IsNullOrEmpty(search))
             {
                 var s = search.ToLower();
@@ -97,15 +119,7 @@ namespace MyApi.Modules.Purchases.Services
             // Enforced at the DB layer by ux_supplier_invoices_tenant_supplier_ref;
             // pre-check here so we can throw a structured error instead of a
             // raw 23505 unique-violation string.
-            if (!string.IsNullOrWhiteSpace(dto.SupplierInvoiceRef))
-            {
-                var dupExists = await _context.SupplierInvoices.AsNoTracking()
-                    .AnyAsync(i => i.SupplierId == dto.SupplierId
-                                && i.SupplierInvoiceRef == dto.SupplierInvoiceRef
-                                && !i.IsDeleted);
-                if (dupExists)
-                    throw new InvalidOperationException($"[DUPLICATE_SUPPLIER_REF] An invoice with reference '{dto.SupplierInvoiceRef}' already exists for this supplier");
-            }
+            await AssertNoDuplicateSupplierRefAsync(dto.SupplierId, dto.SupplierInvoiceRef);
 
             // Server-side re-validation of line-item bounds. DTO attributes
             // already reject bad payloads at model binding, but any caller
@@ -254,11 +268,26 @@ namespace MyApi.Modules.Purchases.Services
             var strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                using var tx = await _context.Database.BeginTransactionAsync();
+                // Serializable: the duplicate-ref and three-way-match guards above run
+                // on a pre-transaction snapshot. Two concurrent creates against the same
+                // PO line could both pass them and jointly over-invoice. Re-checking under
+                // Serializable makes the read set part of the conflict detection, so one
+                // of the two transactions is aborted instead of double-booking.
+                using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
+                    await AssertNoDuplicateSupplierRefAsync(dto.SupplierId, dto.SupplierInvoiceRef);
                     _context.SupplierInvoices.Add(invoice);
-                    await _context.SaveChangesAsync();
+                    try
+                    {
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException ex) when (
+                        (ex.InnerException?.Message ?? string.Empty).Contains("ux_supplier_invoices_tenant_supplier_ref"))
+                    {
+                        throw new InvalidOperationException(
+                            $"[DUPLICATE_SUPPLIER_REF] An invoice with reference '{dto.SupplierInvoiceRef}' already exists for this supplier");
+                    }
 
                     if (dto.Items?.Any() == true)
                     {

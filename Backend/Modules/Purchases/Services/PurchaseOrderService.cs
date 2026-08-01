@@ -390,8 +390,10 @@ namespace MyApi.Modules.Purchases.Services
                 ReceivedOrders = orders.Count(o => o.Status == "received"),
                 CancelledOrders = orders.Count(o => o.Status == "cancelled"),
                 TotalSpend = orders.Where(o => o.Status != "cancelled" && o.Status != "draft").Sum(o => o.GrandTotal),
-                MonthlySpend = orders.Where(o => o.OrderDate >= monthStart && o.Status != "cancelled").Sum(o => o.GrandTotal),
-                AvgLeadTime = (decimal)orders.Where(o => o.ActualDelivery.HasValue).Select(o => (o.ActualDelivery!.Value - o.OrderDate).TotalDays).DefaultIfEmpty(0).Average(),
+                MonthlySpend = orders.Where(o => o.OrderDate >= monthStart && o.Status != "cancelled" && o.Status != "draft").Sum(o => o.GrandTotal),
+                // Clamp at 0: a back-dated OrderDate later than ActualDelivery would
+                // otherwise contribute a negative lead time and skew the average.
+                AvgLeadTime = (decimal)orders.Where(o => o.ActualDelivery.HasValue).Select(o => Math.Max(0, (o.ActualDelivery!.Value - o.OrderDate).TotalDays)).DefaultIfEmpty(0).Average(),
                 PendingReceipts = orders.Count(o => o.Status == "ordered" || o.Status == "partially_received"),
                 OverdueInvoices = await _context.SupplierInvoices.CountAsync(i => !i.IsDeleted && i.DueDate < now && i.Status != "paid" && i.Status != "cancelled")
             };

@@ -34,6 +34,43 @@ namespace MyApi.Modules.Purchases.Services
             _stockService = stockService;
         }
 
+        // Stock movements raised by a receipt must be traceable back to it.
+        // AddStockAsync/RemoveStockAsync hardcode ReferenceType="manual" with no
+        // reference id, which left the stock ledger unable to explain where a
+        // goods-receipt movement came from (and made reversals unauditable).
+        // We go through CreateTransactionAsync so reference_type/id/number are set.
+        // NOTE: "goods_receipt" is deliberately NOT part of the idempotency index
+        // pairs, so partial re-receipts of the same PO line are never collapsed.
+        private async Task MoveStockAsync(
+            int articleId, decimal quantity, string transactionType,
+            string reason, int receiptId, string receiptNumber,
+            string userId, string? userName, string notes)
+        {
+            if (_stockService == null || quantity <= 0) return;
+            try
+            {
+                await _stockService.CreateTransactionAsync(new MyApi.Modules.Articles.DTOs.CreateStockTransactionDto
+                {
+                    ArticleId = articleId,
+                    TransactionType = transactionType,
+                    Quantity = quantity,
+                    Reason = reason,
+                    ReferenceType = "goods_receipt",
+                    ReferenceId = receiptId.ToString(),
+                    ReferenceNumber = receiptNumber,
+                    Notes = notes
+                }, userId, userName);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("Insufficient stock"))
+            {
+                // Surface an actionable 400 instead of a bare "Insufficient stock"
+                // that gives the operator no idea which article blocked the action.
+                throw new InvalidOperationException(
+                    $"Cannot apply stock movement for receipt {receiptNumber}: article #{articleId} does not have enough stock to reverse {quantity}. " +
+                    "The received goods were likely already consumed or sold. Adjust stock manually first.", ex);
+            }
+        }
+
         public async Task<PaginatedGoodsReceiptResponse> GetReceiptsAsync(
             int? purchaseOrderId, string? supplierId, string? status,
             DateTime? dateFrom, DateTime? dateTo, string? search,
@@ -119,6 +156,8 @@ namespace MyApi.Modules.Purchases.Services
                             var remaining = poItem.Quantity - poItem.ReceivedQty;
                             if (itemDto.QuantityReceived < 0)
                                 throw new InvalidOperationException("QuantityReceived cannot be negative");
+                            if (itemDto.QuantityRejected < 0)
+                                throw new InvalidOperationException("QuantityRejected cannot be negative");
                             if (itemDto.QuantityReceived > remaining)
                                 throw new InvalidOperationException($"Over-receipt for item {poItem.Id}: requested {itemDto.QuantityReceived}, remaining {remaining}");
                         }
@@ -218,16 +257,13 @@ namespace MyApi.Modules.Purchases.Services
 
                     // Increment stock for received articles. Done inside the same transaction
                     // so a stock-write failure rolls back the receipt and PO updates.
-                    if (_stockService != null)
+                    foreach (var (articleId, qty) in stockUpdates)
                     {
-                        foreach (var (articleId, qty) in stockUpdates)
-                        {
-                            await _stockService.AddStockAsync(
-                                articleId, qty,
-                                reason: "goods_receipt",
-                                userId: userId,
-                                notes: $"Goods receipt {receiptNumber} (PO {po.OrderNumber})");
-                        }
+                        await MoveStockAsync(articleId, qty, "add",
+                            reason: "goods_receipt",
+                            receiptId: receipt.Id, receiptNumber: receiptNumber,
+                            userId: userId, userName: userName,
+                            notes: $"Goods receipt {receiptNumber} (PO {po.OrderNumber})");
                     }
 
                     await tx.CommitAsync();
@@ -438,21 +474,20 @@ namespace MyApi.Modules.Purchases.Services
                     await _context.SaveChangesAsync();
 
                     // Apply net stock movements last so a failure rolls back receipt + PO.
-                    if (_stockService != null)
+                    foreach (var (articleId, delta) in stockDeltas)
                     {
-                        foreach (var (articleId, delta) in stockDeltas)
-                        {
-                            if (delta > 0)
-                                await _stockService.AddStockAsync(articleId, delta,
-                                    reason: "goods_receipt_update",
-                                    userId: userId,
-                                    notes: $"Receipt {receipt.ReceiptNumber} edited (+{delta})");
-                            else if (delta < 0)
-                                await _stockService.RemoveStockAsync(articleId, -delta,
-                                    reason: "goods_receipt_update",
-                                    userId: userId,
-                                    notes: $"Receipt {receipt.ReceiptNumber} edited ({delta})");
-                        }
+                        if (delta > 0)
+                            await MoveStockAsync(articleId, delta, "add",
+                                reason: "goods_receipt_update",
+                                receiptId: receipt.Id, receiptNumber: receipt.ReceiptNumber,
+                                userId: userId, userName: userName,
+                                notes: $"Receipt {receipt.ReceiptNumber} edited (+{delta})");
+                        else if (delta < 0)
+                            await MoveStockAsync(articleId, -delta, "remove",
+                                reason: "goods_receipt_update",
+                                receiptId: receipt.Id, receiptNumber: receipt.ReceiptNumber,
+                                userId: userId, userName: userName,
+                                notes: $"Receipt {receipt.ReceiptNumber} edited ({delta})");
                     }
 
                     await tx.CommitAsync();
@@ -562,23 +597,20 @@ namespace MyApi.Modules.Purchases.Services
                     await _context.SaveChangesAsync();
 
                     // Reverse stock movements that the receipt had created.
-                    if (_stockService != null)
+                    foreach (var (articleId, qty) in stockReversals)
                     {
-                        foreach (var (articleId, qty) in stockReversals)
+                        try
                         {
-                            try
-                            {
-                                await _stockService.RemoveStockAsync(
-                                    articleId, qty,
-                                    reason: "goods_receipt_reversal",
-                                    userId: userId,
-                                    notes: $"Reversal of receipt {receipt.ReceiptNumber}");
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "Stock reversal failed for article {ArticleId} qty {Qty} on receipt {ReceiptId}", articleId, qty, id);
-                                throw;
-                            }
+                            await MoveStockAsync(articleId, qty, "remove",
+                                reason: "goods_receipt_reversal",
+                                receiptId: id, receiptNumber: receipt.ReceiptNumber,
+                                userId: userId, userName: userName,
+                                notes: $"Reversal of receipt {receipt.ReceiptNumber}");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Stock reversal failed for article {ArticleId} qty {Qty} on receipt {ReceiptId}", articleId, qty, id);
+                            throw;
                         }
                     }
 
