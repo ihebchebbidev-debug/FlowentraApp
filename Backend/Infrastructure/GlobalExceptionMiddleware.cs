@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Npgsql;
 
 namespace MyApi.Infrastructure;
 
@@ -54,6 +55,35 @@ public class GlobalExceptionMiddleware
             _logger.LogError(ex, "Operation timed out: {Method} {Path}", context.Request.Method, context.Request.Path);
             await WriteErrorResponse(context, HttpStatusCode.GatewayTimeout, "The operation timed out. Please try again.");
         }
+        catch (Exception ex) when (TryGetSchemaDriftException(ex, out var schemaException))
+        {
+            // Repair the missing table/column immediately for this tenant database,
+            // then ask the client to retry. DDL runs on a fresh connection, never
+            // inside the failed request transaction.
+            var tenant = context.Request.Headers[TenantMiddleware.TenantHeaderName].FirstOrDefault() ?? "default";
+            _logger.LogCritical(schemaException,
+                "Database schema drift for tenant {Tenant}: SqlState={SqlState}, DatabaseObject={DatabaseObject}",
+                tenant,
+                schemaException?.SqlState,
+                schemaException?.ColumnName ?? schemaException?.TableName ?? "unknown");
+
+            var repaired = false;
+            var repairService = context.RequestServices.GetService<RuntimeSchemaRepair>();
+            if (repairService != null)
+            {
+                repaired = await repairService.TryRepairAsync(tenant, context.RequestAborted);
+            }
+
+            context.Response.Headers["Retry-After"] = repaired ? "1" : "30";
+            await WriteErrorResponse(
+                context,
+                HttpStatusCode.ServiceUnavailable,
+                repaired
+                    ? "The tenant database was just updated automatically. Please retry."
+                    : "This tenant database is being updated. Please retry shortly.",
+                "database_schema_out_of_date");
+        }
+
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
@@ -66,7 +96,25 @@ public class GlobalExceptionMiddleware
         }
     }
 
-    private static async Task WriteErrorResponse(HttpContext context, HttpStatusCode statusCode, string message)
+    private static bool TryGetSchemaDriftException(Exception exception, out PostgresException? postgresException)
+    {
+        Exception? current = exception;
+        while (current != null)
+        {
+            if (current is PostgresException pg &&
+                pg.SqlState is PostgresErrorCodes.UndefinedColumn or PostgresErrorCodes.UndefinedTable)
+            {
+                postgresException = pg;
+                return true;
+            }
+            current = current.InnerException;
+        }
+
+        postgresException = null;
+        return false;
+    }
+
+    private static async Task WriteErrorResponse(HttpContext context, HttpStatusCode statusCode, string message, string? code = null)
     {
         if (context.Response.HasStarted) return;
 
@@ -85,6 +133,7 @@ public class GlobalExceptionMiddleware
         {
             status = (int)statusCode,
             error = statusCode.ToString(),
+            code,
             message,
             timestamp = DateTime.UtcNow
         };
