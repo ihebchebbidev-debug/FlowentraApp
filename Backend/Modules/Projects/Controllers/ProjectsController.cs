@@ -179,7 +179,10 @@ namespace MyApi.Modules.Projects.Controllers
         {
             try
             {
-                var result = await _projectService.SearchProjectsAsync(searchTerm ?? "");
+                if (string.IsNullOrWhiteSpace(searchTerm))
+                    return Ok(new { projects = new List<ProjectResponseDto>(), totalCount = 0 });
+
+                var result = await _projectService.SearchProjectsAsync(searchTerm);
                 return Ok(new { projects = result, totalCount = result.Count });
             }
             catch (Exception ex)
@@ -188,6 +191,7 @@ namespace MyApi.Modules.Projects.Controllers
                 return StatusCode(500, "An error occurred while searching projects");
             }
         }
+
 
         /// <summary>
         /// Get project statistics
@@ -241,6 +245,14 @@ namespace MyApi.Modules.Projects.Controllers
                 var note = await _projectService.CreateProjectNoteAsync(projectId, createDto, GetCurrentUser());
                 return CreatedAtAction(nameof(GetProjectNotes), new { projectId = projectId }, note);
             }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating project note");
@@ -263,12 +275,19 @@ namespace MyApi.Modules.Projects.Controllers
                 }
                 return NoContent();
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Only the note creator may delete — surface 403, not 500.
+                _logger.LogWarning(ex, "Forbidden delete of project note {NoteId}", noteId);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting project note");
                 return StatusCode(500, "An error occurred while deleting the project note");
             }
         }
+
 
         /// <summary>
         /// Get project activity
@@ -404,8 +423,15 @@ namespace MyApi.Modules.Projects.Controllers
         [HttpPost("{projectId}/team-members")]
         public async Task<ActionResult> AssignTeamMember(int projectId, [FromBody] AssignTeamMemberRequestDto dto)
         {
-            try { await _projectService.AssignTeamMemberAsync(projectId, dto, GetCurrentUser()); return NoContent(); }
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+                if (dto.UserId <= 0) return BadRequest("userId must be greater than 0");
+                await _projectService.AssignTeamMemberAsync(projectId, dto, GetCurrentUser());
+                return NoContent();
+            }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (Exception ex) { _logger.LogError(ex, "Error assigning team member"); return StatusCode(500, "Error"); }
         }
 
@@ -414,13 +440,16 @@ namespace MyApi.Modules.Projects.Controllers
         {
             try
             {
+                if (dto.UserId <= 0) return BadRequest("userId must be greater than 0");
                 var ok = await _projectService.RemoveTeamMemberAsync(projectId, dto.UserId, GetCurrentUser());
                 if (!ok) return NotFound("Team member not found on project");
                 return NoContent();
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (Exception ex) { _logger.LogError(ex, "Error removing team member"); return StatusCode(500, "Error"); }
         }
+
 
         private string GetCurrentUser()
         {

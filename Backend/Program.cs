@@ -629,9 +629,8 @@ using (var schemaScope = app.Services.CreateScope())
     }
 
     // ── Unlimited dispatches per job ──
-    // Legacy databases carry a partial unique index ("UX_DispatchJobs_Job_Active")
-    // that allowed only one active dispatch per job. The application supports
-    // multiple dispatches per job, so drop it on every tenant database.
+    // Legacy databases may carry either of two partial unique indexes that
+    // allowed only one active dispatch per job. Drop both on every database.
     foreach (var database in databases)
     {
         try
@@ -639,15 +638,17 @@ using (var schemaScope = app.Services.CreateScope())
             await using var dropConn = new NpgsqlConnection(database.Value);
             await dropConn.OpenAsync();
             await using var dropCmd = dropConn.CreateCommand();
-            dropCmd.CommandText = @"DROP INDEX IF EXISTS ""UX_DispatchJobs_Job_Active"";";
+            dropCmd.CommandText = @"
+                DROP INDEX IF EXISTS ""UX_DispatchJobs_Job_Active"";
+                DROP INDEX IF EXISTS ""UX_Dispatches_JobId_Active"";";
             await dropCmd.ExecuteNonQueryAsync();
             schemaLogger.LogInformation(
-                "✅ UX_DispatchJobs_Job_Active dropped on {Database} (unlimited dispatches per job)", database.Key);
+                "✅ Legacy active-dispatch unique indexes dropped on {Database} (unlimited dispatches per job)", database.Key);
         }
         catch (Exception ex)
         {
             schemaLogger.LogWarning(
-                "⚠️ Could not drop UX_DispatchJobs_Job_Active on {Database}: {Error}", database.Key, ex.Message);
+                "⚠️ Could not drop active-dispatch unique indexes on {Database}: {Error}", database.Key, ex.Message);
         }
     }
 }
@@ -948,13 +949,15 @@ END $$;";
             try
             {
                 using var djCmd = probe.CreateCommand();
-                djCmd.CommandText = @"DROP INDEX IF EXISTS ""UX_DispatchJobs_Job_Active"";";
+                djCmd.CommandText = @"
+                    DROP INDEX IF EXISTS ""UX_DispatchJobs_Job_Active"";
+                    DROP INDEX IF EXISTS ""UX_Dispatches_JobId_Active"";";
                 djCmd.ExecuteNonQuery();
-                migrationLogger.LogInformation("✅ UX_DispatchJobs_Job_Active dropped (unlimited dispatches per job)");
+                migrationLogger.LogInformation("✅ Legacy active-dispatch unique indexes dropped (unlimited dispatches per job)");
             }
             catch (Exception djEx)
             {
-                migrationLogger.LogWarning("⚠️ Dropping UX_DispatchJobs_Job_Active failed (non-fatal): {Error}", djEx.Message);
+                migrationLogger.LogWarning("⚠️ Dropping active-dispatch unique indexes failed (non-fatal): {Error}", djEx.Message);
             }
 
 

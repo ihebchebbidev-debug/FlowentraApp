@@ -24,31 +24,55 @@ const defaultSettings: ProjectSettings = {
 
 export function ProjectSettingsTab() {
   const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [message, setMessage] = useState<string>("");
 
+  const load = async () => {
+    setIsLoading(true);
+    setLoadFailed(false);
+    setMessage("");
+    try {
+      const data = await ProjectsService.getSettings();
+      setSettings({ ...defaultSettings, ...data });
+    } catch {
+      // Keep the form disabled: saving here would overwrite the stored settings
+      // with the hardcoded defaults the user never actually chose.
+      setLoadFailed(true);
+      setMessage("Failed to load settings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const run = async () => {
+    let cancelled = false;
+    (async () => {
       setIsLoading(true);
+      setLoadFailed(false);
       try {
         const data = await ProjectsService.getSettings();
+        if (cancelled) return;
         setSettings({ ...defaultSettings, ...data });
       } catch {
+        if (cancelled) return;
+        setLoadFailed(true);
         setMessage("Failed to load settings");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
-    };
-    run();
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleSave = async () => {
+    if (loadFailed) return;
     setIsSaving(true);
     setMessage("");
     try {
       const updated = await ProjectsService.updateSettings(settings);
-      setSettings(updated);
+      setSettings({ ...defaultSettings, ...updated });
       setMessage("Settings saved");
     } catch {
       setMessage("Failed to save settings");
@@ -58,6 +82,18 @@ export function ProjectSettingsTab() {
   };
 
   if (isLoading) return <div className="text-muted-foreground">Loading settings...</div>;
+
+  if (loadFailed) {
+    return (
+      <div className="space-y-3 max-w-2xl">
+        <p className="text-sm text-destructive">
+          Failed to load project settings. Saving is disabled to avoid overwriting your configuration.
+        </p>
+        <Button variant="outline" onClick={load}>Retry</Button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-4 max-w-2xl">

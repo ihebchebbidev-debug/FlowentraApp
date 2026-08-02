@@ -17,6 +17,8 @@ import {
 import { Project } from "../../types";
 import { cn } from "@/lib/utils";
 import { formatCurrencyValue } from "@/lib/formatters";
+import { getProjectStatusColor, getProjectTypeColor } from "../../utils/projectBadgeColors";
+
 
 interface Technician {
   id: string;
@@ -55,35 +57,9 @@ export function ProjectOverviewTab({
 
   if (!project) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-success text-success-foreground";
-      case "completed":
-        return "bg-primary text-primary-foreground";
-      case "on-hold":
-        return "bg-warning text-warning-foreground";
-      case "cancelled":
-        return "bg-destructive text-destructive-foreground";
-      default:
-        return "bg-secondary text-secondary-foreground";
-    }
-  };
+  const getStatusColor = getProjectStatusColor;
+  const getTypeColor = getProjectTypeColor;
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "service":
-        return "bg-primary/10 text-primary";
-      case "sales":
-        return "bg-success/10 text-success";
-      case "internal":
-        return "bg-secondary text-secondary-foreground";
-      case "custom":
-        return "bg-warning/10 text-warning";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
 
   const getPriorityColor = (priority?: string) => {
     switch (priority) {

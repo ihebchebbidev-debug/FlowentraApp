@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ import {
   normalizeTaskStatus,
   taskMatchesUiFilterStatus,
 } from '../utils/taskStatusMapping';
+import { getProjectStatusColor, getProjectTypeColor } from '../utils/projectBadgeColors';
+
 
 // Interface for technician/assignable users
 interface Technician {
@@ -94,6 +96,13 @@ export default function ProjectTasksPage() {
   const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [projectError, setProjectError] = useState<string | null>(null);
   const [projectLinks, setProjectLinks] = useState<any | null>(null);
+  const [projectLinksError, setProjectLinksError] = useState<string | null>(null);
+
+  // Monotonic request ids: any response whose id no longer matches the latest
+  // request is discarded (prevents out-of-order overwrites and unmount setState).
+  const projectReqRef = useRef(0);
+  const tasksReqRef = useRef(0);
+
   
   // Technicians/Users state
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -221,17 +230,21 @@ export default function ProjectTasksPage() {
       return;
     }
 
+    // Guard against out-of-order responses / setState after unmount.
+    const requestId = ++projectReqRef.current;
     setIsLoadingProject(true);
     setProjectError(null);
 
     try {
       const fetchedProject = await ProjectsService.getProjectById(numericProjectId);
+      if (requestId !== projectReqRef.current) return;
       setProject(fetchedProject);
     } catch (error) {
+      if (requestId !== projectReqRef.current) return;
       console.error('Failed to fetch project from API:', error);
       setProjectError('Failed to load project');
     } finally {
-      setIsLoadingProject(false);
+      if (requestId === projectReqRef.current) setIsLoadingProject(false);
     }
   }, [numericProjectId]);
 
@@ -240,32 +253,54 @@ export default function ProjectTasksPage() {
       return;
     }
 
+    const requestId = ++tasksReqRef.current;
     setIsLoadingTasks(true);
     setTasksError(null);
 
     try {
       const apiTasks = await TasksService.getProjectTasks(numericProjectId);
       const mapped = mapToLocal(apiTasks);
+      if (requestId !== tasksReqRef.current) return;
       setTasksState(mapped);
     } catch (error) {
+      if (requestId !== tasksReqRef.current) return;
       console.error('Failed to fetch tasks from API:', error);
       setTasksError('Failed to load tasks');
       setTasksState([]);
     } finally {
-      setIsLoadingTasks(false);
+      if (requestId === tasksReqRef.current) setIsLoadingTasks(false);
     }
   }, [numericProjectId, mapToLocal]);
 
   useEffect(() => {
     fetchProject();
+    // Invalidate any in-flight request when the route changes / component unmounts.
+    return () => { projectReqRef.current++; };
   }, [fetchProject]);
 
+  // Keyed on the project *id* only — depending on the whole `project` object
+  // re-ran this on every setProject (e.g. after a team update) and refetched
+  // tasks + links needlessly.
+  const loadedProjectId = project?.id;
   useEffect(() => {
-    if (project) {
-      fetchTasks();
-      ProjectsService.getProjectLinks(Number(project.id)).then(setProjectLinks).catch(() => setProjectLinks(null));
-    }
-  }, [project, fetchTasks]);
+    if (loadedProjectId === undefined || loadedProjectId === null) return;
+    let cancelled = false;
+
+    fetchTasks();
+
+    setProjectLinksError(null);
+    ProjectsService.getProjectLinks(Number(loadedProjectId))
+      .then((links) => { if (!cancelled) setProjectLinks(links); })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Failed to load project links:', error);
+        setProjectLinks(null);
+        setProjectLinksError('Failed to load linked records');
+      });
+
+    return () => { cancelled = true; };
+  }, [loadedProjectId, fetchTasks]);
+
 
   const isTaskCompleted = (task: any) => {
     if (task.completedAt) return true;
@@ -299,8 +334,15 @@ export default function ProjectTasksPage() {
     let filtered = tasksState
       .filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()) || (t.description||'').toLowerCase().includes(searchTerm.toLowerCase()))
       .filter(t => taskMatchesUiFilterStatus(t, filterStatus, columns))
-      .filter(t => filterPriority === 'all' ? true : t.priority === filterPriority)
-      .filter(t => filterAssignee === 'all' ? true : t.assignee === filterAssignee);
+      .filter(t => filterPriority === 'all' ? true : String(t.priority || '').toLowerCase() === String(filterPriority).toLowerCase())
+      // Match on the assignee *id* (the select now carries ids); fall back to the
+      // display name so legacy tasks without an assigneeId still filter correctly.
+      .filter(t => {
+        if (filterAssignee === 'all') return true;
+        const selected = String(filterAssignee);
+        return String(t.assigneeId || '') === selected || String(t.assignee || '') === selected;
+      });
+
     
     if (!showAllDates) {
       filtered = filtered.filter(t => {
@@ -436,25 +478,9 @@ export default function ProjectTasksPage() {
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-success text-success-foreground';
-      case 'completed': return 'bg-primary text-primary-foreground';
-      case 'on-hold': return 'bg-warning text-warning-foreground';
-      case 'cancelled': return 'bg-destructive text-destructive-foreground';
-      default: return 'bg-secondary text-secondary-foreground';
-    }
-  };
+  const getStatusColor = getProjectStatusColor;
+  const getTypeColor = getProjectTypeColor;
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'service': return 'bg-primary/10 text-primary';
-      case 'sales': return 'bg-success/10 text-success';
-      case 'internal': return 'bg-secondary text-secondary-foreground';
-      case 'custom': return 'bg-warning/10 text-warning';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
 
   return (
     <div className="h-full bg-background flex flex-col">

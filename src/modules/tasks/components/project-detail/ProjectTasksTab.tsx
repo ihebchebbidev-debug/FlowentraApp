@@ -295,7 +295,7 @@ export function ProjectTasksTab({
                   >
                     <option value="all">{t("projects.filters.all")}</option>
                     {lookupPriorities.map((p: any) => (
-                      <option key={p.id} value={p.id}>
+                      <option key={p.id} value={String(p.name ?? p.id).toLowerCase()}>
                         {p.name}
                       </option>
                     ))}
@@ -310,10 +310,11 @@ export function ProjectTasksTab({
                   >
                     <option value="all">{t("projects.filters.allAssignees")}</option>
                     {technicians.map((tech) => (
-                      <option key={tech.id} value={tech.name}>
+                      <option key={tech.id} value={String(tech.id)}>
                         {tech.name}
                       </option>
                     ))}
+
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>

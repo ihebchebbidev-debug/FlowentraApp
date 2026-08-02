@@ -38,12 +38,14 @@ namespace MyApi.Modules.Projects.Services
                 // Apply filters
                 if (searchRequest != null)
                 {
-                    if (!string.IsNullOrEmpty(searchRequest.SearchTerm))
+                    if (!string.IsNullOrWhiteSpace(searchRequest.SearchTerm))
                     {
-                        var searchTerm = searchRequest.SearchTerm.ToLower();
-                        query = query.Where(p => p.Name.ToLower().Contains(searchTerm) ||
-                                               (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
+                        // Index-friendly, case-insensitive match (same pattern as SearchProjectsAsync).
+                        var pattern = $"%{searchRequest.SearchTerm.Trim()}%";
+                        query = query.Where(p => EF.Functions.ILike(p.Name, pattern) ||
+                                               (p.Description != null && EF.Functions.ILike(p.Description, pattern)));
                     }
+
 
                     if (!string.IsNullOrEmpty(searchRequest.Status))
                         query = query.Where(p => p.Status == searchRequest.Status);
@@ -160,17 +162,31 @@ namespace MyApi.Modules.Projects.Services
 
         public async Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto createDto, string createdByUser)
         {
+            // Validate enum-like fields up front so a typo can never reach the DB
+            // (statistics/kanban grouping silently break on unknown values).
+            var status = NormalizeStatus(createDto.Status);
+            var kind = NormalizeKind(createDto.ProjectKind);
+            var priority = NormalizePriority(createDto.Priority);
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                if (createDto.ContactId.HasValue)
+                {
+                    var contactExists = await _context.Contacts.AnyAsync(c => c.Id == createDto.ContactId.Value);
+                    if (!contactExists)
+                        throw new InvalidOperationException($"Contact {createDto.ContactId.Value} not found");
+                }
+
                 var project = new Project
                 {
                     Name = createDto.Name,
                     Description = createDto.Description,
                     ContactId = createDto.ContactId,
                     TeamMembers = SerializeTeamMembers(createDto.TeamMembers),
-                    Status = createDto.Status ?? "active",
-                    ProjectKind = createDto.ProjectKind ?? "client",
-                    Priority = createDto.Priority ?? "medium",
+                    Status = status,
+                    ProjectKind = kind,
+                    Priority = priority,
                     Budget = createDto.Budget,
                     StartDate = createDto.StartDate,
                     EndDate = createDto.EndDate,
@@ -193,7 +209,9 @@ namespace MyApi.Modules.Projects.Services
                     await _columnService.CreateDefaultColumnsAsync(project.Id, createdByUser);
                 }
 
-                // Reload with includes
+                await tx.CommitAsync();
+
+                // Reload with includes (after commit so the read sees the final state)
                 var createdProject = await GetProjectByIdAsync(project.Id);
                 _logger.LogInformation("Project created successfully with ID {ProjectId}", project.Id);
 
@@ -201,13 +219,16 @@ namespace MyApi.Modules.Projects.Services
             }
             catch (Exception ex)
             {
+                await tx.RollbackAsync();
                 _logger.LogError(ex, "Error creating project");
                 throw;
             }
         }
 
+
         public async Task<ProjectResponseDto?> UpdateProjectAsync(int id, UpdateProjectRequestDto updateDto, string modifiedByUser)
         {
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
                 var project = await _context.Projects
@@ -225,7 +246,12 @@ namespace MyApi.Modules.Projects.Services
                     project.Description = updateDto.Description;
 
                 if (updateDto.ContactId.HasValue)
+                {
+                    var contactExists = await _context.Contacts.AnyAsync(c => c.Id == updateDto.ContactId.Value);
+                    if (!contactExists)
+                        throw new InvalidOperationException($"Contact {updateDto.ContactId.Value} not found");
                     project.ContactId = updateDto.ContactId;
+                }
 
                 if (updateDto.TeamMembers != null)
                     project.TeamMembers = SerializeTeamMembers(updateDto.TeamMembers);
@@ -234,13 +260,13 @@ namespace MyApi.Modules.Projects.Services
                 var oldKind = project.ProjectKind;
 
                 if (!string.IsNullOrEmpty(updateDto.Status))
-                    project.Status = updateDto.Status;
+                    project.Status = NormalizeStatus(updateDto.Status);
 
                 if (!string.IsNullOrEmpty(updateDto.ProjectKind))
-                    project.ProjectKind = updateDto.ProjectKind;
+                    project.ProjectKind = NormalizeKind(updateDto.ProjectKind);
 
                 if (!string.IsNullOrEmpty(updateDto.Priority))
-                    project.Priority = updateDto.Priority;
+                    project.Priority = NormalizePriority(updateDto.Priority);
 
                 if (updateDto.StartDate.HasValue)
                     project.StartDate = updateDto.StartDate;
@@ -271,6 +297,8 @@ namespace MyApi.Modules.Projects.Services
                 await _context.SaveChangesAsync();
                 await SetProjectIdForLinkedEntitiesAsync(id, updateDto.LinkOfferId, updateDto.LinkSaleId, updateDto.LinkServiceOrderId, updateDto.LinkDispatchId);
 
+                await tx.CommitAsync();
+
                 var updatedProject = await GetProjectByIdAsync(id);
                 _logger.LogInformation("Project updated successfully with ID {ProjectId}", id);
 
@@ -278,6 +306,7 @@ namespace MyApi.Modules.Projects.Services
             }
             catch (Exception ex)
             {
+                await tx.RollbackAsync();
                 _logger.LogError(ex, "Error updating project with ID {ProjectId}", id);
                 throw;
             }
@@ -285,6 +314,11 @@ namespace MyApi.Modules.Projects.Services
 
         public async Task<bool> DeleteProjectAsync(int id, string deletedByUser)
         {
+            // ProjectTask/ProjectColumn/ProjectNote/ProjectActivity have no FK to Projects
+            // (ProjectTask is entity-agnostic), so there is no DB-level cascade. Clean up
+            // every child row explicitly inside one transaction, otherwise deleting a
+            // project leaves orphaned tasks/columns/notes/activities behind forever.
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
                 var project = await _context.Projects
@@ -294,18 +328,49 @@ namespace MyApi.Modules.Projects.Services
                 if (project == null)
                     return false;
 
+                var columns = await _context.Set<ProjectColumn>().Where(c => c.ProjectId == id).ToListAsync();
+                if (columns.Count > 0) _context.Set<ProjectColumn>().RemoveRange(columns);
+
+                var notes = await _context.Set<ProjectNote>().Where(n => n.ProjectId == id).ToListAsync();
+                if (notes.Count > 0) _context.Set<ProjectNote>().RemoveRange(notes);
+
+                var activities = await _context.Set<ProjectActivity>().Where(a => a.ProjectId == id).ToListAsync();
+                if (activities.Count > 0) _context.Set<ProjectActivity>().RemoveRange(activities);
+
+                var tasks = await _context.Set<ProjectTask>()
+                    .Where(t => t.RelatedEntityType != null
+                        && t.RelatedEntityType.ToLower() == "project"
+                        && t.RelatedEntityId == id)
+                    .ToListAsync();
+                if (tasks.Count > 0) _context.Set<ProjectTask>().RemoveRange(tasks);
+
+                // Detach linked business documents instead of deleting them.
+                foreach (var o in await _context.Offers.Where(o => o.ProjectId == id).ToListAsync())
+                    o.ProjectId = null;
+                foreach (var s in await _context.Sales.Where(s => s.ProjectId == id).ToListAsync())
+                    s.ProjectId = null;
+                foreach (var s in await _context.ServiceOrders.Where(s => s.ProjectId == id).ToListAsync())
+                    s.ProjectId = null;
+                foreach (var d in await _context.Dispatches.Where(d => d.ProjectId == id).ToListAsync())
+                    d.ProjectId = null;
+
                 _context.Projects.Remove(project);
                 await _context.SaveChangesAsync();
+                await tx.CommitAsync();
 
-                _logger.LogInformation("Project deleted successfully with ID {ProjectId}", id);
+                _logger.LogInformation(
+                    "Project {ProjectId} deleted by {User} (cleaned {Columns} columns, {Notes} notes, {Activities} activities, {Tasks} tasks)",
+                    id, deletedByUser, columns.Count, notes.Count, activities.Count, tasks.Count);
                 return true;
             }
             catch (Exception ex)
             {
+                await tx.RollbackAsync();
                 _logger.LogError(ex, "Error deleting project with ID {ProjectId}", id);
                 throw;
             }
         }
+
 
         public async Task<ProjectStatisticsDto> GetStatisticsAsync()
         {
@@ -346,13 +411,19 @@ namespace MyApi.Modules.Projects.Services
         {
             try
             {
-                // Use EF.Functions.ILike / Like for index-friendly, case-insensitive matching
-                // instead of .ToLower() which forces a full scan.
-                var pattern = $"%{searchTerm}%";
+                // An empty term would become LIKE '%%' — a full table scan returning an
+                // arbitrary 50 rows. Return nothing instead.
+                if (string.IsNullOrWhiteSpace(searchTerm))
+                    return new List<ProjectResponseDto>();
+
+                // ILike = index-friendly, case-insensitive matching (no .ToLower() scan).
+                var pattern = $"%{searchTerm.Trim()}%";
                 var projects = await _context.Projects
+                    .AsNoTracking()
                     .Include(p => p.Contact)
-                    .Where(p => EF.Functions.Like(p.Name, pattern)
-                        || (p.Description != null && EF.Functions.Like(p.Description, pattern)))
+                    .Where(p => EF.Functions.ILike(p.Name, pattern)
+                        || (p.Description != null && EF.Functions.ILike(p.Description, pattern)))
+                    .OrderByDescending(p => p.CreatedDate)
                     .Take(50)
                     .ToListAsync();
 
@@ -365,13 +436,49 @@ namespace MyApi.Modules.Projects.Services
             }
         }
 
-        private static string SerializeTeamMembers(List<int>? teamMembers)
+        // ---- Enum-like field validation -------------------------------------------------
+        private static readonly HashSet<string> AllowedStatuses =
+            new(StringComparer.OrdinalIgnoreCase) { "active", "completed", "on-hold", "cancelled", "planning" };
+        private static readonly HashSet<string> AllowedKinds =
+            new(StringComparer.OrdinalIgnoreCase) { "client", "internal" };
+        private static readonly HashSet<string> AllowedPriorities =
+            new(StringComparer.OrdinalIgnoreCase) { "low", "medium", "high", "urgent" };
+
+        private static string NormalizeStatus(string? value)
         {
-            // Stored as JSON in Projects.TeamMembers (varchar)
-            return JsonSerializer.Serialize(teamMembers ?? new List<int>());
+            if (string.IsNullOrWhiteSpace(value)) return "active";
+            var v = value.Trim().ToLowerInvariant();
+            if (!AllowedStatuses.Contains(v))
+                throw new InvalidOperationException($"Invalid status '{value}'. Allowed: {string.Join(", ", AllowedStatuses)}");
+            return v;
         }
 
-        private static List<int> DeserializeTeamMembers(string? teamMembersJson)
+        private static string NormalizeKind(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "client";
+            var v = value.Trim().ToLowerInvariant();
+            if (!AllowedKinds.Contains(v))
+                throw new InvalidOperationException($"Invalid projectKind '{value}'. Allowed: {string.Join(", ", AllowedKinds)}");
+            return v;
+        }
+
+        private static string NormalizePriority(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "medium";
+            var v = value.Trim().ToLowerInvariant();
+            if (!AllowedPriorities.Contains(v))
+                throw new InvalidOperationException($"Invalid priority '{value}'. Allowed: {string.Join(", ", AllowedPriorities)}");
+            return v;
+        }
+
+        private static string SerializeTeamMembers(List<int>? teamMembers)
+        {
+            // Stored as JSON in Projects.TeamMembers (varchar). De-duplicated so the
+            // blob can never accumulate the same user twice.
+            return JsonSerializer.Serialize((teamMembers ?? new List<int>()).Distinct().ToList());
+        }
+
+        private List<int> DeserializeTeamMembers(string? teamMembersJson)
         {
             if (string.IsNullOrWhiteSpace(teamMembersJson))
                 return new List<int>();
@@ -380,12 +487,14 @@ namespace MyApi.Modules.Projects.Services
             {
                 return JsonSerializer.Deserialize<List<int>>(teamMembersJson) ?? new List<int>();
             }
-            catch
+            catch (Exception ex)
             {
-                // If column contains invalid JSON for any reason, fail safely.
+                // Fail safely, but never silently — this indicates corrupted data.
+                _logger.LogWarning(ex, "Corrupted TeamMembers JSON encountered: {Json}", teamMembersJson);
                 return new List<int>();
             }
         }
+
 
         public async Task<List<ProjectNoteDto>> GetProjectNotesAsync(int projectId)
         {
@@ -417,17 +526,22 @@ namespace MyApi.Modules.Projects.Services
 
         public async Task<ProjectNoteDto> CreateProjectNoteAsync(int projectId, CreateProjectNoteRequestDto createDto, string createdByUser)
         {
+            if (string.IsNullOrWhiteSpace(createDto.Content))
+                throw new InvalidOperationException("Note content is required");
+
+            // Note + activity must land together, otherwise the timeline desyncs.
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Verify project exists
-                var project = await _context.Projects.FindAsync(projectId);
-                if (project == null)
-                    throw new InvalidOperationException($"Project with ID {projectId} not found");
+                var projectExists = await _context.Projects.AnyAsync(p => p.Id == projectId);
+                if (!projectExists)
+                    throw new KeyNotFoundException($"Project with ID {projectId} not found");
 
                 var note = new ProjectNote
                 {
                     ProjectId = projectId,
-                    Content = createDto.Content,
+                    Content = createDto.Content.Trim(),
                     CreatedDate = DateTime.UtcNow,
                     CreatedBy = createdByUser
                 };
@@ -446,6 +560,7 @@ namespace MyApi.Modules.Projects.Services
                     RelatedEntityType = "Note"
                 });
                 await _context.SaveChangesAsync();
+                await tx.CommitAsync();
 
                 return new ProjectNoteDto
                 {
@@ -460,10 +575,12 @@ namespace MyApi.Modules.Projects.Services
             }
             catch (Exception ex)
             {
+                await tx.RollbackAsync();
                 _logger.LogError(ex, "Error creating project note for project {ProjectId}", projectId);
                 throw;
             }
         }
+
 
         public async Task<bool> DeleteProjectNoteAsync(int noteId, string deletedByUser)
         {
@@ -635,7 +752,11 @@ namespace MyApi.Modules.Projects.Services
 
         public async Task<ProjectSettingsDto> GetProjectSettingsAsync()
         {
-            var settings = await _context.Set<ProjectSettings>().FirstOrDefaultAsync();
+            // Deterministic pick: if duplicate rows ever exist, always read the same one.
+            var settings = await _context.Set<ProjectSettings>()
+                .AsNoTracking()
+                .OrderBy(s => s.Id)
+                .FirstOrDefaultAsync();
             if (settings == null)
             {
                 return new ProjectSettingsDto();
@@ -644,15 +765,18 @@ namespace MyApi.Modules.Projects.Services
             {
                 return JsonSerializer.Deserialize<ProjectSettingsDto>(settings.SettingsJson) ?? new ProjectSettingsDto();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Corrupted ProjectSettings JSON on row {SettingsId}", settings.Id);
                 return new ProjectSettingsDto();
             }
         }
 
         public async Task<ProjectSettingsDto> UpdateProjectSettingsAsync(ProjectSettingsDto dto, string userId)
         {
-            var settings = await _context.Set<ProjectSettings>().FirstOrDefaultAsync();
+            var settings = await _context.Set<ProjectSettings>()
+                .OrderBy(s => s.Id)
+                .FirstOrDefaultAsync();
             if (settings == null)
             {
                 settings = new ProjectSettings();
@@ -674,56 +798,103 @@ namespace MyApi.Modules.Projects.Services
             return DeserializeTeamMembers(project.TeamMembers);
         }
 
+        /// <summary>
+        /// Takes a row-level lock on the project so concurrent team-member writes can't
+        /// clobber each other (the member list is a JSON blob read-modify-written in memory).
+        /// </summary>
+        private Task LockProjectRowAsync(int projectId) =>
+            _context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Projects\" WHERE \"Id\" = {projectId} FOR UPDATE");
+
         public async Task<bool> AssignTeamMemberAsync(int projectId, AssignTeamMemberRequestDto dto, string userId)
         {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-            if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+            if (dto.UserId <= 0) throw new InvalidOperationException("userId must be greater than 0");
 
-            var members = DeserializeTeamMembers(project.TeamMembers);
-            if (members.Contains(dto.UserId)) return true;
-            members.Add(dto.UserId);
-            project.TeamMembers = SerializeTeamMembers(members);
-            project.ModifiedBy = userId;
-            project.ModifiedDate = DateTime.UtcNow;
-
-            await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
             {
-                ProjectId = projectId,
-                ActionType = "member_added",
-                Description = $"Team member {(string.IsNullOrEmpty(dto.UserName) ? $"#{dto.UserId}" : dto.UserName)} added",
-                CreatedDate = DateTime.UtcNow,
-                CreatedBy = userId,
-                RelatedEntityId = dto.UserId,
-                RelatedEntityType = "TeamMember"
-            });
-            await _context.SaveChangesAsync();
-            return true;
+                await LockProjectRowAsync(projectId);
+
+                var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+                if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+
+                var userExists = await _context.Users.AnyAsync(u => u.Id == dto.UserId && !u.IsDeleted);
+                if (!userExists) throw new KeyNotFoundException($"User {dto.UserId} not found");
+
+                var members = DeserializeTeamMembers(project.TeamMembers);
+                if (members.Contains(dto.UserId))
+                {
+                    await tx.CommitAsync();
+                    return true;
+                }
+                members.Add(dto.UserId);
+                project.TeamMembers = SerializeTeamMembers(members);
+                project.ModifiedBy = userId;
+                project.ModifiedDate = DateTime.UtcNow;
+
+                await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+                {
+                    ProjectId = projectId,
+                    ActionType = "member_added",
+                    Description = $"Team member {(string.IsNullOrEmpty(dto.UserName) ? $"#{dto.UserId}" : dto.UserName)} added",
+                    CreatedDate = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    RelatedEntityId = dto.UserId,
+                    RelatedEntityType = "TeamMember"
+                });
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<bool> RemoveTeamMemberAsync(int projectId, int userIdToRemove, string userId)
         {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
-            if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+            if (userIdToRemove <= 0) throw new InvalidOperationException("userId must be greater than 0");
 
-            var members = DeserializeTeamMembers(project.TeamMembers);
-            if (!members.Remove(userIdToRemove)) return false;
-            project.TeamMembers = SerializeTeamMembers(members);
-            project.ModifiedBy = userId;
-            project.ModifiedDate = DateTime.UtcNow;
-
-            await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
             {
-                ProjectId = projectId,
-                ActionType = "member_removed",
-                Description = $"Team member #{userIdToRemove} removed",
-                CreatedDate = DateTime.UtcNow,
-                CreatedBy = userId,
-                RelatedEntityId = userIdToRemove,
-                RelatedEntityType = "TeamMember"
-            });
-            await _context.SaveChangesAsync();
-            return true;
+                await LockProjectRowAsync(projectId);
+
+                var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+                if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+
+                var members = DeserializeTeamMembers(project.TeamMembers);
+                if (!members.Remove(userIdToRemove))
+                {
+                    await tx.CommitAsync();
+                    return false;
+                }
+                project.TeamMembers = SerializeTeamMembers(members);
+                project.ModifiedBy = userId;
+                project.ModifiedDate = DateTime.UtcNow;
+
+                await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+                {
+                    ProjectId = projectId,
+                    ActionType = "member_removed",
+                    Description = $"Team member #{userIdToRemove} removed",
+                    CreatedDate = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    RelatedEntityId = userIdToRemove,
+                    RelatedEntityType = "TeamMember"
+                });
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
+
 
         private ProjectResponseDto MapToProjectDto(Project project)
         {
