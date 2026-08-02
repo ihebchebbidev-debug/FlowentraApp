@@ -10,10 +10,39 @@ import type {
 } from '@/types/contacts';
 import { apiFetch } from './apiClient';
 import { bulkImportErrorFromThrown } from '@/shared/import/parseBulkImportResponse';
+import {
+  ensureContactVisibilityLoaded,
+  filterVisibleContacts,
+} from '@/services/contactVisibility';
+
+/**
+ * Apply the user-group visibility filter to a paged contact response and fix
+ * the pagination counters so the pager never advertises hidden contacts.
+ */
+function applyContactPageVisibility(data: ContactListResponse): ContactListResponse {
+  const all = data.contacts ?? [];
+  const contacts = filterVisibleContacts(all);
+  const hidden = all.length - contacts.length;
+  const totalCount = Math.max(contacts.length, (data.totalCount ?? all.length) - hidden);
+  const pageSize = data.pageSize || all.length || 1;
+  const pageNumber = data.pageNumber ?? 1;
+  const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1;
+  return {
+    ...data,
+    contacts,
+    totalCount,
+    hasNextPage: pageNumber < totalPages,
+    hasPreviousPage: pageNumber > 1,
+  };
+}
 
 export const contactsApi = {
-  // Get all contacts with filtering and pagination
-  async getAll(params?: ContactSearchParams): Promise<ContactListResponse> {
+  /**
+   * Raw, UNFILTERED contact list. Only the contact-visibility loader may use
+   * this (it needs the full contact → user-group map to decide what to hide).
+   * Every feature/UI must use `getAll`, which applies the visibility filter.
+   */
+  async getAllRaw(params?: ContactSearchParams): Promise<ContactListResponse> {
     const queryParams = new URLSearchParams();
     
     if (params?.searchTerm) queryParams.append('searchTerm', params.searchTerm);
@@ -36,6 +65,13 @@ export const contactsApi = {
     }
 
     return data;
+  },
+
+  // Get all contacts with filtering and pagination (user-group visibility applied)
+  async getAll(params?: ContactSearchParams): Promise<ContactListResponse> {
+    const data = await contactsApi.getAllRaw(params);
+    await ensureContactVisibilityLoaded();
+    return applyContactPageVisibility(data);
   },
 
   // Get contact by ID
@@ -102,7 +138,8 @@ export const contactsApi = {
       throw new Error(error || 'Failed to search contacts');
     }
 
-    return data;
+    await ensureContactVisibilityLoaded();
+    return applyContactPageVisibility(data);
   },
 
   // Check if contact exists by email

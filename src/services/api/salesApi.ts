@@ -1,6 +1,11 @@
 // Real API service for Sales management
 // Migrated to use centralized apiFetch for automatic 401 retry, dedup, and logging
 import { apiFetch } from '@/services/api/apiClient';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 
 // Types
 export interface SaleItem {
@@ -161,11 +166,15 @@ export const salesApi = {
 
     const result = await apiFetch<any>(`/api/sales?${queryParams.toString()}`);
     const data = unwrap(result, 'Failed to fetch sales');
+    const sales = data?.data?.sales || data?.sales || data?.items || (Array.isArray(data) ? data : []);
+    await ensureContactVisibilityLoaded();
+    const pagination = data?.data?.pagination || data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 };
+    const paged = filterPageByContactVisibility<any>(sales, pagination);
     return {
       success: true,
       data: {
-        sales: data?.data?.sales || data?.sales || data?.items || (Array.isArray(data) ? data : []),
-        pagination: data?.data?.pagination || data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 },
+        sales: paged.rows,
+        pagination: { ...pagination, total: paged.total, totalPages: paged.totalPages },
       },
     };
   },

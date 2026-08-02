@@ -1,4 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
@@ -158,10 +160,16 @@ export default function InstallationDetail() {
     return colors[type?.toLowerCase()] || "bg-muted text-muted-foreground";
   };
   
+  const contactAccess = useContactAccessGuard((installation as any)?.contactId);
+
   if (isLoading) {
     return <DetailPageSkeleton />;
   }
   
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={'installation'} />;
+  }
+
   if (error || !installation) {
     return (
       <div className="container mx-auto p-6">

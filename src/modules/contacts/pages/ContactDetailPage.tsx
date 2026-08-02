@@ -1,4 +1,6 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { DetailPageSkeleton } from '@/components/ui/page-skeleton';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -132,6 +134,8 @@ export default function ContactDetailPage() {
     }
   };
 
+  const contactAccess = useContactAccessGuard(contactId, contact);
+
   if (isLoading) {
     return <DetailPageSkeleton />;
   }
@@ -158,6 +162,10 @@ export default function ContactDetailPage() {
     articles:       { icon: Package,          label: () => t('detail.tabs.articles', 'Articles') },
     timeline:       { icon: Activity,         label: () => t('detail.tabs.timeline', 'Timeline') },
   };
+
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied />;
+  }
 
   if (error || !contact) {
     return (

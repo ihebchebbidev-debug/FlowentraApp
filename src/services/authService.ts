@@ -4,6 +4,7 @@ import { API_URL } from '@/config/api';
 import { dedupFetch } from '@/utils/requestDedup';
 import { clearHydrationPreferencesMemory } from '@/services/offline/offlineHydrationPreferences';
 import { resetAuthClaimsCache } from '@/utils/authClaims';
+import { invalidateContactVisibility } from '@/services/contactVisibility';
 import { resetActiveCompanyState } from '@/utils/targetTenant';
 
 
@@ -618,6 +619,7 @@ class AuthService {
     }
     // The token is new on every sign-in, so the claims memo must be dropped.
     resetAuthClaimsCache();
+    invalidateContactVisibility();
 
 
     
@@ -711,6 +713,7 @@ class AuthService {
     // tenant slug maps (module-level state that survives logout in the same
     // SPA session), so the next sign-in resolves its own bound company.
     resetAuthClaimsCache();
+    invalidateContactVisibility();
     resetActiveCompanyState();
 
 

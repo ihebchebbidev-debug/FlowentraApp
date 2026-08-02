@@ -1,5 +1,9 @@
 import api from '@/services/api/axiosInstance';
 import { bulkImportErrorFromAxios } from '@/shared/import/parseBulkImportResponse';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+} from '@/services/contactVisibility';
 import type {
   InstallationDto,
   CreateInstallationDto,
@@ -74,16 +78,19 @@ export const installationsApi = {
       rawInstallations = rawData.Installations;
     }
     
-    const installations = rawInstallations.map(normalizeInstallation);
+    await ensureContactVisibilityLoaded();
+    const allInstallations = rawInstallations.map(normalizeInstallation);
+    const installations = filterByContactVisibility(allInstallations);
+    const hiddenInstallations = allInstallations.length - installations.length;
 
     // Use the server pagination metadata when present so page 2+ is reachable.
     const rawPagination = rawData?.pagination || rawData?.Pagination;
     if (rawPagination) {
       const page = rawPagination.page ?? rawPagination.Page ?? filters?.page ?? 1;
       const pageSize = rawPagination.pageSize ?? rawPagination.PageSize ?? filters?.pageSize ?? installations.length;
-      const totalCount = rawPagination.totalCount ?? rawPagination.TotalCount ?? installations.length;
-      const totalPages = rawPagination.totalPages ?? rawPagination.TotalPages
-        ?? (pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1);
+      const rawTotalCount = rawPagination.totalCount ?? rawPagination.TotalCount ?? allInstallations.length;
+      const totalCount = Math.max(installations.length, rawTotalCount - hiddenInstallations);
+      const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1;
       return {
         installations,
         pagination: {

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useUserNameResolver } from "@/hooks/useUserNameResolver";
 import { getStatusColorClass } from "@/config/entity-statuses";
 import { useParams, useNavigate } from "react-router-dom";
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -327,6 +329,8 @@ export default function DispatchJobDetail() {
     }
   }, [dispatch?.jobs, currentJobId]);
 
+  const contactAccess = useContactAccessGuard((dispatch as any)?.contactId ?? (contact as any)?.id);
+
   if (loading) {
     return <div className="p-6 space-y-6 animate-pulse">
         <div className="flex items-center gap-3">
@@ -341,6 +345,10 @@ export default function DispatchJobDetail() {
         </div>
       </div>;
   }
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={'dispatch'} />;
+  }
+
   if (!dispatch) {
     return <div className="flex items-center justify-center h-64">
         <div className="text-center">

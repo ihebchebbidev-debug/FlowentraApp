@@ -2,6 +2,11 @@
 // Migrated to use centralized apiFetch for automatic 401 retry, dedup, and logging
 import { apiFetch } from '@/services/api/apiClient';
 import { serviceOrderJobPaths } from '@/services/api/serviceOrderJobPaths';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 
 // Types
 export interface ServiceOrderJob {
@@ -155,11 +160,15 @@ export const serviceOrdersApi = {
     const result = await apiFetch<any>(`/api/service-orders?${queryParams.toString()}`);
     const data = unwrap(result, 'Failed to fetch service orders');
     const wrapper = data?.data || data;
+    const serviceOrders = wrapper?.serviceOrders || wrapper?.items || (Array.isArray(wrapper) ? wrapper : []);
+    await ensureContactVisibilityLoaded();
+    const pagination = wrapper?.pagination || { page: 1, pageSize: 20, total: 0, totalPages: 0 };
+    const paged = filterPageByContactVisibility<any>(serviceOrders, pagination);
     return {
       success: true,
       data: {
-        serviceOrders: wrapper?.serviceOrders || wrapper?.items || (Array.isArray(wrapper) ? wrapper : []),
-        pagination: wrapper?.pagination || { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+        serviceOrders: paged.rows,
+        pagination: { ...pagination, total: paged.total, totalPages: paged.totalPages },
       },
     };
   },

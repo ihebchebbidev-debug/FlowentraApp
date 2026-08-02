@@ -1515,6 +1515,34 @@ i18n.addResourceBundle('en', 'suppliers', flattenedSuppliersEn, true, true);
 i18n.addResourceBundle('fr', 'suppliers', suppliersFr, true, true);
 i18n.addResourceBundle('fr', 'suppliers', flattenedSuppliersFr, true, true);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Contact user-group visibility namespace (blocking page for restricted records)
+// ─────────────────────────────────────────────────────────────────────────────
+const visibilityEn = {
+  denied: {
+    title: 'Access restricted',
+    description: 'This record belongs to a contact reserved for specific user groups. You are not a member of any of them.',
+    descriptionEntity: 'This {{entity}} belongs to a contact reserved for specific user groups. You are not a member of any of them.',
+    hint: 'If you think this is a mistake, ask an administrator to add you to the contact\u2019s user group.',
+    back: 'Go back',
+    dashboard: 'Back to dashboard',
+  },
+};
+const visibilityFr = {
+  denied: {
+    title: 'Acc\u00e8s restreint',
+    description: 'Cette fiche appartient \u00e0 un contact r\u00e9serv\u00e9 \u00e0 certains groupes d\u2019utilisateurs. Vous n\u2019\u00eates membre d\u2019aucun d\u2019entre eux.',
+    descriptionEntity: 'Ce/Cette {{entity}} appartient \u00e0 un contact r\u00e9serv\u00e9 \u00e0 certains groupes d\u2019utilisateurs. Vous n\u2019\u00eates membre d\u2019aucun d\u2019entre eux.',
+    hint: 'Si vous pensez qu\u2019il s\u2019agit d\u2019une erreur, demandez \u00e0 un administrateur de vous ajouter au groupe d\u2019utilisateurs du contact.',
+    back: 'Retour',
+    dashboard: 'Retour au tableau de bord',
+  },
+};
+i18n.addResourceBundle('en', 'visibility', visibilityEn, true, true);
+i18n.addResourceBundle('en', 'visibility', flattenToDotted(visibilityEn), true, true);
+i18n.addResourceBundle('fr', 'visibility', visibilityFr, true, true);
+i18n.addResourceBundle('fr', 'visibility', flattenToDotted(visibilityFr), true, true);
+
 export default i18n;
 // ─────────────────────────────────────────────────────────────────────────────
 // Plugin manifest namespaces (auto-registered)

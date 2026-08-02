@@ -1,4 +1,9 @@
 // Projects API Service - Backend Integration
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 import type { Project, Column, ProjectStats } from '@/modules/tasks/types';
 import { getAuthHeaders, getMutationHeaders } from '@/utils/apiHeaders';
 
@@ -333,9 +338,14 @@ export const projectsApi = {
     }
 
     const data: ProjectListResponseDto = await response.json();
+    await ensureContactVisibilityLoaded();
+    const pagedProjects = filterPageByContactVisibility(
+      data.projects.map(mapProjectResponseToFrontend),
+      { totalCount: data.totalCount, pageSize: data.pageSize },
+    );
     return {
-      projects: data.projects.map(mapProjectResponseToFrontend),
-      totalCount: data.totalCount,
+      projects: pagedProjects.rows,
+      totalCount: pagedProjects.total,
       pageSize: data.pageSize,
       pageNumber: data.pageNumber,
     };

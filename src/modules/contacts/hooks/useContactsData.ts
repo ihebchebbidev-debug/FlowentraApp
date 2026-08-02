@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { contactsApi, type ContactSearchParams } from '@/services/contactsApi';
+import {
+  ensureContactVisibilityLoaded,
+  filterVisibleContacts,
+} from '@/services/contactVisibility';
 
 export type ContactSearchRequest = ContactSearchParams & {
   searchTerm?: string;
@@ -39,7 +43,10 @@ const fetchContacts = async (searchParams?: ContactSearchRequest) => {
     list = list.filter((c: any) => allowed.includes(String(c.type || 'individual').toLowerCase()));
   }
 
-  return list;
+  // User-group visibility: contacts assigned to a user group are only shown to
+  // members of that group (MainAdminUser always sees everything).
+  await ensureContactVisibilityLoaded();
+  return filterVisibleContacts(list);
 };
 
 export const useContactsData = (searchParams?: ContactSearchRequest) => {

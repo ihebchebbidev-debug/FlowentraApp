@@ -1,6 +1,11 @@
 // Real API service for Offers management
 // Migrated to use centralized apiFetch for automatic 401 retry, dedup, and logging
 import { apiFetch } from '@/services/api/apiClient';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 import { bulkImportErrorFromThrown } from '@/shared/import/parseBulkImportResponse';
 import i18n from '@/lib/i18n';
 
@@ -189,11 +194,15 @@ export const offersApi = {
 
     const result = await apiFetch<any>(`/api/offers?${queryParams.toString()}`);
     const data = unwrap(result, 'Failed to fetch offers');
+    const offers = data?.data?.offers || data?.offers || data?.items || (Array.isArray(data) ? data : []);
+    await ensureContactVisibilityLoaded();
+    const pagination = data?.data?.pagination || data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 };
+    const paged = filterPageByContactVisibility<any>(offers, pagination);
     return {
       success: true,
       data: {
-        offers: data?.data?.offers || data?.offers || data?.items || (Array.isArray(data) ? data : []),
-        pagination: data?.data?.pagination || data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 },
+        offers: paged.rows,
+        pagination: { ...pagination, total: paged.total, totalPages: paged.totalPages },
       },
     };
   },

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { invalidateContactVisibility } from '@/services/contactVisibility';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, X } from 'lucide-react';
@@ -156,6 +157,7 @@ export function ContactUserGroupsInline({
     try {
       await contactsApi.assignUserGroup(idNum, group.id);
       invalidateContactUserGroupsCache(idNum);
+      invalidateContactVisibility();
       const fresh = await loadGroups(idNum);
       setCache(idNum, fresh);
       setResolved(fresh);
@@ -182,6 +184,7 @@ export function ContactUserGroupsInline({
     try {
       await contactsApi.removeUserGroup(idNum, groupId);
       invalidateContactUserGroupsCache(idNum);
+      invalidateContactVisibility();
       const fresh = await loadGroups(idNum);
       setCache(idNum, fresh);
       setResolved(fresh);

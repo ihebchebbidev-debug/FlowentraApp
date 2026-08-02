@@ -1,4 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -69,8 +71,14 @@ export function InvoiceDetailPage() {
     return value === 0 ? `0 ${currencyInfo.code}` : format(value);
   };
 
+  const contactAccess = useContactAccessGuard((invoice as any)?.contactId);
+
   if (isLoading || !invoice) {
     return <div className="p-6 text-sm text-muted-foreground">{t('loading')}</div>;
+  }
+
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={'invoice'} />;
   }
 
   return (

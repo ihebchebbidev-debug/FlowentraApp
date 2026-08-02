@@ -3,6 +3,11 @@
 import { apiFetch } from '@/services/api/apiClient';
 import { API_URL } from '@/config/api';
 import { getAuthHeaders } from '@/utils/apiHeaders';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 
 // Get current user info for activity logging
 const getCurrentUserName = (): string => {
@@ -263,11 +268,17 @@ export const dispatchesApi = {
 
     const result = await apiFetch<any>(`/api/dispatches?${queryParams.toString()}`);
     const data = unwrap(result, 'Failed to fetch dispatches');
-    const dispatches = data?.data || data?.items || (Array.isArray(data) ? data : []);
+    const rawDispatches = data?.data || data?.items || (Array.isArray(data) ? data : []);
+    await ensureContactVisibilityLoaded();
+    const pagedDispatches = filterPageByContactVisibility<any>(rawDispatches, {
+      total: data?.totalItems,
+      pageSize: data?.pageSize,
+    });
+    const dispatches = pagedDispatches.rows;
     return {
       success: true,
       data: dispatches,
-      totalItems: data?.totalItems || dispatches.length,
+      totalItems: data?.totalItems !== undefined ? pagedDispatches.total : dispatches.length,
       pageNumber: data?.pageNumber || 1,
       pageSize: data?.pageSize || 50,
     };

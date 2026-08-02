@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -275,6 +277,8 @@ export function OfferDetail() {
     return idx === -1 ? 1 : idx + 1;
   };
 
+  const contactAccess = useContactAccessGuard((offer as any)?.contactId ?? (offer as any)?.contact?.id);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -308,6 +312,10 @@ export function OfferDetail() {
         </Button>
       </div>
     );
+  }
+
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={t('detail.entityLabel', 'offer')} />;
   }
 
   const currentStep = getWorkflowStep(offer.status);

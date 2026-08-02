@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { useParams, useNavigate } from "react-router-dom";
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -969,8 +971,14 @@ export default function ServiceOrderDetail() {
   }, [t, serviceOrder]);
 
   // Loading state
+  const contactAccess = useContactAccessGuard((serviceOrder as any)?.contactId ?? (serviceOrder as any)?.contact?.id);
+
   if (loading) {
     return <DetailPageSkeleton className="min-h-screen" />;
+  }
+
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={'service order'} />;
   }
 
   // Not found state

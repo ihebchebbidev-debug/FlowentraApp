@@ -1,5 +1,10 @@
 // API service for Customer Invoices (contact-facing invoices)
 import { apiFetch } from './apiClient';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 import type { Invoice, InvoiceActivity, InvoiceQueryParams, PagedInvoiceResponse } from '@/modules/invoices/types';
 
 const BASE = '/api/invoices';
@@ -24,7 +29,19 @@ function unwrap<T>(result: { data: T | null; status: number; error?: string }, f
 export const customerInvoicesApi = {
   async list(params: InvoiceQueryParams = {}): Promise<PagedInvoiceResponse> {
     const result = await apiFetch<PagedInvoiceResponse>(`${BASE}${qs(params as Record<string, unknown>)}`);
-    return unwrap(result, 'Failed to fetch invoices');
+    const paged = unwrap(result, 'Failed to fetch invoices');
+    await ensureContactVisibilityLoaded();
+    const filtered = filterPageByContactVisibility(paged?.data ?? [], {
+      total: (paged as any)?.total ?? (paged as any)?.totalCount,
+      pageSize: (paged as any)?.pageSize ?? (params as any)?.pageSize,
+    });
+    return {
+      ...paged,
+      data: filtered.rows,
+      ...((paged as any)?.total !== undefined ? { total: filtered.total } : {}),
+      ...((paged as any)?.totalCount !== undefined ? { totalCount: filtered.total } : {}),
+      ...((paged as any)?.totalPages !== undefined ? { totalPages: filtered.totalPages } : {}),
+    } as PagedInvoiceResponse;
   },
 
   async getById(id: number): Promise<Invoice> {

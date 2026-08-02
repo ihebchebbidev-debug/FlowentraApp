@@ -3,6 +3,11 @@
 // headers automatically — same tenant scoping as every other module.
 import { apiFetch } from '@/services/api/apiClient';
 import i18n from '@/lib/i18n';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
 
 /**
  * Error thrown by `dealsApi.convert` when the backend rejects a repeat
@@ -217,9 +222,13 @@ export const dealsApi = {
     const result = await apiFetch<any>(`/api/deals?${q.toString()}`);
     const data = unwrap(result, 'Failed to fetch deals');
     const inner = data?.data ?? data;
+    const deals = inner?.deals ?? inner?.items ?? (Array.isArray(inner) ? inner : []);
+    await ensureContactVisibilityLoaded();
+    const pagination = inner?.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 0 };
+    const paged = filterPageByContactVisibility<any>(deals, pagination);
     return {
-      deals: inner?.deals ?? inner?.items ?? (Array.isArray(inner) ? inner : []),
-      pagination: inner?.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 0 },
+      deals: paged.rows,
+      pagination: { ...pagination, total: paged.total, totalPages: paged.totalPages },
     };
   },
 

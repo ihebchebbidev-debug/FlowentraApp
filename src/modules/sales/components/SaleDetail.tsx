@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { useParams, useNavigate } from "react-router-dom";
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -112,6 +114,8 @@ export function SaleDetail() {
     fetchSale();
   };
 
+  const contactAccess = useContactAccessGuard(sale?.contactId ?? (sale as any)?.contact?.id);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -146,6 +150,10 @@ export function SaleDetail() {
         </Button>
       </div>
     );
+  }
+
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={t('detail.entityLabel', 'sale')} />;
   }
 
   const getStatusColor = (status: string) => {

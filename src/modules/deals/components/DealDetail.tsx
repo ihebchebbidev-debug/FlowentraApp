@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
+import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from "react-i18next";
 import { translateNote } from "@/modules/shared/utils/noteTranslation";
 import { Button } from "@/components/ui/button";
@@ -74,11 +76,17 @@ export function DealDetail() {
     }
   };
 
+  const contactAccess = useContactAccessGuard((deal as any)?.contactId);
+
   if (loading || !deal) {
     return <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin" /></div>;
   }
 
   const converted = deal.convertedToSaleId || deal.convertedToProjectId || deal.convertedToOfferId;
+
+  if (!contactAccess.checking && !contactAccess.allowed) {
+    return <ContactAccessDenied entityLabel={'deal'} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
