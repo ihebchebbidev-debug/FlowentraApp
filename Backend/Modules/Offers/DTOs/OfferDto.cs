@@ -97,7 +97,6 @@ namespace MyApi.Modules.Offers.DTOs
         public string? InstallationId { get; set; }
         public string? InstallationName { get; set; }
         public int DisplayOrder { get; set; }
-        public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
 
     public class CreateOfferDto

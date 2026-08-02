@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer, Download, FileText } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer, Download, FileText, Scale } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLayoutModeContext } from '@/hooks/useLayoutMode';
@@ -21,6 +21,7 @@ import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
 import { InvoiceActivityTab } from '../components/tabs/InvoiceActivityTab';
 import { InvoiceDocumentsTab } from '../components/tabs/InvoiceDocumentsTab';
 import { InvoicePDFPreviewModal } from '../components/InvoicePDFPreviewModal';
+import { PostInvoiceReconciliationDialog } from '../components/PostInvoiceReconciliationDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -58,6 +59,9 @@ export function InvoiceDetailPage() {
   const [reopenMemo, setReopenMemo] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  // Posting always goes through reconciliation: the sale total is compared with
+  // every invoice generated from it, and hard mismatches block the post.
+  const [postGateOpen, setPostGateOpen] = useState(false);
 
   // Totals must always render a number (0 included) — never a dash.
   const money = (amount?: number | null) => {
@@ -114,7 +118,7 @@ export function InvoiceDetailPage() {
           </Button>
 
           {invoice.status === 'draft' && canUpdateInvoice && (
-            <Button size="sm" className="gap-2 bg-primary text-white hover:bg-primary/90 shadow-medium" onClick={() => post.mutate(invoice.id)}>
+            <Button size="sm" className="gap-2 bg-primary text-white hover:bg-primary/90 shadow-medium" onClick={() => setPostGateOpen(true)} disabled={post.isPending}>
               <Send className="h-4 w-4" />
               <span className="hidden sm:inline">{t('actions.post')}</span>
             </Button>
@@ -129,6 +133,12 @@ export function InvoiceDetailPage() {
             <Button size="sm" variant="outline" className="gap-2 text-destructive" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4" />
               <span className="hidden sm:inline">{t('actions.delete')}</span>
+            </Button>
+          )}
+          {invoice.saleId && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => navigate(`/dashboard/invoices/${invoice.id}/reconciliation`)}>
+              <Scale className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('actions.reconcile', 'Reconcile')}</span>
             </Button>
           )}
           {invoice.saleId && (
@@ -402,6 +412,17 @@ export function InvoiceDetailPage() {
         isOpen={pdfPreviewOpen}
         onClose={() => setPdfPreviewOpen(false)}
         invoice={invoice}
+      />
+
+      <PostInvoiceReconciliationDialog
+        open={postGateOpen}
+        onOpenChange={setPostGateOpen}
+        invoiceId={invoice.id}
+        saleId={invoice.saleId ?? null}
+        isPosting={post.isPending}
+        onConfirm={() =>
+          post.mutate(invoice.id, { onSuccess: () => setPostGateOpen(false) })
+        }
       />
       </div>
     </div>

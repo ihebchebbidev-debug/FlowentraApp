@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { format as formatDate } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Activity, Plus, Pencil, Send, Ban, Trash2, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Loader2, Activity, Plus, Pencil, Send, Ban, Trash2, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useInvoiceActivities } from '../../hooks/useCustomerInvoices';
 import { usersApi } from '@/services/api/usersApi';
 import type { InvoiceActivity } from '../../types';
@@ -24,6 +24,7 @@ const TYPE_ICON: Record<string, { icon: typeof Plus; className: string }> = {
   auto_reopened:      { icon: RefreshCw,    className: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40' },
   manual_marked_paid: { icon: CheckCircle2, className: 'text-green-600 bg-green-100 dark:bg-green-900/40' },
   manual_reopened:    { icon: RefreshCw,    className: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40' },
+  auto_post_skipped:  { icon: AlertTriangle, className: 'text-orange-600 bg-orange-100 dark:bg-orange-900/40' },
 };
 
 export function InvoiceActivityTab({ invoiceId }: Props) {

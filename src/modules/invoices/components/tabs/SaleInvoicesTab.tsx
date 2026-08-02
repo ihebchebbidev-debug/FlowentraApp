@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, FileText, Receipt, ExternalLink, Eye } from 'lucide-react';
+import { Plus, FileText, Receipt, ExternalLink, Eye, Scale } from 'lucide-react';
 import { getStatusColorClass } from '@/config/entity-statuses';
 import { useCustomerInvoicesList, useInvoiceMutations } from '../../hooks/useCustomerInvoices';
 import { useCurrency } from '@/shared/hooks/useCurrency';
@@ -65,6 +65,14 @@ export function SaleInvoicesTab({ saleId, saleTotal, currency }: Props) {
               {t('sale_tab.heading')} ({invoices.length})
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/dashboard/invoices/reconciliation?saleId=${saleId}`)}
+              >
+                <Scale className="h-4 w-4 mr-2" />
+                {t('actions.reconcile', 'Reconcile')}
+              </Button>
               <Button size="sm" onClick={() => setConfirmOpen(true)} disabled={createFromSale.isPending}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('sale_tab.create_invoice')}

@@ -224,7 +224,22 @@ namespace MyApi.Modules.Invoices.Services
 
                     // Over-invoicing guard, re-checked inside the serializable tx so a
                     // concurrent draft cannot slip past before we commit.
-                    var saleTotal = sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount;
+                    // The ceiling is recomputed from the live sale items + header
+                    // discount/tax/fiscal stamp rather than read from sale.GrandTotal:
+                    // ServiceOrderService.PrepareForInvoiceAsync briefly leaves the stored
+                    // header totals as a raw sum of line totals, which would make this
+                    // ceiling wrong in both directions (too high with a big header discount,
+                    // too low once tax/stamp apply).
+                    var saleItemsForCeiling = await _context.SaleItems
+                        .Where(i => i.SaleId == sale.Id)
+                        .ToListAsync();
+                    var saleTotal = saleItemsForCeiling.Count > 0
+                        ? Sales.Services.SaleTotalsCalculator.Compute(
+                            saleItemsForCeiling.Sum(i => Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                                i.Quantity, i.UnitPrice, i.Discount, i.DiscountType)),
+                            sale.Discount, Sales.Services.SaleTotalsCalculator.HeaderDiscountType(sale),
+                            sale.Taxes, sale.TaxType, sale.FiscalStamp).GrandTotal
+                        : (sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount);
                     if (saleTotal > 0m)
                     {
                         var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(sale.Id);

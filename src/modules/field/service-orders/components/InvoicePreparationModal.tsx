@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Package, Clock, Receipt, AlertCircle, CheckCircle2, FileText } from "lucide-react";
+import { Loader2, Package, Clock, Receipt, AlertCircle, AlertTriangle, CheckCircle2, FileText } from "lucide-react";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { toast } from "sonner";
@@ -519,6 +519,16 @@ export function InvoicePreparationModal({
                               <Badge variant="outline" className="text-px-10 px-1.5 py-0">
                                 {formatDuration(te.duration)}
                               </Badge>
+                              {/* Labor logged from the field app has no hourly rate of its
+                                  own; the backend falls back to the technician's last known
+                                  rate and, failing that, transfers the line at 0. Surface
+                                  that instead of silently billing nothing. */}
+                              {te.duration > 0 && !(te.totalCost || 0) && (
+                                <Badge variant="outline" className="text-px-10 px-1.5 py-0 border-amber-500/50 text-amber-600">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  {t("invoicePreparation.rateMissing", "No rate — price manually")}
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               {te.hourlyRate && (
@@ -533,7 +543,7 @@ export function InvoicePreparationModal({
                               )}
                             </div>
                           </div>
-                          <span className="text-sm font-semibold text-foreground whitespace-nowrap">
+                          <span className={`text-sm font-semibold whitespace-nowrap ${te.duration > 0 && !(te.totalCost || 0) ? 'text-amber-600' : 'text-foreground'}`}>
                             {format(te.totalCost || 0)}
                           </span>
                         </label>

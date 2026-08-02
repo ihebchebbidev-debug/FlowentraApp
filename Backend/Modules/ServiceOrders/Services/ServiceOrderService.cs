@@ -1106,12 +1106,25 @@ namespace MyApi.Modules.ServiceOrders.Services
                     newStatus = "cancelled";
                 else if (activeDispatchStatuses.Count == 0)
                     newStatus = "ready_for_planning";
-                else if (activeDispatchStatuses.All(s => s == "completed"))
+                else if (activeDispatchStatuses.All(s => s == "completed" || s == "technically_completed"))
                     newStatus = "technically_completed";
                 else if (activeDispatchStatuses.Any(s => s == "in_progress"))
                     newStatus = "in_progress";
                 else
                     newStatus = "scheduled";
+
+                // Never walk the order backwards off a billing status. BusinessWorkflowService
+                // advances an all-dispatches-done order straight to "ready_for_invoice"; this
+                // recalculation would otherwise answer the same question with
+                // "technically_completed" and silently downgrade it (the FE calls updateStatus
+                // and recalculateStatus back to back on the same click). A genuinely new,
+                // not-yet-finished dispatch still reopens the order to scheduled/in_progress,
+                // so re-planning a service order three or four times keeps working.
+                if (string.Equals(serviceOrder.Status, "ready_for_invoice", StringComparison.OrdinalIgnoreCase)
+                    && newStatus == "technically_completed")
+                {
+                    newStatus = serviceOrder.Status;
+                }
 
                 if (newStatus != serviceOrder.Status)
                 {
@@ -2669,6 +2682,25 @@ namespace MyApi.Modules.ServiceOrders.Services
             var existingSignatures = new HashSet<string>(
                 existingSoSaleItems.Select(si => BuildSaleItemSignature(si.Type, si.ItemName, si.Description, si.UnitPrice, si.Quantity, si.ArticleId, si.InstallationId)));
 
+            // Primary idempotency key for dispatch-sourced lines: the identity of the source
+            // row itself (SaleItem.SourceType/SourceId), which no edit to price, rate or
+            // description can change. The value signature above is kept only as a fallback
+            // for legacy rows transferred before SourceId existed, so historical sales are
+            // still deduplicated. This is what makes re-planning a service order and
+            // re-running "Prepare for invoice" any number of times safe.
+            static string BuildSourceKey(string sourceType, int sourceId) => $"{sourceType}:{sourceId}";
+
+            var existingSourceKeys = new HashSet<string>(
+                existingSoSaleItems
+                    .Where(si => !string.IsNullOrWhiteSpace(si.SourceType) && !string.IsNullOrWhiteSpace(si.SourceId))
+                    .Select(si => $"{si.SourceType!.Trim()}:{si.SourceId!.Trim()}"));
+
+            // Legacy sales (rows transferred before SourceType/SourceId existed) have no
+            // source keys to compare against, so for those we keep the old value-signature
+            // dedup as the only available guard. Captured once, before the loops start
+            // filling existingSourceKeys.
+            var useLegacySignatureDedup = existingSoSaleItems.Any() && existingSourceKeys.Count == 0;
+
             var previouslyTransferred = existingSoSaleItems.Any();
 
 
@@ -2750,6 +2782,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         InstallationId = mat.InstallationId?.ToString(),
                         InstallationName = mat.InstallationName,
                         ServiceOrderId = id.ToString(),
+                        SourceType = "service_order_material",
+                        SourceId = mat.Id.ToString(),
                         DisplayOrder = currentDisplayOrder,
                         Currency = sale.Currency
                     });
@@ -2777,12 +2811,19 @@ namespace MyApi.Modules.ServiceOrders.Services
                         .Where(d => d.Id == mat.DispatchId)
                         .Select(d => (int?)d.InstallationId)
                         .FirstOrDefaultAsync();
-                    var signature = BuildSaleItemSignature("article", name, desc, mat.UnitPrice, mat.Quantity, mat.ArticleId, dispatchInstallationId?.ToString());
-                    if (!existingSignatures.Add(signature))
+                    var sourceKey = BuildSourceKey("dispatch_material", mat.Id);
+                    if (existingSourceKeys.Contains(sourceKey))
                     {
-                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch material #{Id} (already on sale)", mat.Id);
+                        _logger.LogInformation("PrepareForInvoice: Skipping already-transferred dispatch material #{Id} (source key match)", mat.Id);
                         continue;
                     }
+                    var signature = BuildSaleItemSignature("article", name, desc, mat.UnitPrice, mat.Quantity, mat.ArticleId, dispatchInstallationId?.ToString());
+                    if (useLegacySignatureDedup && !existingSignatures.Add(signature))
+                    {
+                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch material #{Id} (legacy signature match)", mat.Id);
+                        continue;
+                    }
+                    existingSourceKeys.Add(sourceKey);
 
                     currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
@@ -2796,6 +2837,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         LineTotal = mat.TotalPrice,
                         ArticleId = mat.ArticleId,
                         ServiceOrderId = id.ToString(),
+                        SourceType = "dispatch_material",
+                        SourceId = mat.Id.ToString(),
                         DisplayOrder = currentDisplayOrder,
                         Currency = sale.Currency
                     });
@@ -2826,6 +2869,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = exp.Amount,
                         LineTotal = exp.Amount,
                         ServiceOrderId = id.ToString(),
+                        SourceType = "service_order_expense",
+                        SourceId = exp.Id.ToString(),
                         DisplayOrder = currentDisplayOrder,
                         Currency = sale.Currency
                     });
@@ -2849,12 +2894,19 @@ namespace MyApi.Modules.ServiceOrders.Services
                     // Include installation from the source dispatch/expense so identical-named
                     // expenses on different installations do not collide (§4.4).
                     var installKey = dExp.InstallationId?.ToString() ?? "";
-                    var signature = BuildSaleItemSignature("service", name, desc, dExp.Amount, 1m, null, installKey);
-                    if (!existingSignatures.Add(signature))
+                    var sourceKey = BuildSourceKey("dispatch_expense", dExp.Id);
+                    if (existingSourceKeys.Contains(sourceKey))
                     {
-                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch expense #{Id} (already on sale)", dExp.Id);
+                        _logger.LogInformation("PrepareForInvoice: Skipping already-transferred dispatch expense #{Id} (source key match)", dExp.Id);
                         continue;
                     }
+                    var signature = BuildSaleItemSignature("service", name, desc, dExp.Amount, 1m, null, installKey);
+                    if (useLegacySignatureDedup && !existingSignatures.Add(signature))
+                    {
+                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch expense #{Id} (legacy signature match)", dExp.Id);
+                        continue;
+                    }
+                    existingSourceKeys.Add(sourceKey);
 
                     currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
@@ -2867,6 +2919,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = dExp.Amount,
                         LineTotal = dExp.Amount,
                         ServiceOrderId = id.ToString(),
+                        SourceType = "dispatch_expense",
+                        SourceId = dExp.Id.ToString(),
                         DisplayOrder = currentDisplayOrder,
                         Currency = sale.Currency
                     });
@@ -2901,6 +2955,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = total,
                         LineTotal = total,
                         ServiceOrderId = id.ToString(),
+                        SourceType = "service_order_time_entry",
+                        SourceId = te.Id.ToString(),
                         DisplayOrder = currentDisplayOrder,
                         Currency = sale.Currency
                     });
@@ -2953,12 +3009,19 @@ namespace MyApi.Modules.ServiceOrders.Services
                     // logged by different technicians / on different installations
                     // don't collide into one (§4.4).
                     var teKey = $"tech:{te.TechnicianId}|inst:{te.InstallationId?.ToString() ?? ""}";
-                    var signature = BuildSaleItemSignature("service", name, description, total, 1m, null, teKey);
-                    if (!existingSignatures.Add(signature))
+                    var sourceKey = BuildSourceKey("dispatch_time_entry", te.Id);
+                    if (existingSourceKeys.Contains(sourceKey))
                     {
-                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch time entry #{Id} (already on sale)", te.Id);
+                        _logger.LogInformation("PrepareForInvoice: Skipping already-transferred dispatch time entry #{Id} (source key match)", te.Id);
                         continue;
                     }
+                    var signature = BuildSaleItemSignature("service", name, description, total, 1m, null, teKey);
+                    if (useLegacySignatureDedup && !existingSignatures.Add(signature))
+                    {
+                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch time entry #{Id} (legacy signature match)", te.Id);
+                        continue;
+                    }
+                    existingSourceKeys.Add(sourceKey);
 
                     currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
@@ -2971,6 +3034,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = total,
                         LineTotal = total,
                         ServiceOrderId = id.ToString(),
+                        SourceType = "dispatch_time_entry",
+                        SourceId = te.Id.ToString(),
                         DisplayOrder = currentDisplayOrder,
                         Currency = sale.Currency
                     });
@@ -3036,8 +3101,12 @@ namespace MyApi.Modules.ServiceOrders.Services
                     var updatedSale = await _context.Sales.Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == saleId);
                     if (updatedSale != null)
                     {
-                        updatedSale.TotalAmount = updatedSale.Items?.Sum(i => i.LineTotal) ?? 0;
-                        updatedSale.GrandTotal = updatedSale.TotalAmount;
+                        // Recompute the header the same way every other sale write does:
+                        // subtotal → header discount → tax → fiscal stamp. The previous raw
+                        // `Sum(LineTotal)` assignment left GrandTotal discount/tax/stamp-blind
+                        // until SyncSaleInvoiceStateAsync healed it, and the manual
+                        // CreateDraftAsync over-invoicing guard reads that stored value.
+                        Sales.Services.SaleTotalsCalculator.Apply(updatedSale, updatedSale.Items);
                         updatedSale.LastActivity = DateTime.UtcNow;
 
                         // #5 fix: mark SaleItems belonging to this SO as fulfilled once

@@ -19,7 +19,7 @@ import { offersApi } from "@/services/api/offersApi";
 import { salesApi } from "@/services/api/salesApi";
 import { articlesApi } from "@/services/api/articlesApi";
 import { InstallationSelector } from "@/modules/field/installations/components/InstallationSelector";
-import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
+
 import { CreateInstallationModal } from "@/modules/field/installations/components/CreateInstallationModal";
 import { DeleteConfirmationModal } from "@/shared/components/DeleteConfirmationModal";
 import { toast } from "sonner";

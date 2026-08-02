@@ -209,22 +209,14 @@ namespace MyApi.Modules.Planning.Services
                         includeNullSourceOrigin: false);
                 }
 
-                var linkedJobIds = await ResolveServiceOrderJobIdsForSaleItemsAsync(saleItemIds);
-                foreach (var jobId in linkedJobIds)
-                {
-                    if (sourceType == "service_order_job" && sourceParentId == jobId)
-                        continue;
-
-                    var sourceOrigins = await ResolveSourceOriginScopeAsync(sourceParentType, sourceParentId);
-                    await OverwriteScopeAsync(
-                        sourceParentType,
-                        sourceParentId,
-                        "service_order_job",
-                        jobId,
-                        userId,
-                        replaceOriginIds: sourceOrigins.Count > 0 ? sourceOrigins : null,
-                        copiedOriginOverride: sourceType == "sale_item" && sourceOrigins.Count == 1 ? sourceOrigins[0] : null);
-                }
+                // Job-level planned entries are intentionally NOT overwritten from the
+                // offer/sale side any more. OverwriteScopeAsync wipes the whole target
+                // scope and re-copies, which silently destroyed manual job-level plan
+                // adjustments made by dispatchers whenever the originating offer/sale line
+                // was later touched. Planning is now authored on the service order job
+                // (JobDetail) and seeded once at service-order creation via CopyAsync, so
+                // there is no upstream owner that should be allowed to overwrite it.
+                await Task.CompletedTask;
                 return null;
             }
             catch (Exception ex)

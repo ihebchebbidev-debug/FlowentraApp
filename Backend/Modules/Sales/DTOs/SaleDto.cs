@@ -116,7 +116,6 @@ namespace MyApi.Modules.Sales.DTOs
         public int DisplayOrder { get; set; }
         // Currency this line was priced in. When null, the parent Sale.Currency applies.
         public string? Currency { get; set; }
-        public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
 
     public class CreateSaleDto
