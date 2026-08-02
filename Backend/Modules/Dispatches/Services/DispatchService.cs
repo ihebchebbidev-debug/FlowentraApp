@@ -334,6 +334,9 @@ namespace MyApi.Modules.Dispatches.Services
                 {
                     // Multiple dispatches per job allowed; no race re-check needed.
 
+                    // Insert the dispatch first so it gets an Id before the
+                    // dependent DispatchJob / DispatchTechnician rows reference it.
+                    _db.Dispatches.Add(dispatch);
                     await _db.SaveChangesAsync();
 
                     // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries

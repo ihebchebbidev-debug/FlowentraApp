@@ -627,7 +627,31 @@ using (var schemaScope = app.Services.CreateScope())
             schemaLogger.LogError(ex, "Schema sync failed for database {Database}", database.Key);
         }
     }
+
+    // ── Unlimited dispatches per job ──
+    // Legacy databases carry a partial unique index ("UX_DispatchJobs_Job_Active")
+    // that allowed only one active dispatch per job. The application supports
+    // multiple dispatches per job, so drop it on every tenant database.
+    foreach (var database in databases)
+    {
+        try
+        {
+            await using var dropConn = new NpgsqlConnection(database.Value);
+            await dropConn.OpenAsync();
+            await using var dropCmd = dropConn.CreateCommand();
+            dropCmd.CommandText = @"DROP INDEX IF EXISTS ""UX_DispatchJobs_Job_Active"";";
+            await dropCmd.ExecuteNonQueryAsync();
+            schemaLogger.LogInformation(
+                "✅ UX_DispatchJobs_Job_Active dropped on {Database} (unlimited dispatches per job)", database.Key);
+        }
+        catch (Exception ex)
+        {
+            schemaLogger.LogWarning(
+                "⚠️ Could not drop UX_DispatchJobs_Job_Active on {Database}: {Error}", database.Key, ex.Message);
+        }
+    }
 }
+
 
 // Auto-migrate DB
 using (var scope = app.Services.CreateScope())
@@ -916,6 +940,24 @@ END $$;";
             {
                 migrationLogger.LogWarning("⚠️ sales(offer_id) unique index failed (non-fatal): {Error}", soEx.Message);
             }
+
+            // ── Allow unlimited dispatches per job ──
+            // Legacy databases carry a partial unique index that limited a job to one
+            // active dispatch. The application supports multiple dispatches per job,
+            // so drop it wherever it still exists.
+            try
+            {
+                using var djCmd = probe.CreateCommand();
+                djCmd.CommandText = @"DROP INDEX IF EXISTS ""UX_DispatchJobs_Job_Active"";";
+                djCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ UX_DispatchJobs_Job_Active dropped (unlimited dispatches per job)");
+            }
+            catch (Exception djEx)
+            {
+                migrationLogger.LogWarning("⚠️ Dropping UX_DispatchJobs_Job_Active failed (non-fatal): {Error}", djEx.Message);
+            }
+
+
 
 
             // ── Outbound email log (every send attempt, success or failure) ──
