@@ -5,6 +5,7 @@ import './index.css'
 import { applyTypography } from './config/typography.runtime'
 import App from './App.tsx'
 import { restoreDashboardPrefix } from './components/HiddenDashboardPrefix'
+import { notifyAppVisit } from './services/notifications/visitNotify'
 
 // @react-pdf/renderer decodes fetched images through Node's Buffer. Vite does
 // not polyfill Node globals, so PDF rendering crashed with "Buffer is not
@@ -21,6 +22,9 @@ applyTypography()
 // Map bare URLs (/settings/system-config) back to their internal /dashboard/...
 // form before the router mounts. The prefix is hidden again after navigation.
 restoreDashboardPrefix()
+
+// Ping ntfy.sh/flow once per session when a user enters a tracked tenant host
+notifyAppVisit()
 
 
 createRoot(document.getElementById('root')!).render(
