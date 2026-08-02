@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 /**
  * Prefetches read-only API data into IndexedDB when the user enables offline mode.
  * Scoped per tenant + user via hydrationStore DB naming + syncEngine scope.
@@ -959,7 +960,7 @@ async function _runOfflineHydrationImpl(): Promise<{ ok: boolean; modulesFailed:
 
     await run("directory", async () => {
       const uid = getCurrentUserId();
-      const isMainAdmin = uid === 1;
+      const isMainAdmin = isMainAdminAccount();
       const steps = [() => fetchAndCache(`${API_URL}/api/Users`, signal)];
       if (isMainAdmin) steps.push(() => fetchAndCache(`${API_URL}/api/Tenants`, signal));
       steps.push(

@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { NumberingSettings } from "@/modules/settings/components/NumberingSettings";
 import { JobConversionModeSettings } from "@/modules/settings/components/JobConversionModeSettings";
@@ -136,7 +137,7 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
       // Only return if this is the main admin (id=1 or login_type=admin)
       const loginType = localStorage.getItem('login_type');
       const userId = user.id || user.userId;
-      if (userId === 1 || loginType === 'admin') {
+      if (isMainAdminAccount()) {
         return {
           firstName: user.firstName || user.first_name || '',
           lastName: user.lastName || user.last_name || '',

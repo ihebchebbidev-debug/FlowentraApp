@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 // AI Data Service - Fetches real-time data for AI responses
 // This service queries the actual APIs to answer data-related questions
 import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
@@ -58,11 +59,8 @@ const getCurrentUserId = (): number | null => {
   }
 };
 
-// Check if current user is MainAdmin (id=1 bypasses all permissions)
-const isMainAdmin = (): boolean => {
-  const userId = getCurrentUserId();
-  return userId === 1;
-};
+// Check if current user is MainAdmin (JWT claims are authoritative)
+const isMainAdmin = (): boolean => isMainAdminAccount();
 
 // Check if user has a specific permission
 const checkUserPermission = async (module: PermissionModule, action: PermissionAction): Promise<boolean> => {

@@ -164,13 +164,8 @@ export const apiFetch = async <T>(
     const isExemptEndpoint = VIEW_ALL_WRITE_EXEMPT_ENDPOINTS.some(p => endpoint.includes(p));
     // Only main-admin users can be in cross-company view-all mode; never gate
     // regular (single-tenant) users even if a stale flag lingers in storage.
-    const isMainAdmin = (() => {
-      try {
-        const u = JSON.parse(localStorage.getItem('user_data') || '{}');
-        const id = u?.id ?? u?.userId;
-        return id === 1 || id === '1';
-      } catch { return false; }
-    })();
+    const { isMainAdminAccount } = await import('@/utils/authClaims');
+    const isMainAdmin = isMainAdminAccount();
     if (isMainAdmin && !allowViewAllWrite && !isExemptEndpoint) {
       const { isViewAllWriteBlocked } = await import('@/utils/targetTenant');
       if (isViewAllWriteBlocked()) {

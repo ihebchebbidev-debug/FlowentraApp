@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -87,7 +88,7 @@ export default function TwoFactorChallenge() {
         });
 
         const user = res.user;
-        const isMainAdmin = initial.userType === 'admin' || user?.id === 1;
+        const isMainAdmin = isMainAdminAccount();
         if (isMainAdmin && user?.emailVerified === false) {
           navigate('/verify-email', { replace: true });
         } else if (isMainAdmin && !user?.onboardingCompleted) {

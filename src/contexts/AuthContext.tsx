@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getAuthClaims } from '@/utils/authClaims';
 import { authService, UserData } from '@/services/authService';
 
 interface SignupUserData {
@@ -57,6 +58,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // IMPORTANT: MainAdminUser ALWAYS has id=1 (from MainAdminUsers table)
   // Users from Users table have id >= 2 and use role-based permissions
   const checkIsMainAdmin = (): boolean => {
+    // JWT claims are authoritative (UserType / login_type).
+    const claims = getAuthClaims();
+    if (claims.isMainAdmin) return true;
+    if (claims.isRegularUser) return false;
+
     const storedUser = authService.getCurrentUserFromStorage();
     if (!storedUser) return false;
     

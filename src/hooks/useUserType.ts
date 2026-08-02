@@ -10,8 +10,37 @@ export interface UserTypeInfo {
   adminUserId: string | null; // The MainAdminUser who created this regular user
 }
 
+import { getAuthClaims } from '@/utils/authClaims';
+
 export function useUserType(): UserTypeInfo {
   try {
+    // JWT claims are authoritative — the id===1 heuristic below is a legacy fallback.
+    const claims = getAuthClaims();
+    if (claims.isMainAdmin) {
+      return {
+        isMainAdminUser: true,
+        isRegularUser: false,
+        userId: claims.userId?.toString() ?? '1',
+        userType: 'MainAdminUser',
+        adminUserId: null,
+      };
+    }
+    if (claims.isRegularUser) {
+      let createdBy: string | null = null;
+      try {
+        const raw = localStorage.getItem('user_data');
+        const parsed = raw ? JSON.parse(raw) : null;
+        createdBy = parsed?.createdBy?.toString() ?? parsed?.mainAdminUserId?.toString() ?? null;
+      } catch { /* ignore */ }
+      return {
+        isMainAdminUser: false,
+        isRegularUser: true,
+        userId: claims.userId?.toString() ?? null,
+        userType: 'RegularUser',
+        adminUserId: createdBy,
+      };
+    }
+
     const userData = localStorage.getItem('user_data');
     if (!userData) {
       return {

@@ -3,6 +3,10 @@ import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
 import { API_URL } from '@/config/api';
 import { dedupFetch } from '@/utils/requestDedup';
 import { clearHydrationPreferencesMemory } from '@/services/offline/offlineHydrationPreferences';
+import { resetAuthClaimsCache } from '@/utils/authClaims';
+import { resetActiveCompanyState } from '@/utils/targetTenant';
+
+
 
 type AdminPrefs = {
   theme?: string;
@@ -590,6 +594,32 @@ class AuthService {
   private saveUserSession(authResponse: AuthResponse, persistent: boolean = true, loginType: 'admin' | 'user' = 'user'): void {
     this.useLocalStorage = persistent;
     const storage = this.getStorage();
+
+    // Belt-and-braces: if this sign-in is a DIFFERENT account than the one whose
+    // state is still around (session ended without a clean logout, or a second
+    // login in the same tab), wipe the previous account's pinned company and
+    // memoised claims before writing the new session.
+    try {
+      const previousRaw =
+        localStorage.getItem('user_data') || sessionStorage.getItem('user_data');
+      const previousId = previousRaw
+        ? (JSON.parse(previousRaw) as { id?: number; userId?: number })
+        : null;
+      const prevId = previousId?.id ?? previousId?.userId ?? null;
+      const nextId =
+        (authResponse.user as { id?: number; userId?: number } | undefined)?.id ??
+        (authResponse.user as { id?: number; userId?: number } | undefined)?.userId ??
+        null;
+      if (prevId !== null && nextId !== null && prevId !== nextId) {
+        resetActiveCompanyState();
+      }
+    } catch {
+      /* ignore */
+    }
+    // The token is new on every sign-in, so the claims memo must be dropped.
+    resetAuthClaimsCache();
+
+
     
     // Save login type to differentiate MainAdminUser vs regular User
     // IMPORTANT: Some backends may authenticate a staff "Users" table account
@@ -663,19 +693,32 @@ class AuthService {
     const keys = [
       'access_token', 'refresh_token', 'token_expires_at', 'user_data',
       'onboarding-completed', 'auth_storage_type', 'login_type',
+      // Per-account scoping — must never leak into the next session, otherwise
+      // the next user inherits the previous user's pinned company / role.
+      'active_company_id', 'active_company_view_all', 'user_role',
       // HR module — sensitive payroll/bonus data must not persist between sessions
       'hr_payroll_draft_runs_v1', 'hr_bonuses_v1', 'hr_cnss_rates_v1',
       'hr_departments_v1', 'hr_public_holidays_v1',
       // Workflow definitions
       'lovable-workflows',
     ];
+
     keys.forEach(key => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
+    // Drop the memoised JWT claims AND the in-memory active-company mirror /
+    // tenant slug maps (module-level state that survives logout in the same
+    // SPA session), so the next sign-in resolves its own bound company.
+    resetAuthClaimsCache();
+    resetActiveCompanyState();
+
+
     // Clear tenant-scoped HR keys and dynamic employee document keys from both storages
     const matchesHrPattern = (key: string) =>
       /^t:[^:]+:hr_/.test(key) || key.includes('hr_docs_') || key.includes(':hr_docs_');
+
+
 
     const lsRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {

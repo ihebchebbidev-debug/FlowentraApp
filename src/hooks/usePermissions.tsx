@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { permissionsApi } from "@/services/api/permissionsApi";
+import { getAuthClaims } from '@/utils/authClaims';
 import { 
   RolePermission, 
   PermissionModule, 
@@ -9,6 +10,7 @@ import {
   hasPermissionFromStrings,
   stringsToRolePermissions
 } from "@/types/permissions";
+
 
 interface UsePermissionsReturn {
   permissions: RolePermission[];
@@ -66,6 +68,11 @@ function getCurrentUserData(): StoredUserData | null {
 // IMPORTANT: MainAdminUser ALWAYS has id=1 (from MainAdminUsers table)
 // Users from Users table have id >= 2 and use role-based permissions
 function checkIsMainAdmin(): boolean {
+  // JWT claims are authoritative (UserType / login_type).
+  const claims = getAuthClaims();
+  if (claims.isMainAdmin) return true;
+  if (claims.isRegularUser) return false;
+
   const userData = getCurrentUserData();
   if (!userData) return false;
   

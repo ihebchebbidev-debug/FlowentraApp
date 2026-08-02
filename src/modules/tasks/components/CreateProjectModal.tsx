@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -138,7 +139,7 @@ export function CreateProjectModal({
       if (userData) {
         const parsed = JSON.parse(userData);
         // MainAdminUser always has ID=1
-        if (parsed.id === 1 || parsed.userId === 1) {
+        if (isMainAdminAccount() && (parsed.id === 1 || parsed.userId === 1)) {
           return {
             id: 1,
             firstName: parsed.firstName || parsed.fullName?.split(' ')[0] || 'Admin',

@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -55,7 +56,7 @@ const Index = () => {
           // MainAdminUser (id===1 / loginType='admin') is NEVER staff. The old
           // heuristic misclassified fresh signups as staff and skipped /onboarding.
           const loginType = localStorage.getItem('login_type') || sessionStorage.getItem('login_type');
-          const isMainAdmin = user.id === 1 || loginType === 'admin';
+          const isMainAdmin = isMainAdminAccount();
           const isStaffUser = !isMainAdmin && (user.userType === 'RegularUser' || (typeof user.id === 'number' && user.id >= 2));
           const hasCompletedOnboarding = user.onboardingCompleted === true ||
                                          isStaffUser ||
@@ -110,7 +111,7 @@ const Index = () => {
             // Staff users (created by admin) have onboardingCompleted=true from backend
             // They also have empty companyName/companyWebsite and role in industry field
             const loginType2 = localStorage.getItem('login_type') || sessionStorage.getItem('login_type');
-            const isMainAdmin2 = user.id === 1 || loginType2 === 'admin';
+            const isMainAdmin2 = isMainAdminAccount();
             const isStaffUser = !isMainAdmin2 && (user.userType === 'RegularUser' || (typeof user.id === 'number' && user.id >= 2));
             
             // Store user role for access control

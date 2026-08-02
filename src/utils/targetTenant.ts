@@ -240,6 +240,44 @@ export function clearActiveCompany(): void {
   setActiveCompany({ id: null, viewAll: false });
 }
 
+/**
+ * Full teardown of active-company state — call on logout ONLY.
+ *
+ * Removing the localStorage keys is not enough: `_activeCompanyId`,
+ * `_activeCompanyViewAll` and the id↔slug maps are module-level memory that
+ * survives a logout inside the same SPA session. Without this the next account
+ * to sign in (e.g. a company-locked staff user after a main admin) inherits the
+ * previous user's pinned company and sends the wrong X-Target-Tenant.
+ */
+export function resetActiveCompanyState(): void {
+  _activeCompanyId = undefined;
+  _activeCompanyViewAll = undefined;
+  _tenantSlugsById.clear();
+  _tenantIdsBySlug.clear();
+  _defaultTenantIds.clear();
+
+  if (typeof window === 'undefined') return;
+  try {
+    const { localStorage: ls, sessionStorage: ss } = window;
+    for (const store of [ls, ss]) {
+      store.removeItem(ACTIVE_COMPANY_ID_KEY);
+      store.removeItem(ACTIVE_COMPANY_VIEW_ALL_KEY);
+      store.removeItem(TENANT_ID_SLUG_CACHE_KEY);
+      const stale: string[] = [];
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i);
+        if (key && (key.startsWith(COMPANY_FILTER_PREFIX) || key.startsWith('tenants:cache:'))) {
+          stale.push(key);
+        }
+      }
+      stale.forEach((key) => store.removeItem(key));
+    }
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
+
 export function getActiveCompanyId(): number | undefined {
   hydrateActiveCompanyFromStorage();
   return _activeCompanyId;

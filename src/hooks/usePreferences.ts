@@ -1,3 +1,4 @@
+import { isMainAdminAccount } from '@/utils/authClaims';
 import { useState, useEffect, createContext, useContext } from 'react';
 import { preferencesService, UserPreferences, CreatePreferencesRequest, UpdatePreferencesRequest } from '@/services/preferencesService';
 import { useTheme } from './useTheme';
@@ -54,7 +55,7 @@ export function usePreferencesManager() {
       try {
         const user = JSON.parse(userData);
         // If this is MainAdminUser (id=1), use their preferences directly
-        if (user.id === 1 && user.preferences) {
+        if (isMainAdminAccount() && user.preferences) {
           const prefs = typeof user.preferences === 'string'
             ? JSON.parse(user.preferences)
             : user.preferences;
@@ -157,7 +158,7 @@ export function usePreferencesManager() {
         const user = JSON.parse(userData);
         
         // If this is MainAdminUser (id=1), use their preferences directly from user_data
-        if (user.id === 1 && user.preferences) {
+        if (isMainAdminAccount() && user.preferences) {
           const prefs = typeof user.preferences === 'string'
             ? JSON.parse(user.preferences)
             : user.preferences;

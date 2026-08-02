@@ -14,6 +14,7 @@ import {
 import {
   filterActiveTenants,
   hasActiveCompanySelection,
+  isCompanyLockedUser,
   isMainAdminFromStorage,
   pinActiveCompanyFromList,
   shouldShowCompanyPicker,
@@ -32,11 +33,15 @@ export function RequireCompany({ children }: { children: ReactNode }) {
   const activeTenants = filterActiveTenants(tenants);
   const mainAdmin = isMainAdminFromStorage();
 
-  // Auto-pin when there is only one company — no picker needed.
+  // Auto-pin whenever no picker is needed:
+  //  • single company (anyone), or
+  //  • a regular user locked to their own company (JWT tenant_id), even when
+  //    the database holds several companies.
   useEffect(() => {
     if (!tenantsLoaded || !isAuthenticated) return;
     if (hasActiveCompanySelection()) return;
-    if (activeTenants.length !== 1) return;
+    if (activeTenants.length === 0) return;
+    if (shouldShowCompanyPicker(activeTenants, mainAdmin)) return;
     pinActiveCompanyFromList(activeTenants, mainAdmin);
   }, [tenantsLoaded, isAuthenticated, activeTenants, mainAdmin]);
 
@@ -62,8 +67,10 @@ export function RequireCompany({ children }: { children: ReactNode }) {
   if (!isAuthenticated) return <>{children}</>;
   if (hasActiveCompanySelection()) return <>{children}</>;
 
-  // Still pinning the sole company — hold the gate briefly.
-  if (activeTenants.length === 1) return null;
+  // Still pinning (single company, or a company-locked staff account).
+  if (activeTenants.length > 0 && !shouldShowCompanyPicker(activeTenants, mainAdmin)) {
+    return null;
+  }
 
   // Picker only for main admins with multiple companies.
   if (shouldShowCompanyPicker(tenants, mainAdmin)) {
@@ -76,8 +83,23 @@ export function RequireCompany({ children }: { children: ReactNode }) {
     );
   }
 
-  // Zero companies (setup not finished) — send to /onboarding.
-  // The company picker is only meaningful when there are 2+ companies.
+  // Zero companies. Only the workspace owner can create one, so staff accounts
+  // must not be bounced into the onboarding wizard (it would loop forever).
+  if (!mainAdmin && isCompanyLockedUser()) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
+        <div className="max-w-md space-y-2 text-center">
+          <h1 className="text-lg font-semibold text-foreground">No company assigned</h1>
+          <p className="text-sm text-muted-foreground">
+            Your account is not linked to an active company yet. Please contact your
+            administrator to be assigned to one.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Setup not finished — send the owner to /onboarding.
   return (
     <Navigate
       to="/onboarding"
