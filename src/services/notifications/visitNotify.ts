@@ -1,33 +1,20 @@
 /**
- * Sends a push notification to ntfy.sh/flow whenever a user enters the app
- * on one of the tracked tenant subdomains. Fires once per browser session.
+ * Sends a push notification to ntfy.sh/flow whenever anyone opens the app.
+ * Fires on every entry (page load), regardless of login state.
  */
 
 const NTFY_URL = 'https://ntfy.sh/flow';
-const SESSION_KEY = 'ntfy_visit_notified';
 
-const TRACKED_HOSTS = [
-  'test.flowentra.app',
-  'dev.flowentra.app',
-  'demo.flowentra.app',
-  'dubai.flowentra.app',
-  'kr.flowentra.app',
-];
+// Headers must be ASCII-only, otherwise fetch() throws and nothing is sent.
+function ascii(value: string): string {
+  return value.replace(/[^\x20-\x7E]/g, '');
+}
 
 export function notifyAppVisit(): void {
   if (typeof window === 'undefined') return;
 
   const host = window.location.hostname.toLowerCase();
-  if (!TRACKED_HOSTS.includes(host)) return;
-
-  try {
-    if (sessionStorage.getItem(SESSION_KEY) === host) return;
-    sessionStorage.setItem(SESSION_KEY, host);
-  } catch {
-    /* ignore storage errors */
-  }
-
-  const tenant = host.split('.')[0];
+  const tenant = host.split('.')[0] || host;
 
   let user = '';
   try {
@@ -51,14 +38,14 @@ export function notifyAppVisit(): void {
   fetch(NTFY_URL, {
     method: 'POST',
     headers: {
-      Title: `App visit — ${tenant}`,
+      Title: ascii(`App visit - ${tenant}`),
       Priority: '3',
       Tags: 'bust_in_silhouette,globe_with_meridians',
-      Click: window.location.href,
+      Click: ascii(window.location.href),
     },
     body,
     keepalive: true,
   }).catch(() => {
-    /* best-effort — never block the app */
+    /* best-effort - never block the app */
   });
 }
