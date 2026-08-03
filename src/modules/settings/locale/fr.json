@@ -361,7 +361,108 @@
       "createSuccessTitle": "Succès",
       "createFailedTitle": "Erreur",
       "createSuccess": "Rôle créé avec succès",
-      "createFailed": "Échec de la création du rôle"
+      "createFailed": "Échec de la création du rôle",
+      "templatePickerLabel": "Modèle de rôle",
+      "templateHint": "Partez d'un modèle de rôle prêt à l'emploi — les permissions et leurs dépendances sont préconfigurées. Vous pouvez tout ajuster ensuite.",
+      "modulesBadge": "{{count}} modules",
+      "scratchTitle": "Partir de zéro",
+      "scratchDesc": "Crée le rôle avec toutes les permissions accordées, à restreindre manuellement.",
+      "whatCanDo": "Ce qu'un {{role}} peut faire",
+      "createFromTemplate": "Créer {{role}}",
+      "createdFromTemplate": "{{role}} créé à partir du modèle « {{template}} ». Vous pouvez ajuster ses permissions à tout moment."
+    },
+    "templates": {
+      "technician": {
+        "name": "Technicien",
+        "description": "Intervenant terrain qui exécute les ordres de service et saisit temps et matériel.",
+        "highlights": [
+          "Consulte et met à jour les ordres de service et interventions assignés",
+          "Saisit les temps et les dépenses",
+          "Consulte les clients, articles et installations",
+          "Peut sortir du stock lors de la consommation de matériel"
+        ]
+      },
+      "planner": {
+        "name": "Planificateur / Répartiteur",
+        "description": "Planifie le travail, affecte les techniciens et maintient le planning à jour.",
+        "highlights": [
+          "Accès complet au planning, aux interventions et aux ordres de service",
+          "Consulte clients, articles, devis et achats pour le contexte",
+          "Gère les installations et les formulaires dynamiques",
+          "Lecture seule sur les utilisateurs pour affecter les techniciens"
+        ]
+      },
+      "salesperson": {
+        "name": "Commercial",
+        "description": "Pilote le cycle commercial : contacts, devis, affaires et ventes.",
+        "highlights": [
+          "Accès complet aux contacts, devis, affaires et ventes",
+          "Consulte les articles, installations et ordres de service",
+          "Accès aux analyses et rapports commerciaux",
+          "Peut saisir ses propres temps et dépenses"
+        ]
+      },
+      "purchaser": {
+        "name": "Acheteur",
+        "description": "Gère les achats : commandes fournisseurs, réceptions et factures fournisseurs.",
+        "highlights": [
+          "Accès complet aux achats et au catalogue d'articles",
+          "Gestion complète du stock : entrées, sorties et journaux",
+          "Consulte les fournisseurs et les contacts",
+          "Accès au tableau de bord des achats"
+        ]
+      },
+      "hr_manager": {
+        "name": "Responsable RH",
+        "description": "Gère les employés, les présences, les congés, la paie et les rapports RH.",
+        "highlights": [
+          "Accès complet au module RH et aux rapports RH",
+          "Gère les données de temps et de validation des dépenses",
+          "Consulte les utilisateurs et les contacts",
+          "Aucun accès aux ventes, achats ou paramètres système"
+        ]
+      },
+      "manager": {
+        "name": "Manager",
+        "description": "Supervise les opérations de tous les départements avec de larges droits de lecture et d'édition.",
+        "highlights": [
+          "Création et modification en CRM, service terrain, temps et dépenses",
+          "Accès aux rapports financiers et aux journaux d'audit",
+          "Consulte RH, achats, utilisateurs, paramètres et services en arrière-plan",
+          "Ne peut pas gérer les rôles ni les API externes"
+        ]
+      },
+      "admin": {
+        "name": "Administrateur",
+        "description": "Accès complet au système : utilisateurs, rôles, paramètres et intégrations.",
+        "highlights": [
+          "Tous les modules avec toutes les actions",
+          "Gère les utilisateurs, les rôles et les permissions",
+          "Configure les paramètres, intégrations et services en arrière-plan",
+          "Accès à tous les tableaux de bord et journaux d'audit"
+        ]
+      }
+    },
+    "permissionsEditor": {
+      "title": "Permissions pour {{role}}",
+      "subtitle": "Configurez ce à quoi les utilisateurs de ce rôle peuvent accéder",
+      "grantAll": "Tout accorder",
+      "revokeAll": "Tout retirer",
+      "unsavedChanges": "Modifications non enregistrées",
+      "cancel": "Annuler",
+      "reset": "Réinitialiser",
+      "save": "Enregistrer les permissions",
+      "saving": "Enregistrement...",
+      "saveSuccess": "Permissions enregistrées avec succès",
+      "saveFailed": "Échec de l'enregistrement des permissions",
+      "deps": {
+        "title": "Certaines permissions nécessitent des compléments",
+        "description": "Certaines permissions accordées dépendent d'autres pour fonctionner (par exemple les écrans du Planning nécessitent Planning · Voir). Voulez-vous les ajouter automatiquement ?",
+        "listLabel": "Permissions qui seront ajoutées",
+        "cancel": "Annuler",
+        "saveWithout": "Enregistrer sans elles",
+        "addAndSave": "Ajouter {{count}} et enregistrer"
+      }
     }
   },
   "confirm": {
@@ -702,7 +803,14 @@
       "audit_logs": "Journaux",
       "documents": "Documentation",
       "dynamic_forms": "Formulaires Dynamiques",
-      "ai_assistant": "Assistant IA"
+      "ai_assistant": "Assistant IA",
+      "deals": "Affaires",
+      "processes": "Services en arrière-plan",
+      "hr": "Ressources humaines",
+      "purchases": "Achats",
+      "external_endpoints": "API externes",
+      "reporting_finance": "Rapports financiers",
+      "reporting_hr": "Rapports RH"
     },
     "descriptions": {
       "contacts": "Gérer les informations clients et contacts",
@@ -722,7 +830,14 @@
       "audit_logs": "Voir les journaux d'audit et historique d'activité",
       "documents": "Accéder à la documentation API et guides",
       "dynamic_forms": "Créer et gérer des formulaires et listes de contrôle personnalisés",
-      "ai_assistant": "Accéder à l'assistant IA pour aide et automatisation"
+      "ai_assistant": "Accéder à l'assistant IA pour aide et automatisation",
+      "deals": "Gérer les affaires et le pipeline commercial",
+      "processes": "Surveiller et gérer les services en arrière-plan",
+      "hr": "Gérer les employés, présences, congés et paie",
+      "purchases": "Gérer les commandes d'achat, réceptions et factures fournisseurs",
+      "external_endpoints": "Gérer les points d'accès API externes et les intégrations",
+      "reporting_finance": "Consulter le tableau de bord financier",
+      "reporting_hr": "Consulter le tableau de bord RH"
     },
     "categories": {
       "CRM": "CRM",
@@ -738,7 +853,9 @@
       "delete": "Supprimer",
       "add_stock": "Ajouter du stock",
       "remove_stock": "Retirer du stock",
-      "read_logs": "Voir les journaux"
+      "read_logs": "Voir les journaux",
+      "switch_company": "Changer d'entreprise",
+      "manage": "Gérer"
     }
   },
   "subscription": {

@@ -56,6 +56,7 @@ export const FinanceDashboard = () => {
       tone="info"
       title={t('finance.title', 'Finance Dashboard')}
       subtitle={t('finance.subtitle', 'Invoices, payments & expenses with RAG flags')}
+      explain="All figures come from your sales (used as invoices) and dispatch expenses. Revenue is the sum of sale totals, outstanding is everything not marked paid, and the table lists the 10 largest sales."
       onRefresh={() => refetch()}
       onExport={() => data && exportSingleReport('finance', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
@@ -75,14 +76,21 @@ export const FinanceDashboard = () => {
             ]).slice(0, 4).map((k, i) => {
               const Icon = iconByIdx[i] || Wallet;
               const tone = k.ragStatus === 'green' ? 'success' : k.ragStatus === 'yellow' ? 'warning' : k.ragStatus === 'red' ? 'destructive' : 'info';
+              // TEMPORARY calculation notes, indexed like the backend KPI list.
+              const explain = [
+                'Sum of the Total Amount of every non-deleted sale (all periods).',
+                'Sum of the Total Amount of the sales whose payment status is not paid.',
+                'Number of non-deleted sales (each sale counts as one invoice line).',
+                'Number of sales whose payment status is overdue. Green when 0.',
+              ][i];
               return (
-                <KpiCard favorite={{ id: `f-kpi-${i}`, title: k.title, source: SOURCE }} key={i} icon={Icon} tone={tone as any} value={k.formattedValue} label={k.title} trend={k.trend} rag={k.ragStatus as any} trendDirection={!k.trend ? 'neutral' : k.trend.startsWith('-') ? 'down' : 'up'} />
+                <KpiCard explain={explain} favorite={{ id: `f-kpi-${i}`, title: k.title, source: SOURCE }} key={i} icon={Icon} tone={tone as any} value={k.formattedValue} label={k.title} trend={k.trend} rag={k.ragStatus as any} trendDirection={!k.trend ? 'neutral' : k.trend.startsWith('-') ? 'down' : 'up'} />
               );
             })}
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <ChartCard title={t('finance.invoiceStatus', 'Invoice Status')} favorite={{ id: 'f-donut', title: 'Invoice Status', source: SOURCE }} empty={!donut.length}>
+            <ChartCard title={t('finance.invoiceStatus', 'Invoice Status')} explain="All non-deleted sales counted by payment status: Paid, Pending (empty/pending/unpaid/open), Partial (partial/partially_paid) and Overdue. Statuses with 0 rows are hidden." favorite={{ id: 'f-donut', title: 'Invoice Status', source: SOURCE }} empty={!donut.length}>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={donut} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" nameKey="name">
@@ -93,7 +101,7 @@ export const FinanceDashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('finance.expenses', 'Expenses by Category')} favorite={{ id: 'f-exp', title: 'Expenses by Category', source: SOURCE }} empty={!expenses.length} emptyLabel={t('finance.expensesEmpty', 'Expense categories not yet available')}>
+            <ChartCard title={t('finance.expenses', 'Expenses by Category')} explain="Dispatch expenses grouped by expense type, summing the amount of each expense. Sorted from highest to lowest." favorite={{ id: 'f-exp', title: 'Expenses by Category', source: SOURCE }} empty={!expenses.length} emptyLabel={t('finance.expensesEmpty', 'Expense categories not yet available')}>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={expenses}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -107,7 +115,7 @@ export const FinanceDashboard = () => {
           </div>
 
           <div className="mt-3">
-            <ChartCard title={t('finance.invoiceTable', 'Recent Invoices')} favorite={{ id: 'f-inv', title: 'Recent Invoices', source: SOURCE }} bodyClassName="p-0" empty={!invoices.length} emptyLabel={t('finance.invoiceEmpty', 'Invoice detail rows not yet populated')}>
+            <ChartCard title={t('finance.invoiceTable', 'Recent Invoices')} explain="The 10 sales with the highest total amount. Colour dot: green = paid, red = overdue, yellow = partial, grey = other." favorite={{ id: 'f-inv', title: 'Recent Invoices', source: SOURCE }} bodyClassName="p-0" empty={!invoices.length} emptyLabel={t('finance.invoiceEmpty', 'Invoice detail rows not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">

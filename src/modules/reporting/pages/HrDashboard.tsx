@@ -55,6 +55,7 @@ export const HrDashboard = () => {
       tone="purple"
       title={t('hr.title', 'HR Dashboard')}
       subtitle={t('hr.subtitle', 'Headcount, salaries, performance & hiring')}
+      explain="All figures come from your active users, their salary configuration and their performance reviews. Employees without a salary configuration count in headcount but not in salary cost."
       onRefresh={() => refetch()}
       onExport={() => data && exportSingleReport('hr', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
@@ -66,14 +67,14 @@ export const HrDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard favorite={{ id: 'h-kpi-head', title: 'Total Headcount', source: SOURCE }} icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
-            <KpiCard favorite={{ id: 'h-kpi-sal', title: 'Monthly Salary Cost', source: SOURCE }} icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
-            <KpiCard favorite={{ id: 'h-kpi-perf', title: 'Avg Performance Grade', source: SOURCE }} icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
-            <KpiCard favorite={{ id: 'h-kpi-hires', title: 'New Hires', source: SOURCE }} icon={UserPlus} tone="accent" tag="YTD" value={totalHires || '—'} label={t('hr.kpi.hires', 'New Hires')} />
+            <KpiCard explain="Total number of active, non-deleted users (sum of the headcount-by-department chart)." favorite={{ id: 'h-kpi-head', title: 'Total Headcount', source: SOURCE }} icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
+            <KpiCard explain="Sum of the gross salaries of all employees that have a salary configuration (sum of the salary-by-department chart)." favorite={{ id: 'h-kpi-sal', title: 'Monthly Salary Cost', source: SOURCE }} icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
+            <KpiCard explain="Static placeholder value — not yet computed from the performance reviews." favorite={{ id: 'h-kpi-perf', title: 'Avg Performance Grade', source: SOURCE }} icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
+            <KpiCard explain="Sum of the hires series of the last 12 months (hire date from the salary config, otherwise the user creation date)." favorite={{ id: 'h-kpi-hires', title: 'New Hires', source: SOURCE }} icon={UserPlus} tone="accent" tag="YTD" value={totalHires || '—'} label={t('hr.kpi.hires', 'New Hires')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <ChartCard title={t('hr.headcount', 'Headcount by Department')} favorite={{ id: 'h-head', title: 'Headcount by Department', source: SOURCE }} empty={!headcount.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+            <ChartCard title={t('hr.headcount', 'Headcount by Department')} explain="Active users grouped by the department in their salary configuration. Users without a department are grouped as Unassigned." favorite={{ id: 'h-head', title: 'Headcount by Department', source: SOURCE }} empty={!headcount.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={headcount}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -84,7 +85,7 @@ export const HrDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('hr.salary', 'Salary Cost by Department')} favorite={{ id: 'h-sal', title: 'Salary Cost by Department', source: SOURCE }} empty={!salary.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+            <ChartCard title={t('hr.salary', 'Salary Cost by Department')} explain="Salary configurations grouped by department, summing the gross salary of each employee." favorite={{ id: 'h-sal', title: 'Salary Cost by Department', source: SOURCE }} empty={!salary.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={salary}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -98,7 +99,7 @@ export const HrDashboard = () => {
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <ChartCard title={t('hr.performance', 'Performance Distribution')} favorite={{ id: 'h-perf', title: 'Performance Distribution', source: SOURCE }} empty={!performance.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+            <ChartCard title={t('hr.performance', 'Performance Distribution')} explain="Performance reviews (non-deleted, with a rating) counted per rating value." favorite={{ id: 'h-perf', title: 'Performance Distribution', source: SOURCE }} empty={!performance.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={performance} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" nameKey="name">
@@ -109,7 +110,7 @@ export const HrDashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('hr.hiring', 'Hiring vs Turnover')} favorite={{ id: 'h-hire', title: 'Hiring vs Turnover', source: SOURCE }} empty={!hiring.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+            <ChartCard title={t('hr.hiring', 'Hiring vs Turnover')} explain="Rolling 12 months. Hires = employees whose hire date (or account creation date) falls in that month. Leavers = salary configs whose contract end date falls in that month. Third series = hires - leavers." favorite={{ id: 'h-hire', title: 'Hiring vs Turnover', source: SOURCE }} empty={!hiring.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={hiring}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -125,7 +126,7 @@ export const HrDashboard = () => {
           </div>
 
           <div className="mt-3">
-            <ChartCard title={t('hr.employeeTable', 'Employee Detail')} favorite={{ id: 'h-emp', title: 'Employees', source: SOURCE }} bodyClassName="p-0" empty={!employees.length} emptyLabel={t('hr.empty', 'Employee table not yet populated')}>
+            <ChartCard title={t('hr.employeeTable', 'Employee Detail')} explain="All active users (max 50), sorted by gross salary descending then first name. Amount = gross salary, status = latest review rating." favorite={{ id: 'h-emp', title: 'Employees', source: SOURCE }} bodyClassName="p-0" empty={!employees.length} emptyLabel={t('hr.empty', 'Employee table not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">

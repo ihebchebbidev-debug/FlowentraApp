@@ -56,6 +56,7 @@ export const PurchaseDashboard = () => {
       tone="warning"
       title={t('purchase.title', 'Purchase Dashboard')}
       subtitle={t('purchase.subtitle', 'Suppliers, spend, articles & receipts')}
+      explain="All figures come from your purchase orders and goods receipts. Spend always uses the PO grand total, and the trend covers a rolling 12 months."
       onRefresh={() => refetch()}
       onExport={() => data && exportSingleReport('purchase', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
@@ -67,14 +68,14 @@ export const PurchaseDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard favorite={{ id: 'p-kpi-spend', title: 'Total Spend', source: SOURCE }} icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
-            <KpiCard favorite={{ id: 'p-kpi-pos', title: 'Purchase Orders', source: SOURCE }} icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
-            <KpiCard favorite={{ id: 'p-kpi-sup', title: 'Active Suppliers', source: SOURCE }} icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
-            <KpiCard favorite={{ id: 'p-kpi-rec', title: 'Receipt Rate', source: SOURCE }} icon={Truck} tone="accent" tag="AVG" value={receiptStatusRaw.length ? `${((receiptStatusRaw.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatusRaw.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
+            <KpiCard explain="Sum of the grand total of all non-deleted purchase orders (sum of the spend-by-supplier chart)." favorite={{ id: 'p-kpi-spend', title: 'Total Spend', source: SOURCE }} icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
+            <KpiCard explain="Number of purchase orders shown in the PO detail table (10 most recent by order date)." favorite={{ id: 'p-kpi-pos', title: 'Purchase Orders', source: SOURCE }} icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
+            <KpiCard explain="Number of suppliers in the spend-by-supplier chart (top 8 suppliers by spend)." favorite={{ id: 'p-kpi-sup', title: 'Active Suppliers', source: SOURCE }} icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
+            <KpiCard explain="Goods receipts with status received / all goods receipts x100." favorite={{ id: 'p-kpi-rec', title: 'Receipt Rate', source: SOURCE }} icon={Truck} tone="accent" tag="AVG" value={receiptStatusRaw.length ? `${((receiptStatusRaw.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatusRaw.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <ChartCard title={t('purchase.spendSupplier', 'Spend by Supplier — Top 8')} favorite={{ id: 'p-sup', title: 'Spend by Supplier', source: SOURCE }} className="lg:col-span-2" empty={!bySupplier.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+            <ChartCard title={t('purchase.spendSupplier', 'Spend by Supplier — Top 8')} explain="Purchase orders grouped by supplier name, summing the grand total. Top 8 suppliers." favorite={{ id: 'p-sup', title: 'Spend by Supplier', source: SOURCE }} className="lg:col-span-2" empty={!bySupplier.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={bySupplier.slice(0, 8)} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID_STROKE} />
@@ -86,7 +87,7 @@ export const PurchaseDashboard = () => {
               </ResponsiveContainer>
             </ChartCard>
             <div className="grid grid-cols-1 gap-3">
-              <ChartCard title={t('purchase.spendCategory', 'Spend by Category')} favorite={{ id: 'p-cat', title: 'Spend by Category', source: SOURCE }} empty={!byCategory.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+              <ChartCard title={t('purchase.spendCategory', 'Spend by Category')} explain="Purchase orders grouped by PO status, summing the grand total (purchase orders have no category field yet)." favorite={{ id: 'p-cat', title: 'Spend by Category', source: SOURCE }} empty={!byCategory.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
                 <ResponsiveContainer width="100%" height={110}>
                   <PieChart>
                     <Pie data={byCategory} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" nameKey="name">
@@ -96,7 +97,7 @@ export const PurchaseDashboard = () => {
                   </PieChart>
                 </ResponsiveContainer>
               </ChartCard>
-              <ChartCard title={t('purchase.receiptStatus', 'Receipt Status')} favorite={{ id: 'p-rec', title: 'Receipt Status', source: SOURCE }} empty={!receiptStatus.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+              <ChartCard title={t('purchase.receiptStatus', 'Receipt Status')} explain="Goods receipts counted per status." favorite={{ id: 'p-rec', title: 'Receipt Status', source: SOURCE }} empty={!receiptStatus.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
                 <ResponsiveContainer width="100%" height={110}>
                   <PieChart>
                     <Pie data={receiptStatus} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" nameKey="name">
@@ -110,7 +111,7 @@ export const PurchaseDashboard = () => {
           </div>
 
           <div className="mt-3">
-            <ChartCard title={t('purchase.trend', 'PO Spend Trend')} favorite={{ id: 'p-trend', title: 'PO Spend Trend', source: SOURCE }} empty={!trend.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+            <ChartCard title={t('purchase.trend', 'PO Spend Trend')} explain="Rolling 12 months: sum of the grand total of the purchase orders whose order date falls in that month." favorite={{ id: 'p-trend', title: 'PO Spend Trend', source: SOURCE }} empty={!trend.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={trend}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -124,7 +125,7 @@ export const PurchaseDashboard = () => {
           </div>
 
           <div className="mt-3">
-            <ChartCard title={t('purchase.poTable', 'Purchase Order Detail')} favorite={{ id: 'p-po', title: 'Purchase Orders', source: SOURCE }} bodyClassName="p-0" empty={!pos.length} emptyLabel={t('purchase.empty', 'PO detail table not yet populated')}>
+            <ChartCard title={t('purchase.poTable', 'Purchase Order Detail')} explain="The 10 most recent purchase orders by order date. Colour dot from the PO status." favorite={{ id: 'p-po', title: 'Purchase Orders', source: SOURCE }} bodyClassName="p-0" empty={!pos.length} emptyLabel={t('purchase.empty', 'PO detail table not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">

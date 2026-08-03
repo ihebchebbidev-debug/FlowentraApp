@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { ExplainNote } from './ExplainNote';
 import { useTenantMap } from '@/contexts/TenantMapContext';
 import { getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
 
@@ -28,6 +29,8 @@ interface ReportShellProps {
   onExport?: () => void;
   error?: unknown;
   actions?: React.ReactNode;
+  /** TEMPORARY: plain-language note on how this dashboard is calculated. */
+  explain?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -41,6 +44,7 @@ export const ReportShell = ({
   onExport,
   error,
   actions,
+  explain,
   children,
 }: ReportShellProps) => {
   const t = toneMap[tone];
@@ -105,6 +109,7 @@ export const ReportShell = ({
           )}
         </div>
       ) : null}
+      {explain && <ExplainNote variant="page">{explain}</ExplainNote>}
       {children}
     </div>
   );

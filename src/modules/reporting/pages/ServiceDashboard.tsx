@@ -89,6 +89,7 @@ export const ServiceDashboard = () => {
       tone="accent"
       title={t('service.title', 'Service Dashboard')}
       subtitle={t('service.subtitle', 'Completion, planning & technician profitability')}
+      explain="All figures come live from your service orders, dispatches and job time entries. Completion is measured against a fixed 90% target, hours compare estimated vs actual job time, and dispatches are split per technician and per year."
       onRefresh={() => refetch()}
       onExport={() => data && exportSingleReport('service', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
@@ -100,14 +101,14 @@ export const ServiceDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard favorite={{ id: 'sv-kpi-comp', title: 'Completion Rate vs Target', source: SOURCE }} icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
-            <KpiCard favorite={{ id: 'sv-kpi-wo', title: 'Work Orders', source: SOURCE }} icon={ClipboardList} tone="info" tag="LIVE" value={byStatusAll.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
-            <KpiCard favorite={{ id: 'sv-kpi-techs', title: 'Active Technicians', source: SOURCE }} icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
-            <KpiCard favorite={{ id: 'sv-kpi-eff', title: 'Time Efficiency', source: SOURCE }} icon={Timer} tone="success" tag="YTD" value={effVal > 0 ? `${effVal.toFixed(0)}%` : '—'} label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection={effVal >= 100 ? 'up' : 'down'} rag={effVal >= 100 ? 'green' : effVal >= 85 ? 'yellow' : effVal > 0 ? 'red' : 'neutral'} />
+            <KpiCard explain="Average of the monthly completion rates of the current year. Monthly rate = service orders with status completed or closed / all service orders created that month x100. Target = 90%." favorite={{ id: 'sv-kpi-comp', title: 'Completion Rate vs Target', source: SOURCE }} icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
+            <KpiCard explain="Total number of service orders (sum of all status groups)." favorite={{ id: 'sv-kpi-wo', title: 'Work Orders', source: SOURCE }} icon={ClipboardList} tone="info" tag="LIVE" value={byStatusAll.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
+            <KpiCard explain="Number of distinct technicians appearing in the dispatch-per-technician breakdown (top 5 dispatchers of the last 3 years)." favorite={{ id: 'sv-kpi-techs', title: 'Active Technicians', source: SOURCE }} icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
+            <KpiCard explain="Planned hours / consumed hours x100. Planned = estimated hours (or estimated minutes / 60) of jobs, consumed = actual hours (or actual minutes / 60). Above 100% means faster than planned." favorite={{ id: 'sv-kpi-eff', title: 'Time Efficiency', source: SOURCE }} icon={Timer} tone="success" tag="YTD" value={effVal > 0 ? `${effVal.toFixed(0)}%` : '—'} label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection={effVal >= 100 ? 'up' : 'down'} rag={effVal >= 100 ? 'green' : effVal >= 85 ? 'yellow' : effVal > 0 ? 'red' : 'neutral'} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <ChartCard title={t('service.completionTarget', 'Completion Rate vs Target — by Month')} favorite={{ id: 'sv-comp', title: 'Completion vs Target', source: SOURCE }} className="lg:col-span-2" empty={!completion.length}>
+            <ChartCard title={t('service.completionTarget', 'Completion Rate vs Target — by Month')} explain="Per month of the current year: service orders completed or closed / all service orders of that month x100. Target = 90%." favorite={{ id: 'sv-comp', title: 'Completion vs Target', source: SOURCE }} className="lg:col-span-2" empty={!completion.length}>
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={completion}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -178,7 +179,7 @@ export const ServiceDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('service.dispatchesTech', 'Dispatches per Technician — Year')} favorite={{ id: 'sv-disp', title: 'Dispatches by Technician', source: SOURCE }} empty={!dispatches.length}>
+            <ChartCard title={t('service.dispatchesTech', 'Dispatches per Technician — Year')} explain="Dispatches grouped by the user who dispatched them, split by year: 2 years ago, last year, current year. Max 5 technicians." favorite={{ id: 'sv-disp', title: 'Dispatches by Technician', source: SOURCE }} empty={!dispatches.length}>
               <ResponsiveContainer width="100%" height={190}>
                 <BarChart data={dispatches}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -192,7 +193,7 @@ export const ServiceDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} favorite={{ id: 'sv-hours', title: 'Consumed vs Planned Hours', source: SOURCE }} empty={!plannedH && !consumedH && !savedH && !effVal} emptyLabel={t('service.hoursEmpty', 'No planned/actual hours logged yet')}>
+            <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} explain="Planned = sum of estimated hours of all jobs of the current year, Consumed = sum of actual hours, Hours saved = planned - consumed (never negative), Efficiency = planned / consumed x100. If no job carries a date of this year, all jobs are used." favorite={{ id: 'sv-hours', title: 'Consumed vs Planned Hours', source: SOURCE }} empty={!plannedH && !consumedH && !savedH && !effVal} emptyLabel={t('service.hoursEmpty', 'No planned/actual hours logged yet')}>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
                 {[
                   { v: effVal > 0 ? `${effVal.toFixed(0)}%` : '—', l: t('service.avgEfficiency', 'Avg Efficiency'), tone: 'text-accent' },
@@ -210,7 +211,7 @@ export const ServiceDashboard = () => {
           </div>
 
           <div className="mt-3">
-            <ChartCard title={t('service.techTable', 'Technician Performance Detail')} favorite={{ id: 'sv-techs', title: 'Technician Performance', source: SOURCE }} bodyClassName="p-0" empty={!techs.length} emptyLabel={t('service.techEmpty', 'Technician table not yet populated')}>
+            <ChartCard title={t('service.techTable', 'Technician Performance Detail')} explain="One row per technician built from the dispatch grouping above (dispatch counts per year)." favorite={{ id: 'sv-techs', title: 'Technician Performance', source: SOURCE }} bodyClassName="p-0" empty={!techs.length} emptyLabel={t('service.techEmpty', 'Technician table not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">

@@ -26,6 +26,17 @@ import {
 } from "@/types/permissions";
 import { permissionsApi } from "@/services/api/permissionsApi";
 import { broadcastPermissionChange } from "@/utils/permissionBroadcast";
+import { findMissingDependencies } from "@/config/roleTemplates";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface RolePermissionsEditorProps {
   role: Role;
@@ -66,14 +77,26 @@ const MODULE_ICONS: Record<PermissionModule, React.ReactNode> = {
   processes: <Activity className="h-4 w-4" />,
 };
 
+
 export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorProps) {
   const { t } = useTranslation('settings');
+
+  // "service_orders:read" -> "Service Orders · View" (translated)
+  const formatPermissionKey = (key: string): string => {
+    const [module, action] = key.split(':') as [PermissionModule, PermissionAction];
+    const mod = PERMISSION_MODULES.find(m => m.module === module);
+    const moduleLabel = t(`permissions.modules.${module}`, mod?.label ?? module);
+    const actionLabel = t(`permissions.actions.${action}`, ACTION_LABELS[action] ?? action);
+    return `${moduleLabel} · ${actionLabel}`;
+  };
   const queryClient = useQueryClient();
   
   // Local state for permissions being edited
   const [localPermissions, setLocalPermissions] = useState<Map<string, boolean>>(new Map());
   const [hasChanges, setHasChanges] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  // Dependency confirmation before saving
+  const [pendingDependencies, setPendingDependencies] = useState<string[]>([]);
 
   // Fetch existing permissions for this role
   const { data: existingPermissions = [], isLoading } = useQuery({
@@ -100,15 +123,17 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
     setInitialized(true);
   }, [existingPermissions, isLoading, initialized]);
 
-  // Mutation to save permissions
+  // Mutation to save permissions. Optionally receives extra "module:action"
+  // keys to force-grant (used by the dependency confirmation dialog).
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (extraGrants: string[] = []) => {
+      const forced = new Set(extraGrants);
       const permissions: { module: PermissionModule; action: PermissionAction; granted: boolean }[] = [];
       
       PERMISSION_MODULES.forEach(mod => {
         mod.actions.forEach(action => {
           const key = `${mod.module}:${action}`;
-          const granted = localPermissions.get(key) ?? false;
+          const granted = forced.has(key) || (localPermissions.get(key) ?? false);
           permissions.push({ module: mod.module, action, granted });
         });
       });
@@ -118,19 +143,45 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
         permissions,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, extraGrants) => {
       queryClient.invalidateQueries({ queryKey: ['rolePermissions', role.id] });
       // Also invalidate user permissions so logged-in users get updates
       queryClient.invalidateQueries({ queryKey: ['myPermissions'] });
       // Broadcast to other tabs/windows that permissions have changed
       broadcastPermissionChange();
-      toast.success('Permissions saved successfully');
+      if (extraGrants && extraGrants.length > 0) {
+        // Reflect the auto-added dependencies in the local grid
+        setLocalPermissions(prev => {
+          const next = new Map(prev);
+          extraGrants.forEach(key => next.set(key, true));
+          return next;
+        });
+      }
+      toast.success(t('roles.permissionsEditor.saveSuccess'));
       setHasChanges(false);
+      setPendingDependencies([]);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to save permissions');
+      toast.error(error.message || t('roles.permissionsEditor.saveFailed'));
     },
   });
+
+  // Currently granted keys, used for dependency checking
+  const grantedKeys = (): string[] =>
+    Array.from(localPermissions.entries())
+      .filter(([, granted]) => granted)
+      .map(([key]) => key);
+
+  // Ask before auto-adding missing dependencies
+  const handleSaveClick = () => {
+    const missing = findMissingDependencies(grantedKeys());
+    if (missing.length > 0) {
+      setPendingDependencies(missing);
+      return;
+    }
+    saveMutation.mutate([]);
+  };
+
 
   // Toggle a single permission
   const togglePermission = (module: PermissionModule, action: PermissionAction) => {
@@ -228,9 +279,9 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
             <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold">Permissions for {role.name}</h3>
+            <h3 className="font-semibold">{t('roles.permissionsEditor.title', { role: role.name })}</h3>
             <p className="text-xs text-muted-foreground">
-              Configure what users with this role can access
+              {t('roles.permissionsEditor.subtitle')}
             </p>
           </div>
         </div>
@@ -238,11 +289,11 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={grantAll}>
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            Grant All
+            {t('roles.permissionsEditor.grantAll')}
           </Button>
           <Button variant="outline" size="sm" onClick={revokeAll}>
             <X className="h-4 w-4 mr-1" />
-            Revoke All
+            {t('roles.permissionsEditor.revokeAll')}
           </Button>
         </div>
       </div>
@@ -352,7 +403,7 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
         <div className="flex items-center gap-2">
           {hasChanges && (
             <Badge variant="outline" className="text-warning border-warning/30 bg-warning/10">
-              Unsaved changes
+              {t('roles.permissionsEditor.unsavedChanges')}
             </Badge>
           )}
         </div>
@@ -360,7 +411,7 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
         <div className="flex items-center gap-2">
           {onClose && (
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {t('roles.permissionsEditor.cancel')}
             </Button>
           )}
           <Button
@@ -369,18 +420,67 @@ export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorPr
             disabled={!hasChanges || saveMutation.isPending}
           >
             <RotateCcw className="h-4 w-4 mr-1" />
-            Reset
+            {t('roles.permissionsEditor.reset')}
           </Button>
           <Button
-            onClick={() => saveMutation.mutate()}
+            onClick={handleSaveClick}
             disabled={!hasChanges || saveMutation.isPending}
             className="gap-2"
           >
             <Save className="h-4 w-4" />
-            {saveMutation.isPending ? 'Saving...' : 'Save Permissions'}
+            {saveMutation.isPending
+              ? t('roles.permissionsEditor.saving')
+              : t('roles.permissionsEditor.save')}
           </Button>
         </div>
       </div>
+
+      {/* Dependency confirmation */}
+      <AlertDialog
+        open={pendingDependencies.length > 0}
+        onOpenChange={(o) => { if (!o) setPendingDependencies([]); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('roles.permissionsEditor.deps.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('roles.permissionsEditor.deps.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-56 overflow-auto rounded-md border bg-muted/30 p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              {t('roles.permissionsEditor.deps.listLabel')}
+            </p>
+            <ul className="space-y-1">
+              {pendingDependencies.map(key => (
+                <li key={key} className="text-sm flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                  {formatPermissionKey(key)}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('roles.permissionsEditor.deps.cancel')}</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => saveMutation.mutate([])}
+              disabled={saveMutation.isPending}
+            >
+              {t('roles.permissionsEditor.deps.saveWithout')}
+            </Button>
+            <AlertDialogAction
+              onClick={() => saveMutation.mutate(pendingDependencies)}
+              disabled={saveMutation.isPending}
+            >
+              {t('roles.permissionsEditor.deps.addAndSave', { count: pendingDependencies.length })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }

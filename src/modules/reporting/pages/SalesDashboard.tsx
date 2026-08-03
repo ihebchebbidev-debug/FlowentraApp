@@ -62,6 +62,7 @@ export const SalesDashboard = () => {
       tone="primary"
       title={t('sales.title', 'Sales Dashboard')}
       subtitle={t('sales.subtitle', 'Commercial pipeline: offers, orders, conversion, customers')}
+      explain="All figures come live from your offers and sales orders. Counts group records by their status field, the conversion trend covers the last 6 months, the year comparison the last 3 years, and Top Customers ranks contacts by total sales amount. The period and status filters are applied on the loaded data."
       onRefresh={() => refetch()}
       onExport={() => data && exportSingleReport('sales', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
@@ -74,14 +75,14 @@ export const SalesDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard favorite={{ id: 's-kpi-offers', title: 'Total Offers', source: SOURCE }} icon={FileText} tone="primary" tag="YTD" value={offersByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.totalOffers', 'Total Offers')} trend={t('sales.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
-            <KpiCard favorite={{ id: 's-kpi-conv', title: 'Offer Conversion Rate', source: SOURCE }} icon={Repeat} tone="accent" tag="AVG" value={`${(conversion.reduce((s, c) => s + Number(c.value ?? 0), 0) / Math.max(conversion.length, 1)).toFixed(0)}%`} label={t('sales.kpi.conversion', 'Offer Conversion Rate')} trend={t('sales.kpi.target', 'target 50%')} trendDirection="up" />
-            <KpiCard favorite={{ id: 's-kpi-orders', title: 'Sales Orders', source: SOURCE }} icon={Receipt} tone="info" tag="LIVE" value={salesByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.openOrders', 'Sales Orders')} trendDirection="up" trend={t('sales.kpi.thisPeriod', 'this period')} />
-            <KpiCard favorite={{ id: 's-kpi-topcust', title: 'Top Customers', source: SOURCE }} icon={Building2} tone="success" tag="TOP" value={topCustomers.length} label={t('sales.kpi.topCustomers', 'Top Customers')} />
+            <KpiCard explain="Sum of all offer counts grouped by status (every offer in the company, no date limit)." favorite={{ id: 's-kpi-offers', title: 'Total Offers', source: SOURCE }} icon={FileText} tone="primary" tag="YTD" value={offersByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.totalOffers', 'Total Offers')} trend={t('sales.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
+            <KpiCard explain="Average of the monthly conversion rates of the last 6 months. Monthly rate = offers with status accepted/won divided by all offers created that month, x100. Target line = 50%." favorite={{ id: 's-kpi-conv', title: 'Offer Conversion Rate', source: SOURCE }} icon={Repeat} tone="accent" tag="AVG" value={`${(conversion.reduce((s, c) => s + Number(c.value ?? 0), 0) / Math.max(conversion.length, 1)).toFixed(0)}%`} label={t('sales.kpi.conversion', 'Offer Conversion Rate')} trend={t('sales.kpi.target', 'target 50%')} trendDirection="up" />
+            <KpiCard explain="Sum of all sales-order counts grouped by status (all sales orders)." favorite={{ id: 's-kpi-orders', title: 'Sales Orders', source: SOURCE }} icon={Receipt} tone="info" tag="LIVE" value={salesByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.openOrders', 'Sales Orders')} trendDirection="up" trend={t('sales.kpi.thisPeriod', 'this period')} />
+            <KpiCard explain="Number of customers shown in the Top Customers table (top 5 contacts by total sales revenue)." favorite={{ id: 's-kpi-topcust', title: 'Top Customers', source: SOURCE }} icon={Building2} tone="success" tag="TOP" value={topCustomers.length} label={t('sales.kpi.topCustomers', 'Top Customers')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <ChartCard title={t('sales.offersByStatus', 'Offers by Status')} favorite={{ id: 's-offers', title: 'Offers by Status', source: SOURCE }} empty={!offersByStatus.length}>
+            <ChartCard title={t('sales.offersByStatus', 'Offers by Status')} explain="Count of offers grouped by their Status field. Client filters (period/status) are applied on top of this list." favorite={{ id: 's-offers', title: 'Offers by Status', source: SOURCE }} empty={!offersByStatus.length}>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={offersByStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" nameKey="name">
@@ -92,7 +93,7 @@ export const SalesDashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('sales.salesByStatus', 'Sales Orders by Status')} favorite={{ id: 's-orders', title: 'Sales Orders by Status', source: SOURCE }} empty={!salesByStatus.length}>
+            <ChartCard title={t('sales.salesByStatus', 'Sales Orders by Status')} explain="Count of sales orders grouped by their Status field." favorite={{ id: 's-orders', title: 'Sales Orders by Status', source: SOURCE }} empty={!salesByStatus.length}>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={salesByStatus}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -103,7 +104,7 @@ export const SalesDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('sales.conversionTrend', 'Offer Conversion Trend')} favorite={{ id: 's-conv', title: 'Conversion Trend', source: SOURCE }} empty={!conversion.length}>
+            <ChartCard title={t('sales.conversionTrend', 'Offer Conversion Trend')} explain="Per month over the last 6 months: accepted or won offers / all offers created that month x100, rounded to 1 decimal. Target = 50%." favorite={{ id: 's-conv', title: 'Conversion Trend', source: SOURCE }} empty={!conversion.length}>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={conversion}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -118,7 +119,7 @@ export const SalesDashboard = () => {
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <ChartCard title={t('sales.yoyComparison', 'Sales Orders — Year Comparison')} favorite={{ id: 's-yoy', title: 'Year Comparison', source: SOURCE }} className="lg:col-span-2" empty={!yoy.length}>
+            <ChartCard title={t('sales.yoyComparison', 'Sales Orders — Year Comparison')} explain="Sales orders created per month, split into three series: 2 years ago, last year and the current year (counted by creation date)." favorite={{ id: 's-yoy', title: 'Year Comparison', source: SOURCE }} className="lg:col-span-2" empty={!yoy.length}>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={yoy}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
@@ -132,7 +133,7 @@ export const SalesDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} favorite={{ id: 's-types', title: 'Orders by Type', source: SOURCE }} empty={!ordersByType.length}>
+            <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} explain="Line items of offers and sales orders grouped by item Type (article, service, ...). Counts of both are summed; top 8 types shown." favorite={{ id: 's-types', title: 'Orders by Type', source: SOURCE }} empty={!ordersByType.length}>
               {(['primary', 'accent', 'info', 'warning', 'purple'] as const).map((tone, i) => {
                 const row = ordersByType[i];
                 if (!row) return null;
@@ -142,7 +143,7 @@ export const SalesDashboard = () => {
           </div>
 
           <div className="mt-3">
-            <ChartCard title={t('sales.topCustomers', 'Top Customers — Offers & Orders')} favorite={{ id: 's-topcust', title: 'Top Customers', source: SOURCE }} bodyClassName="p-0" empty={!topCustomers.length}>
+            <ChartCard title={t('sales.topCustomers', 'Top Customers — Offers & Orders')} explain="Sales grouped by contact; revenue = sum of the sale Total Amount. Top 5 contacts by revenue." favorite={{ id: 's-topcust', title: 'Top Customers', source: SOURCE }} bodyClassName="p-0" empty={!topCustomers.length}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">

@@ -2,6 +2,7 @@ import { ArrowUp, ArrowDown, Minus, LucideIcon, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RagDot, RagStatus } from './RagDot';
 import { useFavoritesStore, FavoriteWidget } from '../store/useFavoritesStore';
+import { ExplainNote } from './ExplainNote';
 
 export type KpiTone = 'primary' | 'accent' | 'info' | 'success' | 'warning' | 'destructive' | 'purple';
 
@@ -16,6 +17,8 @@ interface KpiCardProps {
   rag?: RagStatus;
   suffix?: React.ReactNode;
   favorite?: FavoriteWidget;
+  /** TEMPORARY: plain-language note on how this KPI is calculated. */
+  explain?: React.ReactNode;
 }
 
 const toneMap: Record<KpiTone, { bg: string; fg: string; corner: string }> = {
@@ -39,6 +42,7 @@ export const KpiCard = ({
   rag,
   suffix,
   favorite,
+  explain,
 }: KpiCardProps) => {
   const t = toneMap[tone];
   const TrendIcon = trendDirection === 'up' ? ArrowUp : trendDirection === 'down' ? ArrowDown : Minus;
@@ -85,6 +89,7 @@ export const KpiCard = ({
         {suffix && <div className="text-xs text-muted-foreground">{suffix}</div>}
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+      {explain && <ExplainNote className="mt-2">{explain}</ExplainNote>}
       {trend && (
         <div className={cn('mt-2 flex items-center gap-1 text-px-11 font-medium', trendCls)}>
           <TrendIcon className="h-3 w-3" />

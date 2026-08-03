@@ -2,6 +2,7 @@ import { Star, Inbox } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useFavoritesStore, FavoriteWidget } from '../store/useFavoritesStore';
+import { ExplainNote } from './ExplainNote';
 
 interface ChartCardProps {
   title: string;
@@ -12,6 +13,8 @@ interface ChartCardProps {
   className?: string;
   empty?: boolean;
   emptyLabel?: string;
+  /** TEMPORARY: plain-language note on how this card is calculated. */
+  explain?: React.ReactNode;
 }
 
 export const ChartCard = ({
@@ -23,6 +26,7 @@ export const ChartCard = ({
   className,
   empty,
   emptyLabel,
+  explain,
 }: ChartCardProps) => {
   const { t } = useTranslation('reporting');
   const { has, toggle } = useFavoritesStore();
@@ -51,6 +55,7 @@ export const ChartCard = ({
           )}
         </div>
       </div>
+      {explain && <ExplainNote className="m-3 mb-0">{explain}</ExplainNote>}
       <div className={cn('flex-1 p-4', bodyClassName)}>
         {empty ? (
           <div className="flex h-full min-h-[160px] flex-col items-center justify-center gap-2 text-center">

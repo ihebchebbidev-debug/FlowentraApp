@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
  * Closeable header banner prompting users to enable two-factor authentication.
  * - MainAdmin: CTA links to security settings to enable 2FA.
  * - Regular user: informational — asks them to contact their administrator.
- * Dismiss is session-only (reappears next login).
+ * Dismiss is permanent (stored in localStorage — never shown again on this device).
  */
 export function TwoFactorReminderBanner() {
   const { t } = useTranslation('auth');
@@ -19,7 +19,7 @@ export function TwoFactorReminderBanner() {
   const storageKey = 'twofactor:banner:dismissed';
   const [dismissed, setDismissed] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem(storageKey) === '1';
+      return localStorage.getItem(storageKey) === '1';
     } catch {
       return false;
     }
@@ -31,7 +31,8 @@ export function TwoFactorReminderBanner() {
 
   const dismiss = () => {
     try {
-      sessionStorage.setItem(storageKey, '1');
+      localStorage.setItem(storageKey, '1');
+      sessionStorage.removeItem(storageKey);
     } catch {
       /* ignore */
     }

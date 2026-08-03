@@ -7,6 +7,7 @@ import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { usePlugins } from '@/modules/shared/plugins';
+import { ExplainNote } from '@/modules/reporting/components/ExplainNote';
 
 /** Dashboard card id → owning plugin code (omit = always visible). */
 const DASHBOARD_CARD_PLUGIN: Record<string, string> = {
@@ -123,6 +124,7 @@ function KpiCard({
   tone = 'primary',
   trend,
   onClick,
+  explain,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -131,6 +133,8 @@ function KpiCard({
   /** Month-over-month % change; renders an up/down pill next to the value. */
   trend?: number;
   onClick?: () => void;
+  /** TEMPORARY: plain-language note on how this KPI is calculated. */
+  explain?: React.ReactNode;
 }) {
   return (
     <div
@@ -158,6 +162,7 @@ function KpiCard({
           </span>
         )}
       </div>
+      {explain && <ExplainNote className="mt-2.5">{explain}</ExplainNote>}
     </div>
   );
 }
@@ -195,7 +200,7 @@ function PanelHead({ icon: Icon, title, onViewAll, viewAllLabel }: { icon: React
   );
 }
 
-function Panel({ title, action, children, className = '' }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+function Panel({ title, action, explain, children, className = '' }: { title?: string; action?: React.ReactNode; explain?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={`${PANEL} ${className}`}>
       {title && (
@@ -204,6 +209,7 @@ function Panel({ title, action, children, className = '' }: { title?: string; ac
           {action}
         </div>
       )}
+      {explain && <ExplainNote className="mx-4 mb-2">{explain}</ExplainNote>}
       <div className={title ? 'px-4 pb-4' : 'p-4'}>{children}</div>
     </div>
   );
@@ -446,26 +452,28 @@ export default function DashboardOverview() {
           icon={TrendingUp}
           tone={(revenueMoM.delta ?? 0) >= 0 ? 'success' : 'danger'}
           label={t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' })}
+          explain="Sum of the Total Amount of every sale created in the current calendar month. The badge is the change vs last month: (this month - last month) / last month x 100."
+
           value={format(Math.round(revenueMoM.thisMonth))}
           trend={revenueMoM.delta}
           onClick={() => navigate('/dashboard/sales')}
         />
       ),
     },
-    { id: 'kpi-active-sales', size: 'kpi', node: <KpiCard icon={ShoppingCart} tone="success" label={t('overview.activeSales', { defaultValue: 'Active sales' })} value={activeSales} onClick={() => navigate('/dashboard/sales')} /> },
-    { id: 'kpi-open-offers', size: 'kpi', node: <KpiCard icon={FileText} tone="info" label={t('overview.openOffers', { defaultValue: 'Open offers' })} value={openOffers} onClick={() => navigate('/dashboard/offers')} /> },
-    { id: 'kpi-active-so', size: 'kpi', node: <KpiCard icon={Wrench} tone="warning" label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })} value={activeServiceOrders} onClick={() => navigate('/dashboard/field/service-orders/list')} /> },
-    { id: 'kpi-contacts', size: 'kpi', node: <KpiCard icon={Users} tone="primary" label={t('overview.totalContacts', { defaultValue: 'Contacts' })} value={totalContacts || '-'} onClick={() => navigate('/dashboard/contacts')} /> },
+    { id: 'kpi-active-sales', size: 'kpi', node: <KpiCard icon={ShoppingCart} tone="success" explain="Number of sales whose status is NOT closed, cancelled, invoiced or completed." label={t('overview.activeSales', { defaultValue: 'Active sales' })} value={activeSales} onClick={() => navigate('/dashboard/sales')} /> },
+    { id: 'kpi-open-offers', size: 'kpi', node: <KpiCard icon={FileText} tone="info" explain="Number of offers with status draft, sent, pending or negotiation." label={t('overview.openOffers', { defaultValue: 'Open offers' })} value={openOffers} onClick={() => navigate('/dashboard/offers')} /> },
+    { id: 'kpi-active-so', size: 'kpi', node: <KpiCard icon={Wrench} tone="warning" explain="Number of service orders whose status is NOT completed, closed, invoiced or cancelled." label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })} value={activeServiceOrders} onClick={() => navigate('/dashboard/field/service-orders/list')} /> },
+    { id: 'kpi-contacts', size: 'kpi', node: <KpiCard icon={Users} tone="primary" explain="Total number of contacts returned by the contacts list (all contacts you have access to)." label={t('overview.totalContacts', { defaultValue: 'Contacts' })} value={totalContacts || '-'} onClick={() => navigate('/dashboard/contacts')} /> },
     {
       id: 'chart-revenue-trend', size: 'wide', node: (
-        <Panel className="h-full" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
+        <Panel className="h-full" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })} explain="One bar per month for the last 6 months (current month included): sum of the Total Amount of the sales created in that month, rounded.">
           <ThemedBarChart data={revenueTrend} height={240} />
         </Panel>
       ),
     },
     {
       id: 'chart-service-status', size: 'half', node: (
-        <Panel className="h-full" title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}>
+        <Panel className="h-full" title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })} explain="All service orders counted per status (status text is normalised to lower case). The centre number is the total of all service orders.">
           {serviceOrderStatus.length > 0
             ? <DonutChartComponent data={serviceOrderStatus} height={240} innerRadius={58} outerRadius={92} centerValue={serviceOrders.length} centerLabel={t('overview.total', { defaultValue: 'Total' })} />
             : <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
@@ -481,6 +489,7 @@ export default function DashboardOverview() {
             onViewAll={() => navigate('/dashboard/dispatcher')}
             viewAllLabel={t('overview.openPlanner', { defaultValue: 'Planner' })}
           />
+          <ExplainNote className="mx-4 mb-3">Built from all dispatches grouped by technician. Hours worked = sum of dispatch duration (minutes) / 60 · Expenses = sum of the amounts of the expenses attached to those dispatches · Active technicians = number of distinct technicians with at least one dispatch · Jobs completed = dispatches with status completed. The bar per technician is their hours relative to the busiest technician.</ExplainNote>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 pb-4">
             <Stat icon={Clock} tone="info" label={t('overview.hoursWorked', { defaultValue: 'Hours worked' })} value={fmtHours(teamTotals.minutes)} />
             <Stat icon={Receipt} tone="warning" label={t('overview.teamExpenses', { defaultValue: 'Expenses' })} value={teamTotals.expenses > 0 ? format(Math.round(teamTotals.expenses)) : '—'} />
@@ -522,7 +531,7 @@ export default function DashboardOverview() {
     },
     {
       id: 'chart-stock-status', size: 'half', node: (
-        <Panel className="h-full" title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
+        <Panel className="h-full" title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })} explain="Articles split by their stock status: Out of stock and Low stock come from the article status field, Available = total articles - low - out.">
           {stockDonut.length > 0
             ? <DonutChartComponent data={stockDonut} height={220} innerRadius={56} outerRadius={90} centerValue={stockStats.total} centerLabel={t('overview.totalArticles', { defaultValue: 'Total articles' })} />
             : <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
@@ -538,6 +547,7 @@ export default function DashboardOverview() {
             onViewAll={() => navigate('/dashboard/inventory-services')}
             viewAllLabel={t('overview.openInventory', { defaultValue: 'Inventory' })}
           />
+          <ExplainNote className="mx-4 mb-3">Total articles = number of articles · Stock value = sum of (stock quantity x price, falling back to cost price) for every article · Low stock / Out of stock = articles with that status. Needs restocking lists the low/out-of-stock articles with the lowest quantity first (max 5).</ExplainNote>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 pb-4">
             <Stat icon={Package} tone="primary" label={t('overview.totalArticles', { defaultValue: 'Total articles' })} value={stockStats.total} />
             <Stat icon={Wallet} tone="success" label={t('overview.stockValue', { defaultValue: 'Stock value' })} value={stockStats.value > 0 ? format(Math.round(stockStats.value)) : '—'} />
@@ -765,6 +775,12 @@ export default function DashboardOverview() {
           </Button>
         </div>
       </div>
+
+      <ExplainNote variant="page">
+        Every card below is calculated live in your browser from the sales, offers, contacts, service orders,
+        dispatches and articles you are allowed to see — nothing is cached or estimated. Monetary values use your
+        company currency and are rounded for display. These notes are temporary and can be switched off at any time.
+      </ExplainNote>
 
       {isLoading ? (
         <SkeletonGrid n={5} />
