@@ -67,8 +67,7 @@ namespace MyApi.Modules.Plugins
             new("PL0037LOOKUPS",       false, new string[0]),
 
             // ── Builders ──
-            new("PL0038WEBSITEBLDR",   false, new string[0]),
-            new("PL0039DASHBLDR",      false, new string[0]),
+            // Website and Dashboard builders removed per request
 
             // ── Analytics / Audit / Sync ──
             new("PL0040ANALYTICS",     false, new string[0]),
@@ -76,8 +75,8 @@ namespace MyApi.Modules.Plugins
             new("PL0041AIASSISTANT",   false, new string[0]),
             new("PL0042AUTOMATION",    false, new string[0]),
             new("PL0043USERS",         false, new string[0]),
-            new("PL0044PREFERENCES",   false, new string[0]),
-            new("PL0045ONBOARDING",    false, new string[0]),
+            new("PL0044PREFERENCES",   true,  new string[0]),
+            new("PL0045ONBOARDING",    true,  new string[0]),
         };
 
         public static readonly Dictionary<string, Entry> ByCode =
