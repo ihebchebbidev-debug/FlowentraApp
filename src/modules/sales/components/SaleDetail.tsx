@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useContactAccessGuard } from '@/hooks/useContactAccessGuard';
 import { ContactAccessDenied } from '@/components/access/ContactAccessDenied';
 import { useTranslation } from "react-i18next";
+import { usePlugins } from '@/modules/shared/plugins/usePlugins';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,8 @@ export function SaleDetail() {
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const { isEnabled: isPluginEnabled } = usePlugins();
+  const invoicesEnabled = isPluginEnabled('PL0004INVOICES');
   const [showServiceOrderDialog, setShowServiceOrderDialog] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [hasShownAutoPrompt, setHasShownAutoPrompt] = useState(false);
@@ -588,7 +591,7 @@ export function SaleDetail() {
                 const TABS = [
                   { value: 'overview',   icon: LayoutDashboard, label: t('tabs.overview') },
                   { value: 'items',      icon: Package,          label: t('tabs.items') },
-                  { value: 'invoices',   icon: Receipt,          label: t('tabs.invoices') },
+                  ...(invoicesEnabled ? [{ value: 'invoices', icon: Receipt, label: t('tabs.invoices') }] : []),
                   { value: 'checklists', icon: CheckSquare,      label: t('tabs.checklists') },
                   { value: 'documents',  icon: FolderOpen,       label: t('tabs.documents') },
                   { value: 'notes',      icon: StickyNote,       label: t('tabs.activity', 'Activity') },
@@ -626,7 +629,7 @@ export function SaleDetail() {
                 <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
                 <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
                 
-                <TabsTrigger value="invoices">{t('tabs.invoices')}</TabsTrigger>
+                {invoicesEnabled && <TabsTrigger value="invoices">{t('tabs.invoices')}</TabsTrigger>}
                 <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
                 <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
                 <TabsTrigger value="notes">{t('tabs.activity', 'Activity')}</TabsTrigger>
@@ -644,13 +647,14 @@ export function SaleDetail() {
           </TabsContent>
 
 
-          <TabsContent value="invoices">
+          {invoicesEnabled && <TabsContent value="invoices">
             <SaleInvoicesTab
               saleId={Number(sale.id)}
               saleTotal={calculateEntityTotal(sale).total}
               currency={sale.currency ?? 'TND'}
             />
-          </TabsContent>
+          </TabsContent>}
+
 
           <TabsContent value="notes">
             <NotesTab sale={sale} />

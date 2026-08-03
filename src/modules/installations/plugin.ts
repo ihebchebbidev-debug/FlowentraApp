@@ -15,7 +15,7 @@ export const installationsPlugin: PluginManifest = {
   icon: "Wrench",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0015FIELD", "PL0007ARTICLES"],
+  dependencies: ["PL0001CONTACTS", "PL0015FIELD", "PL0007ARTICLES", "PL0037LOOKUPS"],
   routes: ["/dashboard/field/installations"],
   sidebarKeys: ["installations"],
 };

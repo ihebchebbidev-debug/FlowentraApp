@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { usePlugins } from '@/modules/shared/plugins/usePlugins';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLayoutModeContext } from '@/hooks/useLayoutMode';
 import {
@@ -48,6 +49,7 @@ export default function ContactDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation('contacts');
+  const { isEnabled: isPluginEnabled } = usePlugins();
   const queryClient = useQueryClient();
   const { canUpdate, canDelete, isMainAdmin } = usePermissions();
   const contactId = id ? parseInt(id, 10) : null;
@@ -148,9 +150,19 @@ export default function ContactDetailPage() {
   // Instead, we show an Articles tab listing articles linked via article-suppliers.
   // Purchases tab is supplier-only: the Purchases module deals exclusively with
   // supplier (fournisseur) transactions, so we hide it on contact/company detail pages.
-  const tabConfig = isSupplierRoute
-    ? (['overview', 'articles', 'purchases', 'timeline'] as const)
-    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'timeline'] as const);
+  // Related tabs only make sense when their owning module is enabled for the tenant.
+  const TAB_PLUGIN: Record<string, string | undefined> = {
+    installations: 'PL0018INSTALLATIONS',
+    offers: 'PL0005OFFERS',
+    sales: 'PL0002SALES',
+    serviceOrders: 'PL0015FIELD',
+    purchases: 'PL0025PURCHASES',
+    articles: 'PL0007ARTICLES',
+  };
+  const tabConfig = (isSupplierRoute
+    ? ['overview', 'articles', 'purchases', 'timeline']
+    : ['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'timeline']
+  ).filter((tab) => isPluginEnabled(TAB_PLUGIN[tab]));
 
   const TAB_META: Record<string, { icon: LucideIcon; label: () => string }> = {
     overview:       { icon: LayoutDashboard, label: () => t('detail.tabs.overview') },

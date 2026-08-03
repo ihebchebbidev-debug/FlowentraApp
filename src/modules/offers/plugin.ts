@@ -9,7 +9,7 @@ export const offersPlugin: PluginManifest = {
   icon: "FileText",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0001CONTACTS"],
+  dependencies: ["PL0001CONTACTS", "PL0007ARTICLES", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["offers"],
 };

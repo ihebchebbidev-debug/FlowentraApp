@@ -13,6 +13,8 @@ export interface WorkspaceModule {
   icon: string;
   /** Optional plugin gate. When present and the plugin is disabled, the module is hidden. */
   pluginCode?: string;
+  /** All of these plugins must be enabled for the entry to show. */
+  pluginCodes?: string[];
   /** Optional nested children; when present the module renders as a collapsible group. */
   children?: WorkspaceModule[];
   /** Optional section header rendered above this module in the panel. */
@@ -61,7 +63,7 @@ export const WORKSPACES: Workspace[] = [
     icon: "TrendingUp",
     landingUrl: "/dashboard/reporting/sales",
     modules: [
-      { key: "sales-dash", label: "Orders dashboard", labelI18nKey: "workspace.modules.ordersDashboard", url: "/dashboard/reporting/sales", icon: "BarChart3" },
+      { key: "sales-dash", label: "Orders dashboard", labelI18nKey: "workspace.modules.ordersDashboard", url: "/dashboard/reporting/sales", icon: "BarChart3", pluginCodes: ["PL0046REPORTING", "PL0002SALES"] },
       { key: "offers", label: "Offers", url: "/dashboard/offers", icon: "FileText", pluginCode: "PL0005OFFERS" },
       { key: "sales", label: "Orders", labelI18nKey: "workspace.modules.orders", url: "/dashboard/sales", icon: "TrendingUp", pluginCode: "PL0002SALES" },
       { key: "invoices", label: "Invoices", labelI18nKey: "workspace.modules.invoices", url: "/dashboard/invoices", icon: "Receipt", pluginCode: "PL0004INVOICES" },
@@ -79,7 +81,7 @@ export const WORKSPACES: Workspace[] = [
     icon: "ShoppingCart",
     landingUrl: "/dashboard/reporting/purchase",
     modules: [
-      { key: "purchase-dash", label: "Purchases dashboard", url: "/dashboard/reporting/purchase", icon: "BarChart3" },
+      { key: "purchase-dash", label: "Purchases dashboard", url: "/dashboard/reporting/purchase", icon: "BarChart3", pluginCodes: ["PL0046REPORTING", "PL0025PURCHASES"] },
       { key: "purchases", label: "Purchases", url: "/dashboard/purchases", icon: "ShoppingCart", pluginCode: "PL0025PURCHASES" },
       { key: "suppliers", label: "Suppliers", url: "/dashboard/suppliers", icon: "Truck", pluginCode: "PL0001CONTACTS" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
@@ -93,7 +95,7 @@ export const WORKSPACES: Workspace[] = [
     icon: "Wrench",
     landingUrl: "/dashboard/reporting/service",
     modules: [
-      { key: "service-dash", label: "Service dashboard", url: "/dashboard/reporting/service", icon: "BarChart3" },
+      { key: "service-dash", label: "Service dashboard", url: "/dashboard/reporting/service", icon: "BarChart3", pluginCodes: ["PL0046REPORTING", "PL0015FIELD"] },
       { key: "service-orders", label: "Service orders", url: "/dashboard/field/service-orders/list", icon: "ClipboardList", pluginCode: "PL0015FIELD" },
       { key: "dispatches", label: "Operations", url: "/dashboard/field/dispatcher", icon: "Send", pluginCode: "PL0024DISPATCHER" },
       { key: "installations", label: "Installations", url: "/dashboard/field/installations/list", icon: "Wrench", pluginCode: "PL0018INSTALLATIONS" },
@@ -123,7 +125,7 @@ export const WORKSPACES: Workspace[] = [
     icon: "UserCog",
     landingUrl: "/dashboard/reporting/hr",
     modules: [
-      { key: "hr-dash", label: "HR dashboard", url: "/dashboard/reporting/hr", icon: "BarChart3" },
+      { key: "hr-dash", label: "HR dashboard", url: "/dashboard/reporting/hr", icon: "BarChart3", pluginCodes: ["PL0046REPORTING", "PL0013HR"] },
       { key: "employees", label: "Employees", url: "/dashboard/hr/employees", icon: "Users", pluginCode: "PL0013HR" },
       { key: "payroll", label: "Payroll", url: "/dashboard/hr/payroll", icon: "Wallet", pluginCode: "PL0013HR" },
       { key: "leaves", label: "Leaves", url: "/dashboard/hr/leaves", icon: "CalendarOff", pluginCode: "PL0013HR" },
@@ -140,12 +142,12 @@ export const WORKSPACES: Workspace[] = [
     icon: "BarChart3",
     landingUrl: "/dashboard/reporting/sales",
     modules: [
-      { key: "sales-report", label: "Sales", url: "/dashboard/reporting/sales", icon: "TrendingUp" },
-      { key: "service-report", label: "Service", url: "/dashboard/reporting/service", icon: "Wrench" },
-      { key: "purchase-report", label: "Purchases", url: "/dashboard/reporting/purchase", icon: "ShoppingCart" },
-      { key: "finance-report", label: "Finance", url: "/dashboard/reporting/finance", icon: "DollarSign" },
-      { key: "hr-report", label: "HR", url: "/dashboard/reporting/hr", icon: "UserCog" },
-      { key: "export-report", label: "Export reports", url: "/dashboard/reporting/export", icon: "Download" },
+      { key: "sales-report", label: "Sales", url: "/dashboard/reporting/sales", icon: "TrendingUp", pluginCodes: ["PL0046REPORTING", "PL0002SALES"] },
+      { key: "service-report", label: "Service", url: "/dashboard/reporting/service", icon: "Wrench", pluginCodes: ["PL0046REPORTING", "PL0015FIELD"] },
+      { key: "purchase-report", label: "Purchases", url: "/dashboard/reporting/purchase", icon: "ShoppingCart", pluginCodes: ["PL0046REPORTING", "PL0025PURCHASES"] },
+      { key: "finance-report", label: "Finance", url: "/dashboard/reporting/finance", icon: "DollarSign", pluginCodes: ["PL0046REPORTING", "PL0004INVOICES"] },
+      { key: "hr-report", label: "HR", url: "/dashboard/reporting/hr", icon: "UserCog", pluginCodes: ["PL0046REPORTING", "PL0013HR"] },
+      { key: "export-report", label: "Export reports", url: "/dashboard/reporting/export", icon: "Download", pluginCode: "PL0046REPORTING" },
       { key: "traceability", label: "Traceability", url: "/dashboard/traceability", icon: "Activity" },
     ],
   },

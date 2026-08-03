@@ -9,7 +9,7 @@ export const invoicesPlugin: PluginManifest = {
   icon: "Receipt",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0001CONTACTS", "PL0002SALES"],
+  dependencies: ["PL0001CONTACTS", "PL0002SALES", "PL0007ARTICLES", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["invoices"],
 };

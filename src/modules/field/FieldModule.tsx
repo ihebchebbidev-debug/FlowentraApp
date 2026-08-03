@@ -71,18 +71,23 @@ export function FieldModule() {
           </PermissionRoute>
         } />
         <Route path="dispatches/*" element={
-          <PermissionRoute module="service_orders" action="read">
-            <Suspense fallback={<TableLoadingPlaceholder />}>
-              <DispatchModule />
-            </Suspense>
-          </PermissionRoute>
+          <PluginGate code="PL0024DISPATCHER">
+            <PermissionRoute module="service_orders" action="read">
+              <Suspense fallback={<TableLoadingPlaceholder />}>
+                <DispatchModule />
+              </Suspense>
+            </PermissionRoute>
+          </PluginGate>
         } />
       
+        {/* DispatcherModule self-gates on PL0024DISPATCHER (and PL0023SCHEDULING inside). */}
         <Route path="dispatcher/*" element={
           <PermissionRoute module="service_orders" action="read">
             <DispatcherModule />
           </PermissionRoute>
         } />
+
+
         <Route path="installations/*" element={
           <PluginGate code="PL0018INSTALLATIONS">
             <PermissionRoute module="installations" action="read">

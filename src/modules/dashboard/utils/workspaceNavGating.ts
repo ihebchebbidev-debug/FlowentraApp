@@ -7,8 +7,7 @@
  *     effectively enabled (its whole dependency chain must be on).
  *  2. A parent with `children` is hidden when every child is hidden.
  *  3. A workspace is hidden when it has no visible module left.
- *  4. Entries without a `pluginCode` are always visible (dashboards, reporting,
- *     traceability, settings...).
+ *  4. Entries without any plugin code are always visible (settings, traceability...).
  */
 import type { Workspace, WorkspaceModule } from '../components/workspaces.config';
 
@@ -22,6 +21,9 @@ export function visibleWorkspaceModules(
   const out: WorkspaceModule[] = [];
   for (const m of modules) {
     if (m.pluginCode && !isEnabled(m.pluginCode)) continue;
+    // `pluginCodes` = every listed module must be enabled (e.g. a reporting
+    // dashboard needs both Reporting and the module owning the data).
+    if (m.pluginCodes && !m.pluginCodes.every((code) => isEnabled(code))) continue;
     if (m.children && m.children.length > 0) {
       const children = visibleWorkspaceModules(m.children, isEnabled);
       if (children.length === 0) continue;

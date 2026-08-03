@@ -9,7 +9,7 @@ export const supportPlugin: PluginManifest = {
   icon: "LifeBuoy",
   version: "1.0.0",
   isCore: false,
-  dependencies: [],
+  dependencies: ["PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["support"],
 };

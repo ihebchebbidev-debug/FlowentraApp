@@ -46,6 +46,7 @@ import { useResolvedPdfSettings } from "@/shared/pdf/useResolvedPdfSettings";
 import { getRecordTenantId } from "@/shared/pdf/resolveCompany";
 import { AddMaterialModal } from "../../components/AddMaterialModal";
 import { InvoicePreparationModal } from "../components/InvoicePreparationModal";
+import { usePlugins } from '@/modules/shared/plugins/usePlugins';
 import { PreferredSkillsCard } from "../components/PreferredSkillsCard";
 import type { Article } from "@/modules/inventory-services/types";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
@@ -242,6 +243,9 @@ export default function ServiceOrderDetail() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [activeTab, setActiveTab] = useState("overview");
+  const { isEnabled: isPluginEnabled } = usePlugins();
+  const dispatcherEnabled = isPluginEnabled('PL0024DISPATCHER');
+  const invoicesEnabled = isPluginEnabled('PL0004INVOICES');
   const [activityFilter, setActivityFilter] = useState<'all' | 'history' | 'communications'>('all');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
@@ -423,7 +427,7 @@ export default function ServiceOrderDetail() {
     if (!serviceOrder) return;
 
     // Intercept: if transitioning to ready_for_invoice from technically_completed, open invoice modal
-    if (newStatus === 'ready_for_invoice' && currentStatusFlow === 'technically_completed') {
+    if (invoicesEnabled && newStatus === 'ready_for_invoice' && currentStatusFlow === 'technically_completed') {
       setIsInvoiceModalOpen(true);
       return;
     }
@@ -1167,7 +1171,7 @@ export default function ServiceOrderDetail() {
                 isUpdating={isStatusUpdating}
               />
             </div>
-            {currentStatusFlow === 'technically_completed' && (
+            {invoicesEnabled && currentStatusFlow === 'technically_completed' && (
               <Button
                 size="sm"
                 className="gap-2 shrink-0"
@@ -1194,7 +1198,7 @@ export default function ServiceOrderDetail() {
               const TABS = [
                 { value: 'overview',      icon: LayoutDashboard, label: t('tabs.overview') },
                 { value: 'jobs',          icon: Wrench,           label: t('tabs.jobs') },
-                { value: 'dispatches',    icon: Truck,            label: t('tabs.dispatches') },
+                ...(dispatcherEnabled ? [{ value: 'dispatches', icon: Truck, label: t('tabs.dispatches') }] : []),
                 { value: 'time_expenses', icon: Timer,            label: t('tabs.time_expenses') },
                 { value: 'materials',     icon: Package,          label: t('tabs.materials') },
                 { value: 'attachments',   icon: FolderOpen,       label: t('tabs.attachments') },
@@ -1233,7 +1237,7 @@ export default function ServiceOrderDetail() {
             <TabsList variant="underline">
               <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
               <TabsTrigger value="jobs">{t('tabs.jobs')}</TabsTrigger>
-              <TabsTrigger value="dispatches">{t('tabs.dispatches')}</TabsTrigger>
+              {dispatcherEnabled && <TabsTrigger value="dispatches">{t('tabs.dispatches')}</TabsTrigger>}
               <TabsTrigger value="time_expenses">{t('tabs.time_expenses')}</TabsTrigger>
               <TabsTrigger value="materials">{t('tabs.materials')}</TabsTrigger>
               <TabsTrigger value="attachments">{t('tabs.attachments')}</TabsTrigger>
@@ -1407,7 +1411,7 @@ export default function ServiceOrderDetail() {
           </TabsContent>
 
           {/* Dispatches Tab */}
-          <TabsContent value="dispatches">
+          {dispatcherEnabled && <TabsContent value="dispatches">
             <Card>
               <CardContent>
                 <div className="flex items-center justify-end pt-4">
@@ -1426,7 +1430,8 @@ export default function ServiceOrderDetail() {
                 />
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent>}
+
 
           {/* Time & Expenses Tab */}
           <TabsContent value="time_expenses">

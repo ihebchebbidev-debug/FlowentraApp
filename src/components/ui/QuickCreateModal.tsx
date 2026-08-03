@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { UserPlus, CheckSquare, Layers, FileText, Package, Building, Wrench, Handshake } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePlugins } from '@/modules/shared/plugins/usePlugins';
 import { useTranslation } from 'react-i18next';
 import { ContactForm } from '@/modules/contacts/components/ContactForm';
 import { contactsApi } from '@/services/contactsApi';
@@ -28,6 +29,7 @@ interface QuickCreateModalProps {
 export function QuickCreateModal({ open, onOpenChange }: QuickCreateModalProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isEnabled: isPluginEnabled } = usePlugins();
   
   // State for sub-modals
   const [showContactModal, setShowContactModal] = useState(false);
@@ -132,16 +134,20 @@ export function QuickCreateModal({ open, onOpenChange }: QuickCreateModalProps) 
     }
   };
 
-  const actions = [
-    { labelKey: 'quickCreate.newContact', icon: UserPlus },
-    { labelKey: 'quickCreate.newTask', icon: CheckSquare },
-    { labelKey: 'quickCreate.newProject', icon: Layers },
-    { labelKey: 'quickCreate.newOffer', icon: FileText },
-    { labelKey: 'quickCreate.newDeal', icon: Handshake },
-    { labelKey: 'quickCreate.newServiceOrder', icon: Wrench },
-    { labelKey: 'quickCreate.newArticle', icon: Package },
-    { labelKey: 'quickCreate.newInstallation', icon: Building }
+  const allActions = [
+    { labelKey: 'quickCreate.newContact', icon: UserPlus, pluginCode: 'PL0001CONTACTS' },
+    { labelKey: 'quickCreate.newTask', icon: CheckSquare, pluginCode: 'PL0011TASKS' },
+    { labelKey: 'quickCreate.newProject', icon: Layers, pluginCode: 'PL0004PROJECTS' },
+    { labelKey: 'quickCreate.newOffer', icon: FileText, pluginCode: 'PL0005OFFERS' },
+    { labelKey: 'quickCreate.newDeal', icon: Handshake, pluginCode: 'PL0003DEALS' },
+    { labelKey: 'quickCreate.newServiceOrder', icon: Wrench, pluginCode: 'PL0015FIELD' },
+    { labelKey: 'quickCreate.newArticle', icon: Package, pluginCode: 'PL0007ARTICLES' },
+    { labelKey: 'quickCreate.newInstallation', icon: Building, pluginCode: 'PL0018INSTALLATIONS' }
   ];
+
+  // Only offer creation shortcuts for modules the tenant actually has enabled.
+  const actions = allActions.filter((a) => isPluginEnabled(a.pluginCode));
+
 
   return (
     <>

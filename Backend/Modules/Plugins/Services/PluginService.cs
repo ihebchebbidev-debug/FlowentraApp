@@ -17,16 +17,58 @@ namespace MyApi.Modules.Plugins.Services
 
         public async Task<List<PluginActivationDto>> GetActivationsAsync()
         {
-            // Only the rows that have been explicitly toggled. Frontend treats
-            // missing codes as enabled (default-on).
+            // Simple, complete snapshot: every known plugin with its EFFECTIVE
+            // state (explicit row + transitive dependency chain + core lock).
+            // The backend enforces nothing at API level — it only reports what
+            // is activated/deactivated; the frontend does the gating.
             var rows = await _db.ActivatedModules.AsNoTracking().ToListAsync();
-            return rows.Select(r => new PluginActivationDto
+            var stored = rows
+                .GroupBy(r => r.PluginCode)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            var result = new List<PluginActivationDto>();
+
+            foreach (var entry in KnownPlugins.All)
             {
-                Code = r.PluginCode,
-                IsEnabled = r.IsEnabled,
-                UpdatedAt = r.UpdatedAt,
-            }).ToList();
+                stored.TryGetValue(entry.Code, out var row);
+
+                bool enabled;
+                if (entry.IsCore)
+                {
+                    enabled = true;
+                }
+                else if (row != null && !row.IsEnabled)
+                {
+                    enabled = false;
+                }
+                else
+                {
+                    enabled = KnownPlugins.TransitiveDependencies(entry.Code)
+                        .All(dep => !stored.TryGetValue(dep, out var d) || d.IsEnabled);
+                }
+
+                result.Add(new PluginActivationDto
+                {
+                    Code = entry.Code,
+                    IsEnabled = enabled,
+                    UpdatedAt = row?.UpdatedAt ?? default,
+                });
+            }
+
+            // Unknown codes stored by a newer frontend still surface as-is.
+            foreach (var row in rows.Where(r => !KnownPlugins.ByCode.ContainsKey(r.PluginCode)))
+            {
+                result.Add(new PluginActivationDto
+                {
+                    Code = row.PluginCode,
+                    IsEnabled = row.IsEnabled,
+                    UpdatedAt = row.UpdatedAt,
+                });
+            }
+
+            return result;
         }
+
 
         public Task<PluginActivationDto> SetActivationAsync(string code, bool isEnabled, int? userId)
             => SetActivationAsync(code, isEnabled, userId, cascade: false);

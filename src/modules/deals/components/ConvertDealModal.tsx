@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePlugins } from '@/modules/shared/plugins/usePlugins';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +18,7 @@ interface Props {
 
 export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
   const { t } = useTranslation("deals");
+  const { isEnabled: isPluginEnabled } = usePlugins();
   // In "view all companies" mode a MainAdmin has no single target tenant, so the
   // backend rejects mutations. Force them to pick the deal's company from the
   // top bar before converting (the conversion writes into that company).
@@ -37,7 +39,9 @@ export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
       title: t("convert.toProject"), desc: t("convert.toProjectDesc"), note: alreadyProject ? t("convert.alreadyProject") : null },
     { key: "offer", icon: FileText, checked: toOffer, set: setToOffer, disabled: alreadyOffer,
       title: t("convert.toOffer"), desc: t("convert.toOfferDesc"), note: alreadyOffer ? t("convert.alreadyOffer") : null },
-  ];
+  ].filter((target) => isPluginEnabled(
+    target.key === "sale" ? "PL0002SALES" : target.key === "project" ? "PL0004PROJECTS" : "PL0005OFFERS"
+  ));
 
   const handleConvert = async () => {
     if (viewAll) {

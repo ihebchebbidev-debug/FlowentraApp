@@ -9,7 +9,7 @@ export const dispatcherPlugin: PluginManifest = {
   icon: "Map",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0015FIELD"],
+  dependencies: ["PL0015FIELD", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["dispatcher"],
 };

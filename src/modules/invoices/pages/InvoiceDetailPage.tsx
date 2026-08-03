@@ -20,6 +20,7 @@ import { useLayoutModeContext } from '@/hooks/useLayoutMode';
 import { useCustomerInvoice, useInvoiceMutations } from '../hooks/useCustomerInvoices';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
+import { usePlugins } from '@/modules/shared/plugins/usePlugins';
 import { InvoiceActivityTab } from '../components/tabs/InvoiceActivityTab';
 import { InvoiceDocumentsTab } from '../components/tabs/InvoiceDocumentsTab';
 import { InvoicePDFPreviewModal } from '../components/InvoicePDFPreviewModal';
@@ -34,14 +35,21 @@ const STATUS_COLOR: Record<string, string> = {
   void: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
-const INVOICE_TABS = [
-  { value: 'payments', icon: CheckCircle2, labelKey: 'detail.payments', fallback: 'Payments' },
-  { value: 'documents', icon: FileText, labelKey: 'detail.documents', fallback: 'Documents' },
-  { value: 'activity', icon: RefreshCw, labelKey: 'detail.activity', fallback: 'Activity' },
+const ALL_INVOICE_TABS = [
+  { value: 'payments', icon: CheckCircle2, labelKey: 'detail.payments', fallback: 'Payments', pluginCode: 'PL0026PAYMENTS' },
+  { value: 'documents', icon: FileText, labelKey: 'detail.documents', fallback: 'Documents', pluginCode: 'PL0012DOCUMENTS' },
+  { value: 'activity', icon: RefreshCw, labelKey: 'detail.activity', fallback: 'Activity', pluginCode: undefined },
 ] as const;
 
 export function InvoiceDetailPage() {
-  const [activeTab, setActiveTab] = useState<string>('payments');
+  const { isEnabled: isPluginEnabled } = usePlugins();
+  const INVOICE_TABS = ALL_INVOICE_TABS.filter((tab) => isPluginEnabled(tab.pluginCode));
+  const paymentsEnabled = isPluginEnabled('PL0026PAYMENTS');
+  const [activeTabRaw, setActiveTab] = useState<string>('payments');
+  // Fall back to the first available tab when the stored one is gated off.
+  const activeTab = INVOICE_TABS.some((tab) => tab.value === activeTabRaw)
+    ? activeTabRaw
+    : (INVOICE_TABS[0]?.value ?? 'activity');
   const { isMobile } = useLayoutModeContext();
   const { id } = useParams<{ id: string }>();
   const invoiceId = id ? parseInt(id, 10) : null;
@@ -312,7 +320,7 @@ export function InvoiceDetailPage() {
                 </TabsList>
               )}
             </div>
-            <TabsContent value="payments" className="mt-4 space-y-4">
+            {paymentsEnabled && <TabsContent value="payments" className="mt-4 space-y-4">
 
               {(invoice.status === 'posted' || invoice.status === 'paid' || invoice.status === 'void') && (
                 <div className="flex flex-wrap gap-2 justify-end">
@@ -338,7 +346,7 @@ export function InvoiceDetailPage() {
                 totalAmount={invoice.grandTotal}
                 currency={currencyInfo.code}
               />
-            </TabsContent>
+            </TabsContent>}
             <TabsContent value="documents" className="mt-4">
               <InvoiceDocumentsTab
                 invoiceId={invoice.id}

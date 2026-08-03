@@ -9,7 +9,7 @@ export const contactsPlugin: PluginManifest = {
   icon: "Users",
   version: "1.0.0",
   isCore: false,
-  dependencies: [],
+  dependencies: ["PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["contacts"],
 };

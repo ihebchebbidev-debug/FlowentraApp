@@ -13,7 +13,10 @@ export function DispatcherModule() {
     <PluginGate code="PL0024DISPATCHER">
       <Routes>
         <Route index element={<DispatcherPage />} />
-        <Route path="interface" element={<DispatchingInterface />} />
+        <Route path="interface" element={
+          <PluginGate code="PL0023SCHEDULING"><DispatchingInterface /></PluginGate>
+        } />
+
         <Route path="job/:id" element={<DispatchJobDetail />} />
         <Route path="manage-scheduler" element={
           <PluginGate code="PL0023SCHEDULING">

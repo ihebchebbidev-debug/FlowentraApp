@@ -9,7 +9,7 @@ export const inventoryServicesPlugin: PluginManifest = {
   icon: "Boxes",
   version: "1.0.0",
   isCore: false,
-  dependencies: [],
+  dependencies: ["PL0007ARTICLES", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["inventory-services"],
 };

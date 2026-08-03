@@ -9,7 +9,7 @@ export const stockManagementPlugin: PluginManifest = {
   icon: "Warehouse",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0007ARTICLES"],
+  dependencies: ["PL0007ARTICLES", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["stock-management"],
 };

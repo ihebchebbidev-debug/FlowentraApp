@@ -9,7 +9,7 @@ export const paymentsPlugin: PluginManifest = {
   icon: "CreditCard",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0004INVOICES"],
+  dependencies: ["PL0004INVOICES", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["payments"],
 };

@@ -9,7 +9,7 @@ export const articlesPlugin: PluginManifest = {
   icon: "Package",
   version: "1.0.0",
   isCore: false,
-  dependencies: [],
+  dependencies: ["PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["articles"],
 };

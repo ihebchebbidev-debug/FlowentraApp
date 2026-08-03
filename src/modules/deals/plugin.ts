@@ -9,7 +9,7 @@ export const dealsPlugin: PluginManifest = {
   icon: "Handshake",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0001CONTACTS"],
+  dependencies: ["PL0001CONTACTS", "PL0037LOOKUPS"],
   routes: [],
   sidebarKeys: ["deals"],
 };
