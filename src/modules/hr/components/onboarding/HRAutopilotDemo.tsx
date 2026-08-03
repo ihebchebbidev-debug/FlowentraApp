@@ -1716,8 +1716,12 @@ export function HRAutopilotDemo({ open, onClose }: Props) {
     return () => synth.removeEventListener?.('voiceschanged', onVoices);
   }, []);
 
+  // Keep the narrated element on screen, then park the cursor on it.
+  // HR pages are much taller than the viewport, so without the scroll step the
+  // cursor would point at rows the viewer can't see while the voice describes them.
   useEffect(() => {
     if (!open || finished) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     const place = () => {
       const el = document.getElementById(step.target);
       if (!el) return;
@@ -1726,39 +1730,59 @@ export function HRAutopilotDemo({ open, onClose }: Props) {
       if (clickRef.current) clearTimeout(clickRef.current);
       clickRef.current = setTimeout(() => setCursor(c => ({ ...c, clicking: false })), 450);
     };
-    const t = setTimeout(place, 160);
-    return () => clearTimeout(t);
+    const run = () => {
+      const el = document.getElementById(step.target);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      // Re-measure after the smooth scroll settles so the cursor lands on the
+      // element's final on-screen position, not its pre-scroll one.
+      timers.push(setTimeout(place, 420));
+      timers.push(setTimeout(place, 780));
+    };
+    timers.push(setTimeout(run, 160));
+    return () => { timers.forEach(clearTimeout); };
   }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.leaveTab, state.performanceTab, state.recruitmentTab, state.showPayrollRun, state.payrollStep]);
+
 
   useEffect(() => {
     if (!open || !playing || finished) return;
     const advance = () => setStepIndex(i => i + 1);
     const caption = captionText;
     const synthSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+    // Voice starts once the scroll + cursor move has landed, so what you hear
+    // always matches what is highlighted on screen.
+    const SYNC_DELAY = 520;
 
     if (!muted && synthSupported && caption) {
       const synth = window.speechSynthesis;
       synth.cancel();
       const { code, bcp47 } = languageTagFor(i18n.language);
-      const voice = pickBestVoice(code);
       const chunks = splitForSpeech(caption);
 
       let advanced = false;
       const doAdvance = () => { if (advanced) return; advanced = true; timerRef.current = setTimeout(advance, 420); };
 
-      chunks.forEach((chunk, idx) => {
-        const u = new SpeechSynthesisUtterance(chunk);
-        u.lang = bcp47;
-        configureUtteranceForFemaleVoice(u, voice);
-        if (idx === chunks.length - 1) { u.onend = doAdvance; u.onerror = doAdvance; }
-        try { synth.speak(u); } catch { /* safety */ }
-      });
+      const startSpeaking = () => {
+        // Resolve the voice at speak-time: on first open the voice list is
+        // often still empty, which is what makes the first steps fall back to
+        // a robotic default voice.
+        const voice = pickBestVoice(code);
+        chunks.forEach((chunk, idx) => {
+          const u = new SpeechSynthesisUtterance(chunk);
+          u.lang = bcp47;
+          configureUtteranceForFemaleVoice(u, voice);
+          if (idx === chunks.length - 1) { u.onend = doAdvance; u.onerror = doAdvance; }
+          try { synth.speak(u); } catch { /* safety */ }
+        });
+      };
+      const startTimer = setTimeout(startSpeaking, SYNC_DELAY);
 
-      const safetyMs = Math.max(step.duration, caption.length * 110 + 1800);
+      const safetyMs = SYNC_DELAY + Math.max(step.duration, caption.length * 110 + 1800);
       const safety = setTimeout(doAdvance, safetyMs);
       const keepAlive = setInterval(() => { if (synth.speaking && !synth.paused) { synth.pause(); synth.resume(); } }, 10000);
 
       return () => {
+        clearTimeout(startTimer);
         clearTimeout(safety);
         clearInterval(keepAlive);
         if (timerRef.current) clearTimeout(timerRef.current);
@@ -1766,9 +1790,13 @@ export function HRAutopilotDemo({ open, onClose }: Props) {
       };
     }
 
-    timerRef.current = setTimeout(advance, step.duration);
+    // Muted / unsupported: hold each step long enough to actually read the
+    // caption (≈55ms per character) instead of the fixed scripted duration.
+    const readMs = SYNC_DELAY + Math.max(step.duration, caption.length * 55 + 900);
+    timerRef.current = setTimeout(advance, readMs);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [stepIndex, open, playing, finished, muted, step, captionText, i18n.language]);
+
 
   const restart = useCallback(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
