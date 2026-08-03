@@ -54,11 +54,14 @@ export interface PluginRuntimeState {
 
 export interface PluginToggleRequest {
   isEnabled: boolean;
+  /** Cascade dependents off / dependency chain on instead of 409 conflict. */
+  cascade?: boolean;
 }
 
 export interface PluginBulkToggleRequest {
   codes: string[];
   isEnabled: boolean;
+  cascade?: boolean;
 }
 
 export interface PluginStats {

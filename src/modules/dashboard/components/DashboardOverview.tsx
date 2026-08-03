@@ -6,6 +6,21 @@ import { cn } from '@/lib/utils';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { usePlugins } from '@/modules/shared/plugins';
+
+/** Dashboard card id → owning plugin code (omit = always visible). */
+const DASHBOARD_CARD_PLUGIN: Record<string, string> = {
+  'kpi-revenue': 'PL0002SALES',
+  'kpi-active-sales': 'PL0002SALES',
+  'kpi-open-offers': 'PL0005OFFERS',
+  'kpi-active-so': 'PL0015FIELD',
+  'kpi-contacts': 'PL0001CONTACTS',
+  'chart-revenue-trend': 'PL0002SALES',
+  'chart-service-status': 'PL0015FIELD',
+  'panel-team': 'PL0015FIELD',
+  'chart-stock-status': 'PL0009STOCK',
+  'panel-stock': 'PL0009STOCK',
+};
 import { ThemedBarChart } from '@/components/charts/ThemedBarChart';
 import { DonutChartComponent } from '@/components/charts/DonutChartComponent';
 import dayjs from 'dayjs';
@@ -305,6 +320,8 @@ export default function DashboardOverview() {
 
 
 
+  const { isEnabled: isPluginEnabled } = usePlugins();
+
   const {
     sales,
     closedSalesRevenue,
@@ -422,7 +439,7 @@ export default function DashboardOverview() {
   );
 
   // ── Default cards (individually removable / reorderable) ─────
-  const defaultCards: DashboardCard[] = [
+  const allDefaultCards: DashboardCard[] = [
     {
       id: 'kpi-revenue', size: 'kpi', node: (
         <KpiCard
@@ -555,6 +572,16 @@ export default function DashboardOverview() {
       ),
     },
   ];
+
+  // Per-tenant module gating: a card whose owning module is deactivated for
+  // this tenant must not render (nor appear in the customize sheet).
+  const defaultCards: DashboardCard[] = React.useMemo(
+    () => allDefaultCards.filter((c) => {
+      const code = DASHBOARD_CARD_PLUGIN[c.id];
+      return !code || isPluginEnabled(code);
+    }),
+    [allDefaultCards, isPluginEnabled],
+  );
 
   const reportingRoute: Record<string, string> = {
     Sales: '/dashboard/reporting/sales',

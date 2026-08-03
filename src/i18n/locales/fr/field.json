@@ -62,5 +62,11 @@
         "rejected": "Rejeté"
       }
     }
+  },
+  "plugin": {
+    "installations": {
+      "name": "Installations",
+      "description": "Equipements installes chez les clients, lies aux ordres de service et aux articles."
+    }
   }
 }

@@ -9,7 +9,7 @@ export const fieldPlugin: PluginManifest = {
   icon: "Wrench",
   version: "1.0.0",
   isCore: false,
-  dependencies: [],
+  dependencies: ["PL0001CONTACTS"],
   routes: [],
   sidebarKeys: ["field"],
 };

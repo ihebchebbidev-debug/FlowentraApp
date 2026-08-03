@@ -28,6 +28,8 @@ import {
   findWorkspaceForPath,
   type Workspace,
 } from "./workspaces.config";
+import { usePlugins } from "@/modules/shared/plugins";
+import { visibleWorkspaces, workspaceEntryUrl } from "../utils/workspaceNavGating";
 
 function Icon({ name, className }: { name: string; className?: string }) {
   const Comp = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name] ?? Icons.Circle;
@@ -79,6 +81,10 @@ export function MobileWorkspaceNav() {
   const { unreadCount } = useNotifications();
   const aiAssistantAvailable = useAiAssistantAvailable();
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
+  const { isEnabled } = usePlugins();
+  // Mobile drawer uses the exact same gating as the desktop rail: deactivated
+  // modules (and workspaces left empty by them) are not rendered at all.
+  const navWorkspaces = useMemo(() => visibleWorkspaces(WORKSPACES, isEnabled), [isEnabled]);
 
   const handleSignOut = async () => {
     try {
@@ -112,7 +118,7 @@ export function MobileWorkspaceNav() {
     if (NO_SECONDARY.has(ws.id) || !ws.modules || ws.modules.length === 0) {
       setOpen(false);
       setActiveSubmenuId(null);
-      navigate(ws.landingUrl);
+      navigate(workspaceEntryUrl(ws, isEnabled));
       return;
     }
     // Otherwise reveal the submenu inside the drawer.
@@ -120,8 +126,8 @@ export function MobileWorkspaceNav() {
   };
 
   const activeSubmenuWs = useMemo(
-    () => WORKSPACES.find((w) => w.id === activeSubmenuId) ?? null,
-    [activeSubmenuId]
+    () => navWorkspaces.find((w) => w.id === activeSubmenuId) ?? null,
+    [navWorkspaces, activeSubmenuId]
   );
 
   const activeModule = useMemo(() => {
@@ -239,7 +245,7 @@ export function MobileWorkspaceNav() {
                     onClick={() => {
                       setOpen(false);
                       setActiveSubmenuId(null);
-                      navigate(activeSubmenuWs.landingUrl);
+                      navigate(workspaceEntryUrl(activeSubmenuWs, isEnabled));
                     }}
                     className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
                   >
@@ -277,7 +283,7 @@ export function MobileWorkspaceNav() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-1">
-                  {WORKSPACES.map((ws) => {
+                  {navWorkspaces.map((ws) => {
                     const active = currentWs?.id === ws.id;
                     const hasSubmenu = !NO_SECONDARY.has(ws.id) && ws.modules.length > 0;
                     return (

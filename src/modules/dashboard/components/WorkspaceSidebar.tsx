@@ -29,6 +29,7 @@ import {
   type SidebarModuleItemProps,
 } from "./workspaces.config";
 import { usePlugins } from "@/modules/shared/plugins";
+import { visibleWorkspaceModules, visibleWorkspaces, workspaceEntryUrl } from "../utils/workspaceNavGating";
 import { LogoDots } from "./LogoDots";
 
 function Icon({ name, className }: { name: string; className?: string }) {
@@ -83,12 +84,16 @@ function moduleMatchesLocation(url: string, pathname: string, search: string): b
   return workspaceModuleMatchesPath(url, pathname);
 }
 
-/** Filter modules by plugin activation (empty pluginCode = always visible). */
+/**
+ * Filter modules by plugin activation. Delegates to the shared gating util so
+ * desktop and mobile navigation hide exactly the same entries (nested children
+ * included).
+ */
 function visibleModules(
   modules: WorkspaceModule[],
   isEnabled: (code: string | undefined | null) => boolean
 ) {
-  return modules.filter((m) => !m.pluginCode || isEnabled(m.pluginCode));
+  return visibleWorkspaceModules(modules, isEnabled);
 }
 
 /** Inline theme picker rendered inside the user account dropdown. */
@@ -140,6 +145,9 @@ export function WorkspaceSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isEnabled } = usePlugins();
+  // Workspaces the tenant may actually see: any workspace whose every gated
+  // module is deactivated disappears from the rail entirely (no empty panels).
+  const navWorkspaces = useMemo(() => visibleWorkspaces(WORKSPACES, isEnabled), [isEnabled]);
   const companyLogo = useCompanyLogo();
   const { user, logout } = useAuth();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
@@ -175,7 +183,7 @@ export function WorkspaceSidebar() {
       stored = null;
     }
     if (stored && !NO_SECONDARY.has(stored)) {
-      const ws = WORKSPACES.find((w) => w.id === stored);
+      const ws = navWorkspaces.find((w) => w.id === stored);
       const owns = ws?.modules.some((m) => workspaceModuleMatchesPath(m.url, location.pathname));
       if (owns) return stored;
     }
@@ -223,7 +231,7 @@ export function WorkspaceSidebar() {
       return;
     }
     // If the currently open workspace still owns the new path, stay.
-    const currentWs = WORKSPACES.find((w) => w.id === openId);
+    const currentWs = navWorkspaces.find((w) => w.id === openId);
     const stillInCurrent = currentWs?.modules.some((m) => workspaceModuleMatchesPath(m.url, location.pathname));
     if (stillInCurrent) {
       prevDetectedId.current = nextId;
@@ -236,7 +244,7 @@ export function WorkspaceSidebar() {
 
 
   const activeWs: Workspace | null =
-    openId ? WORKSPACES.find((w) => w.id === openId) ?? null : null;
+    openId ? navWorkspaces.find((w) => w.id === openId) ?? null : null;
 
   const isPathActive = (url: string, siblings?: { url: string }[]) => {
     const bases = getWorkspaceModuleMatchBases(url);
@@ -285,11 +293,7 @@ export function WorkspaceSidebar() {
     openedViaKeyboard.current = viaKeyboard;
     lastTriggerId.current = ws.id;
     setOpenId(ws.id);
-    const visible = visibleModules(ws.modules, isEnabled);
-    const landingModule = ws.modules.find((m) => m.url === ws.landingUrl);
-    const landingVisible = !landingModule || visible.includes(landingModule);
-    if (landingVisible) navigate(ws.landingUrl);
-    else if (visible[0]) navigate(visible[0].url);
+    navigate(workspaceEntryUrl(ws, isEnabled));
   };
 
   const closePanel = (opts?: { restoreFocus?: boolean }) => {
@@ -320,7 +324,7 @@ export function WorkspaceSidebar() {
 
   // Roving arrow-key navigation across primary workspace triggers.
   const handleTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-    const total = WORKSPACES.length;
+    const total = navWorkspaces.length;
     let nextIndex: number | null = null;
     if (e.key === "ArrowDown") nextIndex = (index + 1) % total;
     else if (e.key === "ArrowUp") nextIndex = (index - 1 + total) % total;
@@ -328,7 +332,7 @@ export function WorkspaceSidebar() {
     else if (e.key === "End") nextIndex = total - 1;
     if (nextIndex !== null) {
       e.preventDefault();
-      const target = WORKSPACES[nextIndex];
+      const target = navWorkspaces[nextIndex];
       triggerRefs.current[target.id]?.focus();
     }
   };
@@ -405,7 +409,7 @@ export function WorkspaceSidebar() {
         {/* Workspace icons */}
         <div className="flex-1 overflow-y-auto py-2">
           <div data-tour="workspace-rail" className="flex flex-col items-center gap-1">
-            {WORKSPACES.map((ws) => {
+            {navWorkspaces.map((ws) => {
               const isCurrent = detected?.id === ws.id;
               return (
                 <button
@@ -737,7 +741,7 @@ export function WorkspaceSidebar() {
             aria-labelledby="workspaces-heading"
             className="flex flex-col gap-0.5"
           >
-            {WORKSPACES.map((ws, index) => {
+            {navWorkspaces.map((ws, index) => {
               const isOpen = openId === ws.id;
               const isCurrent = detected?.id === ws.id;
               return (

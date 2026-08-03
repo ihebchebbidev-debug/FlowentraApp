@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useIsPluginEnabled } from '@/modules/shared/plugins';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -116,7 +117,19 @@ const statusColor = (status: string) => {
 // ═══════════════════════════════════════════════════════
 // Main PaymentsTab Component
 // ═══════════════════════════════════════════════════════
-export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, currency, items = [], entityData, onPaymentsChanged }: PaymentsTabProps) {
+/**
+ * Module guard: Payments (PL0026PAYMENTS) is an embedded tab, so it gates
+ * itself instead of relying on a route-level <PluginGate>. When the module
+ * (or its dependency chain Invoices → Sales → Contacts) is off, it renders
+ * nothing at all.
+ */
+export function PaymentsTab(props: PaymentsTabProps) {
+  const { isEnabled, isLoading } = useIsPluginEnabled('PL0026PAYMENTS');
+  if (isLoading || !isEnabled) return null;
+  return <PaymentsTabInner {...props} />;
+}
+
+function PaymentsTabInner({ entityType, entityId, entityNumber, totalAmount, currency, items = [], entityData, onPaymentsChanged }: PaymentsTabProps) {
   const { t } = useTranslation('payments');
   const { format: formatCurrency, current: currencyInfo } = useCurrency();
   const companyLogo = useCompanyLogo();

@@ -28,7 +28,10 @@ namespace MyApi.Modules.Plugins.Services
             }).ToList();
         }
 
-        public async Task<PluginActivationDto> SetActivationAsync(string code, bool isEnabled, int? userId)
+        public Task<PluginActivationDto> SetActivationAsync(string code, bool isEnabled, int? userId)
+            => SetActivationAsync(code, isEnabled, userId, cascade: false);
+
+        public async Task<PluginActivationDto> SetActivationAsync(string code, bool isEnabled, int? userId, bool cascade)
         {
             if (string.IsNullOrWhiteSpace(code))
                 throw new PluginUnknownException(code ?? "");
@@ -41,10 +44,22 @@ namespace MyApi.Modules.Plugins.Services
             if (!isEnabled && known != null && known.IsCore)
                 throw new PluginCoreLockedException(code);
 
-            if (!isEnabled && known != null)
+            // ── Codes that must be written alongside the requested one ──
+            var alsoWrite = new List<string>();
+
+            if (known != null && isEnabled)
             {
-                // Find dependents that are still enabled (no row OR row.IsEnabled=true)
-                var dependents = KnownPlugins.Dependents(code).Select(d => d.Code).ToList();
+                // Enabling auto-enables the whole transitive dependency chain,
+                // otherwise the plugin would resolve to "off" anyway.
+                alsoWrite.AddRange(KnownPlugins.TransitiveDependencies(code));
+            }
+            else if (known != null && !isEnabled)
+            {
+                // Find dependents (transitive) that are still enabled
+                // (no row OR row.IsEnabled = true).
+                var dependents = KnownPlugins.TransitiveDependents(code)
+                    .Where(c => !KnownPlugins.IsCore(c))
+                    .ToList();
                 if (dependents.Any())
                 {
                     var rowMap = (await _db.ActivatedModules
@@ -59,33 +74,49 @@ namespace MyApi.Modules.Plugins.Services
                         })
                         .ToList();
                     if (blocking.Any())
-                        throw new PluginDependencyConflictException(code, blocking);
+                    {
+                        if (!cascade)
+                            throw new PluginDependencyConflictException(code, blocking);
+                        alsoWrite.AddRange(blocking);
+                    }
                 }
             }
 
-            var existing = await _db.ActivatedModules
-                .FirstOrDefaultAsync(a => a.PluginCode == code);
+            var targets = new List<string> { code };
+            targets.AddRange(alsoWrite.Where(c => c != code));
+            targets = targets.Distinct().ToList();
 
-            if (existing == null)
+            var rows = await _db.ActivatedModules
+                .Where(a => targets.Contains(a.PluginCode))
+                .ToListAsync();
+
+            ActivatedModule? primary = null;
+            foreach (var target in targets)
             {
-                existing = new ActivatedModule
+                var row = rows.FirstOrDefault(r => r.PluginCode == target);
+                if (row == null)
                 {
-                    PluginCode = code,
-                    IsEnabled = isEnabled,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    UpdatedBy = userId,
-                };
-                _db.ActivatedModules.Add(existing);
-            }
-            else
-            {
-                existing.IsEnabled = isEnabled;
-                existing.UpdatedAt = DateTime.UtcNow;
-                existing.UpdatedBy = userId;
+                    row = new ActivatedModule
+                    {
+                        PluginCode = target,
+                        IsEnabled = isEnabled,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        UpdatedBy = userId,
+                    };
+                    _db.ActivatedModules.Add(row);
+                }
+                else
+                {
+                    row.IsEnabled = isEnabled;
+                    row.UpdatedAt = DateTime.UtcNow;
+                    row.UpdatedBy = userId;
+                }
+                if (target == code) primary = row;
             }
 
             await _db.SaveChangesAsync();
+            var existing = primary!;
 
             return new PluginActivationDto
             {
@@ -95,14 +126,17 @@ namespace MyApi.Modules.Plugins.Services
             };
         }
 
-        public async Task<List<PluginActivationDto>> BulkSetAsync(List<string> codes, bool isEnabled, int? userId)
+        public Task<List<PluginActivationDto>> BulkSetAsync(List<string> codes, bool isEnabled, int? userId)
+            => BulkSetAsync(codes, isEnabled, userId, cascade: false);
+
+        public async Task<List<PluginActivationDto>> BulkSetAsync(List<string> codes, bool isEnabled, int? userId, bool cascade)
         {
             var results = new List<PluginActivationDto>();
             foreach (var code in codes.Distinct())
             {
                 try
                 {
-                    var dto = await SetActivationAsync(code, isEnabled, userId);
+                    var dto = await SetActivationAsync(code, isEnabled, userId, cascade);
                     results.Add(dto);
                 }
                 catch (PluginCoreLockedException) { /* skip core */ }
@@ -114,12 +148,22 @@ namespace MyApi.Modules.Plugins.Services
         public async Task<PluginStatsDto> GetStatsAsync()
         {
             var total = KnownPlugins.All.Count;
-            var disabledCount = await _db.ActivatedModules
-                .Where(a => !a.IsEnabled)
-                .Select(a => a.PluginCode)
-                .Distinct()
-                .CountAsync();
-            return new PluginStatsDto { Active = total - disabledCount, Total = total };
+
+            var stored = (await _db.ActivatedModules.AsNoTracking().ToListAsync())
+                .GroupBy(a => a.PluginCode)
+                .ToDictionary(g => g.Key, g => g.First().IsEnabled);
+
+            // Effective state: off when explicitly off OR when any transitive
+            // dependency is off. Mirrors the frontend resolver exactly.
+            var active = KnownPlugins.All.Count(e =>
+            {
+                if (e.IsCore) return true;
+                if (stored.TryGetValue(e.Code, out var v) && !v) return false;
+                return KnownPlugins.TransitiveDependencies(e.Code)
+                    .All(dep => !stored.TryGetValue(dep, out var dv) || dv);
+            });
+
+            return new PluginStatsDto { Active = active, Total = total };
         }
     }
 }

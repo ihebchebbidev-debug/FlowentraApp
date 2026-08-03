@@ -50,29 +50,41 @@ export class PluginsApiUnavailableError extends Error {
 }
 
 export const pluginsApi = {
-  async list(): Promise<PluginActivation[]> {
+  /** Throws PluginsApiUnavailableError when the API can't be reached. */
+  async listStrict(): Promise<PluginActivation[]> {
     try {
       const data = await get<PluginActivation[]>('/api/plugins');
       return Array.isArray(data) ? data : [];
     } catch (err) {
-      // API missing / 400 / 404 / network down → silent fallback.
-      // Returning [] lets the query succeed so React Query caches it with
-      // staleTime and stops refetching. Default-on semantics in usePlugins
-      // ensure all modules remain accessible when activations can't be loaded.
       if (import.meta.env.DEV) {
-        console.warn('[plugins] GET /api/plugins failed — defaulting to all-enabled.', err);
+        console.warn('[plugins] GET /api/plugins failed.', err);
       }
+      throw new PluginsApiUnavailableError(err);
+    }
+  },
+
+  /** Lenient variant: never throws, returns [] (default-on) on failure. */
+  async list(): Promise<PluginActivation[]> {
+    try {
+      return await this.listStrict();
+    } catch {
       return [];
     }
   },
 
-  async toggle(code: string, isEnabled: boolean): Promise<PluginActivation> {
-    const body: PluginToggleRequest = { isEnabled };
+
+  /**
+   * Toggle one plugin. `cascade` lets the server switch dependents off
+   * (when disabling) or the dependency chain on (when enabling) instead of
+   * returning a 409 dependencyConflict.
+   */
+  async toggle(code: string, isEnabled: boolean, cascade = true): Promise<PluginActivation> {
+    const body: PluginToggleRequest = { isEnabled, cascade };
     return send<PluginActivation>(`/api/plugins/${encodeURIComponent(code)}`, 'PATCH', body);
   },
 
-  async bulkToggle(codes: string[], isEnabled: boolean): Promise<PluginActivation[]> {
-    const body: PluginBulkToggleRequest = { codes, isEnabled };
+  async bulkToggle(codes: string[], isEnabled: boolean, cascade = true): Promise<PluginActivation[]> {
+    const body: PluginBulkToggleRequest = { codes, isEnabled, cascade };
     const data = await send<PluginActivation[]>('/api/plugins/bulk', 'POST', body);
     return Array.isArray(data) ? data : [];
   },

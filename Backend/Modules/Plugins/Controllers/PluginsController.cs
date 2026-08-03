@@ -38,7 +38,7 @@ namespace MyApi.Modules.Plugins.Controllers
         {
             try
             {
-                var dto = await _svc.SetActivationAsync(code, body.IsEnabled, GetUserId());
+                var dto = await _svc.SetActivationAsync(code, body.IsEnabled, GetUserId(), body.Cascade);
                 return Ok(new { success = true, data = dto });
             }
             catch (PluginCoreLockedException ex)
@@ -65,8 +65,27 @@ namespace MyApi.Modules.Plugins.Controllers
         [HttpPost("bulk")]
         public async Task<IActionResult> Bulk([FromBody] PluginBulkToggleRequest body)
         {
-            var data = await _svc.BulkSetAsync(body.Codes ?? new(), body.IsEnabled, GetUserId());
+            var data = await _svc.BulkSetAsync(body.Codes ?? new(), body.IsEnabled, GetUserId(), body.Cascade);
             return Ok(new { success = true, data });
         }
+
+        /// <summary>
+        /// Static dependency graph (codes, core flags, dependencies) so an
+        /// external admin app can mirror the cascade rules without hardcoding.
+        /// </summary>
+        [HttpGet("graph")]
+        [AllowAnonymous]
+        public IActionResult Graph() => Ok(new
+        {
+            success = true,
+            data = KnownPlugins.All.Select(e => new
+            {
+                code = e.Code,
+                isCore = e.IsCore,
+                dependencies = e.Dependencies,
+                transitiveDependencies = KnownPlugins.TransitiveDependencies(e.Code),
+                transitiveDependents = KnownPlugins.TransitiveDependents(e.Code),
+            }),
+        });
     }
 }

@@ -233,9 +233,11 @@ export function DashboardContent() {
         <Route path="help/*" element={<HelpModule />} />
         {/* Service Desk (tickets) — mounted here so the workspace sidebar stays visible */}
         <Route path="support/*" element={
-          <Suspense fallback={<PageSkeleton />}>
-            <SupportModuleRoutes />
-          </Suspense>
+          <PluginGate code="PL0006SUPPORT">
+            <Suspense fallback={<PageSkeleton />}>
+              <SupportModuleRoutes />
+            </Suspense>
+          </PluginGate>
         } />
         {/* Projects: standalone /dashboard/projects URLs redirect into the tasks module */}
         <Route path="projects" element={<Navigate to="/dashboard/tasks/projects" replace />} />

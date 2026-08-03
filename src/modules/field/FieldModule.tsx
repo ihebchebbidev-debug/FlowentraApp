@@ -84,9 +84,11 @@ export function FieldModule() {
           </PermissionRoute>
         } />
         <Route path="installations/*" element={
-          <PermissionRoute module="installations" action="read">
-            <InstallationsModule />
-          </PermissionRoute>
+          <PluginGate code="PL0018INSTALLATIONS">
+            <PermissionRoute module="installations" action="read">
+              <InstallationsModule />
+            </PermissionRoute>
+          </PluginGate>
         } />
       
         <Route path="inventory/*" element={<InventoryField />} />

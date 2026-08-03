@@ -1,20 +1,26 @@
 /**
  * LocalStorage cache for the last successful /api/plugins response.
  *
- * Plugin activations are GLOBAL across all tenants — every company
- * (krossier.flowentra.app, dev.flowentra.app, demo.flowentra.app, …)
- * shares the exact same set of enabled modules. So a single shared cache
- * key is used regardless of the currently selected tenant.
+ * Plugin activations are PER TENANT — deactivating a module for
+ * demo.flowentra.app must not affect krossier.flowentra.app — so the cache
+ * is keyed by the current tenant slug. A stale snapshot from another tenant
+ * must never be used as the offline fallback.
  *
  * Used as a fallback so that when the backend is briefly unreachable,
  * the UI keeps respecting the last known plugin activations instead of
  * silently defaulting every plugin to "enabled".
  */
+import { getCurrentTenant } from '@/utils/tenant';
 import type { PluginActivation } from './types';
 
-const CACHE_KEY = 'plugins:activations:global';
-/** Legacy per-tenant keys we clean up on read so old data doesn't linger. */
-const LEGACY_KEY_PREFIX = 'plugins:activations:';
+const KEY_PREFIX = 'plugins:activations:';
+/** Legacy global key (pre tenant-scoping) — purged on read. */
+const LEGACY_GLOBAL_KEY = 'plugins:activations:global';
+
+function cacheKey(): string {
+  const tenant = getCurrentTenant();
+  return `${KEY_PREFIX}${tenant || 'default'}`;
+}
 /** Entries older than this are considered stale and ignored. */
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -23,16 +29,9 @@ interface CacheEntry {
   activations: PluginActivation[];
 }
 
-function purgeLegacyTenantKeys(): void {
+function purgeLegacyGlobalKey(): void {
   try {
-    const toRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(LEGACY_KEY_PREFIX) && k !== CACHE_KEY) {
-        toRemove.push(k);
-      }
-    }
-    toRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.removeItem(LEGACY_GLOBAL_KEY);
   } catch {
     /* non-fatal */
   }
@@ -40,8 +39,8 @@ function purgeLegacyTenantKeys(): void {
 
 export function readCachedActivations(): PluginActivation[] | undefined {
   try {
-    purgeLegacyTenantKeys();
-    const raw = localStorage.getItem(CACHE_KEY);
+    purgeLegacyGlobalKey();
+    const raw = localStorage.getItem(cacheKey());
     if (!raw) return undefined;
     const entry = JSON.parse(raw) as CacheEntry;
     if (!entry || !Array.isArray(entry.activations)) return undefined;
@@ -56,7 +55,7 @@ export function readCachedActivations(): PluginActivation[] | undefined {
 export function writeCachedActivations(activations: PluginActivation[]): void {
   try {
     const entry: CacheEntry = { savedAt: Date.now(), activations };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+    localStorage.setItem(cacheKey(), JSON.stringify(entry));
   } catch {
     /* quota / disabled storage — non-fatal */
   }
@@ -64,8 +63,8 @@ export function writeCachedActivations(activations: PluginActivation[]): void {
 
 export function clearCachedActivations(): void {
   try {
-    localStorage.removeItem(CACHE_KEY);
-    purgeLegacyTenantKeys();
+    localStorage.removeItem(cacheKey());
+    purgeLegacyGlobalKey();
   } catch {
     /* non-fatal */
   }

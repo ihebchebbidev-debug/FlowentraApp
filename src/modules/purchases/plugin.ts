@@ -9,7 +9,7 @@ export const purchasesPlugin: PluginManifest = {
   icon: "ShoppingCart",
   version: "1.0.0",
   isCore: false,
-  dependencies: [],
+  dependencies: ["PL0001CONTACTS", "PL0007ARTICLES"],
   routes: [],
   sidebarKeys: ["purchases"],
 };

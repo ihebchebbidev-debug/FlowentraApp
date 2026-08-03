@@ -2018,7 +2018,7 @@ export const MODULES: ModuleDoc[] = [
       "Mobile-friendly views — lightweight technician UI: My Dispatches today, swipe-to-start/finish, capture customer signature, upload photos, log materials",
       "Field documents — site photos, signed delivery notes, certificates of conformity per Service Order; bulk download as ZIP",
       "Field reports — Technician productivity, First-time fix rate, Average travel/onsite time, Cost per dispatch, SLA breaches",
-      "Plugin-gated (PL0010FIELD); RBAC; multi-company aware",
+      "Plugin-gated (PL0015FIELD); RBAC; multi-company aware",
     ],
         routes: [
       { path: "/dashboard/field/dashboard", label: "Field dashboard" },

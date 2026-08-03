@@ -32,6 +32,19 @@ import { dealsApi } from '@/services/api/dealsApi';
 import { salesApi } from '@/services/api/salesApi';
 import { projectsApi } from '@/services/api/projectsApi';
 import { getUniversalStatusColorClass } from '@/config/entity-statuses';
+import { usePlugins } from '@/modules/shared/plugins';
+
+/** Search result type → owning plugin code, for per-tenant module gating. */
+const SEARCH_TYPE_PLUGIN: Record<string, string> = {
+  'contact': 'PL0001CONTACTS',
+  'service-order': 'PL0015FIELD',
+  'installation': 'PL0018INSTALLATIONS',
+  'article': 'PL0008INVSERVICES',
+  'offer': 'PL0005OFFERS',
+  'deal': 'PL0003DEALS',
+  'sale': 'PL0002SALES',
+  'project': 'PL0004PROJECTS',
+};
 
 // Search result types
 export interface SearchResultItem {
@@ -110,9 +123,19 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     'project': 0
   });
   const navigate = useNavigate();
+  // Deactivated modules must not be queried, counted, filtered on, or shown.
+  const { isEnabled } = usePlugins();
+  const typeAllowed = useCallback(
+    (type: string) => {
+      const code = SEARCH_TYPE_PLUGIN[type];
+      return !code || isEnabled(code);
+    },
+    [isEnabled],
+  );
 
   // Debounced search function
   const performSearch = useCallback(async (term: string) => {
+    const skip = () => Promise.resolve(null);
     if (!term || term.length < 1) {
       setResults([]);
       setCounts({
@@ -156,14 +179,14 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         salesResult,
         projectsResult
       ] = await Promise.allSettled([
-        contactsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 }),
-        serviceOrdersApi.getAll({ search: term, page: 1, pageSize: 10 }),
-        installationsApi.getAll({ search: term, page: 1, pageSize: 10 }),
-        articlesApi.getAll({ search: term, page: 1, limit: 10 }),
-        offersApi.getAll({ search: term, page: 1, limit: 10 }),
-        dealsApi.getAll({ search: term, page: 1, limit: 10 }),
-        salesApi.getAll({ search: term, page: 1, limit: 10 }),
-        projectsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 })
+        typeAllowed('contact') ? contactsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 }) : skip(),
+        typeAllowed('service-order') ? serviceOrdersApi.getAll({ search: term, page: 1, pageSize: 10 }) : skip(),
+        typeAllowed('installation') ? installationsApi.getAll({ search: term, page: 1, pageSize: 10 }) : skip(),
+        typeAllowed('article') ? articlesApi.getAll({ search: term, page: 1, limit: 10 }) : skip(),
+        typeAllowed('offer') ? offersApi.getAll({ search: term, page: 1, limit: 10 }) : skip(),
+        typeAllowed('deal') ? dealsApi.getAll({ search: term, page: 1, limit: 10 }) : skip(),
+        typeAllowed('sale') ? salesApi.getAll({ search: term, page: 1, limit: 10 }) : skip(),
+        typeAllowed('project') ? projectsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 }) : skip()
       ]);
 
       // Log any failures for debugging
@@ -323,7 +346,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [typeAllowed]);
 
   // Debounce search
   useEffect(() => {
@@ -336,8 +359,9 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
 
   // Filter results by selected type
   const filteredResults = useMemo(() => {
-    if (selectedType === 'all') return results;
-    return results.filter(item => item.type === selectedType);
+    const allowed = results.filter(item => typeAllowed(item.type));
+    if (selectedType === 'all') return allowed;
+    return allowed.filter(item => item.type === selectedType);
   }, [results, selectedType]);
 
   const handleResultClick = (result: SearchResultItem) => {
@@ -363,7 +387,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     }
   }, [isOpen]);
 
-  const typeFilters: { value: SearchType; labelKey: string; shortKey: string; fallback: string }[] = [
+  const allTypeFilters: { value: SearchType; labelKey: string; shortKey: string; fallback: string }[] = [
     { value: 'all', labelKey: 'search.filters.all', shortKey: 'search.filtersShort.all', fallback: 'All' },
     { value: 'service-order', labelKey: 'search.filters.serviceOrders', shortKey: 'search.filtersShort.service', fallback: 'Service Orders' },
     { value: 'contact', labelKey: 'search.filters.contacts', shortKey: 'search.filtersShort.contacts', fallback: 'Contacts' },
@@ -374,6 +398,8 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     { value: 'installation', labelKey: 'search.filters.installations', shortKey: 'search.filtersShort.installations', fallback: 'Installations' },
     { value: 'article', labelKey: 'search.filters.articles', shortKey: 'search.filtersShort.articles', fallback: 'Articles' },
   ];
+
+  const typeFilters = allTypeFilters.filter((f) => f.value === 'all' || typeAllowed(f.value));
 
   const getTypeLabel = (type: string): string => {
     switch (type) {

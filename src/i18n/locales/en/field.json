@@ -62,5 +62,11 @@
         "rejected": "Rejected"
       }
     }
+  },
+  "plugin": {
+    "installations": {
+      "name": "Installations",
+      "description": "Equipment installed at customer sites, linked to service orders and articles."
+    }
   }
 }

@@ -68,3 +68,83 @@ export function getDependentsOf(code: string): PluginManifest[] {
 }
 
 export const ALL_PLUGIN_CODES = (): string[] => getAllPlugins().map((p) => p.code);
+
+// ───────────── Graph helpers (transitive) ─────────────
+
+/**
+ * All codes this plugin needs, directly or transitively.
+ * Enabling a plugin must enable this whole set.
+ */
+export function getTransitiveDependencies(code: string): string[] {
+  const out = new Set<string>();
+  const walk = (c: string) => {
+    const m = getPluginByCode(c);
+    if (!m) return;
+    for (const dep of m.dependencies) {
+      if (out.has(dep)) continue;
+      out.add(dep);
+      walk(dep);
+    }
+  };
+  walk(code);
+  out.delete(code);
+  return Array.from(out);
+}
+
+/**
+ * All codes that break if this plugin goes off, directly or transitively.
+ * Disabling a plugin must disable this whole set (cascade).
+ */
+export function getTransitiveDependents(code: string): string[] {
+  const out = new Set<string>();
+  const walk = (c: string) => {
+    for (const dep of getDependentsOf(c)) {
+      if (out.has(dep.code)) continue;
+      out.add(dep.code);
+      walk(dep.code);
+    }
+  };
+  walk(code);
+  out.delete(code);
+  return Array.from(out);
+}
+
+/** Codes referenced as dependencies but not present in the registry. */
+export function getUnknownDependencies(): { code: string; missing: string[] }[] {
+  const all = getAllPlugins();
+  const known = new Set(all.map((p) => p.code));
+  return all
+    .map((p) => ({ code: p.code, missing: p.dependencies.filter((d) => !known.has(d)) }))
+    .filter((r) => r.missing.length > 0);
+}
+
+/** Returns cycles found in the dependency graph (empty array = acyclic). */
+export function getDependencyCycles(): string[][] {
+  const cycles: string[][] = [];
+  const state = new Map<string, 0 | 1 | 2>();
+  const stack: string[] = [];
+
+  const visit = (code: string) => {
+    const s = state.get(code) ?? 0;
+    if (s === 1) {
+      cycles.push([...stack.slice(stack.indexOf(code)), code]);
+      return;
+    }
+    if (s === 2) return;
+    state.set(code, 1);
+    stack.push(code);
+    for (const dep of getPluginByCode(code)?.dependencies ?? []) visit(dep);
+    stack.pop();
+    state.set(code, 2);
+  };
+
+  for (const p of getAllPlugins()) visit(p.code);
+  return cycles;
+}
+
+if (import.meta.env.DEV) {
+  const unknown = getUnknownDependencies();
+  if (unknown.length) console.error('[plugins] Unknown dependency codes:', unknown);
+  const cycles = getDependencyCycles();
+  if (cycles.length) console.error('[plugins] Dependency cycles detected:', cycles);
+}

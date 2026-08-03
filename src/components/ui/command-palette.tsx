@@ -20,6 +20,8 @@ import {
 import { loadSidebarConfig, type SidebarItemConfig } from '@/modules/dashboard/services/sidebar.service';
 import { ICON_REGISTRY, type IconName } from '@/modules/dashboard/components/sidebarIcons';
 import { useTheme } from '@/hooks/useTheme';
+import { usePlugins } from '@/modules/shared/plugins';
+import { isSidebarItemEnabled, isPathEnabled } from '@/modules/dashboard/utils/sidebarPluginGating';
 
 // Recent items stored in localStorage
 const RECENT_KEY = 'command-palette-recent';
@@ -66,6 +68,9 @@ export function CommandPalette() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [recentItems, setRecentItems] = useState<RecentItem[]>(getRecentItems);
+  // Per-tenant module gating — deactivated modules must not surface anywhere
+  // in the palette (quick actions, navigation, or recent items).
+  const { isEnabled } = usePlugins();
 
   // ⌘K / Ctrl+K listener
   useEffect(() => {
@@ -88,11 +93,11 @@ export function CommandPalette() {
   const navItems = useMemo(() => {
     const config = loadSidebarConfig();
     if (!config) return [];
-    return config.filter(i => i.active).map(item => ({
+    return config.filter(i => i.active && isSidebarItemEnabled(i.title, isEnabled)).map(item => ({
       ...item,
       resolvedIcon: resolveIcon(item.icon),
     }));
-  }, [open]); // re-compute when palette opens
+  }, [open, isEnabled]); // re-compute when palette opens
 
   const groupedNav = useMemo(() => {
     const groups: Record<string, typeof navItems> = {};
@@ -134,6 +139,16 @@ export function CommandPalette() {
     return key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, ' ');
   };
 
+  const visibleQuickActions = useMemo(
+    () => QUICK_ACTIONS.filter((a) => isPathEnabled(a.path, isEnabled)),
+    [isEnabled],
+  );
+
+  const visibleRecentItems = useMemo(
+    () => recentItems.filter((r) => isPathEnabled(r.path, isEnabled)),
+    [recentItems, isEnabled],
+  );
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput placeholder={t('commandPalette.placeholder', 'Type a command or search...')} />
@@ -144,9 +159,9 @@ export function CommandPalette() {
         </CommandEmpty>
 
         {/* Recent Items */}
-        {recentItems.length > 0 && (
+        {visibleRecentItems.length > 0 && (
           <CommandGroup heading={t('commandPalette.recent', 'Recent')}>
-            {recentItems.map((item) => {
+            {visibleRecentItems.map((item) => {
               const Icon = resolveIcon(item.icon);
               return (
                 <CommandItem
@@ -162,11 +177,11 @@ export function CommandPalette() {
           </CommandGroup>
         )}
 
-        {recentItems.length > 0 && <CommandSeparator />}
+        {visibleRecentItems.length > 0 && <CommandSeparator />}
 
         {/* Quick Actions */}
         <CommandGroup heading={t('commandPalette.quickActions', 'Quick Actions')}>
-          {QUICK_ACTIONS.map((action) => (
+          {visibleQuickActions.map((action) => (
             <CommandItem
               key={action.id}
               value={`action-${action.id}`}

@@ -94,8 +94,8 @@ export const WORKSPACES: Workspace[] = [
     landingUrl: "/dashboard/reporting/service",
     modules: [
       { key: "service-dash", label: "Service dashboard", url: "/dashboard/reporting/service", icon: "BarChart3" },
-      { key: "service-orders", label: "Service orders", url: "/dashboard/field/service-orders/list", icon: "ClipboardList", pluginCode: "PL0016SERVICEORDERS" },
-      { key: "dispatches", label: "Operations", url: "/dashboard/field/dispatcher", icon: "Send", pluginCode: "PL0017DISPATCHES" },
+      { key: "service-orders", label: "Service orders", url: "/dashboard/field/service-orders/list", icon: "ClipboardList", pluginCode: "PL0015FIELD" },
+      { key: "dispatches", label: "Operations", url: "/dashboard/field/dispatcher", icon: "Send", pluginCode: "PL0024DISPATCHER" },
       { key: "installations", label: "Installations", url: "/dashboard/field/installations/list", icon: "Wrench", pluginCode: "PL0018INSTALLATIONS" },
       { key: "planning", label: "Planning board", url: "/dashboard/field/dispatcher/interface", icon: "CalendarDays", pluginCode: "PL0023SCHEDULING" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
@@ -177,9 +177,9 @@ export const WORKSPACES: Workspace[] = [
     icon: "HelpCircle",
     landingUrl: "/dashboard/support/tickets/dashboard",
     modules: [
-      { key: "support-dashboard", label: "Dashboard", url: "/dashboard/support/tickets/dashboard", icon: "LayoutDashboard" },
-      { key: "support-tickets", label: "My tickets", url: "/dashboard/support/tickets", icon: "Ticket" },
-      { key: "support-new-ticket", label: "New ticket", url: "/dashboard/support/tickets/new", icon: "Plus" },
+      { key: "support-dashboard", label: "Dashboard", url: "/dashboard/support/tickets/dashboard", icon: "LayoutDashboard", pluginCode: "PL0006SUPPORT" },
+      { key: "support-tickets", label: "My tickets", url: "/dashboard/support/tickets", icon: "Ticket", pluginCode: "PL0006SUPPORT" },
+      { key: "support-new-ticket", label: "New ticket", url: "/dashboard/support/tickets/new", icon: "Plus", pluginCode: "PL0006SUPPORT" },
     ],
   },
   {

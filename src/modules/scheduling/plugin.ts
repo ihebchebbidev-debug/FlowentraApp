@@ -9,7 +9,7 @@ export const schedulingPlugin: PluginManifest = {
   icon: "CalendarDays",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0015FIELD"],
+  dependencies: ["PL0015FIELD", "PL0024DISPATCHER"],
   routes: [],
   sidebarKeys: ["scheduling"],
 };

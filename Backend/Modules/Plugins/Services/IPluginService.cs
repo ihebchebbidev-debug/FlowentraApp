@@ -8,7 +8,9 @@ namespace MyApi.Modules.Plugins.Services
     {
         Task<List<PluginActivationDto>> GetActivationsAsync();
         Task<PluginActivationDto> SetActivationAsync(string code, bool isEnabled, int? userId);
+        Task<PluginActivationDto> SetActivationAsync(string code, bool isEnabled, int? userId, bool cascade);
         Task<List<PluginActivationDto>> BulkSetAsync(List<string> codes, bool isEnabled, int? userId);
+        Task<List<PluginActivationDto>> BulkSetAsync(List<string> codes, bool isEnabled, int? userId, bool cascade);
         Task<PluginStatsDto> GetStatsAsync();
     }
 

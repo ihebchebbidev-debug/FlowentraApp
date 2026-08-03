@@ -7,14 +7,19 @@ import {
   getAllPlugins,
   getPluginByCode,
   getDependentsOf,
+  getTransitiveDependencies,
+  getTransitiveDependents,
 } from './registry';
 import {
   readCachedActivations,
   writeCachedActivations,
 } from './activationsCache';
+import { getCurrentTenant } from '@/utils/tenant';
 import type { PluginActivation, PluginManifest, PluginRuntimeState } from './types';
 
-const QUERY_KEY = ['plugins', 'activations'] as const;
+/** Activations are per tenant — scope the cache key so switching company refetches. */
+const queryKeyFor = (tenant: string | null | undefined) =>
+  ['plugins', 'activations', tenant ?? 'default'] as const;
 
 export function usePlugins() {
   const queryClient = useQueryClient();
@@ -22,6 +27,8 @@ export function usePlugins() {
   const { t } = useTranslation('settings');
 
   const manifests = useMemo(() => getAllPlugins(), []);
+  const tenant = getCurrentTenant();
+  const QUERY_KEY = useMemo(() => queryKeyFor(tenant), [tenant]);
 
   // Read once per render — cache lookup is cheap, but keep referential
   // stability for the dependency array below.
@@ -35,18 +42,34 @@ export function usePlugins() {
   } = useQuery<PluginActivation[]>({
     queryKey: QUERY_KEY,
     queryFn: async () => {
-      const data = await pluginsApi.list();
-      // Persist last known good state so offline / cold-start renders have data.
-      if (data.length > 0) writeCachedActivations(data);
-      return data;
+      try {
+        const data = await pluginsApi.listStrict();
+        // Persist last known good state so offline / cold-start renders have data.
+        writeCachedActivations(data);
+        return data;
+      } catch (err) {
+        // API unreachable: never fall back to "everything enabled" — keep the
+        // last known tenant snapshot so disabled modules stay hidden.
+        const cached = readCachedActivations();
+        if (cached) return cached;
+        throw err;
+      }
     },
-    staleTime: 5 * 60_000,
+
+    // Near real-time gating: an admin deactivating a module externally must
+    // take effect in an open session without asking the user to reload.
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     // pluginsApi.list() never throws — it returns [] on any error — so this
     // retry path only triggers for genuine network failures (no response at all).
     retry: 0,
     // Don't re-fetch on component remount: [] is a valid "no activations" state
     // and we don't want the PluginGate skeleton to flash on every navigation.
     retryOnMount: false,
+
     // Seed React Query's cache with the persisted snapshot so the very first
     // render already reflects the tenant's last known activations.
     initialData: cachedActivations,
@@ -68,8 +91,8 @@ export function usePlugins() {
     return activations ?? [];
   }, [activations, isApiError, cachedActivations]);
 
-  /** Map of code -> isEnabled. Default true if no row exists. */
-  const enabledMap = useMemo(() => {
+  /** Raw map of code -> explicit stored value. Default true if no row exists. */
+  const storedMap = useMemo(() => {
     const map = new Map<string, boolean>();
     // Seed with default-on for every known manifest
     for (const m of manifests) map.set(m.code, true);
@@ -77,6 +100,40 @@ export function usePlugins() {
     for (const a of effectiveActivations) map.set(a.code, a.isEnabled);
     return map;
   }, [manifests, effectiveActivations]);
+
+  /**
+   * Effective map — a plugin is only truly on when every plugin in its
+   * TRANSITIVE dependency chain is on. Core plugins are always on.
+   * This is the single source of truth for gating.
+   */
+  const enabledMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    const resolve = (code: string, seen: Set<string>): boolean => {
+      if (map.has(code)) return map.get(code)!;
+      const manifest = getPluginByCode(code);
+      if (!manifest) return true; // unknown code → allow
+      if (manifest.isCore) {
+        map.set(code, true);
+        return true;
+      }
+      if (seen.has(code)) return true; // cycle guard (registry validates separately)
+      seen.add(code);
+      let value = storedMap.get(code) !== false;
+      if (value) {
+        for (const dep of manifest.dependencies) {
+          if (!resolve(dep, seen)) {
+            value = false;
+            break;
+          }
+        }
+      }
+      seen.delete(code);
+      map.set(code, value);
+      return value;
+    };
+    for (const m of manifests) resolve(m.code, new Set());
+    return map;
+  }, [manifests, storedMap]);
 
   const isEnabled = useCallback(
     (code: string | undefined | null): boolean => {
@@ -86,21 +143,15 @@ export function usePlugins() {
       if (!manifest) return true;
       // Core plugins are always on
       if (manifest.isCore) return true;
-      const explicit = enabledMap.get(code);
-      if (explicit === false) return false;
-      // Check dependencies — if any dep is disabled, this plugin is effectively off
-      for (const dep of manifest.dependencies) {
-        if (enabledMap.get(dep) === false) return false;
-      }
-      return true;
+      return enabledMap.get(code) !== false;
     },
     [enabledMap]
   );
 
   const runtimeState = useMemo<PluginRuntimeState[]>(() => {
     return manifests.map((manifest) => {
-      const explicitlyEnabled = enabledMap.get(manifest.code) !== false;
-      const hasBrokenDependency = manifest.dependencies.some(
+      const explicitlyEnabled = manifest.isCore || storedMap.get(manifest.code) !== false;
+      const hasBrokenDependency = getTransitiveDependencies(manifest.code).some(
         (dep) => enabledMap.get(dep) === false
       );
       const enabledDependents = getDependentsOf(manifest.code)
@@ -113,7 +164,7 @@ export function usePlugins() {
         enabledDependents,
       };
     });
-  }, [manifests, enabledMap]);
+  }, [manifests, enabledMap, storedMap]);
 
   const activeCount = useMemo(
     () => runtimeState.filter((s) => s.isEnabled).length,
@@ -123,7 +174,7 @@ export function usePlugins() {
 
   const toggleMutation = useMutation({
     mutationFn: ({ code, enabled }: { code: string; enabled: boolean }) =>
-      pluginsApi.toggle(code, enabled),
+      pluginsApi.toggle(code, enabled, true),
     onSuccess: (_data, { code, enabled }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast({
@@ -154,6 +205,7 @@ export function usePlugins() {
   const toggle = useCallback(
     (code: string, enabled: boolean) => {
       const manifest = getPluginByCode(code);
+      if (!manifest) return;
       if (manifest?.isCore && !enabled) {
         toast({
           title: t('plugins.coreLocked', 'Core plugin'),
@@ -165,6 +217,31 @@ export function usePlugins() {
       toggleMutation.mutate({ code, enabled });
     },
     [toggleMutation, toast, t]
+  );
+
+  /**
+   * Preview of what a toggle will do, for confirmation dialogs.
+   * - enabling → the dependency chain that gets switched ON with it
+   * - disabling → the dependents that get switched OFF with it (cascade)
+   */
+  const previewToggle = useCallback(
+    (code: string, enabled: boolean): { alsoEnabled: string[]; alsoDisabled: string[] } => {
+      if (enabled) {
+        return {
+          alsoEnabled: getTransitiveDependencies(code).filter(
+            (c) => storedMap.get(c) === false
+          ),
+          alsoDisabled: [],
+        };
+      }
+      return {
+        alsoEnabled: [],
+        alsoDisabled: getTransitiveDependents(code).filter(
+          (c) => enabledMap.get(c) !== false
+        ),
+      };
+    },
+    [storedMap, enabledMap]
   );
 
   const bulkToggle = useCallback(
@@ -186,6 +263,7 @@ export function usePlugins() {
     apiError: apiError as Error | null | undefined,
     toggle,
     bulkToggle,
+    previewToggle,
     isToggling: toggleMutation.isPending || bulkMutation.isPending,
   };
 }

@@ -16,10 +16,14 @@ export function DispatcherModule() {
         <Route path="interface" element={<DispatchingInterface />} />
         <Route path="job/:id" element={<DispatchJobDetail />} />
         <Route path="manage-scheduler" element={
-          <PermissionRoute module="service_orders" action="update"><SchedulerManager /></PermissionRoute>
+          <PluginGate code="PL0023SCHEDULING">
+            <PermissionRoute module="service_orders" action="update"><SchedulerManager /></PermissionRoute>
+          </PluginGate>
         } />
         <Route path="manage-scheduler/edit/:technicianId" element={
-          <PermissionRoute module="service_orders" action="update"><ScheduleEditorPage /></PermissionRoute>
+          <PluginGate code="PL0023SCHEDULING">
+            <PermissionRoute module="service_orders" action="update"><ScheduleEditorPage /></PermissionRoute>
+          </PluginGate>
         } />
       </Routes>
     </PluginGate>
