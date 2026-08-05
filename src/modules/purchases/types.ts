@@ -217,13 +217,23 @@ export interface PurchaseActivity {
   id: string;
   entityType: 'purchase_order' | 'goods_receipt' | 'supplier_invoice';
   entityId: string;
-  action: string;
+  /**
+   * Wire field name — the backend serializes PurchaseActivityDto.ActivityType
+   * as `activityType`. Was previously typed as `action`, which is a key the API
+   * never sends, so every consumer read `undefined` and rendered a blank badge.
+   */
+  activityType: string;
   description: string;
   oldValue?: string;
   newValue?: string;
   performedBy: string;
   performedByName: string;
   performedAt: string;
+}
+
+export interface PaginatedPurchaseActivities {
+  activities: PurchaseActivity[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
 // ─── Stats ───

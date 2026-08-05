@@ -887,6 +887,42 @@ CREATE INDEX IF NOT EXISTS ""IX_ProcessRuns_Running""
                 migrationLogger.LogWarning("⚠️ Processes schema check failed (non-fatal): {Error}", prEx.Message);
             }
 
+            // ── HR module integrity indexes (idempotent, mirrors Backend/Migrations/20260805_hr_unique_indexes.sql) ──
+            // The runtime schema repair only adds missing tables/columns, never indexes,
+            // so the unique constraints the HR service relies on must be created here.
+            try
+            {
+                using var hrCmd = probe.CreateCommand();
+                hrCmd.CommandText = @"
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'hr_attendance') THEN
+        -- Collapse pre-existing duplicates (keep the most recently updated row)
+        DELETE FROM hr_attendance a
+        USING hr_attendance b
+        WHERE a.id < b.id
+          AND a.""TenantId"" = b.""TenantId""
+          AND a.user_id = b.user_id
+          AND a.date = b.date;
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_attendance_tenant_user_date
+            ON hr_attendance (""TenantId"", user_id, date);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'hr_payroll_runs') THEN
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_payroll_runs_tenant_year_month
+            ON hr_payroll_runs (""TenantId"", year, month);
+    END IF;
+END $$;";
+                hrCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ HR module integrity indexes verified");
+            }
+            catch (Exception hrEx)
+            {
+                migrationLogger.LogWarning("⚠️ HR index check failed (non-fatal): {Error}", hrEx.Message);
+            }
+
+
+
             // ── Invoices.Status constraint: allow 'overdue' (used by admin.invoices-mark-overdue) ──
             try
             {

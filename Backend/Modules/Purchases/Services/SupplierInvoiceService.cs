@@ -392,9 +392,9 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.Status != null)
                     {
                         if (oldStatus == "cancelled" && dto.Status != "cancelled")
-                            throw new InvalidOperationException("Cancelled invoices cannot change status");
+                            throw new InvalidOperationException("[INVALID_TRANSITION] Cancelled invoices cannot change status");
                         if (oldStatus == "paid" && dto.Status != "paid" && dto.Status != "cancelled")
-                            throw new InvalidOperationException($"Paid invoices cannot transition to '{dto.Status}'");
+                            throw new InvalidOperationException($"[INVALID_TRANSITION] Paid invoices cannot transition to '{dto.Status}'");
                         invoice.Status = dto.Status;
                     }
                     if (dto.DueDate.HasValue) invoice.DueDate = AsUtc(dto.DueDate.Value);
@@ -427,13 +427,13 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.AmountPaid.HasValue)
                     {
                         if (dto.AmountPaid.Value < 0)
-                            throw new InvalidOperationException("AmountPaid cannot be negative");
+                            throw new InvalidOperationException("[INVALID_AMOUNT_PAID] AmountPaid cannot be negative");
                         // Guard: prevent overpayment when a concurrent payment already
                         // settled the invoice. The locked read above guarantees we see
                         // the latest persisted AmountPaid here.
                         if (invoice.GrandTotal > 0 && dto.AmountPaid.Value > invoice.GrandTotal)
                             throw new InvalidOperationException(
-                                $"AmountPaid ({dto.AmountPaid.Value}) exceeds GrandTotal ({invoice.GrandTotal}); a concurrent payment may have settled this invoice");
+                                $"[OVERPAYMENT] AmountPaid ({dto.AmountPaid.Value}) exceeds GrandTotal ({invoice.GrandTotal}); a concurrent payment may have settled this invoice");
 
                         invoice.AmountPaid = dto.AmountPaid.Value;
                         if (dto.Status == null && oldStatus != "cancelled")

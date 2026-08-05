@@ -19,6 +19,10 @@ namespace MyApi.Modules.Purchases.Services
         Task<bool> DeleteItemAsync(int orderId, int itemId);
         // Activities
         Task<List<PurchaseActivityDto>> GetActivitiesAsync(int orderId, int page = 1, int limit = 20);
+        Task<PaginatedPurchaseActivityResponse> GetAllActivitiesAsync(
+            string? entityType = null, int? entityId = null, string? activityType = null,
+            string? search = null, DateTime? dateFrom = null, DateTime? dateTo = null,
+            int page = 1, int limit = 50);
     }
 
     public interface IGoodsReceiptService

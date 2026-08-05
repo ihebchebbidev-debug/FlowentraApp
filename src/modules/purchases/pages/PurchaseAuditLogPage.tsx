@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Search, Clock } from "lucide-react";
-import { purchaseOrderService } from "../services/purchaseService";
+import { purchaseActivityService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { ListTableSkeleton } from "../components/PurchaseSkeletons";
-import { toast } from "sonner";
 import type { PurchaseActivity } from "../types";
 
 const ACTION_COLORS: Record<string, string> = {
@@ -22,51 +20,55 @@ const ACTION_COLORS: Record<string, string> = {
   deleted: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
+const PAGE_SIZE = 50;
+
 function PurchaseAuditLogContent() {
   const { t } = useTranslation('purchases');
-  const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [activities, setActivities] = useState<PurchaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // The current backend only exposes activities per-order; we'll load a combined view
-  // by fetching recent orders and their activities. In a production app you'd want a
-  // dedicated audit-log endpoint.
+  // Debounce the search box so typing doesn't hammer the API.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // Single server-paged call against the dedicated cross-entity audit endpoint.
+  // (Previously this page fetched 50 orders and then fanned out 10 per-order
+  // activity requests, so it only ever showed a slice of the history.)
   const fetchActivities = useCallback(async () => {
     try {
       setError(null);
       setLoading(true);
-      // Fetch recent orders to get their activities
-      const result = await purchaseOrderService.getAll({ limit: 50 });
-      const orders = result.orders || [];
-      const allActivities: PurchaseActivity[] = [];
-      // Fetch activities for each order (limit to first 10 to avoid too many requests)
-      const promises = orders.slice(0, 10).map(async (order) => {
-        try {
-          const acts = await purchaseOrderService.getActivities(order.id, 1, 20);
-          return acts || [];
-        } catch { return []; }
+      const result = await purchaseActivityService.getAll({
+        search: debouncedSearch || undefined,
+        page,
+        limit: PAGE_SIZE,
       });
-      const results = await Promise.all(promises);
-      results.forEach(acts => allActivities.push(...acts));
-      // Sort by date desc
-      allActivities.sort((a, b) => b.performedAt.localeCompare(a.performedAt));
-      setActivities(allActivities);
+      setActivities(result?.activities ?? []);
+      setTotal(result?.pagination?.total ?? 0);
+      setTotalPages(result?.pagination?.totalPages ?? 0);
     } catch (e: any) {
       setError(e?.message || t('common.loadError', 'Failed to load'));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, debouncedSearch, page]);
 
   useEffect(() => { fetchActivities(); }, [fetchActivities]);
 
-  const filtered = activities.filter(a => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return a.description.toLowerCase().includes(q) || a.performedByName.toLowerCase().includes(q);
-  });
+  const filtered = activities;
+
+
 
   return (
     <div className="flex flex-col">
@@ -108,7 +110,7 @@ function PurchaseAuditLogContent() {
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(a.performedAt).toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{a.performedByName}</TableCell>
                       <TableCell><Badge variant="outline" className="text-px-10">{t(`auditLog.entity.${a.entityType}`, a.entityType)}</Badge></TableCell>
-                      <TableCell><Badge variant="secondary" className={`text-px-10 ${ACTION_COLORS[a.action] || ''}`}>{t(`auditLog.actionLabel.${a.action}`, a.action?.replace(/_/g, ' ') || '—')}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary" className={`text-px-10 ${ACTION_COLORS[a.activityType] || ''}`}>{t(`auditLog.actionLabel.${a.activityType}`, a.activityType?.replace(/_/g, ' ') || '—')}</Badge></TableCell>
                       <TableCell className="text-xs max-w-[300px] truncate">{a.description}</TableCell>
                     </TableRow>
                   ))}
@@ -118,6 +120,33 @@ function PurchaseAuditLogContent() {
             </CardContent>
           </Card>
         )}
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {t('auditLog.pageInfo', 'Page {{page}} of {{totalPages}} — {{total}} entries', { page, totalPages, total })}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                {t('common.previous', 'Previous')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                {t('common.next', 'Next')}
+              </Button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

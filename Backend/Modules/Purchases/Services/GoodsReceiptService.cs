@@ -342,6 +342,10 @@ namespace MyApi.Modules.Purchases.Services
                         {
                             if (line.QuantityReceived < 0)
                                 throw new InvalidOperationException("QuantityReceived cannot be negative");
+                            // Mirror the create-path guard: an edit must not be able to
+                            // persist a negative rejected quantity that create rejects.
+                            if (line.QuantityRejected < 0)
+                                throw new InvalidOperationException("QuantityRejected cannot be negative");
 
                             var poItem = po.Items?.FirstOrDefault(i => i.Id == line.PurchaseOrderItemId)
                                 ?? throw new InvalidOperationException($"PurchaseOrderItem {line.PurchaseOrderItemId} does not belong to PO {po.Id}");

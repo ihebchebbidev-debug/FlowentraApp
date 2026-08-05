@@ -1265,12 +1265,24 @@ namespace MyApi.Data
                 entity.HasIndex(e => new { e.UserId, e.Year, e.LeaveType }).IsUnique();
             });
 
+            // One attendance row per (tenant, employee, day). The unique index is what
+            // makes HrService.UpsertAttendanceAsync's concurrent-insert recovery work;
+            // without it duplicate rows double-count hours in payroll.
+            modelBuilder.Entity<HrAttendance>(entity =>
+            {
+                entity.ToTable("hr_attendance");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.TenantId, e.UserId, e.Date }).IsUnique();
+            });
+
             modelBuilder.Entity<HrPayrollRun>(entity =>
             {
                 entity.ToTable("hr_payroll_runs");
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.Year, e.Month });
+                // Unique per tenant/period — backs the duplicate-run guard in HrService.
+                entity.HasIndex(e => new { e.TenantId, e.Year, e.Month }).IsUnique();
             });
+
 
             modelBuilder.Entity<HrPayrollEntry>(entity =>
             {

@@ -378,26 +378,55 @@ namespace MyApi.Modules.Purchases.Services
             if (dateFrom.HasValue) query = query.Where(o => o.OrderDate >= dateFrom.Value);
             if (dateTo.HasValue) query = query.Where(o => o.OrderDate <= dateTo.Value);
 
-            var orders = await query.ToListAsync();
             var now = DateTime.UtcNow;
             var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
+            // Single SQL aggregate instead of materializing every order into memory.
+            var agg = await query
+                .GroupBy(o => 1)
+                .Select(g => new
+                {
+                    Total = g.Count(),
+                    Draft = g.Sum(o => o.Status == "draft" ? 1 : 0),
+                    Ordered = g.Sum(o => o.Status == "ordered" ? 1 : 0),
+                    Received = g.Sum(o => o.Status == "received" ? 1 : 0),
+                    Cancelled = g.Sum(o => o.Status == "cancelled" ? 1 : 0),
+                    TotalSpend = g.Sum(o => o.Status != "cancelled" && o.Status != "draft" ? o.GrandTotal : 0m),
+                    MonthlySpend = g.Sum(o => o.OrderDate >= monthStart && o.Status != "cancelled" && o.Status != "draft" ? o.GrandTotal : 0m),
+                    Pending = g.Sum(o => o.Status == "ordered" || o.Status == "partially_received" ? 1 : 0)
+                })
+                .FirstOrDefaultAsync();
+
+            // Lead time needs date arithmetic: pull only the two date columns for the
+            // (much smaller) set of delivered orders instead of whole entities.
+            var deliveredDates = await query
+                .Where(o => o.ActualDelivery.HasValue)
+                .Select(o => new { o.OrderDate, o.ActualDelivery })
+                .ToListAsync();
+
+            var overdueInvoices = await _context.SupplierInvoices
+                .CountAsync(i => !i.IsDeleted && i.DueDate < now && i.Status != "paid" && i.Status != "cancelled");
+
             return new PurchaseOrderStatsDto
             {
-                TotalOrders = orders.Count,
-                DraftOrders = orders.Count(o => o.Status == "draft"),
-                OrderedOrders = orders.Count(o => o.Status == "ordered"),
-                ReceivedOrders = orders.Count(o => o.Status == "received"),
-                CancelledOrders = orders.Count(o => o.Status == "cancelled"),
-                TotalSpend = orders.Where(o => o.Status != "cancelled" && o.Status != "draft").Sum(o => o.GrandTotal),
-                MonthlySpend = orders.Where(o => o.OrderDate >= monthStart && o.Status != "cancelled" && o.Status != "draft").Sum(o => o.GrandTotal),
+                TotalOrders = agg?.Total ?? 0,
+                DraftOrders = agg?.Draft ?? 0,
+                OrderedOrders = agg?.Ordered ?? 0,
+                ReceivedOrders = agg?.Received ?? 0,
+                CancelledOrders = agg?.Cancelled ?? 0,
+                TotalSpend = agg?.TotalSpend ?? 0m,
+                MonthlySpend = agg?.MonthlySpend ?? 0m,
                 // Clamp at 0: a back-dated OrderDate later than ActualDelivery would
                 // otherwise contribute a negative lead time and skew the average.
-                AvgLeadTime = (decimal)orders.Where(o => o.ActualDelivery.HasValue).Select(o => Math.Max(0, (o.ActualDelivery!.Value - o.OrderDate).TotalDays)).DefaultIfEmpty(0).Average(),
-                PendingReceipts = orders.Count(o => o.Status == "ordered" || o.Status == "partially_received"),
-                OverdueInvoices = await _context.SupplierInvoices.CountAsync(i => !i.IsDeleted && i.DueDate < now && i.Status != "paid" && i.Status != "cancelled")
+                AvgLeadTime = (decimal)deliveredDates
+                    .Select(o => Math.Max(0, (o.ActualDelivery!.Value - o.OrderDate).TotalDays))
+                    .DefaultIfEmpty(0)
+                    .Average(),
+                PendingReceipts = agg?.Pending ?? 0,
+                OverdueInvoices = overdueInvoices
             };
         }
+
 
         public async Task<PurchaseOrderItemDto> AddItemAsync(int orderId, CreatePurchaseOrderItemDto dto)
         {
@@ -519,6 +548,10 @@ namespace MyApi.Modules.Purchases.Services
 
         public async Task<List<PurchaseActivityDto>> GetActivitiesAsync(int orderId, int page, int limit)
         {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+            if (limit > 200) limit = 200;
+
             var rows = await _context.PurchaseActivities.AsNoTracking()
                 .Where(a => a.EntityType == "purchase_order" && a.EntityId == orderId)
                 .OrderByDescending(a => a.PerformedAt)
@@ -532,8 +565,81 @@ namespace MyApi.Modules.Purchases.Services
                     PerformedAt = a.PerformedAt
                 }).ToListAsync();
 
-            // Backfill display name for legacy rows that pre-date PerformedByName persistence.
-            // Look up the User row once per missing id and fall back to "First Last" / Email.
+            await BackfillPerformedByNamesAsync(rows);
+            return rows;
+        }
+
+        /// <summary>
+        /// Cross-entity audit feed. Replaces the old client-side fan-out on the
+        /// Audit Log page (which fetched N orders then N activity calls and only
+        /// ever saw a slice of the history). Filtering, sorting and paging all
+        /// happen in SQL so the log is complete and cheap.
+        /// </summary>
+        public async Task<PaginatedPurchaseActivityResponse> GetAllActivitiesAsync(
+            string? entityType, int? entityId, string? activityType, string? search,
+            DateTime? dateFrom, DateTime? dateTo, int page, int limit)
+        {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 50;
+            if (limit > 200) limit = 200;
+
+            var query = _context.PurchaseActivities.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(entityType))
+                query = query.Where(a => a.EntityType == entityType);
+            if (entityId.HasValue)
+                query = query.Where(a => a.EntityId == entityId.Value);
+            if (!string.IsNullOrWhiteSpace(activityType))
+                query = query.Where(a => a.ActivityType == activityType);
+            if (dateFrom.HasValue)
+                query = query.Where(a => a.PerformedAt >= dateFrom.Value);
+            if (dateTo.HasValue)
+                query = query.Where(a => a.PerformedAt <= dateTo.Value);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = $"%{search.Trim()}%";
+                query = query.Where(a =>
+                    EF.Functions.ILike(a.Description ?? string.Empty, term) ||
+                    EF.Functions.ILike(a.PerformedByName ?? string.Empty, term) ||
+                    EF.Functions.ILike(a.ActivityType, term));
+            }
+
+            var total = await query.CountAsync();
+
+            var rows = await query
+                .OrderByDescending(a => a.PerformedAt).ThenByDescending(a => a.Id)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(a => new PurchaseActivityDto
+                {
+                    Id = a.Id, EntityType = a.EntityType, EntityId = a.EntityId,
+                    ActivityType = a.ActivityType, Description = a.Description,
+                    OldValue = a.OldValue, NewValue = a.NewValue,
+                    PerformedBy = a.PerformedBy, PerformedByName = a.PerformedByName,
+                    PerformedAt = a.PerformedAt
+                }).ToListAsync();
+
+            await BackfillPerformedByNamesAsync(rows);
+
+            return new PaginatedPurchaseActivityResponse
+            {
+                Activities = rows,
+                Pagination = new PurchasePaginationInfo
+                {
+                    Page = page,
+                    Limit = limit,
+                    Total = total,
+                    TotalPages = limit > 0 ? (int)Math.Ceiling(total / (double)limit) : 0
+                }
+            };
+        }
+
+        /// <summary>
+        /// Backfill display name for legacy rows that pre-date PerformedByName
+        /// persistence. Looks up each missing user id once and falls back to
+        /// "First Last" / Email.
+        /// </summary>
+        private async Task BackfillPerformedByNamesAsync(List<PurchaseActivityDto> rows)
+        {
             var missingUserIds = rows
                 .Where(r => string.IsNullOrEmpty(r.PerformedByName) && !string.IsNullOrEmpty(r.PerformedBy))
                 .Select(r => r.PerformedBy)
@@ -542,24 +648,24 @@ namespace MyApi.Modules.Purchases.Services
                 .Where(n => n.HasValue)
                 .Select(n => n!.Value)
                 .ToList();
-            if (missingUserIds.Count > 0)
+            if (missingUserIds.Count == 0) return;
+
+            var userMap = await _context.Users.AsNoTracking()
+                .Where(u => missingUserIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email })
+                .ToDictionaryAsync(u => u.Id.ToString(), u =>
+                    !string.IsNullOrWhiteSpace((u.FirstName + " " + u.LastName).Trim())
+                        ? (u.FirstName + " " + u.LastName).Trim()
+                        : u.Email);
+            foreach (var r in rows)
             {
-                var userMap = await _context.Users.AsNoTracking()
-                    .Where(u => missingUserIds.Contains(u.Id))
-                    .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email })
-                    .ToDictionaryAsync(u => u.Id.ToString(), u =>
-                        !string.IsNullOrWhiteSpace((u.FirstName + " " + u.LastName).Trim())
-                            ? (u.FirstName + " " + u.LastName).Trim()
-                            : u.Email);
-                foreach (var r in rows)
-                {
-                    if (!string.IsNullOrEmpty(r.PerformedByName)) continue;
-                    if (!string.IsNullOrEmpty(r.PerformedBy) && userMap.TryGetValue(r.PerformedBy, out var name))
-                        r.PerformedByName = name;
-                }
+                if (!string.IsNullOrEmpty(r.PerformedByName)) continue;
+                if (!string.IsNullOrEmpty(r.PerformedBy) && userMap.TryGetValue(r.PerformedBy, out var name))
+                    r.PerformedByName = name;
             }
-            return rows;
         }
+
+
 
         // ── Helpers ──
 

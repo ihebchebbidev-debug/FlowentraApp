@@ -350,7 +350,8 @@
       "validated": "Validé",
       "tej_sync": "Synchro TEJ",
       "tej_sync_failed": "Échec synchro TEJ"
-    }
+    },
+    "pageInfo": "Page {{page}} sur {{totalPages}} — {{total}} entrées"
   },
   "activity": {
     "empty": "Aucune activité"
@@ -405,7 +406,9 @@
   },
   "common": {
     "error": "Erreur",
-    "loadError": "Échec du chargement des données"
+    "loadError": "Échec du chargement des données",
+    "previous": "Précédent",
+    "next": "Suivant"
   },
   "errors": {
     "DUPLICATE_SUPPLIER_REF": "Cette référence fournisseur existe déjà pour ce fournisseur",

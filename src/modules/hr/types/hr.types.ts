@@ -113,6 +113,8 @@ export interface SalaryBreakdown {
   irppBrackets: IRPPBracketDetail[];
   css: number;
   cssRate: number;
+  /** Post-tax recurring deductions from the employee's salary config. */
+  customDeductions?: number;
   netSalary: number;
   totalHours?: number;
   overtimeHours?: number;

@@ -61,7 +61,13 @@
     "alreadyReceived": "تم استلامها بالفعل",
     "rejectionReason": "سبب الرفض",
     "rejectionReasonPlaceholder": "أدخل سبب الرفض…",
-    "selectPOFirst": "اختر طلب شراء أولاً"
+    "selectPOFirst": "اختر طلب شراء أولاً",
+    "stats": {
+      "total": "إجمالي الاستلامات",
+      "partial": "جزئية",
+      "complete": "مكتملة",
+      "rejected": "مرفوضة"
+    }
   },
   "invoices": {
     "title": "فواتير الموردين",
@@ -72,7 +78,13 @@
     "notFound": "الفاتورة غير موجودة",
     "createTitle": "إنشاء فاتورة مورد",
     "created": "تم إنشاء فاتورة المورد بنجاح",
-    "deleted": "تم حذف الفاتورة"
+    "deleted": "تم حذف الفاتورة",
+    "stats": {
+      "total": "إجمالي الفواتير",
+      "unpaid": "غير مدفوعة",
+      "overdue": "متأخرة",
+      "value": "القيمة الإجمالية"
+    }
   },
   "status": {
     "draft": "مسودة",
@@ -156,7 +168,9 @@
     "unit": "الوحدة",
     "paymentDate": "تاريخ الدفع",
     "paymentMethod": "الطريقة",
-    "amount": "المبلغ"
+    "amount": "المبلغ",
+    "matriculeFiscale": "المعرف الجبائي",
+    "cin": "بطاقة التعريف الوطنية"
   },
   "filters": {
     "allStatuses": "جميع الحالات"
@@ -179,7 +193,9 @@
     "recordPayment": "تسجيل دفعة",
     "sendFactureEnLigne": "إرسال إلى FactureEnLigne",
     "confirm": "تأكيد",
-    "paymentRecorded": "تم تسجيل الدفعة"
+    "paymentRecorded": "تم تسجيل الدفعة",
+    "downloadTejXml": "تنزيل ملف TEJ XML",
+    "tejXmlDownloaded": "تم تنزيل ملف TEJ XML"
   },
   "detail": {
     "supplierInfo": "معلومات المورد",
@@ -315,14 +331,17 @@
       "validated": "مُعتمد",
       "tej_sync": "مزامنة TEJ",
       "tej_sync_failed": "فشل مزامنة TEJ"
-    }
+    },
+    "pageInfo": "الصفحة {{page}} من {{totalPages}} — {{total}} إدخالاً"
   },
   "activity": {
     "empty": "لا يوجد نشاط"
   },
   "common": {
     "error": "خطأ",
-    "loadError": "فشل تحميل البيانات"
+    "loadError": "فشل تحميل البيانات",
+    "previous": "السابق",
+    "next": "التالي"
   },
   "errors": {
     "DUPLICATE_SUPPLIER_REF": "مرجع المورد هذا موجود بالفعل لهذا المورد",
@@ -480,5 +499,24 @@
     "cheque": "شيك",
     "cash": "نقدًا",
     "card": "بطاقة"
+  },
+  "watchDemo": "مشاهدة العرض التوضيحي",
+  "hub": {
+    "overview": "نظرة عامة"
+  },
+  "tej": {
+    "missingTitle": "معلومات مطلوبة لملف TEJ XML",
+    "missingDescription": "يرجى استكمال العناصر التالية قبل تنزيل ملف TEJ XML، ثم أعد المحاولة.",
+    "missingGotIt": "فهمت",
+    "activateTitle": "تفعيل الخصم من المصدر",
+    "activateDescription": "اختر نوع الخصم — سنطبّقه على هذه الفاتورة (يُحتسب المبلغ تلقائياً) وننشئ ملف XML.",
+    "rsType": "نوع الخصم من المصدر",
+    "applyAndDownload": "تطبيق وتنزيل XML",
+    "applying": "جارٍ التطبيق…",
+    "supplierInfoTitle": "المعلومات الجبائية للمورّد",
+    "supplierInfoDescription": "حدّث المعرف الجبائي للمورّد هنا ثم أعد محاولة تنزيل ملف TEJ XML. سيتم حفظ المعلومات للتصديرات المستقبلية.",
+    "saveSupplierAndRetry": "حفظ المورّد وإعادة المحاولة",
+    "savingSupplier": "جارٍ الحفظ…",
+    "supplierSaved": "تم حفظ المعلومات الجبائية للمورّد"
   }
 }

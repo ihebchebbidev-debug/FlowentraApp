@@ -477,8 +477,16 @@ namespace MyApi.Modules.HR.Services
 
             // Duplicate guard: prevent a second run for the same tenant/year/month
             // (blocks double-clicks and concurrent admin submissions).
-            // Note: relies on tenant query filter; a DB-level unique index on
-            // (TenantId, year, month) enforces this if two requests race past the check.
+            // The check-then-insert is serialized by a transaction-scoped advisory
+            // lock keyed on (year, month) — same pattern as UpsertSalaryConfigAsync —
+            // and additionally backed by the unique index
+            // ux_hr_payroll_runs_tenant_year_month on (TenantId, year, month).
+            await using var runTx = await _db.Database.BeginTransactionAsync();
+            const int PayrollLockNamespace = 0x48525F50; // 'HR_P'
+            await _db.Database.ExecuteSqlRawAsync(
+                "SELECT pg_advisory_xact_lock({0}, {1})",
+                PayrollLockNamespace, dto.Year * 100 + dto.Month);
+
             var existing = await _db.Set<HrPayrollRun>().AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Year == dto.Year && x.Month == dto.Month);
             if (existing != null)
@@ -507,6 +515,7 @@ namespace MyApi.Modules.HR.Services
                 throw new InvalidOperationException(
                     "hr.payroll_run_exists");
             }
+
 
             var users = await _db.Users.AsNoTracking().Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
@@ -656,7 +665,9 @@ namespace MyApi.Modules.HR.Services
 
             await _db.SaveChangesAsync();
             await LogAsync(0, "payroll_generated", $"Payroll run {dto.Month}/{dto.Year} generated", new { runId = run.Id, dto.Month, dto.Year }, createdByUserId);
+            await runTx.CommitAsync();
             return await GetPayrollRunAsync(run.Id);
+
         }
 
         public async Task<List<HrPayrollRunDto>> ListPayrollRunsAsync(int year)

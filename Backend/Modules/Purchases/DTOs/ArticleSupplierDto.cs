@@ -74,4 +74,11 @@ namespace MyApi.Modules.Purchases.DTOs
         public string? PerformedByName { get; set; }
         public DateTime PerformedAt { get; set; }
     }
+
+    /// <summary>Server-paged cross-entity audit feed (GET /api/purchase-activities).</summary>
+    public class PaginatedPurchaseActivityResponse
+    {
+        public List<PurchaseActivityDto> Activities { get; set; } = new();
+        public PurchasePaginationInfo Pagination { get; set; } = new();
+    }
 }

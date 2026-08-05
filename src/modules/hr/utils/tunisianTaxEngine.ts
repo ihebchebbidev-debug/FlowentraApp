@@ -139,8 +139,10 @@ export function calculateTunisianNetSalary(
   // Step 6 — CSS
   const css = taxableGross * rates.cssRate;
 
-  // Step 7 — Net
-  const netSalary = grossSalary - cnss - irpp - css;
+  // Step 7 — Net (custom deductions are post-tax, matching the backend
+  // payroll engine in HrService: they never reduce the CNSS/IRPP/CSS bases).
+  const customDeductions = clampNonNegative(input.customDeductions ?? 0);
+  const netSalary = grossSalary - cnss - irpp - css - customDeductions;
 
   return {
     grossSalary,
@@ -154,6 +156,7 @@ export function calculateTunisianNetSalary(
     irppBrackets,
     css,
     cssRate: rates.cssRate,
+    customDeductions,
     netSalary,
   };
 }

@@ -157,7 +157,18 @@ namespace MyApi.Modules.Purchases.Controllers
                 return Ok(new { success = true, data = invoice });
             }
             catch (KeyNotFoundException) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Invoice not found" } }); }
-            catch (InvalidOperationException ex) { return Conflict(new { success = false, error = new { code = "INVALID_TRANSITION", message = ex.Message } }); }
+            // The service prefixes its message with a bracketed code. Genuine
+            // status-machine violations are 409 INVALID_TRANSITION; plain input
+            // validation (negative AmountPaid, overpayment, …) is 400 so the FE
+            // does not mis-branch on a transition error that never happened.
+            catch (InvalidOperationException ex)
+            {
+                if (ex.Message.StartsWith("[INVALID_TRANSITION]", StringComparison.Ordinal))
+                    return Conflict(new { success = false, error = new { code = "INVALID_TRANSITION", message = ex.Message } });
+                if (ex.Message.StartsWith("[OVERPAYMENT]", StringComparison.Ordinal))
+                    return Conflict(new { success = false, error = new { code = "OVERPAYMENT", message = ex.Message } });
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating supplier invoice {Id}", id);

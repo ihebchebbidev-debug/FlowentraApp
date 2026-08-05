@@ -256,7 +256,7 @@ function PurchaseOrderDetailPage() {
   // Map the backend audit trail onto the shared inline timeline shape.
   const timelineEvents: TimelineEvent[] = activities.map((a) => ({
     id: a.id,
-    action: a.action,
+    action: a.activityType,
     description: a.description,
     at: a.performedAt,
     by: a.performedByName,

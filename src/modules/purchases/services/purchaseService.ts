@@ -2,7 +2,7 @@ import { apiFetch } from '@/services/api/apiClient';
 import { ApiError, apiErrorFromResult } from './apiError';
 import type {
   PurchaseOrder, GoodsReceipt, SupplierInvoice,
-  ArticleSupplier, ArticleSupplierPriceHistory, PurchaseActivity, PurchaseStats,
+  ArticleSupplier, ArticleSupplierPriceHistory, PurchaseActivity, PaginatedPurchaseActivities, PurchaseStats,
   PurchaseOrderFilters, SupplierInvoiceFilters
 } from '../types';
 
@@ -432,9 +432,29 @@ export const supplierInvoiceService = {
 
 // ─── Activities & Stats ──────────────────────────────────────────────────────
 
+export interface PurchaseActivityQuery {
+  entityType?: 'purchase_order' | 'goods_receipt' | 'supplier_invoice';
+  entityId?: number | string;
+  activityType?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
 export const purchaseActivityService = {
   getByOrder: (orderId: string, page = 1, limit = 20) =>
     extract<PurchaseActivity[]>(apiFetch(`/api/purchase-orders/${orderId}/activities${qs({ page, limit })}`), 'Failed'),
+
+  /**
+   * Cross-entity audit feed with server-side filtering, sorting and paging.
+   * Use this instead of fanning out per-order `getActivities` calls.
+   */
+  getAll: (params?: PurchaseActivityQuery) =>
+    extract<PaginatedPurchaseActivities>(
+      apiFetch(`/api/purchase-activities${qs(params as Record<string, unknown> | undefined)}`),
+      'Failed to load audit log'),
 };
 
 export const purchaseStatsService = {

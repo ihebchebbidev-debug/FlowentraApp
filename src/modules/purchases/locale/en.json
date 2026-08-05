@@ -350,7 +350,8 @@
       "validated": "Validated",
       "tej_sync": "TEJ Sync",
       "tej_sync_failed": "TEJ Sync failed"
-    }
+    },
+    "pageInfo": "Page {{page}} of {{totalPages}} — {{total}} entries"
   },
   "activity": {
     "empty": "No activity yet"
@@ -405,7 +406,9 @@
   },
   "common": {
     "error": "Error",
-    "loadError": "Failed to load data"
+    "loadError": "Failed to load data",
+    "previous": "Previous",
+    "next": "Next"
   },
   "errors": {
     "DUPLICATE_SUPPLIER_REF": "This supplier reference already exists for this supplier",

@@ -792,8 +792,71 @@ namespace MyApi.Modules.Planning.Services
 
         // ===================== LEAVE MANAGEMENT =====================
 
+        private static decimal LeaveDayCount(DateTime start, DateTime end)
+            => (decimal)(end.Date - start.Date).TotalDays + 1m;
+
+        /// <summary>
+        /// Server-side leave validation shared by create/update:
+        ///  - end date cannot precede start date;
+        ///  - a pending/approved leave cannot overlap another pending/approved
+        ///    leave for the same employee (double-booking corrupts payroll days);
+        ///  - the request cannot exceed the remaining annual allowance when an
+        ///    HR balance row exists for that (user, year, leave type).
+        /// Cancelled/rejected rows are ignored on both checks.
+        /// </summary>
+        private async Task ValidateLeaveAsync(int userId, string leaveType, DateTime startDate, DateTime endDate, string status, int? excludeLeaveId)
+        {
+            if (endDate.Date < startDate.Date)
+                throw new InvalidOperationException("planning.leave_end_before_start");
+
+            var normalizedStatus = (status ?? "pending").ToLowerInvariant();
+            if (normalizedStatus is "rejected" or "cancelled" or "canceled")
+                return;
+
+            var activeStatuses = new[] { "pending", "approved" };
+
+            var overlaps = await _db.Set<UserLeave>().AsNoTracking()
+                .Where(l => l.UserId == userId
+                            && (excludeLeaveId == null || l.Id != excludeLeaveId.Value)
+                            && activeStatuses.Contains(l.Status)
+                            && l.StartDate.Date <= endDate.Date
+                            && l.EndDate.Date >= startDate.Date)
+                .AnyAsync();
+            if (overlaps)
+                throw new InvalidOperationException("planning.leave_overlap");
+
+            var year = startDate.Year;
+            var balance = await _db.Set<MyApi.Modules.HR.Models.HrLeaveBalance>().AsNoTracking()
+                .FirstOrDefaultAsync(b => b.UserId == userId && b.Year == year && b.LeaveType == leaveType);
+            if (balance == null || balance.AnnualAllowance <= 0) return;
+
+            var sameYear = await _db.Set<UserLeave>().AsNoTracking()
+                .Where(l => l.UserId == userId
+                            && l.LeaveType == leaveType
+                            && (excludeLeaveId == null || l.Id != excludeLeaveId.Value)
+                            && activeStatuses.Contains(l.Status)
+                            && (l.StartDate.Year == year || l.EndDate.Year == year))
+                .ToListAsync();
+
+            var alreadyBooked = sameYear.Sum(l => LeaveDayCount(l.StartDate, l.EndDate));
+            var requested = LeaveDayCount(startDate, endDate);
+            if (alreadyBooked + requested > balance.AnnualAllowance)
+                throw new InvalidOperationException("planning.leave_allowance_exceeded");
+        }
+
         public async Task<UserLeaveDto> CreateLeaveAsync(CreateLeaveDto dto)
         {
+            var status = string.IsNullOrWhiteSpace(dto.Status) ? "pending" : dto.Status!.ToLowerInvariant();
+
+            // Serialize concurrent submissions for the same employee so two
+            // overlapping requests cannot both pass the validation below.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            const int LeaveLockNamespace = 0x484C5645; // 'HLVE'
+            await _db.Database.ExecuteSqlRawAsync(
+                "SELECT pg_advisory_xact_lock({0}, {1})", LeaveLockNamespace, dto.UserId);
+
+            await ValidateLeaveAsync(dto.UserId, dto.LeaveType, dto.StartDate, dto.EndDate, status, null);
+
             var leave = new UserLeave
             {
                 UserId = dto.UserId,
@@ -801,13 +864,14 @@ namespace MyApi.Modules.Planning.Services
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 Reason = dto.Reason,
-                Status = string.IsNullOrWhiteSpace(dto.Status) ? "pending" : dto.Status!.ToLowerInvariant(),
+                Status = status,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
             _db.Set<UserLeave>().Add(leave);
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             return new UserLeaveDto
             {
@@ -826,6 +890,11 @@ namespace MyApi.Modules.Planning.Services
             if (leave == null)
                 throw new KeyNotFoundException($"Leave {leaveId} not found");
 
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            const int LeaveLockNamespace = 0x484C5645; // 'HLVE'
+            await _db.Database.ExecuteSqlRawAsync(
+                "SELECT pg_advisory_xact_lock({0}, {1})", LeaveLockNamespace, leave.UserId);
+
             if (!string.IsNullOrEmpty(dto.LeaveType))
                 leave.LeaveType = dto.LeaveType;
             if (dto.StartDate.HasValue)
@@ -835,10 +904,13 @@ namespace MyApi.Modules.Planning.Services
             if (!string.IsNullOrEmpty(dto.Reason))
                 leave.Reason = dto.Reason;
             if (!string.IsNullOrEmpty(dto.Status))
-                leave.Status = dto.Status;
+                leave.Status = dto.Status.ToLowerInvariant();
+
+            await ValidateLeaveAsync(leave.UserId, leave.LeaveType, leave.StartDate, leave.EndDate, leave.Status, leave.Id);
 
             leave.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             return new UserLeaveDto
             {
@@ -850,6 +922,7 @@ namespace MyApi.Modules.Planning.Services
                 Reason = leave.Reason
             };
         }
+
 
         public async Task DeleteLeaveAsync(int leaveId)
         {
