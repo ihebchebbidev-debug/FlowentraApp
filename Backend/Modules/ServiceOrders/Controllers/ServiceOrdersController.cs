@@ -74,7 +74,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error creating service order from sale {SaleId}", saleId);
                 await _systemLogService.LogErrorAsync($"Failed to create service order from sale {saleId}", "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -120,7 +120,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
                 await _systemLogService.LogErrorAsync("Failed to create direct service order",
                     "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(),
                     "ServiceOrder", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -152,7 +152,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error fetching service orders");
                 await _systemLogService.LogErrorAsync("Failed to retrieve service orders", "ServiceOrders", "read", GetCurrentUserId(), GetCurrentUserName(), details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -170,7 +170,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -188,7 +188,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching job {JobId} for service order {ServiceOrderId}", jobId, serviceOrderId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -222,7 +222,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating job for service order {ServiceOrderId}", serviceOrderId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -246,7 +246,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error patching job status {JobId} for service order {ServiceOrderId}", jobId, serviceOrderId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -269,7 +269,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating job {JobId} for service order {ServiceOrderId}", jobId, serviceOrderId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -293,7 +293,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error updating service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to update service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -317,7 +317,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error patching service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to patch service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -346,7 +346,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error updating status for service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to update status for service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -367,7 +367,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error recalculating status for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -395,7 +395,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error approving service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to approve service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -423,7 +423,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error completing service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to complete service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -453,7 +453,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error retrying shadow Sale for service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to retry shadow Sale for service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -477,7 +477,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error cancelling service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to cancel service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -503,7 +503,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error deleting service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to delete service order {id}", "ServiceOrders", "delete", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -523,7 +523,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching service order statistics");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -544,7 +544,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching dispatches for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -563,7 +563,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching time entries for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -582,7 +582,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching expenses for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -601,7 +601,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching materials for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -625,7 +625,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error adding material to service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add material to service order {id}", "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrderMaterial", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -647,7 +647,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error updating material {MaterialId} for service order {Id}", materialId, id);
                 await _systemLogService.LogErrorAsync($"Failed to update material {materialId} in service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrderMaterial", materialId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -669,7 +669,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error deleting material {MaterialId} from service order {Id}", materialId, id);
                 await _systemLogService.LogErrorAsync($"Failed to delete material {materialId} from service order {id}", "ServiceOrders", "delete", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrderMaterial", materialId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -688,7 +688,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching notes for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -743,7 +743,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error adding note to service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add note to service order {id}", "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrderNote", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -762,7 +762,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching full summary for service order {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -788,7 +788,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error adding time entry to service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add time entry to service order {id}", "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(), "TimeEntry", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -810,7 +810,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error deleting time entry {TimeEntryId} from service order {Id}", timeEntryId, id);
                 await _systemLogService.LogErrorAsync($"Failed to delete time entry {timeEntryId} from service order {id}", "ServiceOrders", "delete", GetCurrentUserId(), GetCurrentUserName(), "TimeEntry", timeEntryId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -836,7 +836,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error adding expense to service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add expense to service order {id}", "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(), "Expense", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -858,7 +858,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error deleting expense {ExpenseId} from service order {Id}", expenseId, id);
                 await _systemLogService.LogErrorAsync($"Failed to delete expense {expenseId} from service order {id}", "ServiceOrders", "delete", GetCurrentUserId(), GetCurrentUserName(), "Expense", expenseId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -888,7 +888,7 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             {
                 _logger.LogError(ex, "Error preparing invoice for service order {Id}", id);
                 await _systemLogService.LogErrorAsync($"Failed to prepare invoice for service order {id}", "ServiceOrders", "update", GetCurrentUserId(), GetCurrentUserName(), "ServiceOrder", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }

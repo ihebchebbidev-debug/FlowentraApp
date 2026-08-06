@@ -6,7 +6,7 @@
 -- RS Records table
 CREATE TABLE IF NOT EXISTS "RSRecords" (
     "Id"               SERIAL PRIMARY KEY,
-    "EntityType"       VARCHAR(20)     NOT NULL,  -- 'offer' or 'sale'
+    "EntityType"       VARCHAR(30)     NOT NULL,  -- 'offer', 'sale' or 'supplier_invoice'
     "EntityId"         INTEGER         NOT NULL,
     "EntityNumber"     VARCHAR(50),
     "InvoiceNumber"    VARCHAR(100)    NOT NULL,

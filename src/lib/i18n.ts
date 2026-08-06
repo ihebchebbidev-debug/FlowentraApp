@@ -507,6 +507,7 @@ const enTranslation = {
     update: 'Update',
     type10: 'Professional Fees / Services (10%)',
     type05: 'Exported Services (0.5%)',
+    compliance: 'Compliance',
     type03: 'Certain Professional Fees (3%)',
     type20: 'Royalties / Interest (20%)',
     err: {
@@ -929,6 +930,7 @@ const frTranslation = {
     update: 'Mettre à jour',
     type10: 'Honoraires / Services professionnels (10%)',
     type05: 'Services exportés (0,5%)',
+    compliance: 'Conformité',
     type03: 'Certains honoraires professionnels (3%)',
     type20: 'Redevances / Intérêts (20%)',
     err: {

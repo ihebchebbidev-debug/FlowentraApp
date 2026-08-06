@@ -1,5 +1,5 @@
 // TEJ Export Modal - Official DGI Tunisian format (DeclarationRetenueSource)
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -62,30 +62,55 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
   const [exportResult, setExportResult] = useState<TEJExportResponseDto | null>(null);
   const [exporting, setExporting] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [recordCount, setRecordCount] = useState<number | null>(null);
   const [totalRS, setTotalRS] = useState(0);
   const [overduePenalty, setOverduePenalty] = useState(0);
   const [overdueRecordCount, setOverdueRecordCount] = useState(0);
 
+  // Guards against out-of-order responses when the period changes quickly.
+  const statsRequestRef = useRef(0);
+
   const loadStats = async () => {
+    const requestId = ++statsRequestRef.current;
     setLoadingStats(true);
+    setStatsError(null);
     try {
-      const result = await fetchRSRecords({
-        entityType, entityId,
-        month: Number(month), year: Number(year),
-        status: 'pending', limit: 100,
-      });
-      setRecordCount(result.pagination?.total ?? 0);
-      setTotalRS(result.records?.reduce((s, r) => s + r.rsAmount, 0) ?? 0);
-      const overdue = result.records?.filter(r => r.isOverdue) || [];
+      const PAGE_SIZE = 200;
+      const all: Awaited<ReturnType<typeof fetchRSRecords>>['records'] = [];
+      let page = 1;
+      let total = 0;
+      let totalPages = 1;
+      // Walk every page: a truncated fetch would under-report the declaration.
+      do {
+        const result = await fetchRSRecords({
+          entityType, entityId,
+          month: Number(month), year: Number(year),
+          status: 'pending', page, limit: PAGE_SIZE,
+        });
+        if (requestId !== statsRequestRef.current) return; // superseded
+        all.push(...(result.records ?? []));
+        total = result.pagination?.total ?? all.length;
+        totalPages = result.pagination?.totalPages ?? 1;
+        page += 1;
+      } while (page <= totalPages && page <= 50);
+
+      if (requestId !== statsRequestRef.current) return;
+      setRecordCount(total);
+      setTotalRS(all.reduce((s, r) => s + r.rsAmount, 0));
+      const overdue = all.filter(r => r.isOverdue);
       setOverdueRecordCount(overdue.length);
-      setOverduePenalty(overdue.reduce((s, r) => s + (r.penaltyAmount || 0), 0) ?? 0);
-    } catch {
-      setRecordCount(0);
+      setOverduePenalty(overdue.reduce((s, r) => s + (r.penaltyAmount || 0), 0));
+    } catch (err: any) {
+      if (requestId !== statsRequestRef.current) return;
+      // Never fall back to 0 — that would let the user file a false "néant".
+      setRecordCount(null);
+      setTotalRS(0);
       setOverdueRecordCount(0);
       setOverduePenalty(0);
+      setStatsError(err?.message || 'Impossible de charger les certificats de la période');
     } finally {
-      setLoadingStats(false);
+      if (requestId === statsRequestRef.current) setLoadingStats(false);
     }
   };
 
@@ -134,6 +159,9 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
     const errs: string[] = [];
     if (!payerName.trim())  errs.push('La raison sociale est requise');
     if (!payerTaxId.trim()) errs.push('Le matricule fiscal est requis');
+    if (statsError || recordCount === null) {
+      errs.push("Les certificats de la période n'ont pas pu être chargés — réessayez avant d'exporter");
+    }
     if (errs.length) { setErrors(errs); return; }
 
     setExporting(true);
@@ -142,7 +170,13 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
       if (recordCount === 0) {
         const fileName = `${payerTaxId}-${year}-${String(month).padStart(2, '0')}-${typeActe}.xml`;
         downloadClientSide(fileName, buildEmptyEnvelopeXml());
-        setExportResult({ status: 'success', fileName, recordCount: 0 } as any);
+        setExportResult({
+          logId: 0,
+          status: 'success',
+          fileName,
+          recordCount: 0,
+          totalRSAmount: 0,
+        });
         toast.success(`Déclaration néant générée : ${fileName}`);
         onExportComplete();
         return;
@@ -150,6 +184,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
 
       const result = await exportTEJ({
         month: Number(month), year: Number(year),
+        entityType, entityId,
         declarant: { name: payerName, taxId: payerTaxId, address: payerAddress },
       });
       setExportResult(result);
@@ -209,6 +244,17 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
           )}
 
           {/* ── Compliance Warnings ── */}
+          {statsError && (
+            <Alert variant="destructive" className="py-3">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {statsError} —{' '}
+                <button type="button" onClick={loadStats} className="underline font-medium">
+                  réessayer
+                </button>
+              </AlertDescription>
+            </Alert>
+          )}
           {overdueRecordCount > 0 && (
             <Alert variant="destructive" className="py-3 border-destructive/50 bg-destructive/10">
               <AlertTriangle className="h-4 w-4" />
@@ -331,7 +377,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
             </div>
           </div>
 
-          {recordCount === 0 && !loadingStats && (
+          {recordCount === 0 && !loadingStats && !statsError && (
             <p className="text-xs text-muted-foreground text-center -mt-2">
               ℹ️ Aucun enregistrement RS pour cette période — une <strong>déclaration néant</strong> sera générée.
             </p>
@@ -437,7 +483,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
             </Button>
             <Button
               onClick={handleExport}
-              disabled={exporting || loadingStats || overdueRecordCount > 0}
+              disabled={exporting || loadingStats || overdueRecordCount > 0 || !!statsError || recordCount === null}
               className="gap-2 min-w-[150px]"
             >
               {exporting ? (

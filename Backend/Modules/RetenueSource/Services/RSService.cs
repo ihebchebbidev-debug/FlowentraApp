@@ -370,20 +370,34 @@ namespace MyApi.Modules.RetenueSource.Services
 
         public async Task<TEJExportResponseDto> ExportTEJAsync(TEJExportRequestDto request, string userId)
         {
+            var scoped = !string.IsNullOrWhiteSpace(request.EntityType) && request.EntityId.HasValue;
+
             // Materialize declarations for RS-applicable supplier invoices of the period
             // that were never downloaded individually — otherwise they'd silently be
-            // missing from the monthly DGI declaration.
-            await MaterializePeriodInvoiceRecordsAsync(request.Month, request.Year, userId);
+            // missing from the monthly DGI declaration. Skipped for a scoped (single
+            // entity) export so we never pull unrelated invoices into the scope.
+            if (!scoped)
+                await MaterializePeriodInvoiceRecordsAsync(request.Month, request.Year, userId);
 
-            var records = await _db.RSRecords
+            var query = _db.RSRecords
                 .Where(r => r.PaymentDate.Month == request.Month &&
                             r.PaymentDate.Year == request.Year &&
                             r.Status == "pending" &&
-                            !r.TEJExported)
-                .ToListAsync();
+                            !r.TEJExported);
+
+            if (scoped)
+            {
+                var entityType = request.EntityType!;
+                var entityId = request.EntityId!.Value;
+                query = query.Where(r => r.EntityType == entityType && r.EntityId == entityId);
+            }
+
+            var records = await query.ToListAsync();
 
             if (records.Count == 0)
-                throw new InvalidOperationException("No pending RS records found for the selected month");
+                throw new InvalidOperationException(scoped
+                    ? "No pending RS records found for this document in the selected month"
+                    : "No pending RS records found for the selected month");
 
             // ─── CRITICAL: Validate all records comply before export ───
             try

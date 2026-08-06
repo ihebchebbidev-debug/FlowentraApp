@@ -46,7 +46,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching purchase activities");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }

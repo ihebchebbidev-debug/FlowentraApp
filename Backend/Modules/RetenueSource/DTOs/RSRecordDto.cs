@@ -142,7 +142,14 @@ namespace MyApi.Modules.RetenueSource.DTOs
     {
         public int Month { get; set; }
         public int Year { get; set; }
-        
+
+        /// <summary>
+        /// Optional scope. When set, only RS records attached to this entity are
+        /// exported and marked as exported. When null the whole period is exported.
+        /// </summary>
+        public string? EntityType { get; set; }
+        public int? EntityId { get; set; }
+
         /// <summary>
         /// Declarant info (payer company). If not provided, uses defaults from first RS record.
         /// </summary>

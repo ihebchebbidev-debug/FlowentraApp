@@ -48,12 +48,23 @@ export function RSRecordsTab({
   const loadRecords = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await fetchRSRecords({
-        entityType,
-        entityId: Number(entityId),
-        limit: 100,
-      });
-      setRecords(result.records || []);
+      // Fetch every page — totals below must cover all records, not the first 100.
+      const PAGE_SIZE = 100;
+      const all: RSRecordDto[] = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const result = await fetchRSRecords({
+          entityType,
+          entityId: Number(entityId),
+          page,
+          limit: PAGE_SIZE,
+        });
+        all.push(...(result.records || []));
+        totalPages = result.pagination?.totalPages ?? 1;
+        page += 1;
+      } while (page <= totalPages && page <= 50);
+      setRecords(all);
     } catch (err: any) {
       console.error('Failed to load RS records:', err);
       toast.error(t('rs.loadError', 'Erreur lors du chargement des enregistrements RS'));

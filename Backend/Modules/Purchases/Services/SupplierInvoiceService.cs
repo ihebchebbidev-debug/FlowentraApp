@@ -231,15 +231,14 @@ namespace MyApi.Modules.Purchases.Services
                     // Never let the cumulative invoiced quantity of a PO line exceed
                     // what was ordered, nor what was actually received once at least
                     // one goods receipt exists for that line.
-                    var linkedIdStrings = linkedPoItemIds.Select(id => id.ToString()).ToList();
                     var alreadyInvoiced = await (
                         from it in _context.SupplierInvoiceItems
                         join inv in _context.SupplierInvoices on it.SupplierInvoiceId equals inv.Id
                         where it.PurchaseOrderItemId != null
-                              && linkedIdStrings.Contains(it.PurchaseOrderItemId)
+                              && linkedPoItemIds.Contains(it.PurchaseOrderItemId.Value)
                               && !inv.IsDeleted && inv.Status != "cancelled"
                         group it by it.PurchaseOrderItemId into g
-                        select new { PoItemId = g.Key!, Qty = g.Sum(x => x.Quantity) }
+                        select new { PoItemId = g.Key!.Value, Qty = g.Sum(x => x.Quantity) }
                     ).ToListAsync();
                     var invoicedByPoItem = alreadyInvoiced.ToDictionary(x => x.PoItemId, x => x.Qty);
 
@@ -248,7 +247,7 @@ namespace MyApi.Modules.Purchases.Services
                     {
                         var po = poItems.First(p => p.Id == grp.Key);
                         var newQty = grp.Sum(i => i.Quantity);
-                        var prevQty = invoicedByPoItem.GetValueOrDefault(grp.Key.ToString(), 0m);
+                        var prevQty = invoicedByPoItem.GetValueOrDefault(grp.Key, 0m);
                         var total = prevQty + newQty;
                         var label = po.Description ?? $"line {po.Id}";
 
@@ -294,8 +293,8 @@ namespace MyApi.Modules.Purchases.Services
                         var items = dto.Items.Select((item, idx) => new SupplierInvoiceItem
                         {
                             SupplierInvoiceId = invoice.Id,
-                            PurchaseOrderItemId = item.PurchaseOrderItemId.HasValue ? item.PurchaseOrderItemId.Value.ToString() : null,
-                            ArticleId = item.ArticleId.HasValue ? item.ArticleId.Value.ToString() : null,
+                            PurchaseOrderItemId = item.PurchaseOrderItemId,
+                            ArticleId = item.ArticleId,
                             ArticleName = item.ArticleName,
                             Description = item.Description,
                             Quantity = item.Quantity,
@@ -712,8 +711,8 @@ namespace MyApi.Modules.Purchases.Services
                     var item = new SupplierInvoiceItem
                     {
                         SupplierInvoiceId = invoiceId,
-                        PurchaseOrderItemId = dto.PurchaseOrderItemId.HasValue ? dto.PurchaseOrderItemId.Value.ToString() : null,
-                        ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null,
+                        PurchaseOrderItemId = dto.PurchaseOrderItemId,
+                        ArticleId = dto.ArticleId,
                         ArticleName = dto.ArticleName,
                         Description = dto.Description,
                         Quantity = dto.Quantity,
@@ -775,7 +774,7 @@ namespace MyApi.Modules.Purchases.Services
                 using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    item.ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null;
+                    item.ArticleId = dto.ArticleId;
                     item.ArticleName = dto.ArticleName;
                     item.Description = dto.Description;
                     item.Quantity = dto.Quantity;
@@ -932,13 +931,12 @@ namespace MyApi.Modules.Purchases.Services
         private static SupplierInvoiceItemDto MapItemToDto(SupplierInvoiceItem i)
 
         {
-            int? ParseInt(string? s) => !string.IsNullOrEmpty(s) && int.TryParse(s, out var v) ? v : (int?)null;
             return new SupplierInvoiceItemDto
             {
                 Id = i.Id,
                 SupplierInvoiceId = i.SupplierInvoiceId,
-                PurchaseOrderItemId = ParseInt(i.PurchaseOrderItemId),
-                ArticleId = ParseInt(i.ArticleId),
+                PurchaseOrderItemId = i.PurchaseOrderItemId,
+                ArticleId = i.ArticleId,
                 ArticleName = i.ArticleName,
                 Description = i.Description,
                 Quantity = i.Quantity,

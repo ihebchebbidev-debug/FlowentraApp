@@ -93,6 +93,9 @@ export interface UpdateRSRecordDto {
 export interface TEJExportRequestDto {
   month: number;
   year: number;
+  /** Scope the export to one document (e.g. 'supplier_invoice') instead of the whole period. */
+  entityType?: string;
+  entityId?: number;
   declarant?: {
     name: string;
     taxId: string;

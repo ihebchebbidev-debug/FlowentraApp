@@ -9,7 +9,8 @@ export const purchasesPlugin: PluginManifest = {
   icon: "ShoppingCart",
   version: "1.0.0",
   isCore: false,
-  dependencies: ["PL0001CONTACTS", "PL0007ARTICLES", "PL0037LOOKUPS"],
+  // Goods receipts post stock transactions, so the stock module is a hard dependency.
+  dependencies: ["PL0001CONTACTS", "PL0007ARTICLES", "PL0037LOOKUPS", "PL0009STOCK"],
   routes: [],
   sidebarKeys: ["purchases"],
 };

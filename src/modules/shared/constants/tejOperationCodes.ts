@@ -32,6 +32,7 @@ export const TEJ_OPERATION_CODES: TejOperationCode[] = [
   // RS2 — Marchés
   { code: 'RS2_000001', labelFr: "Montants >= 1000 TND TTC",                     defaultRate: 1,    family: 'Marchés' },
   { code: 'RS2_000002', labelFr: "Marchés conclus avec l'État / collectivités",  defaultRate: 1.5,  family: 'Marchés' },
+  { code: 'RS2_000003', labelFr: "Acquisitions soumises au taux réduit (0,5%)",  defaultRate: 0.5,  family: 'Marchés' },
   // RS3 — Redevances, intérêts, plus-values
   { code: 'RS3_000001', labelFr: "Redevances - non résidents",                   defaultRate: 15,   family: 'Redevances' },
   { code: 'RS3_000002', labelFr: "Intérêts des prêts payés à l'étranger",       defaultRate: 20,   family: 'Intérêts' },
@@ -61,7 +62,7 @@ export function getTejOperation(code: string | undefined | null): TejOperationCo
 export function legacyToTejOperationCode(legacy: RSTypeCode | string | undefined | null): string {
   switch (legacy) {
     case '10': return 'RS1_000002';
-    case '05': return 'RS3_000003';
+    case '05': return 'RS2_000003';   // 0.5% — rate-matched with the backend table
     case '03': return 'RS1_000001';
     case '20': return 'RS3_000002';
     case 'P1': return 'RS2_000002';

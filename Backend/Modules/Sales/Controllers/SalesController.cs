@@ -72,7 +72,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error fetching sales");
                 await _systemLogService.LogErrorAsync("Failed to retrieve sales", "Sales", "read", GetCurrentUserId(), GetCurrentUserName(), details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching sales" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -90,7 +90,7 @@ namespace MyApi.Modules.Sales.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching sale statistics");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching statistics" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -110,7 +110,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error fetching sale {SaleId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to retrieve sale {id}", "Sales", "read", GetCurrentUserId(), GetCurrentUserName(), "Sale", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching the sale" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -135,7 +135,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error creating sale");
                 await _systemLogService.LogErrorAsync("Failed to create sale", "Sales", "create", GetCurrentUserId(), GetCurrentUserName(), "Sale", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while creating the sale" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -160,7 +160,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error creating sale from offer");
                 await _systemLogService.LogErrorAsync($"Failed to create sale from offer {offerId}", "Sales", "create", GetCurrentUserId(), GetCurrentUserName(), "Sale", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while creating the sale from offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -188,7 +188,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error updating sale {SaleId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to update sale {id}", "Sales", "update", GetCurrentUserId(), GetCurrentUserName(), "Sale", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while updating the sale" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -212,7 +212,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error deleting sale {SaleId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to delete sale {id}", "Sales", "delete", GetCurrentUserId(), GetCurrentUserName(), "Sale", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while deleting the sale" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -227,7 +227,7 @@ namespace MyApi.Modules.Sales.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching activities for sale {SaleId}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching activities" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -278,7 +278,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error adding activity to sale {SaleId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add activity to sale {id}", "Sales", "create", GetCurrentUserId(), GetCurrentUserName(), "SaleActivity", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while adding the activity" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -301,7 +301,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error adding item to sale {SaleId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add item to sale {id}", "Sales", "create", GetCurrentUserId(), GetCurrentUserName(), "SaleItem", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while adding the item" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -324,7 +324,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error updating item {ItemId} in sale {SaleId}", itemId, id);
                 await _systemLogService.LogErrorAsync($"Failed to update item {itemId} in sale {id}", "Sales", "update", GetCurrentUserId(), GetCurrentUserName(), "SaleItem", itemId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while updating the item" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -347,7 +347,7 @@ namespace MyApi.Modules.Sales.Controllers
             {
                 _logger.LogError(ex, "Error deleting item {ItemId} from sale {SaleId}", itemId, id);
                 await _systemLogService.LogErrorAsync($"Failed to delete item {itemId} from sale {id}", "Sales", "delete", GetCurrentUserId(), GetCurrentUserName(), "SaleItem", itemId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while deleting the item" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }

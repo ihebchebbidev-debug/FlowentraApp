@@ -278,3 +278,29 @@ COMMENT ON TABLE "GoodsReceiptItems" IS 'Line items for goods receipts with acce
 COMMENT ON TABLE "SupplierInvoices" IS 'Supplier invoice headers with RS, Facture en Ligne, and TEJ compliance';
 COMMENT ON TABLE "SupplierInvoiceItems" IS 'Line items for supplier invoices';
 COMMENT ON TABLE "PurchaseActivities" IS 'Audit trail for all purchase module operations';
+
+-- ─── Additive patches (idempotent) ──────────────────────────────────────────
+-- Columns that exist on the EF models but were missing from the original DDL.
+-- Running this file repeatedly is safe.
+
+-- ArticleSuppliers soft-delete (ArticleSupplierService filters on !IsDeleted)
+ALTER TABLE "ArticleSuppliers" ADD COLUMN IF NOT EXISTS "IsDeleted"  BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE "ArticleSuppliers" ADD COLUMN IF NOT EXISTS "DeletedAt"  TIMESTAMP;
+
+-- The unique pair must only apply to live rows, otherwise a soft-deleted link
+-- blocks re-adding the same article/supplier pair.
+DROP INDEX IF EXISTS "IX_ArticleSuppliers_Unique";
+CREATE UNIQUE INDEX IF NOT EXISTS "IX_ArticleSuppliers_Unique_Live"
+    ON "ArticleSuppliers" ("TenantId", "ArticleId", "SupplierId") WHERE "IsDeleted" = FALSE;
+
+-- Idempotency keys used by Create*Async to de-duplicate retried POSTs
+ALTER TABLE "PurchaseOrders"   ADD COLUMN IF NOT EXISTS "IdempotencyKey" VARCHAR(100);
+ALTER TABLE "GoodsReceipts"    ADD COLUMN IF NOT EXISTS "IdempotencyKey" VARCHAR(100);
+ALTER TABLE "SupplierInvoices" ADD COLUMN IF NOT EXISTS "IdempotencyKey" VARCHAR(100);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "UX_PurchaseOrders_IdempotencyKey"
+    ON "PurchaseOrders" ("TenantId", "IdempotencyKey") WHERE "IdempotencyKey" IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "UX_GoodsReceipts_IdempotencyKey"
+    ON "GoodsReceipts" ("TenantId", "IdempotencyKey") WHERE "IdempotencyKey" IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "UX_SupplierInvoices_IdempotencyKey"
+    ON "SupplierInvoices" ("TenantId", "IdempotencyKey") WHERE "IdempotencyKey" IS NOT NULL;

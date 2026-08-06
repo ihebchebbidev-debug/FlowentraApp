@@ -20,10 +20,10 @@ namespace MyApi.Modules.Purchases.Models
         public int SupplierInvoiceId { get; set; }
 
         [Column("PurchaseOrderItemId")]
-        public string? PurchaseOrderItemId { get; set; }
+        public int? PurchaseOrderItemId { get; set; }
 
         [Column("ArticleId")]
-        public string? ArticleId { get; set; }
+        public int? ArticleId { get; set; }
 
         [Column("ArticleName")]
         [MaxLength(255)]

@@ -52,7 +52,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching RS records");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -73,7 +73,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching RS record {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -101,7 +101,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating RS record");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -128,7 +128,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating RS record {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -153,7 +153,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting RS record {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -198,7 +198,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error exporting TEJ");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -217,7 +217,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching TEJ logs");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -242,7 +242,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching RS stats");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }

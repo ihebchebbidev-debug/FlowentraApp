@@ -44,7 +44,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching goods receipts");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -61,7 +61,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching goods receipt {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -96,7 +96,7 @@ namespace MyApi.Modules.Purchases.Controllers
             {
                 _logger.LogError(ex, "Error creating goods receipt");
                 await _systemLogService.LogErrorAsync("Failed to create goods receipt", "Purchases", "create", GetUserId(), GetUserName(), details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -129,7 +129,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating goods receipt {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -153,7 +153,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting goods receipt {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }

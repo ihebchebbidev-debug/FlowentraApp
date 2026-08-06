@@ -68,7 +68,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error fetching offers");
                 await _systemLogService.LogErrorAsync("Failed to retrieve offers", "Offers", "read", GetCurrentUserId(), GetCurrentUserName(), details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching offers" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -86,7 +86,7 @@ namespace MyApi.Modules.Offers.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching offer statistics");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching statistics" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -106,7 +106,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error fetching offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to retrieve offer {id}", "Offers", "read", GetCurrentUserId(), GetCurrentUserName(), "Offer", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching the offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -131,7 +131,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error creating offer");
                 await _systemLogService.LogErrorAsync("Failed to create offer", "Offers", "create", GetCurrentUserId(), GetCurrentUserName(), "Offer", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while creating the offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -159,7 +159,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error updating offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to update offer {id}", "Offers", "update", GetCurrentUserId(), GetCurrentUserName(), "Offer", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while updating the offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -183,7 +183,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error deleting offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to delete offer {id}", "Offers", "delete", GetCurrentUserId(), GetCurrentUserName(), "Offer", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while deleting the offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -207,7 +207,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error renewing offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to renew offer {id}", "Offers", "create", GetCurrentUserId(), GetCurrentUserName(), "Offer", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while renewing the offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -231,7 +231,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error marking offer {OfferId} as sent", id);
                 await _systemLogService.LogErrorAsync($"Failed to mark offer {id} as sent", "Offers", "update", GetCurrentUserId(), GetCurrentUserName(), "Offer", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while marking the offer as sent" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -256,7 +256,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error converting offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to convert offer {id}", "Offers", "update", GetCurrentUserId(), GetCurrentUserName(), "Offer", id.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while converting the offer" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -271,7 +271,7 @@ namespace MyApi.Modules.Offers.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching activities for offer {OfferId}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while fetching activities" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -295,7 +295,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error adding activity to offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add activity to offer {id}", "Offers", "create", GetCurrentUserId(), GetCurrentUserName(), "OfferActivity", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while adding activity" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -318,7 +318,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error deleting activity {ActivityId} from offer {OfferId}", activityId, id);
                 await _systemLogService.LogErrorAsync($"Failed to delete activity {activityId} from offer {id}", "Offers", "delete", GetCurrentUserId(), GetCurrentUserName(), "OfferActivity", activityId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while deleting activity" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -341,7 +341,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error adding item to offer {OfferId}", id);
                 await _systemLogService.LogErrorAsync($"Failed to add item to offer {id}", "Offers", "create", GetCurrentUserId(), GetCurrentUserName(), "OfferItem", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while adding the item" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -364,7 +364,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error updating item {ItemId} in offer {OfferId}", itemId, id);
                 await _systemLogService.LogErrorAsync($"Failed to update item {itemId} in offer {id}", "Offers", "update", GetCurrentUserId(), GetCurrentUserName(), "OfferItem", itemId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while updating the item" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -387,7 +387,7 @@ namespace MyApi.Modules.Offers.Controllers
             {
                 _logger.LogError(ex, "Error deleting item {ItemId} from offer {OfferId}", itemId, id);
                 await _systemLogService.LogErrorAsync($"Failed to delete item {itemId} from offer {id}", "Offers", "delete", GetCurrentUserId(), GetCurrentUserName(), "OfferItem", itemId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred while deleting the item" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 

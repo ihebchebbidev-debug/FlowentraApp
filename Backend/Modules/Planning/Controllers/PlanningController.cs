@@ -68,7 +68,7 @@ namespace MyApi.Modules.Planning.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching unassigned jobs");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -101,7 +101,7 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 _logger.LogError(ex, "Error assigning job");
                 await _systemLogService.LogErrorAsync($"Failed to assign job {dto.JobId}", "Planning", "update", GetCurrentUserId(), GetCurrentUserName(), "Job", dto.JobId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -124,7 +124,7 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 _logger.LogError(ex, "Error batch assigning jobs");
                 await _systemLogService.LogErrorAsync("Batch job assignment failed", "Planning", "update", GetCurrentUserId(), GetCurrentUserName(), "Job", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -142,7 +142,7 @@ namespace MyApi.Modules.Planning.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error validating assignment");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -173,7 +173,7 @@ namespace MyApi.Modules.Planning.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching user schedule");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -208,7 +208,7 @@ namespace MyApi.Modules.Planning.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching available users");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -232,7 +232,7 @@ namespace MyApi.Modules.Planning.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching user full schedule");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -258,7 +258,7 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 _logger.LogError(ex, "Error updating user schedule");
                 await _systemLogService.LogErrorAsync($"Failed to update schedule for user {dto.UserId}", "Planning", "update", GetCurrentUserId(), GetCurrentUserName(), "UserSchedule", dto.UserId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -278,7 +278,7 @@ namespace MyApi.Modules.Planning.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching user leaves");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -300,7 +300,7 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 _logger.LogError(ex, "Error creating leave");
                 await _systemLogService.LogErrorAsync($"Failed to create leave for user {dto.UserId}", "Planning", "create", GetCurrentUserId(), GetCurrentUserName(), "Leave", details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -326,7 +326,7 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 _logger.LogError(ex, "Error updating leave");
                 await _systemLogService.LogErrorAsync($"Failed to update leave {leaveId}", "Planning", "update", GetCurrentUserId(), GetCurrentUserName(), "Leave", leaveId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -352,7 +352,7 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 _logger.LogError(ex, "Error deleting leave");
                 await _systemLogService.LogErrorAsync($"Failed to delete leave {leaveId}", "Planning", "delete", GetCurrentUserId(), GetCurrentUserName(), "Leave", leaveId.ToString(), ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }

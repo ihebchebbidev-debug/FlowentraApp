@@ -37,7 +37,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching external endpoints");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to fetch endpoints" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -52,7 +52,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching endpoint stats");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to fetch stats" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -68,7 +68,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching endpoint {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to fetch endpoint" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -89,7 +89,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating endpoint");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to create endpoint" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -114,7 +114,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating endpoint {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to update endpoint" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -131,7 +131,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting endpoint {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to delete endpoint" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -192,7 +192,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error revealing key for endpoint {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to reveal key" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -207,7 +207,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching logs for endpoint {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to fetch logs" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -223,7 +223,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching log {LogId}", logId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to fetch log" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -243,7 +243,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating convert preview for log {LogId}", logId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to generate preview" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -259,7 +259,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting log {LogId}", logId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to delete log" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -274,7 +274,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error clearing logs for endpoint {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to clear logs" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 
@@ -290,7 +290,7 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error marking log {LogId} as read", logId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Failed to mark log" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
 

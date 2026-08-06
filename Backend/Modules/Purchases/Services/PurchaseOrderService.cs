@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
+using MyApi.Modules.Articles.Services;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Models;
 
@@ -22,13 +23,16 @@ namespace MyApi.Modules.Purchases.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<PurchaseOrderService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly IStockTransactionService? _stockService;
 
         public PurchaseOrderService(ApplicationDbContext context, ILogger<PurchaseOrderService> logger,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            IStockTransactionService? stockService = null)
         {
             _context = context;
             _logger = logger;
             _numberingService = numberingService;
+            _stockService = stockService;
         }
 
         public async Task<PaginatedPurchaseOrderResponse> GetOrdersAsync(
@@ -226,6 +230,36 @@ namespace MyApi.Modules.Purchases.Services
             ["closed"] = new(StringComparer.OrdinalIgnoreCase) { },
         };
 
+        /// <summary>
+        /// Removes stock that goods receipts had added for a purchase order that is
+        /// being cancelled. Traceable back to the PO in the stock ledger.
+        /// </summary>
+        private async Task MoveStockForCancellationAsync(
+            int articleId, decimal quantity, string orderNumber, int orderId, string userId, string? userName)
+        {
+            if (_stockService == null || quantity <= 0) return;
+            try
+            {
+                await _stockService.CreateTransactionAsync(new MyApi.Modules.Articles.DTOs.CreateStockTransactionDto
+                {
+                    ArticleId = articleId,
+                    TransactionType = "remove",
+                    Quantity = quantity,
+                    Reason = "purchase_order_cancellation",
+                    ReferenceType = "purchase_order",
+                    ReferenceId = orderId.ToString(),
+                    ReferenceNumber = orderNumber,
+                    Notes = $"Reversal of received quantities for cancelled purchase order {orderNumber}"
+                }, userId, userName);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("Insufficient stock"))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot cancel purchase order {orderNumber}: article #{articleId} does not have enough stock to reverse {quantity}. " +
+                    "The received goods were likely already consumed or sold. Adjust stock manually first.", ex);
+            }
+        }
+
         public async Task<PurchaseOrderDto> UpdateOrderAsync(int id, UpdatePurchaseOrderDto dto, string userId, string? userName = null)
         {
             // Wrap mutation in a transaction with execution strategy. Without this,
@@ -244,6 +278,7 @@ namespace MyApi.Modules.Purchases.Services
                         ?? throw new KeyNotFoundException($"PurchaseOrder {id} not found");
 
                     var oldStatus = order.Status;
+                    var cancelling = false;
                     if (dto.Status != null && !string.Equals(dto.Status, oldStatus, StringComparison.OrdinalIgnoreCase))
                     {
                         if (!AllowedStatusTransitions.TryGetValue(oldStatus, out var allowed) || !allowed.Contains(dto.Status))
@@ -268,6 +303,18 @@ namespace MyApi.Modules.Purchases.Services
                             if (!items.Any(i => i.ReceivedQty > 0))
                                 throw new InvalidOperationException(
                                     "Cannot mark PO as 'partially_received' without at least one line having a received quantity.");
+                        }
+                        else if (string.Equals(dto.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Cancelling a PO that already moved goods must undo the
+                            // stock impact — otherwise the warehouse keeps phantom
+                            // quantities for a PO that no longer exists commercially.
+                            var invoiced = await _context.SupplierInvoices
+                                .AnyAsync(i => i.PurchaseOrderId == id && !i.IsDeleted);
+                            if (invoiced)
+                                throw new InvalidOperationException(
+                                    $"Cannot cancel purchase order {order.OrderNumber}: it is referenced by one or more supplier invoices. Delete or credit those invoices first.");
+                            cancelling = true;
                         }
                     }
 
@@ -308,7 +355,45 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.Status != null && dto.Status != oldStatus)
                         LogActivity("purchase_order", id, "status_changed", $"Status changed from {oldStatus} to {dto.Status}", userId, userName, oldStatus, dto.Status);
 
+                    // ── Cancellation: reverse received quantities + stock movements ──
+                    var cancelReversals = new List<(int articleId, decimal qty)>();
+                    if (cancelling)
+                    {
+                        foreach (var item in order.Items ?? new List<PurchaseOrderItem>())
+                        {
+                            if (item.ReceivedQty > 0)
+                            {
+                                if (item.ArticleId.HasValue)
+                                    cancelReversals.Add((item.ArticleId.Value, item.ReceivedQty));
+                                item.ReceivedQty = 0;
+                            }
+                        }
+                        order.ActualDelivery = null;
+
+                        // Linked receipts are soft-deleted so the Receipts tab stops
+                        // showing deliveries against a cancelled PO, while the rows
+                        // remain for audit / stock traceability.
+                        var receipts = await _context.GoodsReceipts
+                            .Where(r => r.PurchaseOrderId == id && !r.IsDeleted)
+                            .ToListAsync();
+                        foreach (var r in receipts)
+                        {
+                            r.IsDeleted = true;
+                            r.DeletedAt = DateTime.UtcNow;
+                            r.DeletedBy = userId;
+                            r.ModifiedDate = DateTime.UtcNow;
+                            r.ModifiedBy = userId;
+                            LogActivity("goods_receipt", r.Id, "cancelled",
+                                $"Receipt {r.ReceiptNumber} reversed because purchase order {order.OrderNumber} was cancelled",
+                                userId, userName, "active", "cancelled");
+                        }
+                    }
+
                     await _context.SaveChangesAsync();
+
+                    foreach (var (articleId, qty) in cancelReversals)
+                        await MoveStockForCancellationAsync(articleId, qty, order.OrderNumber, id, userId, userName);
+
                     await tx.CommitAsync();
                 }
                 catch

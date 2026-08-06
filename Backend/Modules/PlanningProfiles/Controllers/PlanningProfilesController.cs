@@ -153,7 +153,7 @@ namespace MyApi.Modules.PlanningProfiles.Controllers
                     return BadRequest(new { error = new { code = "VALIDATION_ERROR", message = ex.Message } });
                 default:
                     _logger.LogError(ex, "Unhandled PlanningProfiles.{Action} error", action);
-                    return StatusCode(500, new { error = new { code = "INTERNAL_ERROR", message = "Unexpected error." } });
+                    return StatusCode(500, new { error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }
     }
