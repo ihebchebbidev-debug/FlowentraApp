@@ -1,0 +1,6 @@
+[
+  { "id": "low", "name": "Low", "color": "bg-green-500" },
+  { "id": "medium", "name": "Medium", "color": "bg-yellow-500" },
+  { "id": "high", "name": "High", "color": "bg-orange-500" },
+  { "id": "urgent", "name": "Urgent", "color": "bg-red-500" }
+]

@@ -1,0 +1,13 @@
+{
+  "title": "Informations Technicien",
+  "assigned_technicians": "Techniciens Assignés",
+  "name": "Nom",
+  "email": "Email",
+  "phone": "Téléphone",
+  "skills": "Compétences",
+  "status": "Statut",
+  "no_technicians": "Aucun technicien assigné",
+  "call": "Appeler",
+  "email_action": "Email",
+  "locate": "Localiser"
+}

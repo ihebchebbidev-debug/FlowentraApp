@@ -1,0 +1,497 @@
+export const en = {
+  dispatcher: {
+    title: "Dispatcher",
+    description: "Manage and assign jobs to technicians",
+    dispatch_jobs: "Dispatch Jobs",
+    dispatching_interface: "Dispatching Interface",
+    back_to_list: "Back to List",
+    open_service_orders: "Service Orders",
+    drag_drop_jobs: "Drag and drop jobs to assign them to technicians",
+    dispatch_placeholder: "Interactive calendar & map, drag-and-drop assignments, technician availability.",
+    
+    // Navigation
+    today: "Today",
+    day_view: "Day View",
+    week_view: "Week View",
+    manage_planning: "Manage Planning",
+    day_short: "d",
+    overview_mode: "Overview Mode",
+    overview_select_time: "Select Time",
+    overview_hour: "Hour",
+    overview_minute: "Minute",
+    overview_calendar_hint: "Select more than 7 days for overview mode",
+    
+    // Status
+    status: "Status",
+    status_available: "Available",
+    status_busy: "Busy", 
+    status_offline: "Offline",
+    status_on_leave: "On Leave",
+    status_unassigned: "Unassigned",
+    status_assigned: "Assigned",
+    status_in_progress: "In Progress",
+    status_completed: "Completed",
+    status_cancelled: "Cancelled",
+    status_pending: "Pending",
+    status_scheduled: "Scheduled",
+    status_not_working: "Not Working",
+    status_over_capacity: "Over Capacity",
+    status_on_break: "On Break",
+    status_on_mission: "On Mission",
+    status_before_shift: "Before Shift",
+    status_after_shift: "After Shift",
+    status_no_schedule: "No Schedule",
+    status_unavailable: "Unavailable",
+    status_sick: "Sick",
+    status_off: "Off",
+    
+    // Priority
+    priority: "Priority",
+    priority_low: "Low",
+    priority_medium: "Medium",
+    priority_high: "High",
+    priority_urgent: "Urgent",
+    dispatch_priority: "Dispatch Priority",
+    
+    // Tables
+    job: "Job",
+    customer: "Customer",
+    location: "Location",
+    duration: "Duration",
+    total_duration: "Total Duration",
+    required_skills: "Required Skills",
+    skills: "Skills",
+    service_order: "Service Order",
+    jobs: "jobs",
+    
+    // Lists
+    technicians: "Technicians",
+    unassigned_jobs: "Unassigned Jobs",
+    unassigned_work: "Unassigned Work",
+    individual_jobs: "Individual Jobs",
+    service_orders: "Service Orders",
+    
+    // Search and filters
+    search_placeholder: "Search jobs, customers, or locations...",
+    filter: "Filter",
+    filters: "Filters",
+    all_statuses: "All Statuses",
+    all_priorities: "All Priorities",
+    filter_by_status: "Filter by Status",
+    
+    // Empty states
+    no_unassigned_jobs: "No unassigned jobs",
+    no_unassigned_jobs_description: "All jobs are currently assigned to technicians",
+    no_service_orders: "No service orders",
+    no_service_orders_description: "No pending service orders requiring assignment",
+    no_jobs: "No jobs",
+    all_jobs_assigned: "All jobs are assigned ✓",
+    empty_state_hint: "Create a new service order to generate jobs for planning.",
+    no_installation_assigned: "No installation assigned",
+
+    // Planned orders toggle
+    show_planned: "Show Planned Orders",
+    hide_planned: "Hide Planned Orders",
+    planned_orders: "Planned Orders",
+    no_planned_orders: "No planned orders found",
+    
+    // Actions
+    assign: "Assign",
+    unassign: "Unassign",
+    reschedule: "Reschedule",
+    view_details: "View Details",
+    clear: "Clear",
+    confirm: "Confirm",
+    creating: "Creating...",
+    
+    // Filters
+    by_status: "By Status",
+    by_priority: "By Priority",
+    
+    // View modes
+    table_view: "Table View",
+    list_view: "List View",
+    view_mode: "View Mode",
+    
+    // Mobile warning
+    mobile_warning: "Better to open this on desktop",
+    
+    // Stats and misc
+    total: "Total",
+    assigned: "Assigned",
+    in_progress: "In Progress",
+    pending: "Pending",
+    not_scheduled: "Not scheduled",
+    
+    // Dispatches empty state
+    no_dispatches: "No dispatches found",
+    no_dispatches_description: "Create new dispatches from the planner interface",
+    create_from_planner: "Create new dispatches from the planner interface",
+    
+    // Dispatch modal
+    dispatch_details: "Dispatch Details",
+    dispatch: "Dispatch",
+    view_dispatch: "View Dispatch",
+    locked_dispatch: "Locked Dispatch",
+    locked: "Locked",
+    service_order_info: "Service Order",
+    job_info: "Job Information",
+    schedule_info: "Schedule",
+    assignment_info: "Assignment",
+    assigned_technician: "Technician",
+    dispatched_by: "Dispatched By",
+    dispatched_at: "Dispatched At",
+    scheduled_date: "Date",
+    scheduled_time: "Time",
+    estimated_duration: "Duration",
+    contact_info: "Contact Information",
+    phone: "Phone",
+    email: "Email",
+    company: "Company",
+    address: "Address",
+    dispatch_confirmed_locked: "This dispatch is confirmed and locked",
+    locked_by: "Locked by",
+    locked_dispatches_info: "Locked dispatches cannot be deleted or modified.",
+    confirm_lock_info: "Confirm & Lock to prevent changes, or Delete to reassign.",
+    delete_dispatch: "Delete",
+    confirm_lock: "Confirm & Lock",
+    close: "Close",
+    delete_dispatch_title: "Delete Dispatch?",
+    delete_dispatch_description: "This will delete the dispatch and make the job available for reassignment.",
+    cancel: "Cancel",
+    hours_short: "h",
+    minutes_short: "m",
+    not_specified: "Not specified",
+    installation: "Installation",
+    
+    // Calendar Controls
+    settings: "Settings",
+    include_weekends: "Include weekends",
+    zoom_in: "Zoom In",
+    zoom_out: "Zoom Out",
+    
+    // Assignment Confirmation
+    confirm_assignment: "Confirm Assignment",
+    confirm_job_assignment: "Confirm Job Assignment",
+    assignment_details: "Assignment Details",
+    this_will_create_dispatch: "This will create a dispatch and assign the job to the selected technician at the specified time.",
+    confirm_assignment_btn: "Confirm Assignment",
+    priority_standard: "Standard priority",
+    priority_normal: "Normal priority",
+    priority_important: "Important",
+    priority_immediate: "Immediate attention",
+    
+    // Reschedule
+    confirm_reschedule: "Confirm Reschedule",
+    schedule_change: "Schedule Change",
+    original: "Original",
+    new: "New",
+    assigned_to: "Assigned to",
+    this_will_update_dispatch: "This will update the dispatch schedule.",
+    confirm_reschedule_btn: "Confirm Reschedule",
+    rescheduling: "Rescheduling...",
+    
+    // Batch Assignment
+    batch_assignment_title: "Batch Job Assignment",
+    jobs_to_assign: "Jobs to be assigned",
+    total_suffix: "total",
+    assignment_details_title: "Assignment Details",
+    technician_label: "Technician",
+    date_label: "Date",
+    time_range: "Time Range",
+    location_label: "Location",
+    this_will_create_dispatches: "This will create {count} dispatches and assign all jobs sequentially.",
+    confirm_batch_btn: "Assign All Jobs",
+    assigning: "Assigning...",
+    
+    // Technician Details
+    technician_details: "Technician Details",
+    working_hours: "Working Hours",
+    working_hours_today: "Today's Hours",
+    schedule_status: "Schedule Status",
+    on_leave: "On Leave",
+    leave_type: "Leave type",
+    available_until: "Available until {{time}}",
+    starts_at: "Starts at {{time}}",
+    send_email: "Send Email",
+    call: "Call",
+    unknown: "Unknown",
+    no_email_account: "No email account connected",
+    no_email_account_desc: "Please connect an email account in Settings > Integrations to send emails.",
+    email_sent_success: "Email sent successfully!",
+    email_sent_error: "Failed to send email",
+    
+    // Planning mode
+    planning_mode_job: "Individual Jobs",
+    planning_mode_installation: "Per Installation",
+    planning_mode_service_order: "Service Orders",
+    
+    // Contact info in modals
+    contact: "Contact",
+    
+    // Calendar grid
+    drop_here: "Drop here",
+    day_off: "Day Off",
+    unavailable: "Unavailable",
+    loading_installation: "Loading installation...",
+    not_working_today: "Not working today",
+    
+    // Duration formatting
+    hours_total: "h total",
+    job_count: "{count} job",
+    jobs_count: "{count} jobs",
+    
+    // Toast messages
+    job_assigned_success: "Job assigned successfully!",
+    dispatch_rescheduled_success: "Dispatch rescheduled successfully!",
+    jobs_assigned_success: "{{count}} jobs assigned successfully!",
+    plan_single_dispatch: "Plan as a single dispatch",
+    plan_single_dispatch_on: "All jobs go into one dispatch (materials, expenses and time stay per job).",
+    plan_single_dispatch_off: "Each job becomes its own dispatch.",
+    jobs_in_dispatch: "Jobs in this dispatch",
+    job_duration_updated: "Job duration updated!",
+    failed_to_assign_job: "Failed to assign job",
+    failed_to_reschedule: "Failed to reschedule dispatch",
+    failed_to_assign_jobs: "Failed to assign jobs",
+    failed_to_resize_job: "Failed to update job duration",
+    failed_to_process_drop: "Failed to process drop",
+    dispatch_confirmed_locked_success: "Dispatch confirmed and locked! It cannot be deleted anymore.",
+    failed_to_confirm_job: "Failed to confirm job",
+    dispatch_locked_error: "This dispatch is locked and cannot be deleted.",
+    dispatch_unlocked_success: "Dispatch unlocked successfully! You can now edit it.",
+    failed_to_unlock_job: "Failed to unlock dispatch",
+    unlock: "Unlock",
+    dispatch_deleted_success: "Dispatch deleted! Job is now available for reassignment.",
+    failed_to_delete_dispatch: "Failed to delete dispatch",
+    
+    // Skills loading
+    loading_skills: "Loading skills…",
+
+    // Overlap dialog
+    overlap_detected: "Overlap detected",
+    overlap_slot: "The slot {{start}} – {{end}} overlaps with {{count}} existing job(s):",
+    overlap_suggested: "Suggested next free slot: {{time}}",
+    overlap_stacks: "Overlapping jobs will stack visually under the technician row.",
+    overlap_auto_shift: "Auto-shift to {{time}}",
+    overlap_keep: "Keep overlap anyway",
+    overlap_more: "+{{count}} more",
+    job_number: "Job #{{id}}",
+
+    // Loading overlay
+    preparing_dispatch_board: "Preparing Dispatch Board",
+    loading_resources: "Loading resources for optimal performance",
+    loading_technicians: "Loading technicians",
+    loading_calendar_data: "Loading calendar data",
+    loading_service_orders: "Loading service orders",
+    progress_complete: "{progress}% complete",
+    edit_schedule: "Edit",
+    edit_schedule_inline: "Edit Schedule",
+    editing_date: "Date",
+    editing_time_start: "Start Time",
+    editing_time_end: "End Time",
+    save_schedule: "Save",
+    cancel_edit: "Cancel",
+    schedule_updated: "Schedule updated successfully",
+    schedule_update_failed: "Failed to update schedule",
+    
+    // Duration tracking
+    expected_duration: "Expected Duration",
+    planned_duration: "Planned Duration",
+    duration_exceeds_expected: "Duration exceeds expected time",
+    duration_matches_expected: "Duration matches expected time",
+    duration_within_expected: "Duration within expected time",
+    duration_slightly_over: "Duration slightly over expected",
+    exceeds_by: "Exceeds by",
+    original_from_article: "Original from article",
+    edit_duration: "Edit Duration",
+    duration_updated: "Duration updated successfully",
+    drag_to_resize: "Drag to resize",
+    
+    // Dispatch statuses for badges
+    statuses: {
+      pending: "Pending",
+      planned: "Planned",
+      confirmed: "Confirmed",
+      rejected: "Rejected",
+      assigned: "Assigned",
+      acknowledged: "Acknowledged",
+      en_route: "En Route",
+      on_site: "On Site",
+      in_progress: "In Progress",
+      technically_completed: "Technically Completed",
+      completed: "Completed",
+      cancelled: "Cancelled",
+      not_scheduled: "Not Scheduled",
+      scheduled: "Scheduled"
+    },
+    
+    // Bulk actions
+    selected_count: "{{count}} dispatch(es) selected",
+    deselect_all: "Deselect All",
+    bulk_delete: "Delete Selected",
+    bulk_delete_confirm_title: "Delete {{count}} Dispatch(es)?",
+    bulk_delete_confirm_description: "This will permanently delete {{count}} dispatch(es) and all associated data. The associated jobs will be reset to unplanned status.",
+    bulk_deleting: "Deleting...",
+    confirm_delete: "Delete",
+    profiles: {
+      title: "Planning profiles",
+      new_profile: "New profile",
+      new_profile_name: "New profile",
+      my_profiles: "My profiles",
+      shared_profiles: "Shared profiles",
+      active: "Active",
+      shared: "Shared",
+      set_active: "Set as active",
+      duplicate: "Duplicate",
+      copy_suffix: "copy",
+      created: "Profile created",
+      saved: "Profile saved",
+      deleted: "Profile deleted",
+      activated: "Profile activated",
+      empty_state: "Select or create a profile to begin",
+      edit_working_hours: "Edit working hours & leave",
+      delete_title: "Delete profile?",
+      delete_desc: "This cannot be undone. The profile will be removed for everyone using it.",
+      tab_general: "General",
+      tab_users: "Visible users",
+      tab_display: "Display",
+      tab_permissions: "Permissions",
+      field_name: "Name",
+      field_description: "Description",
+      field_color: "Color",
+      field_shared: "Share with team",
+      field_shared_hint: "Make this profile visible to all users in the tenant (admin only).",
+      name_placeholder: "Profile name",
+      field_mode: "Board mode",
+      mode_service_orders: "Service orders",
+      mode_installations: "Installations",
+      field_default_view: "Default view",
+      field_color_by: "Color jobs by",
+      color_status: "Status",
+      color_priority: "Priority",
+      color_service_order: "Service order",
+      color_technician: "Technician",
+      include_weekends: "Include weekends",
+      show_closed_dispatches: "Display closed dispatches",
+      show_rejected_dispatches: "Display rejected dispatches",
+      show_cancelled_dispatches: "Display cancelled dispatches",
+      load_closed_so: "Load closed service orders",
+      load_planned_so: "Load planned service orders",
+      show_duration: "Show job duration labels",
+      compact_rows: "Compact row height",
+      auto_collapse: "Auto-collapse completed dispatches",
+      allow_scheduling: "Allow scheduling of jobs",
+      allow_past: "Allow scheduling in the past",
+      allow_change: "Allow changing dispatches",
+      allow_unassign: "Allow unassigning dispatches",
+      confirm_overlap: "Confirm before overlap",
+      permissions_hint: "These toggles only relax behavior; final permission checks remain enforced by the server.",
+      hide_no_hours: "Hide users with no working hours",
+      hide_on_leave: "Hide users on leave today",
+      select_all: "Select all",
+      clear_all: "Clear all",
+      users_selected: "{{count}} selected",
+      no_users: "No users found",
+      save_and_apply: "Save & Apply",
+      applied: "Profile saved & applied to board",
+      active_indicator: "Active profile",
+      no_active_profile: "No active profile",
+      change_profile: "Change profile",
+      manage_profiles: "Manage planning profiles",
+      currently_active: "Currently active",
+
+      // Skills filter tab
+      tab_skills: "Skills filter",
+      skills_hint: "Select skills to filter which technicians appear on the planning board. Leave empty to show all technicians regardless of skills.",
+      skill_filter_mode: "Match mode",
+      skill_filter_any_hint: "Show technicians who have at least one of the selected skills.",
+      skill_filter_all_hint: "Show only technicians who have every selected skill.",
+      match_any: "Any",
+      match_all: "All",
+      sort_by_skill_match: "Sort technicians by skill match score",
+      sort_by_skill_match_hint: "Technicians with the most matching skills appear first on the board.",
+      search_skills: "Search skills…",
+      skills_selected: "{{count}} skill(s) required",
+      no_skills_found: "No skills found. Add skills via Dashboard → Lookups → Skills.",
+
+      // General tab — planning mode
+      planning_mode_label: "Planning mode",
+      planning_mode_hint: "How items are dragged onto the board. Matches the toggle above the unassigned jobs list.",
+
+      // Display tab — card display section
+      card_display: "Card display",
+      card_label_fields: "Label shows",
+      card_label_hint_two: 'Pick up to two fields (in order). They are always separated by "-".',
+      hover_fields: "Hover shows",
+      show_jobs_on_hover: "List a service order's jobs on hover",
+      expand_so_jobs: "Allow expanding a service order to its jobs in the list",
+      saveError: "Could not save the profile",
+
+      // Card field labels
+      field_service_order_number: "Service order number",
+      field_service_order_name: "Service order name",
+      field_contact_name: "Contact / customer name",
+      field_customer_company: "Company",
+      field_customer_phone: "Phone",
+      field_installation: "Installation",
+      field_job_title: "Job title",
+      field_status: "Status",
+      field_priority: "Priority",
+      field_duration: "Duration",
+      field_address: "Address",
+      field_technician: "Technician",
+      field_job_count: "Number of jobs",
+
+      // Client-side validation (mirrors backend DTO caps)
+      validation: {
+        name_required: "Profile name is required.",
+        name_too_long: "Profile name must be {{max}} characters or fewer.",
+        description_too_long: "Description must be {{max}} characters or fewer.",
+        too_many_users: "Too many visible users selected ({{count}}). Maximum is {{max}}.",
+        duplicate_users: "Visible users contains duplicates.",
+        too_many_skills: "Too many required skills selected ({{count}}). Maximum is {{max}}.",
+        duplicate_skills: "Required skills contains duplicates."
+      }
+    },
+
+    // Smart planning toolbar
+    smart_planning: "Smart Planning",
+    suggest: {
+      button: "Suggest",
+      title: "Best-fit technicians",
+      subtitle: "Top picks for your unassigned jobs (skills + availability + distance).",
+      empty: "No unassigned jobs to suggest for.",
+      no_tech: "No technicians available"
+    },
+
+    // Auto-fill day
+    autofill: {
+      button: "Auto-fill day",
+      no_jobs: "No unassigned jobs to plan.",
+      no_techs: "No visible technicians in this profile.",
+      not_allowed: "Scheduling new jobs is disabled in your planning profile.",
+      success: "{{n}} job(s) auto-scheduled",
+      skipped: "{{n}} job(s) could not be placed",
+      errors: "{{n}} issue(s) during auto-fill — see console for details",
+      nothing: "Nothing to schedule.",
+      failed: "Auto-fill failed",
+      run: "Run auto-fill",
+      confirm_title: "Auto-fill today's planning?",
+      confirm_desc: "This will assign up to {{n}} unassigned job(s) to your {{m}} visible technician(s), placed back-to-back inside their working hours. You can adjust afterwards.",
+      skip: {
+        slot_taken: "Slot was taken by another dispatcher",
+        needs_multi_day: "Job needs multiple days — schedule manually"
+      }
+    },
+    sideEffect: {
+      failed: "Assignment saved, but a follow-up action failed"
+    },
+    drop: {
+      error: {
+        on_leave: "Technician is on leave during this time",
+        day_off: "Technician doesn't work on this day",
+        on_break: "Technician is on a break during this time"
+      }
+    }
+  }
+};

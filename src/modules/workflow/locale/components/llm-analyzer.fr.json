@@ -1,0 +1,8 @@
+{
+  "llm-analyzer": {
+    "title": "Analyseur IA",
+    "fullDescription": "Analyse du texte ou des données avec un modèle IA pour extraire des insights, résumés ou classifications.",
+    "how": "Fournissez le texte ou les données à analyser et configurez le type de sortie (résumé, tags, sentiment). Utilisez les résultats pour piloter les décisions du workflow.",
+    "examples": ["Résumer les retours clients","Classer les tickets support par sujet"]
+  }
+}

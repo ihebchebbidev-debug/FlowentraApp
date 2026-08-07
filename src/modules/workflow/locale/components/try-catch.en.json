@@ -1,0 +1,8 @@
+{
+  "try-catch": {
+    "title": "Try / Catch",
+    "fullDescription": "Attempts an action and provides error handling branches on failure.",
+    "how": "Wrap risky operations in try-catch and configure retries, fallback actions or error notifications.",
+    "examples": ["Retry API call on transient failure","Fallback to alternative service on error"]
+  }
+}

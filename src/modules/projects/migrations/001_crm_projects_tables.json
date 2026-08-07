@@ -1,0 +1,81 @@
+{
+  "module": "projects",
+  "version": "001",
+  "description": "CRM Project Management Tables",
+  "tables": [
+    {
+      "name": "CRM.projects",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "contactId": { "type": "string", "required": false, "foreignKey": "CRM.contacts.id" },
+        "ownerId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "ownerName": { "type": "string", "required": true },
+        "teamMembers": { "type": "array", "items": "string" },
+        "budget": { "type": "decimal", "required": false },
+        "currency": { "type": "string", "required": false, "foreignKey": "LU.currencies.id" },
+        "status": { "type": "string", "required": true, "foreignKey": "LU.project_statuses.id" },
+        "type": { "type": "string", "required": true, "foreignKey": "LU.project_types.id" },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "progress": { "type": "integer", "default": 0 },
+        "startDate": { "type": "datetime", "required": false },
+        "endDate": { "type": "datetime", "required": false },
+        "actualStartDate": { "type": "datetime", "required": false },
+        "actualEndDate": { "type": "datetime", "required": false },
+        "tags": { "type": "array", "items": "string" },
+        "isArchived": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["contactId", "ownerId", "status", "type", "priority"]
+    },
+    {
+      "name": "CRM.project_columns",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "projectId": { "type": "string", "required": true, "foreignKey": "CRM.projects.id" },
+        "title": { "type": "string", "required": true },
+        "color": { "type": "string", "required": true },
+        "position": { "type": "integer", "required": true },
+        "isDefault": { "type": "boolean", "default": false },
+        "limit": { "type": "integer", "required": false },
+        "createdAt": { "type": "datetime", "required": true }
+      }
+    },
+    {
+      "name": "CRM.project_tasks",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "projectId": { "type": "string", "required": true, "foreignKey": "CRM.projects.id" },
+        "contactId": { "type": "string", "required": false, "foreignKey": "CRM.contacts.id" },
+        "assigneeId": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "assigneeName": { "type": "string", "required": false },
+        "status": { "type": "string", "required": true, "foreignKey": "LU.task_statuses.id" },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "columnId": { "type": "string", "required": true, "foreignKey": "CRM.project_columns.id" },
+        "position": { "type": "integer", "required": true },
+        "parentTaskId": { "type": "string", "required": false, "foreignKey": "CRM.project_tasks.id" },
+        "dueDate": { "type": "datetime", "required": false },
+        "startDate": { "type": "datetime", "required": false },
+        "estimatedHours": { "type": "decimal", "required": false },
+        "actualHours": { "type": "decimal", "required": false },
+        "tags": { "type": "array", "items": "string" },
+        "attachments": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "completedAt": { "type": "datetime", "required": false },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["projectId", "assigneeId", "status", "priority", "dueDate"]
+    }
+  ]
+}

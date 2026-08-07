@@ -1,0 +1,7 @@
+[
+  { "id": "all", "name": "All Levels" },
+  { "id": "info", "name": "Info" },
+  { "id": "warning", "name": "Warning" },
+  { "id": "error", "name": "Error" },
+  { "id": "success", "name": "Success" }
+]

@@ -1,0 +1,251 @@
+{
+  "title": "Emails & Calendar",
+  "description": "Manage your email and calendar integrations",
+  "tabs": {
+    "accounts": "Accounts",
+    "emails": "Emails",
+    "calendar": "Calendar"
+  },
+  "accounts": {
+    "title": "Connected Accounts",
+    "description": "Manage your connected email and calendar accounts",
+    "addAccount": "Add Account",
+    "noAccounts": "No accounts connected",
+    "noAccountsDescription": "Connect your Gmail, Outlook, or custom SMTP/IMAP account to sync emails and calendar events with your workspace.",
+    "connectCustom": "Custom (SMTP/IMAP)",
+    "connectGoogle": "Connect Google",
+    "connectOutlook": "Connect Outlook",
+    "syncStatus": "Sync Status",
+    "lastSynced": "Last synced",
+    "syncing": "Syncing...",
+    "synced": "Synced",
+    "failed": "Sync Failed",
+    "notSynced": "Not Synced",
+    "disconnect": "Disconnect",
+    "reconnect": "Reconnect",
+    "disconnectConfirm": "Are you sure you want to disconnect this account?",
+    "disconnectDescription": "This will stop syncing emails and calendar events from this account.",
+    "provider": "Provider",
+    "emailAddress": "Email Address",
+    "status": "Status",
+    "actions": "Actions",
+    "connected": "Connected",
+    "authFailed": "Authentication Failed",
+    "connectedOn": "Connected on",
+    "cancel": "Cancel"
+  },
+  "emails": {
+    "title": "Email Settings",
+    "description": "Configure how your emails are synced and displayed",
+    "inbox": {
+      "title": "Inbox",
+      "description": "Your synced emails will appear here",
+      "noEmails": "No emails yet",
+      "noEmailsDescription": "Click sync to fetch your latest emails from your connected account.",
+      "noAccountTitle": "No email account connected",
+      "noAccountDescription": "To sync your emails, connect a Google, Outlook, or custom email account in Settings → Integrations.",
+      "goToIntegrations": "Go to Integrations",
+      "noSubject": "(No subject)",
+      "from": "From",
+      "to": "To",
+      "subject": "Subject",
+      "date": "Date",
+      "searchPlaceholder": "Search emails...",
+      "sync": "Sync",
+      "syncNow": "Sync Now",
+      "autoSync": "Auto-syncing every 5 minutes",
+      "page": "Page",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "settings": "Settings",
+    "settingsDescription": "Adjust email sync preferences",
+    "visibility": {
+      "title": "Email Visibility",
+      "description": "Define what will be visible to other users in your workspace",
+      "everything": "Everything",
+      "everythingDescription": "Your email subjects and content will be shared with your team.",
+      "subjectMetadata": "Subject & Metadata",
+      "subjectMetadataDescription": "Your email subjects will be shared with your team, but not the content.",
+      "metadata": "Metadata Only",
+      "metadataDescription": "Only the timestamp & participants will be shared with your team."
+    },
+    "autoCreation": {
+      "title": "Contact Auto-Creation",
+      "description": "Automatically create People records when receiving or sending emails",
+      "sentAndReceived": "Sent & Received",
+      "sentAndReceivedDescription": "Create contacts for both sent and received emails",
+      "sentOnly": "Sent Only",
+      "sentOnlyDescription": "Only create contacts for sent emails",
+      "none": "None",
+      "noneDescription": "Don't automatically create contacts"
+    },
+    "filters": {
+      "excludeGroup": "Exclude group emails",
+      "excludeGroupDescription": "Don't sync emails from team@ support@ noreply@...",
+      "excludeNonProfessional": "Exclude non-professional emails",
+      "excludeNonProfessionalDescription": "Don't create contacts from/to Gmail, Outlook emails"
+    },
+    "sync": {
+      "title": "Email Sync",
+      "description": "Control which emails are synced to your workspace",
+      "enabled": "Sync Enabled",
+      "disabled": "Sync Disabled",
+      "enableSync": "Enable Sync",
+      "disableSync": "Disable Sync"
+    },
+    "actions": {
+      "star": "Star",
+      "unstar": "Unstar",
+      "starred": "Email starred",
+      "unstarred": "Email unstarred",
+      "starFailed": "Failed to toggle star",
+      "markRead": "Mark as read",
+      "markUnread": "Mark as unread",
+      "markedRead": "Email marked as read",
+      "markedUnread": "Email marked as unread",
+      "readFailed": "Failed to toggle read status",
+      "delete": "Delete",
+      "deleted": "Email deleted",
+      "deleteFailed": "Failed to delete email",
+      "deleteConfirmTitle": "Delete this email?",
+      "deleteConfirmDescription": "This will move the email to trash on your provider and remove it from your inbox. This action may be irreversible.",
+      "cancel": "Cancel",
+      "selected": "{{count}} selected",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "bulkStarred": "{{count}} emails starred",
+      "bulkReadToggled": "{{count}} emails updated",
+      "bulkReadFailed": "Failed to update read status for some emails",
+      "bulkDeleted": "{{count}} emails deleted",
+      "bulkDeleteConfirmTitle": "Delete {{count}} emails?",
+      "bulkDeleteConfirmDescription": "This will move {{count}} emails to trash. This action may be irreversible.",
+      "bulkStarFailed": "Failed to star some emails",
+      "bulkDeleteFailed": "Failed to delete some emails"
+    }
+  },
+  "calendar": {
+    "title": "Calendar Settings",
+    "description": "Configure how your calendar events are synced and displayed",
+    "events": {
+      "title": "Upcoming Events",
+      "description": "Your synced calendar events",
+      "noEvents": "No events yet",
+      "noEventsDescription": "Click sync to fetch your latest calendar events from your connected account.",
+      "noAccountTitle": "No calendar account connected",
+      "noAccountDescription": "To sync your calendar, connect a Google, Outlook, or custom email account in Settings → Integrations.",
+      "goToIntegrations": "Go to Integrations",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "thisWeek": "This Week",
+      "allDay": "All day",
+      "searchPlaceholder": "Search events..."
+    },
+    "settings": "Settings",
+    "settingsDescription": "Adjust calendar sync preferences",
+    "visibility": {
+      "title": "Event Visibility",
+      "description": "Define what will be visible to other users in your workspace",
+      "everything": "Share Everything",
+      "everythingDescription": "Event titles, descriptions, and attendees will be shared.",
+      "metadata": "Metadata Only",
+      "metadataDescription": "Only the time slots and attendee count will be shared."
+    },
+    "autoCreation": {
+      "title": "Contact Auto-Creation",
+      "description": "Automatically create contacts for people you've participated in an event with",
+      "enabled": "Auto-creation enabled",
+      "disabled": "Auto-creation disabled"
+    },
+    "sync": {
+      "title": "Calendar Sync",
+      "enabled": "Sync Enabled",
+      "disabled": "Sync Disabled"
+    }
+  },
+  "integration": {
+    "title": "Email & Calendar Integration",
+    "subtitle": "Connect your accounts to sync emails and calendar events",
+    "chooseProvider": "Choose a provider to connect",
+    "privacyNote": "Your privacy settings control what your team can see.",
+    "googleDescription": "Connect your Google account to sync Gmail and Google Calendar",
+    "outlookDescription": "Connect your Microsoft account to sync Outlook email and calendar"
+  },
+  "compose": {
+    "title": "New Message",
+    "compose": "Compose",
+    "from": "From",
+    "to": "To",
+    "cc": "Cc",
+    "bcc": "Bcc",
+    "subject": "Subject",
+    "toPlaceholder": "recipient@example.com",
+    "ccPlaceholder": "cc@example.com",
+    "bccPlaceholder": "bcc@example.com",
+    "subjectPlaceholder": "Email subject",
+    "bodyPlaceholder": "Write your message...",
+    "send": "Send",
+    "discard": "Discard",
+    "successTitle": "Email Sent",
+    "successDescription": "Your email has been sent successfully.",
+    "errorTitle": "Send Failed",
+    "errorDescription": "Failed to send email. Please try again."
+  },
+  "emailDetail": {
+    "to": "To",
+    "noContent": "No content available for this email.",
+    "reply": "Reply",
+    "replyingTo": "Replying to this email",
+    "replyPlaceholder": "Write your reply..."
+  },
+  "eventDetail": {
+    "title": "Event Details",
+    "noTitle": "(No title)",
+    "cancelled": "Cancelled",
+    "tentative": "Tentative",
+    "organizer": "Organizer",
+    "attendees": "Attendees",
+    "description": "Description"
+  },
+  "calendarView": {
+    "today": "Today",
+    "monthView": "Month view",
+    "listView": "List view",
+    "more": "more"
+  },
+  "customEmail": {
+    "title": "Custom Email (SMTP/IMAP)",
+    "description": "Connect your own email server using SMTP and IMAP settings (OVH, IONOS, Zoho, etc.)",
+    "preset": "Email Provider",
+    "email": "Email Address",
+    "password": "Password",
+    "displayName": "Display Name (Optional)",
+    "serverSettings": "Server Settings (SMTP / IMAP)",
+    "connecting": "Connecting...",
+    "connect": "Connect Account",
+    "successTitle": "Account Connected",
+    "successDescription": "Your custom email account has been connected successfully.",
+    "imap": {
+      "title": "Incoming (IMAP)",
+      "server": "IMAP Server",
+      "port": "Port",
+      "security": "Security"
+    },
+    "smtp": {
+      "title": "Outgoing (SMTP)",
+      "server": "SMTP Server",
+      "port": "Port",
+      "security": "Security"
+    },
+    "validation": {
+      "required": "Email and password are required",
+      "serversRequired": "IMAP and SMTP server addresses are required",
+      "connectionFailed": "Failed to connect. Please check your credentials and server settings."
+    }
+  },
+  "plugin": {
+    "name": "Email & Calendar",
+    "description": "Connect mailboxes and calendar accounts.",
+    "category": "Comms"
+  }
+}

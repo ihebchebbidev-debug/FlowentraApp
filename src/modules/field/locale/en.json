@@ -1,0 +1,93 @@
+{
+  "field": {
+    "service_orders": "Service Orders",
+    "dispatches": "Operations",
+    "dispatch": "Operations",
+    "dispatch_placeholder": "Interactive calendar & map, drag-and-drop assignments, technician availability.",
+    "customers_lite": "Customer Management",
+    "inventory": "Inventory & Asset Management",
+    "reports": {
+      "title": "Reporting & Analytics",
+      "serviceOrders": "Service Orders",
+      "jobs": "Jobs",
+      "dispatches": "Operations",
+      "installations": "Installations",
+      "tabs": {
+        "serviceOrders": "Service Orders",
+        "dispatchCalendar": "Operations Calendar"
+      },
+      "calendar": {
+        "filterTitle": "Filter Calendar Display",
+        "plannedDispatches": "Planned Operations",
+        "technicianAbsences": "Technician Absences",
+        "holidays": "Holidays",
+        "summary": "Summary",
+        "byStatus": "By Status",
+        "noDispatches": "No operations this month",
+        "dispatch": "operation",
+        "dispatches": "operations"
+      },
+      "status": {
+        "total": "Total",
+        "completed": "Completed",
+        "inProgress": "In Progress",
+        "scheduled": "Scheduled",
+        "pending": "Pending",
+        "assigned": "Assigned",
+        "draft": "Created",
+        "ready": "Ready",
+        "onHold": "On Hold",
+        "cancelled": "Cancelled"
+      },
+      "priority": {
+        "all": "All Priority",
+        "urgent": "Urgent",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "table": {
+        "orderNumber": "Order #",
+        "customer": "Customer",
+        "status": "Status",
+        "priority": "Priority",
+        "targetDate": "Target Date",
+        "createdBy": "Created By"
+      },
+      "filters": {
+        "allStatus": "All Status",
+        "allPriority": "All Priority",
+        "searchOrders": "Search orders...",
+        "clear": "Clear",
+        "clearFilters": "Clear filters"
+      },
+      "pagination": {
+        "page": "Page",
+        "of": "of",
+        "showing": "Showing",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "empty": {
+        "noServiceOrders": "No service orders found"
+      },
+      "weekdays": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      }
+    },
+    "time-expenses": "Time & Expenses",
+    "userNote": "User Note",
+    "systemActivity": "System Activity"
+  },
+  "plugin": {
+    "name": "Field Service",
+    "description": "Field operations hub.",
+    "category": "Field"
+  }
+}

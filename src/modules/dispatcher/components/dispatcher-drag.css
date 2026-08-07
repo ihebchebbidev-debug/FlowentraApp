@@ -1,0 +1,217 @@
+/* Dispatcher Drag and Drop Styles */
+.dispatcher-job-item {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.15s ease;
+  will-change: transform, box-shadow;
+}
+
+.dispatcher-job-item:not(.mobile):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dispatcher-job-item.dragging {
+  transform: rotate(2deg) scale(1.05) translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), 
+              0 0 0 1px rgba(var(--primary), 0.3);
+  cursor: grabbing !important;
+  z-index: 1000;
+  opacity: 0.9;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.dispatcher-job-item:not(.mobile) {
+  cursor: grab;
+}
+
+.dispatcher-job-item:not(.mobile):active {
+  cursor: grabbing;
+}
+
+/* Enhanced drag feedback */
+.dispatcher-job-item.drag-ready {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Prevent text selection during drag */
+.dispatcher-job-item:not(.mobile) * {
+  pointer-events: none;
+}
+
+.dispatcher-job-item:not(.mobile) {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Drop zone feedback with enhanced animations */
+.calendar-drop-zone {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.calendar-drop-zone.drag-over {
+  background: linear-gradient(135deg, 
+    rgba(var(--primary), 0.15), 
+    rgba(var(--primary), 0.08),
+    rgba(var(--primary), 0.12)
+  );
+  border-color: hsl(var(--primary) / 0.6);
+  border-style: dashed;
+  border-width: 2px;
+  transform: scale(1.02);
+}
+
+.calendar-drop-zone.drag-over::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, 
+    rgba(var(--primary), 0.1) 0%, 
+    transparent 70%
+  );
+  animation: pulse-drop-zone 1.5s ease-in-out infinite;
+}
+
+/* Smooth drag feedback for grip icon */
+.grip-icon {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0.9);
+}
+
+.dispatcher-job-item:hover .grip-icon {
+  opacity: 1;
+  transform: scale(1);
+  color: hsl(var(--primary));
+}
+
+/* Global drag state styles */
+body.dragging {
+  cursor: grabbing !important;
+}
+
+body.dragging * {
+  cursor: grabbing !important;
+}
+
+/* Drag ghost image styles */
+.drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  z-index: -1;
+  opacity: 0.8;
+  transform: rotate(3deg) scale(1.1);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+/* Job block resize animations */
+.resizable-job-block {
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.resizable-job-block.resizing {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15),
+              0 0 0 2px rgba(var(--primary), 0.3);
+  transform: scale(1.02);
+}
+
+.resizable-job-block:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth resize handle */
+.resize-handle {
+  transition: all 0.2s ease;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(var(--primary), 0.4) 50%, 
+    transparent 100%
+  );
+}
+
+.resize-handle:hover {
+  background: linear-gradient(90deg, 
+    rgba(var(--primary), 0.2) 0%, 
+    rgba(var(--primary), 0.6) 50%, 
+    rgba(var(--primary), 0.2) 100%
+  );
+  transform: scaleX(1.1);
+}
+
+/* Drop zone pulse animation */
+@keyframes pulse-drop-zone {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* Processing states */
+.calendar-drop-zone.processing-drop {
+  background: linear-gradient(135deg, 
+    rgba(var(--primary), 0.2), 
+    rgba(var(--primary), 0.1)
+  );
+  animation: processing-pulse 1s ease-in-out infinite;
+}
+
+.calendar-drop-zone.drop-success {
+  background: linear-gradient(135deg, 
+    rgba(34, 197, 94, 0.2), 
+    rgba(34, 197, 94, 0.1)
+  );
+  border-color: rgb(34, 197, 94);
+  animation: success-flash 0.5s ease-out;
+}
+
+.calendar-drop-zone.drop-error {
+  background: linear-gradient(135deg, 
+    rgba(239, 68, 68, 0.2), 
+    rgba(239, 68, 68, 0.1)
+  );
+  border-color: rgb(239, 68, 68);
+  animation: error-shake 0.5s ease-out;
+}
+
+@keyframes processing-pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes success-flash {
+  0% {
+    background: rgba(34, 197, 94, 0.4);
+    transform: scale(1.05);
+  }
+  100% {
+    background: rgba(34, 197, 94, 0.1);
+    transform: scale(1);
+  }
+}
+
+@keyframes error-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}

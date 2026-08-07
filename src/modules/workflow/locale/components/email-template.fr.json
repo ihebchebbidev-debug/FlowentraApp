@@ -1,0 +1,12 @@
+{
+  "email-template": {
+    "title": "Email modèle",
+    "fullDescription": "Envoie un email en utilisant un modèle sélectionné, avec support des variables et des pièces jointes.",
+  "configureDescription": "Sélectionnez un modèle et mappez les variables pour personnaliser le message.",
+  "how": "Sélectionnez un modèle, mappez les variables et choisissez les destinataires. Utile pour les communications standardisées comme les factures.",
+    "examples": [
+      "Envoyer une facture avec le modèle facture",
+      "Envoyer la confirmation de rendez-vous via un modèle"
+    ]
+  }
+}

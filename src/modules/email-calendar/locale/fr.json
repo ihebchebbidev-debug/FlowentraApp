@@ -1,0 +1,251 @@
+{
+  "title": "Emails & Calendrier",
+  "description": "Gérez vos intégrations email et calendrier",
+  "tabs": {
+    "accounts": "Comptes",
+    "emails": "Emails",
+    "calendar": "Calendrier"
+  },
+  "accounts": {
+    "title": "Comptes Connectés",
+    "description": "Gérez vos comptes email et calendrier connectés",
+    "addAccount": "Ajouter un Compte",
+    "noAccounts": "Aucun compte connecté",
+    "noAccountsDescription": "Connectez votre compte Gmail, Outlook ou SMTP/IMAP personnalisé pour synchroniser les emails et calendrier.",
+    "connectCustom": "Personnalisé (SMTP/IMAP)",
+    "connectGoogle": "Connecter Google",
+    "connectOutlook": "Connecter Outlook",
+    "syncStatus": "État de Synchronisation",
+    "lastSynced": "Dernière synchronisation",
+    "syncing": "Synchronisation...",
+    "synced": "Synchronisé",
+    "failed": "Échec de Synchronisation",
+    "notSynced": "Non Synchronisé",
+    "disconnect": "Déconnecter",
+    "reconnect": "Reconnecter",
+    "disconnectConfirm": "Êtes-vous sûr de vouloir déconnecter ce compte ?",
+    "disconnectDescription": "Cela arrêtera la synchronisation des emails et des événements de calendrier de ce compte.",
+    "provider": "Fournisseur",
+    "emailAddress": "Adresse Email",
+    "status": "Statut",
+    "actions": "Actions",
+    "connected": "Connecté",
+    "authFailed": "Authentification Échouée",
+    "connectedOn": "Connecté le",
+    "cancel": "Annuler"
+  },
+  "emails": {
+    "title": "Paramètres Email",
+    "description": "Configurez la synchronisation et l'affichage de vos emails",
+    "inbox": {
+      "title": "Boîte de réception",
+      "description": "Vos emails synchronisés apparaîtront ici",
+      "noEmails": "Aucun email",
+      "noEmailsDescription": "Cliquez sur synchroniser pour récupérer vos derniers emails.",
+      "noAccountTitle": "Aucun compte email connecté",
+      "noAccountDescription": "Pour synchroniser vos emails, connectez un compte Google, Outlook ou personnalisé dans Paramètres → Intégrations.",
+      "goToIntegrations": "Aller aux Intégrations",
+      "noSubject": "(Sans objet)",
+      "from": "De",
+      "to": "À",
+      "subject": "Objet",
+      "date": "Date",
+      "searchPlaceholder": "Rechercher des emails...",
+      "sync": "Sync",
+      "syncNow": "Synchroniser",
+      "autoSync": "Synchronisation automatique toutes les 5 minutes",
+      "page": "Page",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "settings": "Paramètres",
+    "settingsDescription": "Ajuster les préférences de synchronisation email",
+    "visibility": {
+      "title": "Visibilité des Emails",
+      "description": "Définissez ce qui sera visible pour les autres utilisateurs de votre espace de travail",
+      "everything": "Tout",
+      "everythingDescription": "Les sujets et le contenu de vos emails seront partagés avec votre équipe.",
+      "subjectMetadata": "Sujet & Métadonnées",
+      "subjectMetadataDescription": "Les sujets de vos emails seront partagés avec votre équipe, mais pas le contenu.",
+      "metadata": "Métadonnées Uniquement",
+      "metadataDescription": "Seuls l'horodatage et les participants seront partagés avec votre équipe."
+    },
+    "autoCreation": {
+      "title": "Création Automatique de Contacts",
+      "description": "Créez automatiquement des fiches contacts lors de la réception ou de l'envoi d'emails",
+      "sentAndReceived": "Envoyés & Reçus",
+      "sentAndReceivedDescription": "Créer des contacts pour les emails envoyés et reçus",
+      "sentOnly": "Envoyés Uniquement",
+      "sentOnlyDescription": "Créer des contacts uniquement pour les emails envoyés",
+      "none": "Aucun",
+      "noneDescription": "Ne pas créer automatiquement de contacts"
+    },
+    "filters": {
+      "excludeGroup": "Exclure les emails de groupe",
+      "excludeGroupDescription": "Ne pas synchroniser les emails de team@ support@ noreply@...",
+      "excludeNonProfessional": "Exclure les emails non professionnels",
+      "excludeNonProfessionalDescription": "Ne pas créer de contacts depuis/vers les emails Gmail, Outlook"
+    },
+    "sync": {
+      "title": "Synchronisation Email",
+      "description": "Contrôlez quels emails sont synchronisés dans votre espace de travail",
+      "enabled": "Synchronisation Activée",
+      "disabled": "Synchronisation Désactivée",
+      "enableSync": "Activer la Synchronisation",
+      "disableSync": "Désactiver la Synchronisation"
+    },
+    "actions": {
+      "star": "Favoriser",
+      "unstar": "Retirer des favoris",
+      "starred": "Email marqué comme favori",
+      "unstarred": "Email retiré des favoris",
+      "starFailed": "Échec du changement de favori",
+      "markRead": "Marquer comme lu",
+      "markUnread": "Marquer comme non lu",
+      "markedRead": "Email marqué comme lu",
+      "markedUnread": "Email marqué comme non lu",
+      "readFailed": "Échec du changement de statut de lecture",
+      "delete": "Supprimer",
+      "deleted": "Email supprimé",
+      "deleteFailed": "Échec de la suppression",
+      "deleteConfirmTitle": "Supprimer cet email ?",
+      "deleteConfirmDescription": "Cet email sera déplacé dans la corbeille de votre fournisseur et retiré de votre boîte de réception. Cette action peut être irréversible.",
+      "cancel": "Annuler",
+      "selected": "{{count}} sélectionné(s)",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "bulkStarred": "{{count}} emails marqués comme favoris",
+      "bulkReadToggled": "{{count}} emails mis à jour",
+      "bulkReadFailed": "Échec de la mise à jour du statut de lecture pour certains emails",
+      "bulkDeleted": "{{count}} emails supprimés",
+      "bulkDeleteConfirmTitle": "Supprimer {{count}} emails ?",
+      "bulkDeleteConfirmDescription": "{{count}} emails seront déplacés dans la corbeille. Cette action peut être irréversible.",
+      "bulkStarFailed": "Échec du marquage de certains emails",
+      "bulkDeleteFailed": "Échec de la suppression de certains emails"
+    }
+  },
+  "calendar": {
+    "title": "Paramètres Calendrier",
+    "description": "Configurez la synchronisation et l'affichage de vos événements",
+    "events": {
+      "title": "Événements à venir",
+      "description": "Vos événements synchronisés",
+      "noEvents": "Aucun événement",
+      "noEventsDescription": "Cliquez sur synchroniser pour récupérer vos derniers événements.",
+      "noAccountTitle": "Aucun compte calendrier connecté",
+      "noAccountDescription": "Pour synchroniser votre calendrier, connectez un compte Google, Outlook ou personnalisé dans Paramètres → Intégrations.",
+      "goToIntegrations": "Aller aux Intégrations",
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "thisWeek": "Cette semaine",
+      "allDay": "Toute la journée",
+      "searchPlaceholder": "Rechercher des événements..."
+    },
+    "settings": "Paramètres",
+    "settingsDescription": "Ajuster les préférences de synchronisation calendrier",
+    "visibility": {
+      "title": "Visibilité des Événements",
+      "description": "Définissez ce qui sera visible pour les autres utilisateurs de votre espace de travail",
+      "everything": "Tout Partager",
+      "everythingDescription": "Les titres, descriptions et participants des événements seront partagés.",
+      "metadata": "Métadonnées Uniquement",
+      "metadataDescription": "Seuls les créneaux horaires et le nombre de participants seront partagés."
+    },
+    "autoCreation": {
+      "title": "Création Automatique de Contacts",
+      "description": "Créer automatiquement des contacts pour les personnes avec lesquelles vous avez participé à un événement",
+      "enabled": "Création automatique activée",
+      "disabled": "Création automatique désactivée"
+    },
+    "sync": {
+      "title": "Synchronisation Calendrier",
+      "enabled": "Synchronisation Activée",
+      "disabled": "Synchronisation Désactivée"
+    }
+  },
+  "integration": {
+    "title": "Intégration Email & Calendrier",
+    "subtitle": "Connectez vos comptes pour synchroniser emails et événements",
+    "chooseProvider": "Choisissez un fournisseur à connecter",
+    "privacyNote": "Vos paramètres de confidentialité contrôlent ce que votre équipe peut voir.",
+    "googleDescription": "Connectez votre compte Google pour synchroniser Gmail et Google Agenda",
+    "outlookDescription": "Connectez votre compte Microsoft pour synchroniser Outlook email et calendrier"
+  },
+  "compose": {
+    "title": "Nouveau Message",
+    "compose": "Rédiger",
+    "from": "De",
+    "to": "À",
+    "cc": "Cc",
+    "bcc": "Cci",
+    "subject": "Objet",
+    "toPlaceholder": "destinataire@exemple.com",
+    "ccPlaceholder": "cc@exemple.com",
+    "bccPlaceholder": "cci@exemple.com",
+    "subjectPlaceholder": "Objet de l'email",
+    "bodyPlaceholder": "Écrivez votre message...",
+    "send": "Envoyer",
+    "discard": "Annuler",
+    "successTitle": "Email Envoyé",
+    "successDescription": "Votre email a été envoyé avec succès.",
+    "errorTitle": "Échec d'envoi",
+    "errorDescription": "Impossible d'envoyer l'email. Veuillez réessayer."
+  },
+  "emailDetail": {
+    "to": "À",
+    "noContent": "Aucun contenu disponible pour cet email.",
+    "reply": "Répondre",
+    "replyingTo": "Réponse à cet email",
+    "replyPlaceholder": "Écrivez votre réponse..."
+  },
+  "eventDetail": {
+    "title": "Détails de l'événement",
+    "noTitle": "(Sans titre)",
+    "cancelled": "Annulé",
+    "tentative": "Provisoire",
+    "organizer": "Organisateur",
+    "attendees": "Participants",
+    "description": "Description"
+  },
+  "calendarView": {
+    "today": "Aujourd'hui",
+    "monthView": "Vue mensuelle",
+    "listView": "Vue liste",
+    "more": "de plus"
+  },
+  "customEmail": {
+    "title": "Email personnalisé (SMTP/IMAP)",
+    "description": "Connectez votre propre serveur email avec les paramètres SMTP et IMAP (OVH, IONOS, Zoho, etc.)",
+    "preset": "Fournisseur email",
+    "email": "Adresse email",
+    "password": "Mot de passe",
+    "displayName": "Nom d'affichage (Optionnel)",
+    "serverSettings": "Paramètres serveur (SMTP / IMAP)",
+    "connecting": "Connexion...",
+    "connect": "Connecter le compte",
+    "successTitle": "Compte connecté",
+    "successDescription": "Votre compte email personnalisé a été connecté avec succès.",
+    "imap": {
+      "title": "Entrant (IMAP)",
+      "server": "Serveur IMAP",
+      "port": "Port",
+      "security": "Sécurité"
+    },
+    "smtp": {
+      "title": "Sortant (SMTP)",
+      "server": "Serveur SMTP",
+      "port": "Port",
+      "security": "Sécurité"
+    },
+    "validation": {
+      "required": "L'email et le mot de passe sont requis",
+      "serversRequired": "Les adresses des serveurs IMAP et SMTP sont requises",
+      "connectionFailed": "Échec de la connexion. Vérifiez vos identifiants et paramètres serveur."
+    }
+  },
+  "plugin": {
+    "name": "E-mail & Calendrier",
+    "description": "Connectez boîtes mail et calendriers.",
+    "category": "Comms"
+  }
+}

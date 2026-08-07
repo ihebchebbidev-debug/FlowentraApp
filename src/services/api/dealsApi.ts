@@ -1,0 +1,325 @@
+// Real API service for the Deals (pipeline / opportunities) module.
+// Uses the centralized apiFetch, which injects X-Tenant + X-Target-Tenant
+// headers automatically — same tenant scoping as every other module.
+import { apiFetch } from '@/services/api/apiClient';
+import i18n from '@/lib/i18n';
+import {
+  ensureContactVisibilityLoaded,
+  filterByContactVisibility,
+  filterPageByContactVisibility,
+} from '@/services/contactVisibility';
+
+/**
+ * Error thrown by `dealsApi.convert` when the backend rejects a repeat
+ * conversion (deal already turned into a project/sale/offer). `.message` is
+ * already translated for the current UI locale.
+ */
+export class DealConversionError extends Error {
+  code: 'already_converted_to_project' | 'already_converted_to_sale' | 'already_converted_to_offer' | 'generic';
+  targetId?: number;
+  constructor(message: string, code: DealConversionError['code'], targetId?: number) {
+    super(message);
+    this.name = 'DealConversionError';
+    this.code = code;
+    this.targetId = targetId;
+  }
+}
+
+function mapDealConversionError(raw: string): DealConversionError | null {
+  const specs: Array<[RegExp, DealConversionError['code'], string]> = [
+    [/ALREADY_CONVERTED_PROJECT:([^:\s]+)/, 'already_converted_to_project', 'deals:convert.errors.alreadyConvertedToProject'],
+    [/ALREADY_CONVERTED_SALE:([^:\s]+)/,    'already_converted_to_sale',    'deals:convert.errors.alreadyConvertedToSale'],
+    [/ALREADY_CONVERTED_OFFER:([^:\s]+)/,   'already_converted_to_offer',   'deals:convert.errors.alreadyConvertedToOffer'],
+  ];
+  for (const [re, code, key] of specs) {
+    const m = raw.match(re);
+    if (m) {
+      const id = Number(m[1]);
+      return new DealConversionError(
+        i18n.t(key, { id: m[1] }),
+        code,
+        Number.isFinite(id) ? id : undefined,
+      );
+    }
+  }
+  return null;
+}
+
+export type DealStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
+
+export interface DealItem {
+  id?: number;
+  dealId?: number;
+  articleId?: number | null;
+  type: 'article' | 'service';
+  itemName: string;
+  itemCode?: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  discount?: number;
+  discountType?: 'percentage' | 'fixed';
+  lineTotal?: number;
+  displayOrder?: number;
+  installationId?: string | null;
+  installationName?: string | null;
+}
+
+export interface DealContact {
+  id: number;
+  name?: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+}
+
+export interface Deal {
+  id: number;
+  dealNumber?: string;
+  title: string;
+  description?: string;
+  contactId: number;
+  contactName?: string;
+  contact?: DealContact;
+  projectId?: number | null;
+  stage: DealStage;
+  probability: number;
+  estimatedValue: number;
+  currency: string;
+  expectedCloseDate?: string;
+  actualCloseDate?: string;
+  /** Next follow-up date — drives the overdue/at-risk indicators. */
+  nextActionDate?: string;
+  /** Short description of the next step to take. */
+  nextAction?: string;
+  /** Reason captured when the deal is marked lost. */
+  lostReason?: string;
+  category?: string;
+  source?: string;
+  notes?: string;
+  tags?: string[];
+  assignedTo?: string;
+  assignedToName?: string;
+  convertedToOfferId?: string;
+  convertedToSaleId?: string;
+  convertedToProjectId?: string;
+  convertedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  createdByName?: string;
+  lastActivity?: string;
+  items?: DealItem[];
+}
+
+export interface CreateDealRequest {
+  title: string;
+  description?: string;
+  contactId: number;
+  projectId?: number | null;
+  stage?: DealStage;
+  probability?: number;
+  estimatedValue?: number;
+  currency?: string;
+  expectedCloseDate?: string;
+  nextActionDate?: string;
+  nextAction?: string;
+  lostReason?: string;
+  category?: string;
+  source?: string;
+  notes?: string;
+  tags?: string[];
+  assignedTo?: string;
+  assignedToName?: string;
+  items?: Omit<DealItem, 'id' | 'dealId' | 'lineTotal' | 'displayOrder'>[];
+}
+
+export type UpdateDealRequest = Partial<Omit<CreateDealRequest, 'items'>> & {
+  actualCloseDate?: string;
+  /** When provided, the server replaces the deal's line items with this exact set
+   *  in one transaction (an empty array clears them). Omit to leave items untouched. */
+  items?: Omit<DealItem, 'id' | 'dealId' | 'lineTotal' | 'displayOrder'>[];
+};
+
+export interface DealStats {
+  totalDeals: number;
+  openDeals: number;
+  wonDeals: number;
+  lostDeals: number;
+  totalValue: number;
+  openValue: number;
+  wonValue: number;
+  averageValue: number;
+  winRate: number;
+}
+
+export interface DealActivity {
+  id: number;
+  dealId: number;
+  type: string;
+  description: string;
+  details?: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
+  createdBy: string;
+  createdByName?: string;
+}
+
+export interface DealSearchParams {
+  page?: number;
+  limit?: number;
+  stage?: string;
+  category?: string;
+  source?: string;
+  contactId?: number;
+  projectId?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface DealListResponse {
+  deals: Deal[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface ConvertDealRequest {
+  convertToSale?: boolean;
+  convertToProject?: boolean;
+  convertToOffer?: boolean;
+}
+
+export interface ConvertDealResult {
+  saleId?: number;
+  projectId?: number;
+  offerId?: number;
+}
+
+function unwrap<T>(result: { data: T | null; status: number; error?: string }, fallbackMsg: string): T {
+  if (result.error || result.data === null) {
+    throw new Error(result.error || fallbackMsg);
+  }
+  return result.data;
+}
+
+export const dealsApi = {
+  async getAll(params?: DealSearchParams): Promise<DealListResponse> {
+    const q = new URLSearchParams();
+    if (params?.page) q.append('page', params.page.toString());
+    if (params?.limit) q.append('limit', params.limit.toString());
+    if (params?.stage) q.append('stage', params.stage);
+    if (params?.category) q.append('category', params.category);
+    if (params?.source) q.append('source', params.source);
+    if (params?.contactId) q.append('contact_id', params.contactId.toString());
+    if (params?.projectId) q.append('project_id', params.projectId.toString());
+    if (params?.search) q.append('search', params.search);
+    if (params?.sortBy) q.append('sort_by', params.sortBy);
+    if (params?.sortOrder) q.append('sort_order', params.sortOrder);
+
+    const result = await apiFetch<any>(`/api/deals?${q.toString()}`);
+    const data = unwrap(result, 'Failed to fetch deals');
+    const inner = data?.data ?? data;
+    const deals = inner?.deals ?? inner?.items ?? (Array.isArray(inner) ? inner : []);
+    await ensureContactVisibilityLoaded();
+    const pagination = inner?.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 0 };
+    const paged = filterPageByContactVisibility<any>(deals, pagination);
+    return {
+      deals: paged.rows,
+      pagination: { ...pagination, total: paged.total, totalPages: paged.totalPages },
+    };
+  },
+
+  async getById(id: number): Promise<Deal> {
+    const result = await apiFetch<any>(`/api/deals/${id}`);
+    const data = unwrap(result, 'Failed to fetch deal');
+    return data.data ?? data;
+  },
+
+  async getStats(): Promise<DealStats> {
+    const result = await apiFetch<any>(`/api/deals/stats`);
+    const data = unwrap(result, 'Failed to fetch deal stats');
+    return data.data ?? data;
+  },
+
+  async create(request: CreateDealRequest): Promise<Deal> {
+    const result = await apiFetch<any>(`/api/deals`, { method: 'POST', body: JSON.stringify(request) });
+    const data = unwrap(result, 'Failed to create deal');
+    return data.data ?? data;
+  },
+
+  async update(id: number, request: UpdateDealRequest): Promise<Deal> {
+    const result = await apiFetch<any>(`/api/deals/${id}`, { method: 'PATCH', body: JSON.stringify(request) });
+    const data = unwrap(result, 'Failed to update deal');
+    return data.data ?? data;
+  },
+
+  async delete(id: number): Promise<void> {
+    const result = await apiFetch<any>(`/api/deals/${id}`, { method: 'DELETE' });
+    if (result.error) throw new Error(result.error);
+  },
+
+  async convert(id: number, request: ConvertDealRequest): Promise<ConvertDealResult> {
+    const result = await apiFetch<any>(`/api/deals/${id}/convert`, { method: 'POST', body: JSON.stringify(request) });
+    if (result.error) {
+      const mapped = mapDealConversionError(result.error);
+      if (mapped) throw mapped;
+      throw new Error(result.error);
+    }
+    const data = unwrap(result, 'Failed to convert deal');
+    return data.data ?? data;
+  },
+
+  // Items
+  async addItem(dealId: number, item: Omit<DealItem, 'id' | 'dealId' | 'lineTotal' | 'displayOrder'>): Promise<DealItem> {
+    const result = await apiFetch<any>(`/api/deals/${dealId}/items`, { method: 'POST', body: JSON.stringify(item) });
+    const data = unwrap(result, 'Failed to add item');
+    return data.data ?? data;
+  },
+
+  // Full replace of a single item — the server overwrites every field, so always
+  // pass the complete item. To edit items as a set, prefer update(id, { items }).
+  async updateItem(dealId: number, itemId: number, item: Omit<DealItem, 'id' | 'dealId' | 'lineTotal' | 'displayOrder'>): Promise<DealItem> {
+    const result = await apiFetch<any>(`/api/deals/${dealId}/items/${itemId}`, { method: 'PATCH', body: JSON.stringify(item) });
+    const data = unwrap(result, 'Failed to update item');
+    return data.data ?? data;
+  },
+
+  async deleteItem(dealId: number, itemId: number): Promise<void> {
+    const result = await apiFetch<any>(`/api/deals/${dealId}/items/${itemId}`, { method: 'DELETE' });
+    if (result.error) throw new Error(result.error);
+  },
+
+  // Activities
+  async getActivities(dealId: number, type?: string, page = 1, limit = 50): Promise<{ activities: DealActivity[] }> {
+    const q = new URLSearchParams();
+    q.append('page', page.toString());
+    q.append('limit', limit.toString());
+    if (type) q.append('type', type);
+    const result = await apiFetch<any>(`/api/deals/${dealId}/activities?${q.toString()}`);
+    const data = unwrap(result, 'Failed to fetch activities');
+    const inner = data.data ?? data;
+    return { activities: inner?.activities ?? [] };
+  },
+
+  async addActivity(dealId: number, activity: { type: string; description: string; details?: string }): Promise<DealActivity> {
+    // Best-effort audit write — suppress the global error toast so a failing
+    // propagation never surfaces alongside the caller's own success toast.
+    const result = await apiFetch<any>(`/api/deals/${dealId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(activity),
+      headers: { 'X-Suppress-Error-Toast': 'true' },
+    });
+    const data = unwrap(result, 'Failed to add activity');
+    return data.data ?? data;
+  },
+
+  async deleteActivity(dealId: number, activityId: number): Promise<void> {
+    const result = await apiFetch<any>(`/api/deals/${dealId}/activities/${activityId}`, { method: 'DELETE' });
+    if (result.error) throw new Error(result.error);
+  },
+};
+
+export default dealsApi;

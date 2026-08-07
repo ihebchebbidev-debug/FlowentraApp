@@ -1,0 +1,108 @@
+[
+  {
+    "id": "cproj-1",
+    "contactId": "1",
+    "name": "Website Redesign Project",
+    "description": "Complete redesign of company website with modern UI/UX",
+    "type": "service",
+    "status": "active",
+    "startDate": "2024-01-15T00:00:00.000Z",
+    "endDate": "2024-03-15T00:00:00.000Z",
+    "ownerId": "tech-1",
+    "ownerName": "John Smith",
+    "teamMembers": ["tech-1", "tech-2"],
+    "columns": [
+      {
+        "id": "ccol-1",
+        "title": "Backlog",
+        "color": "bg-slate-500",
+        "position": 0,
+        "projectId": "cproj-1",
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "ccol-2", 
+        "title": "In Progress",
+        "color": "bg-primary",
+        "position": 1,
+        "projectId": "cproj-1",
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "ccol-3",
+        "title": "Review",
+        "color": "bg-warning",
+        "position": 2,
+        "projectId": "cproj-1",
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "ccol-4",
+        "title": "Done",
+        "color": "bg-success",
+        "position": 3,
+        "projectId": "cproj-1",
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      }
+    ],
+    "createdAt": "2024-01-10T00:00:00.000Z",
+    "updatedAt": "2024-01-20T00:00:00.000Z"
+  },
+  {
+    "id": "cproj-2",
+    "contactId": "1",
+    "name": "Mobile App Development",
+    "description": "iOS and Android mobile application development",
+    "type": "service",
+    "status": "active",
+    "startDate": "2024-02-01T00:00:00.000Z",
+    "endDate": "2024-06-01T00:00:00.000Z",
+    "ownerId": "tech-3",
+    "ownerName": "Sarah Johnson",
+    "teamMembers": ["tech-3", "tech-4"],
+    "columns": [
+      {
+        "id": "ccol-5",
+        "title": "Planning",
+        "color": "bg-slate-500",
+        "position": 0,
+        "projectId": "cproj-2",
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      },
+      {
+        "id": "ccol-6",
+        "title": "Development",
+        "color": "bg-primary",
+        "position": 1,
+        "projectId": "cproj-2",
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      },
+      {
+        "id": "ccol-7",
+        "title": "Testing",
+        "color": "bg-warning",
+        "position": 2,
+        "projectId": "cproj-2",
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      },
+      {
+        "id": "ccol-8",
+        "title": "Deployed",
+        "color": "bg-success",
+        "position": 3,
+        "projectId": "cproj-2",
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      }
+    ],
+    "createdAt": "2024-02-01T00:00:00.000Z",
+    "updatedAt": "2024-02-10T00:00:00.000Z"
+  }
+]

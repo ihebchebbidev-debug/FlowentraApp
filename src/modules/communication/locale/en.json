@@ -1,0 +1,7 @@
+{
+  "plugin": {
+    "name": "Communication",
+    "description": "Internal messaging and team chat.",
+    "category": "Comms"
+  }
+}

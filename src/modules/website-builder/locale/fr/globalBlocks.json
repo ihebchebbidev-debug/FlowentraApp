@@ -1,0 +1,22 @@
+{
+  "globalBlocks": "Blocs Globaux",
+  "saveAsGlobal": "Enregistrer \"{{name}}\" comme Bloc Global",
+  "searchBlocks": "Rechercher des blocs...",
+  "loadingBlocks": "Chargement des blocs…",
+  "noGlobalBlocks": "Aucun bloc global",
+  "noMatches": "Aucune correspondance",
+  "reuseTip": "Sélectionnez un composant et enregistrez-le ici pour le réutiliser sur tous les sites",
+  "usedCount": "Utilisé {{count}} fois",
+  "saveAsGlobalBlock": "Enregistrer comme Bloc Global",
+  "blockName": "Nom du Bloc",
+  "blockNamePlaceholder": "Nom du bloc",
+  "descriptionOptional": "Description (optionnel)",
+  "descriptionPlaceholder": "Brève description",
+  "globalBlocksTip": "Les blocs globaux peuvent être réutilisés sur tous vos sites. Modifiez une fois, mettez à jour partout.",
+  "saveBlock": "Enregistrer le Bloc",
+  "savedSuccess": "\"{{name}}\" enregistré comme bloc global",
+  "addedToPage": "\"{{name}}\" ajouté à la page",
+  "blockDeleted": "Bloc global supprimé",
+  "failedToSave": "Échec de l'enregistrement du bloc",
+  "failedToDelete": "Échec de la suppression"
+}

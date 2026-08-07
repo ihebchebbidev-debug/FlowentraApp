@@ -1,0 +1,45 @@
+[
+  {
+    "id": "1",
+    "timestamp": "2024-08-07 14:30:25",
+    "level": "info",
+    "message": "User login successful",
+    "module": "Authentication",
+    "userId": "user123",
+    "details": "Login from IP: 192.168.1.100"
+  },
+  {
+    "id": "2",
+    "timestamp": "2024-08-07 14:28:15",
+    "level": "warning",
+    "message": "Failed login attempt",
+    "module": "Authentication",
+    "details": "Invalid credentials for email: user@example.com"
+  },
+  {
+    "id": "3",
+    "timestamp": "2024-08-07 14:25:10",
+    "level": "success",
+    "message": "Task created successfully",
+    "module": "Tasks",
+    "userId": "user456",
+    "details": "Task ID: task_789"
+  },
+  {
+    "id": "4",
+    "timestamp": "2024-08-07 14:20:05",
+    "level": "error",
+    "message": "Database connection failed",
+    "module": "Database",
+    "details": "Connection timeout after 30 seconds"
+  },
+  {
+    "id": "5",
+    "timestamp": "2024-08-07 14:15:00",
+    "level": "info",
+    "message": "Contact updated",
+    "module": "Contacts",
+    "userId": "user123",
+    "details": "Contact ID: contact_456 updated"
+  }
+]

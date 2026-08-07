@@ -1,0 +1,16 @@
+{
+  "condition": {
+    "title": "Condition",
+    "fullDescription": "Evaluates a condition to decide workflow routing based on data or fields.",
+  "conditionType": "Condition type",
+  "chooseTemplate": "Choose a template",
+  "condition": "Condition",
+  "example": "Ex: contact.budget > 10000",
+  "trueAction": "True action",
+  "trueActionPlaceholder": "Action to perform when condition is true...",
+  "falseAction": "False action",
+  "falseActionPlaceholder": "Action to perform when condition is false...",
+    "how": "Define operators and comparison values. Use condition results to route flow branches.",
+    "examples": ["If customer type is premium then route to priority flow","Check if inventory > 0 before creating a dispatch"]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "animation": "Animation",
+  "entranceEffect": "Entrance Effect",
+  "hoverEffect": "Hover Effect",
+  "speed": "Speed",
+  "delay": "Delay",
+  "stagger": "Stagger (children)",
+  "replayOnScroll": "Replay on scroll",
+  "previewHint": "Use Preview to see animations in action"
+}

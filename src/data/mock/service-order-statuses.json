@@ -1,0 +1,50 @@
+[
+  {
+    "id": "draft",
+    "name": "Created"
+  },
+  {
+    "id": "pending",
+    "name": "Pending"
+  },
+  {
+    "id": "ready_for_planning",
+    "name": "Ready for Planning"
+  },
+  {
+    "id": "scheduled",
+    "name": "Scheduled"
+  },
+  {
+    "id": "in_progress",
+    "name": "In Progress"
+  },
+  {
+    "id": "on_hold",
+    "name": "On Hold"
+  },
+  {
+    "id": "partially_completed",
+    "name": "Partially Completed"
+  },
+  {
+    "id": "technically_completed",
+    "name": "Technically Completed"
+  },
+  {
+    "id": "completed",
+    "name": "Completed"
+  },
+  {
+    "id": "invoiced",
+    "name": "Invoiced"
+  },
+  {
+    "id": "closed",
+    "name": "Closed"
+  },
+  {
+    "id": "cancelled",
+    "name": "Cancelled"
+  }
+]

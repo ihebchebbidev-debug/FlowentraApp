@@ -1,0 +1,14 @@
+{
+  "title": "Inventaire Terrain",
+  "subtitle": "Gérer l'inventaire et les actifs sur le terrain",
+  "search_placeholder": "Rechercher dans l'inventaire...",
+  "filters": "Filtres",
+  "list": "Liste",
+  "grid": "Grille",
+  "all_items": "Tous les articles d'inventaire",
+  "items_count": "{{count}} articles dans l'inventaire",
+  "view_details": "Voir les détails",
+  "delete": "Supprimer",
+  "overview": "Aperçu",
+  "documents": "Documents"
+}

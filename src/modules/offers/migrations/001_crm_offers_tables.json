@@ -1,0 +1,74 @@
+{
+  "module": "offers", 
+  "version": "001",
+  "description": "CRM Offers Management Tables",
+  "tables": [
+    {
+      "name": "CRM.offers",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "contactName": { "type": "string", "required": true },
+        "contactCompany": { "type": "string", "required": false },
+        "contactLocation": { "type": "json", "required": false, "description": "Contact location with longitude, latitude, hasLocation fields" },
+        "amount": { "type": "decimal", "required": true },
+        "currency": { "type": "string", "required": true, "foreignKey": "LU.currencies.id" },
+        "status": { "type": "string", "required": true, "enum": ["draft", "sent", "accepted", "declined", "expired"] },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "category": { "type": "string", "required": true, "foreignKey": "LU.offer_categories.id" },
+        "source": { "type": "string", "required": true, "foreignKey": "LU.offer_sources.id" },
+        "description": { "type": "text", "required": false },
+        "notes": { "type": "text", "required": false },
+        "validUntil": { "type": "datetime", "required": false },
+        "shareLink": { "type": "string", "required": false },
+        "assignedTo": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "convertedToSaleId": { "type": "string", "required": false, "foreignKey": "CRM.sales.id" },
+        "isRecurring": { "type": "boolean", "default": false },
+        "recurringInterval": { "type": "string", "required": false, "enum": ["weekly", "monthly", "quarterly", "annually"] },
+        "tags": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["contactId", "status", "assignedTo", "createdAt", "category", "source"]
+    },
+    {
+      "name": "CRM.offer_items",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "type": { "type": "string", "required": true, "enum": ["service", "article"] },
+        "itemId": { "type": "string", "required": true },
+        "itemCode": { "type": "string", "required": false },
+        "itemName": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "quantity": { "type": "decimal", "required": true },
+        "unitPrice": { "type": "decimal", "required": true },
+        "totalPrice": { "type": "decimal", "required": true },
+        "discount": { "type": "decimal", "default": 0 },
+        "position": { "type": "integer", "required": true },
+        "installationId": { "type": "string", "required": false, "foreignKey": "FIELD.installations.id" },
+        "installationName": { "type": "string", "required": false },
+        "requiresServiceOrder": { "type": "boolean", "default": false }
+      },
+      "indexes": ["offerId", "type", "installationId"]
+    },
+    {
+      "name": "CRM.offer_notes",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "note": { "type": "text", "required": true },
+        "isInternal": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["offerId", "createdAt"]
+    }
+  ]
+}

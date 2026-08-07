@@ -1,0 +1,11 @@
+{
+  "email-llm": {
+    "title": "Email IA",
+    "fullDescription": "Génère du contenu d'email personnalisé en utilisant un modèle LLM et l'envoie aux destinataires.",
+    "how": "Fournissez un prompt ou un modèle et laissez le modèle générer le corps de l'email. Relisez ou envoyez automatiquement selon les règles.",
+    "examples": [
+      "Générer un email d'approche personnalisé pour un lead",
+      "Créer un message de relance basé sur l'activité récente"
+    ]
+  }
+}

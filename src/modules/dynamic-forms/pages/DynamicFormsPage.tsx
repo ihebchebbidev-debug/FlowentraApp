@@ -1,0 +1,228 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Plus, FileText, X, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DynamicFormsAutopilotDemo } from '../components/onboarding/DynamicFormsAutopilotDemo';
+import { CollapsibleSearch } from '@/components/ui/collapsible-search';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useDynamicFormsPaged } from '../hooks/useDynamicForms';
+import { FormsTable } from '../components/FormsTable';
+import { FormStatus } from '../types';
+import { usePermissions } from '@/hooks/usePermissions.tsx';
+import { useActionLogger } from '@/hooks/useActionLogger';
+import { useToast } from '@/hooks/use-toast';
+import { PermissionButton } from '@/components/permissions/PermissionButton';
+
+const PAGE_SIZE = 20;
+
+export default function DynamicFormsPage() {
+  const { t } = useTranslation('dynamic-forms');
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { isMainAdmin, hasPermission, isLoading: permissionsLoading } = usePermissions();
+  const { logFilter, logButtonClick } = useActionLogger('DynamicForms');
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<FormStatus | 'all'>('all');
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  
+  // Permission checks
+  const canView = isMainAdmin || hasPermission('dynamic_forms', 'read');
+  const canCreate = isMainAdmin || hasPermission('dynamic_forms', 'create');
+  
+  const { data: pagedForms, isLoading } = useDynamicFormsPaged({
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    search: searchTerm || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+
+  const forms = pagedForms?.items ?? [];
+  const totalCount = pagedForms?.total_count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  // Filter/search changes always restart from the first page
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, searchTerm]);
+  
+  const activeFilterCount = [statusFilter !== 'all' ? statusFilter : null].filter(Boolean).length;
+  
+  // Log filter changes
+  const handleStatusFilterChange = (value: FormStatus | 'all') => {
+    setStatusFilter(value);
+    if (value !== 'all') {
+      logFilter('status', value, { entityType: 'DynamicForm' });
+    }
+  };
+  
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setSearchTerm('');
+    setPage(1);
+    logButtonClick('Clear Filters', { entityType: 'DynamicForm' });
+  };
+  
+  const handleCreateClick = () => {
+    logButtonClick('Create Form', { entityType: 'DynamicForm' });
+    navigate('/dashboard/settings/dynamic-forms/create');
+  };
+  
+  // Redirect if no view permission
+  useEffect(() => {
+    if (!permissionsLoading && !canView) {
+      toast({
+        title: t('common.access_denied', 'Access Denied'),
+        description: t('common.no_permission', "You don't have permission to view this page."),
+        variant: 'destructive',
+      });
+      navigate('/dashboard/settings', { replace: true });
+    }
+  }, [canView, permissionsLoading, navigate, toast, t]);
+  
+  // Show loading or nothing while checking permissions
+  if (permissionsLoading || !canView) {
+    return null;
+  }
+  
+  return (
+    <div className="flex flex-col h-full overflow-auto">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+        <Card className="shadow-card border-0 bg-card">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-foreground flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  </div>
+                  {t('header.title')}
+                </CardTitle>
+                <CardDescription>{t('header.subtitle')}</CardDescription>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDemoOpen(true)}
+                  className="hidden sm:inline-flex gap-1.5"
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">{t('actions.watchDemo', 'Watch Demo')}</span>
+                </Button>
+                <PermissionButton
+                  module="dynamic_forms"
+                  action="create"
+                  onClick={handleCreateClick}
+                  className="gradient-primary text-primary-foreground shadow-medium hover-lift"
+                  tooltipWhenDisabled={t('common.no_create_permission', "You don't have permission to create forms")}
+                >
+                  <Plus className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">{t('actions.create')}</span>
+                </PermissionButton>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            {/* Search + filters row */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CollapsibleSearch
+                  placeholder={t('search.placeholder')}
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                />
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                    {t('filters.clear')}
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+                  <SelectTrigger className="w-[160px] bg-background">
+                    <SelectValue placeholder={t('filters.status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('status.all')}</SelectItem>
+                    <SelectItem value="draft">{t('status.draft')}</SelectItem>
+                    <SelectItem value="released">{t('status.released')}</SelectItem>
+                    <SelectItem value="archived">{t('status.archived')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="h-6 px-2">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Forms list */}
+            <div className="rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
+              <FormsTable forms={forms} isLoading={isLoading} />
+            </div>
+
+            {totalCount > PAGE_SIZE && (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-px-11 text-muted-foreground">
+                  {t('pagination.showing', {
+                    from: (page - 1) * PAGE_SIZE + 1,
+                    to: Math.min(page * PAGE_SIZE, totalCount),
+                    total: totalCount,
+                    defaultValue: `Showing {{from}}-{{to}} of {{total}}`,
+                  })}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1 || isLoading}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('pagination.previous', 'Previous')}</span>
+                  </Button>
+                  <span className="text-px-11 text-muted-foreground">
+                    {t('pagination.page', { page, totalPages, defaultValue: `Page {{page}} of {{totalPages}}` })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages || isLoading}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    <span className="hidden sm:inline">{t('pagination.next', 'Next')}</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Autopilot product demo */}
+      <DynamicFormsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
+    </div>
+  );
+}

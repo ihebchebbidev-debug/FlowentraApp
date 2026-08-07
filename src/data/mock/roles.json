@@ -1,0 +1,92 @@
+[
+  {
+    "id": "role-admin",
+    "name": "Administrator",
+    "description": "Full system access with all permissions",
+    "permissions": [
+      "users.create", "users.read", "users.update", "users.delete",
+      "contacts.create", "contacts.read", "contacts.update", "contacts.delete",
+      "offers.create", "offers.read", "offers.update", "offers.delete",
+      "sales.create", "sales.read", "sales.update", "sales.delete",
+      "service_orders.create", "service_orders.read", "service_orders.update", "service_orders.delete",
+      "dispatch_jobs.create", "dispatch_jobs.read", "dispatch_jobs.update", "dispatch_jobs.delete",
+      "projects.create", "projects.read", "projects.update", "projects.delete",
+      "documents.create", "documents.read", "documents.update", "documents.delete",
+      "system.configure", "reports.access", "audit.access"
+    ],
+    "level": 100,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "role-manager",
+    "name": "Manager",
+    "description": "Management level access with most permissions",
+    "permissions": [
+      "contacts.create", "contacts.read", "contacts.update",
+      "offers.create", "offers.read", "offers.update", "offers.delete",
+      "sales.create", "sales.read", "sales.update", "sales.delete",
+      "service_orders.create", "service_orders.read", "service_orders.update",
+      "dispatch_jobs.read", "dispatch_jobs.update",
+      "projects.create", "projects.read", "projects.update",
+      "documents.create", "documents.read", "documents.update",
+      "reports.access"
+    ],
+    "level": 80,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "role-lead",
+    "name": "Team Lead",
+    "description": "Team leadership access with technical permissions",
+    "permissions": [
+      "contacts.read", "contacts.update",
+      "offers.read", "offers.update",
+      "sales.read", "sales.update", 
+      "service_orders.create", "service_orders.read", "service_orders.update",
+      "dispatch_jobs.create", "dispatch_jobs.read", "dispatch_jobs.update",
+      "projects.create", "projects.read", "projects.update",
+      "documents.create", "documents.read", "documents.update"
+    ],
+    "level": 60,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "role-technician",
+    "name": "Technician",
+    "description": "Field technician access for job execution",
+    "permissions": [
+      "contacts.read",
+      "service_orders.read", "service_orders.update",
+      "dispatch_jobs.read", "dispatch_jobs.update",
+      "documents.create", "documents.read"
+    ],
+    "level": 40,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "role-user",
+    "name": "User",
+    "description": "Basic user access with read permissions",
+    "permissions": [
+      "contacts.read",
+      "offers.read",
+      "sales.read",
+      "service_orders.read",
+      "dispatch_jobs.read",
+      "projects.read",
+      "documents.read"
+    ],
+    "level": 20,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

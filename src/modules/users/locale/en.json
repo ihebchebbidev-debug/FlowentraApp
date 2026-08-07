@@ -1,0 +1,152 @@
+{
+  "createUser": {
+    "title": "Create New User",
+    "description": "Add a new user to the system with their details.",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "password": "Password",
+    "phoneNumber": "Phone Number",
+    "countryCode": "Country Code",
+    "required": "*",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "createUser": "Create User",
+    "role": "Role",
+    "selectCountry": "Select country",
+    "selectRole": "Select role",
+    "checkingEmail": "Checking email availability...",
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "password": "Minimum 8 characters",
+      "phone": "+1234567890",
+      "country": "US"
+    },
+    "errors": {
+      "fillRequired": "Please fill in all required fields",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Email is invalid",
+      "passwordRequired": "Password is required",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "countryRequired": "Country is required",
+      "selectTenant": "Please select a target company first (use the company filter in the header)."
+    },
+    "success": {
+      "title": "Success",
+      "message": "User created successfully"
+    }
+  },
+  "editUser": {
+    "title": "Edit User",
+    "description": "Update user information and manage password for {{firstName}} {{lastName}}",
+    "tabs": {
+      "details": "Details",
+      "skills": "Skills",
+      "password": "Reset Password"
+    },
+    "skills": {
+      "assignedTitle": "Assigned Skills",
+      "loading": "Loading skills…",
+      "emptyTitle": "No skills assigned yet.",
+      "emptyHint": "Use the form below to add skills.",
+      "addTitle": "Add Skill",
+      "skillLabel": "Skill",
+      "selectPlaceholder": "Select a skill…",
+      "noCatalog": "No skills in catalog yet.",
+      "allAssigned": "All skills already assigned.",
+      "proficiencyLabel": "Proficiency",
+      "yearsExpLabel": "Years exp. (optional)",
+      "yearsExpPlaceholder": "e.g. 3",
+      "yearsExpSuffix": "y exp",
+      "adding": "Adding…",
+      "addButton": "Add Skill",
+      "proficiencyLabels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "toast": {
+        "assigned": "Skill assigned",
+        "assignedDesc": "The skill has been added to this user.",
+        "assignFailed": "Failed to assign skill",
+        "tryAgain": "Please try again.",
+        "removed": "Skill removed",
+        "removeFailed": "Failed to remove skill"
+      }
+    },
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phoneNumber": "Phone Number",
+    "countryCode": "Country Code",
+    "activeUser": "Active User",
+    "activeUserDesc": "User can access the system",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "updateUser": "Update User",
+    "checkingEmail": "Checking email availability...",
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1234567890",
+      "country": "US"
+    },
+    "password": {
+      "warning": "Resetting the password will log out the user from all devices. They will need to log in again with the new password.",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "newPasswordPlaceholder": "Enter new password (min 8 characters)",
+      "confirmPlaceholder": "Confirm new password",
+      "mismatch": "Passwords do not match",
+      "resetting": "Resetting...",
+      "resetButton": "Reset Password",
+      "minLength": "Password must be at least 8 characters",
+      "success": "Password reset successfully. User will need to log in again."
+    },
+    "success": {
+      "title": "Success",
+      "message": "User updated successfully"
+    }
+  },
+  "roleAssignment": {
+    "title": "Manage Roles",
+    "description": "Assign and manage roles for {{firstName}} {{lastName}}",
+    "currentRoles": "Current Roles",
+    "noRoles": "No roles assigned",
+    "assignNew": "Assign New Role",
+    "loadingRoles": "Loading roles...",
+    "noAvailableRoles": "No available roles",
+    "selectRole": "Select a role",
+    "assign": "Assign",
+    "close": "Close",
+    "toast": {
+      "fetchFailed": "Failed to fetch roles",
+      "assigned": "Role assigned successfully",
+      "assignFailed": "Failed to assign role",
+      "removed": "Role removed successfully",
+      "removeFailed": "Failed to remove role"
+    }
+  },
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "failedToCreate": "Failed to create user",
+    "failedToUpdate": "Failed to update user",
+    "failedToResetPassword": "Failed to reset password"
+  },
+  "plugin": {
+    "name": "Users",
+    "description": "User accounts and roles.",
+    "category": "System"
+  },
+  "retry": "Retry",
+  "application": {
+    "errorTitle": "Error"
+  }
+}

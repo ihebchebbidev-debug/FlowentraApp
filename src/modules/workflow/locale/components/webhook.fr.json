@@ -1,0 +1,9 @@
+{
+  "webhook": {
+    "title": "Webhook",
+    "fullDescription": "Démarre ou interagit avec le workflow lorsqu'un système externe envoie une requête HTTP.",
+  "configureDescription": "Configurez l'endpoint webhook et mappez les champs du payload entrant aux entrées du nœud.",
+  "how": "Exposez un endpoint ou utilisez une intégration webhook pour déclencher le workflow et mappez le payload vers les entrées du nœud.",
+    "examples": ["Déclencher le workflow quand le fournisseur de paiement envoie un webhook","Recevoir les soumissions de formulaire via webhook"]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "formSubmissions": "Soumissions de Formulaires",
+  "searchSubmissions": "Rechercher des soumissions...",
+  "refresh": "Actualiser",
+  "exportCsv": "Exporter CSV",
+  "clearAll": "Tout effacer",
+  "confirmClear": "Supprimer toutes les soumissions pour ce filtre ?",
+  "loadingSubmissions": "Chargement des soumissions…",
+  "noSubmissions": "Aucune soumission",
+  "noSubmissionsHint": "Les soumissions apparaîtront lorsque les utilisateurs rempliront des formulaires",
+  "submissionDeleted": "Soumission supprimée",
+  "submissionsCleared": "Soumissions effacées",
+  "refreshed": "Actualisé",
+  "noDataToExport": "Aucune donnée à exporter",
+  "failedToDelete": "Échec de la suppression",
+  "failedToClear": "Échec de l'effacement"
+}

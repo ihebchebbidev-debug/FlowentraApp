@@ -1,0 +1,8 @@
+[
+  { "id": "available", "name": "Available" },
+  { "id": "busy", "name": "Busy" },
+  { "id": "on_leave", "name": "On leave" },
+  { "id": "not_working", "name": "Not working" },
+  { "id": "over_capacity", "name": "Over capacity" },
+  { "id": "offline", "name": "Offline" }
+]

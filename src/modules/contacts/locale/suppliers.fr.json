@@ -1,0 +1,199 @@
+{
+  "title": "Fournisseurs",
+  "subtitle": "Gérez votre répertoire de fournisseurs — personnes et entreprises",
+  "add": "Ajouter un fournisseur",
+  "import": "Importer",
+  "no_suppliers": "Aucun Fournisseur Trouvé",
+  "no_suppliers_description": "Commencez par ajouter votre premier fournisseur.",
+  "search_placeholder": "Rechercher des fournisseurs...",
+  "filters_label": "Filtres",
+  "stats": {
+    "total": "Total Fournisseurs",
+    "persons": "Personnes (page)",
+    "companies": "Entreprises (page)"
+  },
+  "addPage": {
+    "title": "Ajouter un Fournisseur",
+    "description": "Créer un nouveau fournisseur dans votre répertoire",
+    "type": {
+      "title": "Type de Fournisseur",
+      "person_label": "Personne",
+      "person_description": "Fournisseur individuel",
+      "company_label": "Entreprise",
+      "company_description": "Entreprise fournisseur ou organisation"
+    },
+    "basic": {
+      "person_title": "Informations Personnelles",
+      "company_title": "Informations d'Entreprise",
+      "description": "Entrez les détails primaires du fournisseur"
+    },
+    "work": {
+      "title": "Informations Professionnelles",
+      "description": "Détails professionnels et statut"
+    },
+    "fields": {
+      "first_name_required_label": "Prénom *",
+      "last_name_required_label": "Nom *",
+      "company_name_required_label": "Nom de l'Entreprise *",
+      "email_label": "Email",
+      "phone_label": "Téléphone",
+      "address_label": "Adresse",
+      "city_label": "Ville",
+      "country_label": "Pays",
+      "company_label": "Entreprise",
+      "position_label": "Poste",
+      "status_label": "Statut",
+      "cin_label": "CIN (Carte d'Identité)",
+      "matricule_fiscale_label": "Matricule Fiscal",
+      "latitude_label": "Latitude",
+      "longitude_label": "Longitude",
+      "geolocation_title": "Géolocalisation",
+      "geolocation_description": "Définir les coordonnées pour l'affichage sur la carte"
+    },
+    "placeholders": {
+      "first_name": "Jean",
+      "last_name": "Dupont",
+      "company_name": "Acme SARL",
+      "email": "jean@example.com",
+      "phone": "+33123456789",
+      "address": "123 Rue Main, Ville, Pays",
+      "city": "Tunis",
+      "country": "Tunisie",
+      "company": "Tech Corp",
+      "position": "Responsable",
+      "cin": "Entrez le numéro CIN",
+      "matricule_fiscale": "Entrez le matricule fiscal",
+      "latitude": "36.8065",
+      "longitude": "10.1815"
+    },
+    "actions": {
+      "create": "Créer le Fournisseur"
+    },
+    "validation": {
+      "first_name_required": "Le prénom est requis",
+      "last_name_required": "Le nom est requis",
+      "company_name_required": "Le nom de l'entreprise est requis",
+      "email_invalid": "Veuillez entrer une adresse email valide (ex: nom@example.com)",
+      "email_too_long": "L'email doit contenir moins de 255 caractères",
+      "phone_invalid_chars": "Le numéro de téléphone ne peut contenir que des chiffres, espaces, +, -, (, ) et .",
+      "phone_too_short": "Le numéro de téléphone est trop court",
+      "phone_too_long": "Le numéro de téléphone est trop long",
+      "name_no_numbers": "{{label}} ne doit pas contenir de chiffres",
+      "name_required": "{{label}} est requis",
+      "name_too_long": "{{label}} doit contenir moins de 100 caractères",
+      "field_required": "{{label}} est requis",
+      "required_fields_missing": "Champs obligatoires manquants",
+      "required_fields_missing_desc": "Veuillez remplir au moins les champs nom et email."
+    },
+    "toasts": {
+      "created_success": "Fournisseur créé avec succès",
+      "create_failed": "Impossible de créer le fournisseur"
+    }
+  },
+  "detail": {
+    "type": "Fournisseur",
+    "back": "Retour aux Fournisseurs",
+    "overview": "Aperçu",
+    "notes": "Notes",
+    "documents": "Documents",
+    "related": "Associés",
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "lead": "Prospect",
+      "customer": "Client",
+      "partner": "Partenaire"
+    }
+  },
+  "filters": {
+    "all": "Tous",
+    "persons": "Personnes",
+    "companies": "Entreprises",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "lead": "Prospect",
+    "status_label": "Statut",
+    "all_statuses": "Tous les statuts",
+    "favorites_label": "Favoris",
+    "all_suppliers": "Tous les fournisseurs",
+    "favorites_only": "Favoris uniquement",
+    "non_favorites": "Non favoris"
+  },
+  "table_headers": {
+    "contact": "Fournisseur",
+    "company_col": "Société",
+    "email": "Email",
+    "phone": "Téléphone",
+    "status": "Statut",
+    "actions": "Actions",
+    "select_all": "Sélectionner tous les fournisseurs",
+    "select_item": "Sélectionner {{name}}",
+    "selected_count": "{{count}} fournisseur(s) sélectionné(s)",
+    "deselect_all": "Tout Désélectionner",
+    "delete_selected": "Supprimer la Sélection"
+  },
+  "table": {
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "type": "Type",
+    "status": "Statut",
+    "city": "Ville",
+    "createdAt": "Créé le",
+    "actions": "Actions"
+  },
+  "bulkImport": {
+    "title": "Importer des Fournisseurs",
+    "description": "Téléchargez un fichier CSV ou Excel pour importer des fournisseurs en masse",
+    "type_label": "Fournisseur",
+    "fields": {
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "company": "Société",
+      "position": "Poste",
+      "status": "Statut",
+      "address": "Adresse",
+      "city": "Ville",
+      "country": "Pays",
+      "postalCode": "Code postal",
+      "cin": "CIN",
+      "matriculeFiscale": "Matricule fiscal"
+    },
+    "validation": {
+      "nameRequired": "Le nom est requis",
+      "nameTooLong": "Le nom doit contenir moins de 255 caractères",
+      "invalidEmail": "Format d'email invalide"
+    }
+  },
+  "confirm": {
+    "delete_title": "Supprimer le fournisseur",
+    "delete_description": "Êtes-vous sûr de vouloir supprimer « {{name}} » ? Cette action est irréversible.",
+    "bulk_delete_title": "Supprimer les fournisseurs sélectionnés",
+    "bulk_delete_description": "Êtes-vous sûr de vouloir supprimer {{count}} fournisseur(s) ? Cette action est irréversible.",
+    "deleting_progress": "Suppression…",
+    "deleting": "Suppression…",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "delete_success": "Fournisseur supprimé",
+    "bulk_delete_success": "{{count}} fournisseur(s) supprimé(s)",
+    "bulk_delete_partial": "{{success}} supprimés, {{failed}} échoués",
+    "delete_failed": "Échec de suppression du/des fournisseur(s)"
+  },
+  "deleteConfirm": {
+    "title": "Supprimer le Fournisseur",
+    "description": "Êtes-vous sûr de vouloir supprimer ce fournisseur ? Cette action est irréversible.",
+    "confirm": "Supprimer",
+    "cancel": "Annuler"
+  },
+  "location": {
+    "title": "Emplacement sur la carte",
+    "my_position": "Ma position",
+    "description": "Cliquez sur la carte pour définir l'emplacement ou utilisez le bouton pour obtenir votre position actuelle",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "zoom_in": "Zoomer",
+    "zoom_out": "Dézoomer",
+    "attribution": "Leaflet | © OpenStreetMap"
+  }
+}

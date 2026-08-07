@@ -1,0 +1,12 @@
+{
+  "service-order": {
+    "title": "Ordre de service",
+    "fullDescription": "Crée ou planifie un ordre de service pour gérer les opérations sur le terrain, les tâches et les demandes clients.",
+  "configureDescription": "Mappez les champs pour créer ou mettre à jour un ordre de service et déclencher des actions en aval.",
+  "how": "Mappez le client, les articles et les créneaux horaires pour créer un ordre de service. Configurez les techniciens, les priorités et les notifications.",
+    "examples": [
+      "Créer un ordre de service lorsqu'un client demande une installation",
+      "Planifier des visites de maintenance automatiquement selon le contrat"
+    ]
+  }
+}

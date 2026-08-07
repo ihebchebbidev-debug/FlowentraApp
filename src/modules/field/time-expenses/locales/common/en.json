@@ -1,0 +1,23 @@
+{
+  "back": "Back",
+  "loading": "Loading...",
+  "error": "Error",
+  "not_found": "Not Found",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "view": "View",
+  "add": "Add",
+  "remove": "Remove",
+  "close": "Close",
+  "submit": "Submit",
+  "search": "Search",
+  "filter": "Filter",
+  "export": "Export",
+  "refresh": "Refresh",
+  "clear": "Clear",
+  "all": "All",
+  "none": "None",
+  "select": "Select"
+}

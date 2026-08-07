@@ -1,0 +1,25 @@
+{
+  "title": "Notes & Problèmes",
+  "add_note": "Ajouter Note",
+  "note_content": "Contenu de la Note",
+  "note_category": "Catégorie",
+  "priority": "Priorité",
+  "attach_files": "Joindre Fichiers",
+  "save_note": "Sauvegarder Note",
+  "no_notes": "Aucune note ajoutée",
+  "created_by": "Créé par",
+  "created_at": "Créé le",
+  "resolved": "Résolu",
+  "resolved_on": "Résolu le",
+  "by": "par",
+  "attachments_count": "pièce(s) jointe(s)",
+  "select_priority": "Sélectionner priorité",
+  "note_description_placeholder": "Décrivez la note, le problème ou l'observation...",
+  "categories": {
+    "general": "Général",
+    "issue": "Problème",
+    "work_performed": "Travail Effectué",
+    "customer_interaction": "Interaction Client",
+    "internal": "Interne"
+  }
+}

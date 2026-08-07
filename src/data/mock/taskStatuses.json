@@ -1,0 +1,62 @@
+[
+  {
+    "id": "todo",
+    "name": "To Do",
+    "color": "#64748b",
+    "description": "Tasks to be started",
+    "isDefault": true,
+    "position": 0,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "progress",
+    "name": "In Progress", 
+    "color": "#3b82f6",
+    "description": "Currently working on",
+    "isDefault": true,
+    "position": 1,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "review",
+    "name": "Review",
+    "color": "#f59e0b", 
+    "description": "Ready for review",
+    "isDefault": true,
+    "position": 2,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "done",
+    "name": "Done",
+    "color": "#10b981",
+    "description": "Completed tasks", 
+    "isDefault": true,
+    "position": 3,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "blocked",
+    "name": "Blocked",
+    "color": "#ef4444",
+    "description": "Cannot proceed",
+    "isDefault": false,
+    "position": 4,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "testing",
+    "name": "Testing",
+    "color": "#8b5cf6",
+    "description": "Under testing",
+    "isDefault": false,
+    "position": 5,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

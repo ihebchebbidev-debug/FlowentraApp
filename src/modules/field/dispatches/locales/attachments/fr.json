@@ -1,0 +1,25 @@
+{
+  "title": "Pièces Jointes & Photos",
+  "upload_files": "Télécharger Fichiers",
+  "take_photo": "Prendre Photo",
+  "drag_drop": "Glissez-déposez les fichiers ici, ou cliquez pour sélectionner",
+  "max_file_size": "Taille maximale du fichier : 10MB",
+  "supported_formats": "Formats supportés : JPG, PNG, PDF, DOC, DOCX",
+  "no_attachments": "Aucune pièce jointe téléchargée",
+  "category": "Catégorie",
+  "file_name": "Nom du Fichier",
+  "file_size": "Taille du Fichier",
+  "uploaded_by": "Téléchargé par",
+  "uploaded_at": "Téléchargé le",
+  "file_description_placeholder": "Description du fichier...",
+  "upload": "Télécharger",
+  "download": "Télécharger",
+  "view": "Voir",
+  "categories": {
+    "photo": "Photo",
+    "document": "Document",
+    "diagnostic": "Diagnostic",
+    "completion": "Achèvement",
+    "other": "Autre"
+  }
+}

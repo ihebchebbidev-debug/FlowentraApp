@@ -1,0 +1,8 @@
+{
+  "filter": {
+    "title": "Filtre",
+    "fullDescription": "Filtre les éléments selon des critères pour ne laisser passer que les éléments correspondants dans le flux.",
+    "how": "Définissez les conditions du filtre et les paramètres de passage. Utile pour réduire les listes ou événements avant traitement.",
+    "examples": ["Filtrer les commandes avec total > 100","Filtrer les leads d'une campagne spécifique"]
+  }
+}

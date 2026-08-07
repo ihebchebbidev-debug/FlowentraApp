@@ -1,0 +1,9 @@
+{
+  "scheduled": {
+    "title": "Planifié",
+    "fullDescription": "Exécute le workflow selon un planning défini (cron ou règles temporelles).",
+  "configureDescription": "Définissez des règles cron ou temporelles pour exécuter ce workflow selon un planning.",
+  "how": "Définissez des expressions cron ou des fenêtres temporelles pour exécuter automatiquement les workflows à des moments précis.",
+    "examples": ["Exécuter des tâches de maintenance la nuit","Envoyer un résumé hebdomadaire"]
+  }
+}

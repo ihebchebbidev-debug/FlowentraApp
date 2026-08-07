@@ -1,0 +1,78 @@
+{
+  "module": "dispatcher",
+  "version": "001",
+  "description": "Field Service Dispatcher Management Tables",
+  "tables": [
+    {
+      "name": "FIELD.jobs",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "serviceOrderId": { "type": "string", "required": true, "foreignKey": "FIELD.service_orders.id" },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["unassigned", "assigned", "in_progress", "completed", "cancelled"] },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "estimatedDuration": { "type": "integer", "required": true },
+        "actualDuration": { "type": "integer", "required": false },
+        "requiredSkills": { "type": "array", "items": "string" },
+        "assignedTechnicianId": { "type": "string", "required": false, "foreignKey": "FIELD.technicians.id" },
+        "scheduledStart": { "type": "datetime", "required": false },
+        "scheduledEnd": { "type": "datetime", "required": false },
+        "actualStart": { "type": "datetime", "required": false },
+        "actualEnd": { "type": "datetime", "required": false },
+        "isLocked": { "type": "boolean", "default": false },
+        "location": { "type": "json", "required": true, "description": "Job location with longitude, latitude, hasLocation fields" },
+        "customerName": { "type": "string", "required": true },
+        "customerPhone": { "type": "string", "required": false },
+        "notes": { "type": "text", "required": false },
+        "instructions": { "type": "text", "required": false },
+        "materials": { "type": "json", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["serviceOrderId", "status", "priority", "assignedTechnicianId", "scheduledStart"]
+    },
+    {
+      "name": "FIELD.technician_schedule",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "technicianId": { "type": "string", "required": true, "foreignKey": "FIELD.technicians.id" },
+        "date": { "type": "date", "required": true },
+        "startTime": { "type": "time", "required": true },
+        "endTime": { "type": "time", "required": true },
+        "type": { "type": "string", "required": true, "enum": ["work", "break", "lunch", "meeting", "travel", "unavailable"] },
+        "jobId": { "type": "string", "required": false, "foreignKey": "FIELD.jobs.id" },
+        "title": { "type": "string", "required": false },
+        "description": { "type": "text", "required": false },
+        "location": { "type": "json", "required": false },
+        "isRecurring": { "type": "boolean", "default": false },
+        "recurringPattern": { "type": "json", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["technicianId", "date", "startTime", "type"]
+    },
+    {
+      "name": "FIELD.technician_locations",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "technicianId": { "type": "string", "required": true, "foreignKey": "FIELD.technicians.id" },
+        "latitude": { "type": "decimal", "required": true, "precision": 10, "scale": 8 },
+        "longitude": { "type": "decimal", "required": true, "precision": 11, "scale": 8 },
+        "address": { "type": "string", "required": false },
+        "accuracy": { "type": "decimal", "required": false },
+        "speed": { "type": "decimal", "required": false },
+        "heading": { "type": "decimal", "required": false },
+        "timestamp": { "type": "datetime", "required": true },
+        "batteryLevel": { "type": "integer", "required": false },
+        "isOnline": { "type": "boolean", "default": true }
+      },
+      "indexes": ["technicianId", "timestamp", "latitude", "longitude"]
+    }
+  ]
+}

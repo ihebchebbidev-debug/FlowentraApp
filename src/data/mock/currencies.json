@@ -1,0 +1,6 @@
+[
+  { "id": "USD", "name": "USD ($)", "symbol": "$" },
+  { "id": "EUR", "name": "EUR (€)", "symbol": "€" },
+  { "id": "GBP", "name": "GBP (£)", "symbol": "£" },
+  { "id": "TND", "name": "TND (د.ت)", "symbol": "د.ت" }
+]

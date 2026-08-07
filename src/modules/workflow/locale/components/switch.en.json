@@ -1,0 +1,8 @@
+{
+  "switch": {
+    "title": "Switch",
+    "fullDescription": "Routes execution across multiple branches depending on a value.",
+    "how": "Provide the field to switch on and define cases for each possible value to route the flow.",
+    "examples": ["Route by country to different handlers","Switch based on payment method"]
+  }
+}

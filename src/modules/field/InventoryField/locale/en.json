@@ -1,0 +1,14 @@
+{
+  "title": "Field Inventory",
+  "subtitle": "Manage inventory & assets on the field",
+  "search_placeholder": "Search inventory...",
+  "filters": "Filters",
+  "list": "List",
+  "grid": "Grid",
+  "all_items": "All Inventory Items",
+  "items_count": "{{count}} items in inventory",
+  "view_details": "View Details",
+  "delete": "Delete",
+  "overview": "Overview",
+  "documents": "Documents"
+}

@@ -1,0 +1,49 @@
+[
+  {
+    "id": 1,
+    "name": "Hydraulic Pump Model X200",
+    "category": "Equipment",
+    "status": "Available",
+    "location": "Warehouse A - Section 12",
+    "serialNumber": "HP-X200-001",
+    "quantity": 3,
+    "lastMaintenance": "2024-01-10",
+    "tags": ["Heavy Equipment", "Critical"],
+    "favorite": true
+  },
+  {
+    "id": 2,
+    "name": "Field Testing Kit Pro",
+    "category": "Tools",
+    "status": "In Use",
+    "location": "Field Unit 5",
+    "serialNumber": "FTK-PRO-042",
+    "quantity": 1,
+    "lastMaintenance": "2024-01-05",
+    "assignedTo": "John Smith",
+    "tags": ["Portable", "Testing"]
+  },
+  {
+    "id": 3,
+    "name": "Safety Helmets",
+    "category": "Safety",
+    "status": "Available",
+    "location": "Warehouse B - Safety",
+    "serialNumber": "SH-STD-100",
+    "quantity": 25,
+    "lastMaintenance": "2023-12-15",
+    "tags": ["PPE", "Standard"]
+  },
+  {
+    "id": 4,
+    "name": "Excavator CAT 320",
+    "category": "Heavy Equipment",
+    "status": "Maintenance",
+    "location": "Service Bay 2",
+    "serialNumber": "EX-CAT320-001",
+    "quantity": 1,
+    "lastMaintenance": "2024-01-12",
+    "tags": ["Heavy Equipment", "Scheduled Maintenance"],
+    "favorite": true
+  }
+]

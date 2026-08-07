@@ -1,0 +1,8 @@
+{
+  "if-else": {
+    "title": "Si / Sinon",
+    "fullDescription": "Évalue une condition et dirige le workflow sur deux branches : vrai ou faux.",
+    "how": "Définissez une condition basée sur des champs ou des données et configurez les actions pour les chemins vrai et faux.",
+    "examples": ["Si le crédit client > 1000 alors approuver","Si le total de la commande est 0 alors ignorer l'étape de paiement"]
+  }
+}

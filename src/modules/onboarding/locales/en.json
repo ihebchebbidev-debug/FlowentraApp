@@ -1,0 +1,206 @@
+{
+  "onboarding": {
+    "progress": "Setup progress",
+    "step": "Step {{current}} of {{total}}",
+    "back": "Back",
+    "continue": "Continue",
+    "finish": "Finish Setup",
+    "complete": "Complete",
+    "loading": "Setting up your workspace...",
+    
+    "steps": {
+      "personal": {
+        "title": "Personal Information",
+        "description": "Tell us about yourself to personalize your experience",
+        "fields": {
+          "firstName": "First Name",
+          "lastName": "Last Name", 
+          "phone": "Phone Number (Optional)",
+          "country": "Country",
+          "firstNamePlaceholder": "Enter your first name",
+          "lastNamePlaceholder": "Enter your last name",
+          "phonePlaceholder": "Enter your phone number",
+          "countryPlaceholder": "Select your country"
+        },
+        "validation": {
+          "firstNameRequired": "First name is required",
+          "lastNameRequired": "Last name is required",
+          "countryRequired": "Please select your country"
+        },
+        "button": "Continue"
+      },
+      
+      "preferences": {
+        "title": "Preferences",
+        "description": "Choose how Flowentra looks and feels for you",
+        "theme": {
+          "title": "Theme",
+          "description": "Select your preferred appearance.",
+          "light": "Light",
+          "lightDesc": "Clean and bright interface",
+          "dark": "Dark", 
+          "darkDesc": "Easy on the eyes",
+          "system": "System",
+          "systemDesc": "Matches your device setting"
+        },
+        "language": {
+          "title": "Language",
+          "description": "Choose your preferred language.",
+          "placeholder": "Select your preferred language"
+        },
+        "color": {
+          "title": "Primary Color",
+          "description": "Select a color that represents your brand."
+        },
+        "layout": {
+          "title": "Layout",
+          "description": "Choose your preferred navigation style.",
+          "sidebar": "Sidebar",
+          "sidebarDesc": "Classic side navigation",
+          "topbar": "Top Navigation", 
+          "topbarDesc": "Horizontal navigation bar"
+        },
+        "dataView": {
+          "title": "Default Data View",
+          "description": "How would you like to view your data?",
+          "table": "Table View",
+          "tableDesc": "Structured rows and columns",
+          "list": "List View",
+          "listDesc": "Simplified vertical listing"
+        },
+        "button": "Continue"
+      },
+      
+      "workArea": {
+        "title": "Industry",
+        "description": "Select your industry to tailor features to your needs",
+        "placeholder": "Search for your industry...",
+        "button": "Continue"
+      },
+      
+      "company": {
+        "title": "Company Details",
+        "description": "Add your branding to personalize the workspace",
+        "finalize": "Finalize setup",
+        "finalizeDesc": "Company details and setup",
+        "fields": {
+          "name": "Company Name",
+          "namePlaceholder": "Enter your company name",
+          "website": "Website (Optional)",
+          "websitePlaceholder": "https://yourcompany.com",
+          "logo": "Company Logo (Optional)",
+          "logoDesc": "Upload your logo to personalize documents and reports",
+          "logoButton": "Upload Logo",
+          "logoChange": "Change Logo"
+        },
+        "validation": {
+          "websiteInvalid": "Please enter a valid website URL"
+        },
+        "button": "Continue"
+      },
+
+      "emailCalendar": {
+        "title": "Emails & Calendar",
+        "description": "Connect your email and calendar to stay on top of everything",
+        "intro": "Flowentra integrates with your email and calendar so you never miss an important message or meeting. Connect your accounts after setup to unlock these features.",
+        "setupLater": "You can connect your email and calendar accounts anytime from Settings → Integrations after completing setup.",
+        "features": {
+          "unifiedInbox": "Unified Inbox",
+          "unifiedInboxDesc": "View all your emails from multiple accounts in one place",
+          "calendarSync": "Calendar Sync",
+          "calendarSyncDesc": "Keep your events synchronized across all connected calendars",
+          "autoSync": "Auto Sync",
+          "autoSyncDesc": "Automatic background synchronization keeps everything up to date",
+          "notifications": "Smart Notifications",
+          "notificationsDesc": "Get notified about important emails and upcoming events"
+        }
+      },
+
+      "websiteBuilder": {
+        "title": "Website Builder",
+        "description": "Build and publish professional websites directly from Flowentra",
+        "intro": "Create stunning websites with our built-in website builder. No coding required — just drag, drop, and publish. You can start building after setup.",
+        "setupLater": "Access the Website Builder anytime from the main navigation. Templates and publishing tools are ready when you are.",
+        "features": {
+          "dragDrop": "Drag & Drop Editor",
+          "dragDropDesc": "Build pages visually with an intuitive drag-and-drop interface",
+          "templates": "Professional Templates",
+          "templatesDesc": "Start with beautiful pre-built templates for any industry",
+          "responsive": "Mobile Responsive",
+          "responsiveDesc": "Every site looks great on desktop, tablet, and mobile",
+          "publish": "One-Click Publish",
+          "publishDesc": "Deploy your website instantly with a single click"
+        }
+      },
+
+      "profilePicture": {
+        "title": "Profile Picture",
+        "description": "Add a photo so your team can recognize you"
+      },
+
+      "setup": {
+        "title": "Finishing Setup",
+        "description": "Creating your personalized workspace",
+        "loading": "Setting up your workspace...",
+        "complete": "Welcome to Flowentra!",
+        "welcome": "Welcome to Flowentra!",
+        "error": "Setup Encountered an Issue",
+        "errorDescription": "Continuing with setup... Please wait.",
+        "creatingProfile": "Creating your profile",
+        "settingPreferences": "Setting up preferences",
+        "finalizing": "Finalizing setup"
+      }
+    },
+    
+    "countries": {
+      "US": "United States",
+      "CA": "Canada", 
+      "GB": "United Kingdom",
+      "FR": "France",
+      "DE": "Germany",
+      "AU": "Australia",
+      "JP": "Japan",
+      "CN": "China",
+      "IN": "India",
+      "BR": "Brazil"
+    },
+    
+    "languages": {
+      "en": "English",
+      "fr": "Français", 
+      "de": "Deutsch"
+    },
+    
+    "colors": {
+      "blue": "Ocean Blue",
+      "red": "Ruby Red",
+      "green": "Forest Green", 
+      "purple": "Royal Purple",
+      "orange": "Sunset Orange",
+      "indigo": "Deep Indigo"
+    },
+    
+    "industries": {
+      "technology": "Technology & Software",
+      "healthcare": "Healthcare & Medical",
+      "finance": "Finance & Banking",
+      "education": "Education & Training",
+      "retail": "Retail & E-commerce",
+      "manufacturing": "Manufacturing & Production",
+      "construction": "Construction & Engineering",
+      "consulting": "Consulting & Services",
+      "real-estate": "Real Estate",
+      "transportation": "Transportation & Logistics",
+      "hospitality": "Hospitality & Tourism",
+      "media": "Media & Entertainment",
+      "nonprofit": "Non-profit & NGO",
+      "government": "Government & Public Sector",
+      "other": "Other"
+    },
+    
+    "languageSwitcher": {
+      "title": "Language",
+      "tooltip": "Change language"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "draft",
+    "name": "Created"
+  },
+  {
+    "id": "sent",
+    "name": "Sent"
+  },
+  {
+    "id": "pending",
+    "name": "Pending"
+  },
+  {
+    "id": "negotiation",
+    "name": "Negotiation"
+  },
+  {
+    "id": "accepted",
+    "name": "Accepted"
+  },
+  {
+    "id": "won",
+    "name": "Won"
+  },
+  {
+    "id": "lost",
+    "name": "Lost"
+  },
+  {
+    "id": "cancelled",
+    "name": "Cancelled"
+  }
+]

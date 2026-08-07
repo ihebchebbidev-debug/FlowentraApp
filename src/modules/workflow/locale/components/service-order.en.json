@@ -1,0 +1,12 @@
+{
+  "service-order": {
+    "title": "Service Order",
+    "fullDescription": "Creates or schedules a service order to manage field operations, tasks, and customer requests.",
+  "configureDescription": "Map fields to create or update a service order and trigger downstream actions.",
+  "how": "Map customer, items and preferred time windows to create a service order. Configure technicians, priorities and notifications for execution.",
+    "examples": [
+      "Create a service order when a customer requests an installation",
+      "Schedule maintenance visits automatically based on contract terms"
+    ]
+  }
+}
