@@ -1,8 +1,0 @@
-{
-  "api": {
-    "title": "API",
-    "fullDescription": "Appelle des APIs externes pour récupérer ou pousser des données dans le workflow.",
-    "how": "Configurez l'endpoint, la méthode, les headers et le body. Mappez les réponses vers des variables et gérez les erreurs.",
-    "examples": ["Appeler la passerelle de paiement pour débiter une carte","Récupérer les informations produit par Référence"]
-  }
-}

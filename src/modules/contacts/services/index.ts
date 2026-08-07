@@ -1,1 +1,0 @@
-export { aiColumnMapper, AIColumnMapperService } from './aiColumnMapper.service';
