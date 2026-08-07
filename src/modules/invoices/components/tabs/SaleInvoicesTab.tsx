@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, FileText, Receipt, ExternalLink, Eye, Scale } from 'lucide-react';
@@ -42,9 +41,8 @@ export function SaleInvoicesTab({ saleId, saleTotal, currency }: Props) {
     const paid = active.reduce((s, i) => s + i.amountPaid, 0);
     const outstanding = active.reduce((s, i) => s + (i.amountDue ?? 0), 0);
     const notInvoiced = Math.max(0, (saleTotal || 0) - invoiced);
-    const coverage = saleTotal > 0 ? Math.min(100, (invoiced / saleTotal) * 100) : 0;
     const drafts = invoices.filter((i) => i.status === 'draft').length;
-    return { invoiced, paid, outstanding, notInvoiced, coverage, drafts };
+    return { invoiced, paid, outstanding, notInvoiced, drafts };
   }, [invoices, saleTotal]);
 
   const handleCreate = () => {
@@ -190,14 +188,6 @@ export function SaleInvoicesTab({ saleId, saleTotal, currency }: Props) {
                     {t('sale_tab.outstanding')}: {format(summary.outstanding)}
                   </p>
                 </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{t('sale_tab.coverage')}</span>
-                  <span>{summary.coverage.toFixed(0)}%</span>
-                </div>
-                <Progress value={summary.coverage} />
               </div>
             </div>
           )}

@@ -246,10 +246,20 @@ export default function DispatchJobDetail() {
             });
           }
 
-          // Store service order materials for the materials tab
+          // Store service order materials for the materials tab.
+          // Fall back to the dedicated materials endpoint when the detail
+          // payload doesn't embed them, so planned materials always show.
           if (soData.materials && soData.materials.length > 0) {
             setServiceOrderMaterials(soData.materials);
+          } else {
+            try {
+              const soMaterials = await serviceOrdersApi.getMaterials(Number(soData.id));
+              setServiceOrderMaterials(Array.isArray(soMaterials) ? soMaterials : []);
+            } catch {
+              setServiceOrderMaterials([]);
+            }
           }
+
 
           // Get job title and installation from job data
           if (soData.jobs && soData.jobs.length > 0 && dispatchData.jobId) {

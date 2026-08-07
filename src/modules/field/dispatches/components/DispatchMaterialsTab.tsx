@@ -559,13 +559,20 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
     return sum + (unitCost * m.quantity);
   }, 0);
 
-  // Filter service order materials by installation ID
+  // Planned materials coming from the sale/service order.
+  // Only rows that originate from the service order itself (not ones logged on a
+  // dispatch, which already appear as "used"). Materials without an installation
+  // are shown too — sale items often carry no installation reference.
   const installationMaterials = useMemo(() => {
-    if (!installationId || !serviceOrderMaterials || serviceOrderMaterials.length === 0) {
-      return [];
-    }
-    return serviceOrderMaterials.filter(m => m.installationId === installationId);
+    if (!serviceOrderMaterials || serviceOrderMaterials.length === 0) return [];
+    return serviceOrderMaterials.filter((m: any) => {
+      const isFromDispatch = m.sourceTable === 'dispatch' || m.source === 'dispatch';
+      if (isFromDispatch) return false;
+      if (!installationId || !m.installationId) return true;
+      return String(m.installationId) === String(installationId);
+    });
   }, [installationId, serviceOrderMaterials]);
+
 
   // Unified rows: actual materials used + pre-planned materials from the service order.
   // Planned rows are read-only and rendered with a [PRE PLANNED] tag — same table, one difference.

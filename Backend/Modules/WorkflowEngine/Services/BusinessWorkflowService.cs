@@ -519,8 +519,11 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 }
 
 
-                // Copy article/material items from sale to service order materials
-                var materialItems = sale.Items?.Where(i => i.Type == "article").ToList() ?? new List<SaleItem>();
+                // Copy every NON-service sale item (article / material / product / untyped)
+                // to service order materials — mirrors ServiceOrderService.CreateFromSaleAsync.
+                var materialItems = sale.Items?
+                    .Where(i => !string.Equals(i.Type?.Trim(), "service", StringComparison.OrdinalIgnoreCase))
+                    .ToList() ?? new List<SaleItem>();
                 if (materialItems.Any())
                 {
                     foreach (var materialItem in materialItems)
@@ -534,8 +537,11 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             Sku = materialItem.ItemCode,
                             Description = materialItem.Description,
                             Quantity = materialItem.Quantity,
+                            EstimatedQuantity = materialItem.Quantity,
                             UnitPrice = materialItem.UnitPrice,
-                            TotalPrice = materialItem.LineTotal,
+                            TotalPrice = materialItem.LineTotal > 0
+                                ? materialItem.LineTotal
+                                : (materialItem.UnitPrice * materialItem.Quantity),
                             Status = "pending",
                             Source = "sale_conversion",
                             InstallationId = int.TryParse(materialItem.InstallationId, out var _miId) ? _miId : (int?)null,

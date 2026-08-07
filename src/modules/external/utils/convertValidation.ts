@@ -35,13 +35,10 @@ export const convertibleFormSchema = z.object({
   contactEmail: optionalTrimmed(255).pipe(
     z.union([z.string().email({ message: 'Invalid email address' }), z.undefined()])
   ),
-  // Phones come from many regions — keep permissive but block junk.
-  contactPhone: optionalTrimmed(40).pipe(
-    z.union([
-      z.string().regex(/^[+()\-.\s\d]{4,40}$/, { message: 'Invalid phone number' }),
-      z.undefined(),
-    ])
-  ),
+  // Phones come from many regions and from existing contact records —
+  // accept whatever is stored, only cap the length.
+  contactPhone: optionalTrimmed(40),
+
   contactAddress: optionalTrimmed(500),
   notes: optionalTrimmed(2000),
   currency: z.string().trim().min(2).max(8).optional(),

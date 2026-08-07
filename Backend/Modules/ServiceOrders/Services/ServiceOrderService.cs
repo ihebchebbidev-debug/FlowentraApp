@@ -686,11 +686,14 @@ namespace MyApi.Modules.ServiceOrders.Services
                     await _context.SaveChangesAsync();
                 }
 
-                // Create materials from material/article-type sale items (not services)
-                // Note: Frontend uses "article" for materials, backend may receive "material" or "article"
-                var materialItems = sale.Items?.Where(i => 
-                    i.Type?.ToLower() == "material" || i.Type?.ToLower() == "article"
-                ).ToList() ?? new List<Sales.Models.SaleItem>();
+                // Create materials from every NON-service sale item.
+                // Frontend uses "article", legacy/imported rows may say "material",
+                // "product", "goods" or carry no type at all — all of those are
+                // materials and must land in the service order Materials tab.
+                var materialItems = sale.Items?
+                    .Where(i => !string.Equals(i.Type?.Trim(), "service", StringComparison.OrdinalIgnoreCase))
+                    .ToList() ?? new List<Sales.Models.SaleItem>();
+
                 if (materialItems.Any())
                 {
                     var materials = materialItems.Select(item => new ServiceOrderMaterial
@@ -1917,6 +1920,71 @@ namespace MyApi.Modules.ServiceOrders.Services
             return allExpenses;
         }
 
+        /// <summary>
+        /// Ensures every non-service item of the originating sale exists as a
+        /// ServiceOrderMaterial row. Idempotent: matches on SaleItemId, so it only
+        /// inserts what is missing and never duplicates manual materials.
+        /// </summary>
+        private async Task BackfillSaleMaterialsAsync(ServiceOrder serviceOrder)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(serviceOrder.SaleId) ||
+                    !int.TryParse(serviceOrder.SaleId, out var saleId))
+                    return;
+
+                var saleItems = await _context.Set<Sales.Models.SaleItem>()
+                    .Where(i => i.SaleId == saleId)
+                    .ToListAsync();
+
+                var materialItems = saleItems
+                    .Where(i => !string.Equals(i.Type?.Trim(), "service", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (materialItems.Count == 0) return;
+
+                var existingSaleItemIds = await _context.ServiceOrderMaterials
+                    .Where(m => m.ServiceOrderId == serviceOrder.Id && m.SaleItemId != null)
+                    .Select(m => m.SaleItemId!.Value)
+                    .ToListAsync();
+
+                var missing = materialItems
+                    .Where(i => !existingSaleItemIds.Contains(i.Id))
+                    .ToList();
+                if (missing.Count == 0) return;
+
+                var rows = missing.Select(item => new ServiceOrderMaterial
+                {
+                    ServiceOrderId = serviceOrder.Id,
+                    SaleItemId = item.Id,
+                    ArticleId = item.ArticleId,
+                    Name = item.ItemName ?? "Material",
+                    Sku = item.ItemCode,
+                    Description = item.Description,
+                    Quantity = item.Quantity,
+                    EstimatedQuantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    TotalPrice = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
+                    Status = "pending",
+                    Source = "sale_conversion",
+                    InstallationId = int.TryParse(item.InstallationId, out var _bfIid) ? _bfIid : (int?)null,
+                    InstallationName = item.InstallationName,
+                    CreatedBy = "system",
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                _context.ServiceOrderMaterials.AddRange(rows);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation(
+                    "Backfilled {Count} sale material(s) onto service order {ServiceOrderId} from sale {SaleId}",
+                    rows.Count, serviceOrder.Id, saleId);
+            }
+            catch (Exception ex)
+            {
+                // Never break the read path because of a backfill problem.
+                _logger.LogWarning(ex, "Material backfill failed for service order {ServiceOrderId}", serviceOrder.Id);
+            }
+        }
+
         public async Task<List<MaterialDto>> GetMaterialsForServiceOrderAsync(int serviceOrderId)
         {
             var serviceOrder = await _context.ServiceOrders
@@ -1926,7 +1994,13 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (serviceOrder == null)
                 throw new KeyNotFoundException($"Service order with ID {serviceOrderId} not found");
 
+            // Self-heal: service orders converted before the material copy existed
+            // (or whose sale items carried an unexpected type) have no material rows.
+            // Backfill them from the originating sale so the Materials tab is always complete.
+            await BackfillSaleMaterialsAsync(serviceOrder);
+
             var allMaterials = new List<MaterialDto>();
+
 
             // 1. Get materials directly linked to the service order (from sale conversion or manual)
             var directMaterials = await _context.ServiceOrderMaterials
