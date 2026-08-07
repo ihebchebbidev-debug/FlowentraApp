@@ -1,2 +1,0 @@
-// Shared utils barrel
-export {};

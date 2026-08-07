@@ -1,2 +1,0 @@
-// Shared constants barrel
-export {};

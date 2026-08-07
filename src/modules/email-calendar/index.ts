@@ -1,1 +1,0 @@
-export { EmailCalendarModule } from './EmailCalendarModule';

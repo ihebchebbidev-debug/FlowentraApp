@@ -1,7 +1,0 @@
-{
-  "plugin": {
-    "name": "Preferences",
-    "description": "Personal user preferences.",
-    "category": "System"
-  }
-}
