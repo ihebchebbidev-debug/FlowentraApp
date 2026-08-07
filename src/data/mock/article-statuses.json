@@ -1,0 +1,5 @@
+[
+  { "id": "available", "name": "Available" },
+  { "id": "low_stock", "name": "Low stock" },
+  { "id": "out_of_stock", "name": "Out of stock" }
+]

@@ -1,0 +1,16 @@
+{
+  "brandProfiles": "Profils de Marque",
+  "brandDesc": "Enregistrez et changez de thèmes de marque instantanément. Appliquez à n'importe quel site en un clic.",
+  "loadingProfiles": "Chargement des profils…",
+  "saveCurrentTheme": "Enregistrer le Thème Actuel comme Marque",
+  "createBrandProfile": "Créer un Profil de Marque",
+  "brandNamePlaceholder": "Nom de la marque (ex. Corporate, Ludique)",
+  "descriptionPlaceholder": "Description (optionnel)",
+  "createBrandDesc": "Cela sauvegardera vos couleurs de thème, polices et espacements actuels en tant que profil de marque réutilisable.",
+  "createBrand": "Créer la Marque",
+  "profileCreated": "Profil de marque \"{{name}}\" créé à partir du thème actuel",
+  "profileApplied": "Marque \"{{name}}\" appliquée",
+  "profileDeleted": "Profil de marque supprimé",
+  "failedToCreate": "Échec de la création du profil",
+  "failedToDelete": "Échec de la suppression du profil"
+}

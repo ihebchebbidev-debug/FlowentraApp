@@ -1,0 +1,199 @@
+{
+  "title": "Suppliers",
+  "subtitle": "Manage your supplier directory — persons and companies",
+  "add": "Add Supplier",
+  "import": "Import",
+  "no_suppliers": "No Suppliers Found",
+  "no_suppliers_description": "Get started by adding your first supplier.",
+  "search_placeholder": "Search suppliers...",
+  "filters_label": "Filters",
+  "stats": {
+    "total": "Total Suppliers",
+    "persons": "Persons (page)",
+    "companies": "Companies (page)"
+  },
+  "addPage": {
+    "title": "Add Supplier",
+    "description": "Create a new supplier in your directory",
+    "type": {
+      "title": "Supplier Type",
+      "person_label": "Person",
+      "person_description": "Individual supplier",
+      "company_label": "Company",
+      "company_description": "Supplier company or organization"
+    },
+    "basic": {
+      "person_title": "Person Information",
+      "company_title": "Company Information",
+      "description": "Enter the supplier's primary details"
+    },
+    "work": {
+      "title": "Work Information",
+      "description": "Professional details and status"
+    },
+    "fields": {
+      "first_name_required_label": "First Name *",
+      "last_name_required_label": "Last Name *",
+      "company_name_required_label": "Company Name *",
+      "email_label": "Email",
+      "phone_label": "Phone",
+      "address_label": "Address",
+      "city_label": "City",
+      "country_label": "Country",
+      "company_label": "Company",
+      "position_label": "Position",
+      "status_label": "Status",
+      "cin_label": "CIN (National ID)",
+      "matricule_fiscale_label": "Tax ID (Matricule Fiscale)",
+      "latitude_label": "Latitude",
+      "longitude_label": "Longitude",
+      "geolocation_title": "Geolocation",
+      "geolocation_description": "Set coordinates for map display"
+    },
+    "placeholders": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "company_name": "Acme Inc.",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "address": "123 Main St, City, Country",
+      "city": "Tunis",
+      "country": "Tunisia",
+      "company": "Tech Corp",
+      "position": "Manager",
+      "cin": "Enter CIN number",
+      "matricule_fiscale": "Enter Tax ID",
+      "latitude": "36.8065",
+      "longitude": "10.1815"
+    },
+    "actions": {
+      "create": "Create Supplier"
+    },
+    "validation": {
+      "first_name_required": "First name is required",
+      "last_name_required": "Last name is required",
+      "company_name_required": "Company name is required",
+      "email_invalid": "Please enter a valid email address (e.g. name@example.com)",
+      "email_too_long": "Email must be less than 255 characters",
+      "phone_invalid_chars": "Phone number can only contain digits, spaces, +, -, (, ) and .",
+      "phone_too_short": "Phone number is too short",
+      "phone_too_long": "Phone number is too long",
+      "name_no_numbers": "{{label}} should not contain numbers",
+      "name_required": "{{label}} is required",
+      "name_too_long": "{{label}} must be less than 100 characters",
+      "field_required": "{{label}} is required",
+      "required_fields_missing": "Required fields missing",
+      "required_fields_missing_desc": "Please fill in at least the name and email fields."
+    },
+    "toasts": {
+      "created_success": "Supplier created successfully",
+      "create_failed": "Failed to create supplier"
+    }
+  },
+  "detail": {
+    "type": "Supplier",
+    "back": "Back to Suppliers",
+    "overview": "Overview",
+    "notes": "Notes",
+    "documents": "Documents",
+    "related": "Related",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "lead": "Lead",
+      "customer": "Customer",
+      "partner": "Partner"
+    }
+  },
+  "filters": {
+    "all": "All",
+    "persons": "Persons",
+    "companies": "Companies",
+    "active": "Active",
+    "inactive": "Inactive",
+    "lead": "Lead",
+    "status_label": "Status",
+    "all_statuses": "All statuses",
+    "favorites_label": "Favorites",
+    "all_suppliers": "All suppliers",
+    "favorites_only": "Favorites only",
+    "non_favorites": "Non favorites"
+  },
+  "table_headers": {
+    "contact": "Supplier",
+    "company_col": "Company",
+    "email": "Email",
+    "phone": "Phone",
+    "status": "Status",
+    "actions": "Actions",
+    "select_all": "Select all suppliers",
+    "select_item": "Select {{name}}",
+    "selected_count": "{{count}} supplier(s) selected",
+    "deselect_all": "Deselect All",
+    "delete_selected": "Delete Selected"
+  },
+  "table": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "type": "Type",
+    "status": "Status",
+    "city": "City",
+    "createdAt": "Created",
+    "actions": "Actions"
+  },
+  "bulkImport": {
+    "title": "Import Suppliers",
+    "description": "Upload a CSV or Excel file to bulk import suppliers",
+    "type_label": "Supplier",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "position": "Position",
+      "status": "Status",
+      "address": "Address",
+      "city": "City",
+      "country": "Country",
+      "postalCode": "Postal Code",
+      "cin": "CIN",
+      "matriculeFiscale": "Tax ID"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must be less than 255 characters",
+      "invalidEmail": "Invalid email format"
+    }
+  },
+  "confirm": {
+    "delete_title": "Delete Supplier",
+    "delete_description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "bulk_delete_title": "Delete Selected Suppliers",
+    "bulk_delete_description": "Are you sure you want to delete {{count}} supplier(s)? This action cannot be undone.",
+    "deleting_progress": "Deleting…",
+    "deleting": "Deleting…",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "delete_success": "Supplier deleted",
+    "bulk_delete_success": "{{count}} supplier(s) deleted",
+    "bulk_delete_partial": "{{success}} deleted, {{failed}} failed",
+    "delete_failed": "Failed to delete supplier(s)"
+  },
+  "deleteConfirm": {
+    "title": "Delete Supplier",
+    "description": "Are you sure you want to delete this supplier? This action cannot be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "location": {
+    "title": "Location on Map",
+    "my_position": "My Position",
+    "description": "Click on the map to set the location or use the button to get your current position",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out",
+    "attribution": "Leaflet | © OpenStreetMap"
+  }
+}

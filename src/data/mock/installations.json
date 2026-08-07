@@ -1,0 +1,399 @@
+[
+  {
+    "id": "inst-001",
+    "name": "Production Server Alpha",
+    "model": "Dell PowerEdge R750",
+    "description": "Main production server for customer operations with redundant storage and network configuration",
+    "location": "Data Center - Rack A12",
+    "manufacturer": "Dell Technologies",
+    "hasWarranty": true,
+    "warrantyFrom": "2023-06-15T00:00:00.000Z",
+    "warrantyTo": "2026-06-15T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-001",
+      "company": "TechCorp Industries",
+      "contactPerson": "John Smith",
+      "phone": "+1-555-0123",
+      "email": "john.smith@techcorp.com",
+      "address": {
+        "street": "123 Business Ave",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10001",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": ["so-001", "so-003"],
+    "createdAt": "2023-06-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T14:20:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "inst-002",
+    "name": "Customer Vehicle Fleet Unit",
+    "model": "Ford Transit Custom",
+    "description": "Customer-owned delivery vehicle requiring regular maintenance and tracking system installation",
+    "location": "Customer Premises - Bay 3",
+    "manufacturer": "Ford Motor Company",
+    "hasWarranty": false,
+    "type": "external",
+    "customer": {
+      "id": "contact-004",
+      "company": "Acme Corporation",
+      "contactPerson": "Mark Brown",
+      "phone": "+1 555 123 4567",
+      "email": "mark.brown@acme.com",
+      "address": {
+        "street": "100 Corporate Blvd",
+        "city": "Boston",
+        "state": "MA",
+        "zipCode": "02101",
+        "country": "United States"
+      }
+    },
+    "relatedServiceOrders": ["so-002"],
+    "createdAt": "2023-08-20T09:15:00.000Z",
+    "updatedAt": "2024-01-10T11:45:00.000Z",
+    "createdBy": "user-002",
+    "modifiedBy": "user-003"
+  },
+  {
+    "id": "inst-003",
+    "name": "Industrial Automation System",
+    "model": "Siemens SIMATIC S7-1500",
+    "description": "Complete industrial automation control system with HMI interface and safety protocols",
+    "location": "Production Floor - Control Room",
+    "manufacturer": "Siemens AG",
+    "hasWarranty": true,
+    "warrantyFrom": "2024-01-01T00:00:00.000Z",
+    "warrantyTo": "2027-01-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-002",
+      "company": "Manufacturing Plus",
+      "contactPerson": "Sarah Johnson",
+      "phone": "+1-555-0456",
+      "email": "sarah.j@manufplus.com",
+      "address": {
+        "street": "456 Industrial Blvd",
+        "city": "Chicago",
+        "state": "IL",
+        "zipCode": "60601",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2024-01-01T08:00:00.000Z",
+    "updatedAt": "2024-01-20T16:30:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "inst-004",
+    "name": "Network Infrastructure Hub",
+    "model": "Cisco Catalyst 9300",
+    "description": "Core network switch providing connectivity for entire office building with redundant power",
+    "location": "IT Room - Floor 2",
+    "manufacturer": "Cisco Systems",
+    "hasWarranty": true,
+    "warrantyFrom": "2023-12-01T00:00:00.000Z",
+    "warrantyTo": "2025-12-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-005",
+      "company": "Global Solutions Inc",
+      "contactPerson": "Michael Davis",
+      "phone": "+1-555-0789",
+      "email": "m.davis@globalsolutions.com",
+      "address": {
+        "street": "789 Enterprise Way",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94105",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2023-12-01T12:00:00.000Z",
+    "updatedAt": "2024-01-05T09:15:00.000Z",
+    "createdBy": "user-003",
+    "modifiedBy": "user-003"
+  },
+  {
+    "id": "inst-005",
+    "name": "HVAC Climate Control System",
+    "model": "Carrier AquaEdge 19DV",
+    "description": "Industrial HVAC system with smart climate control and energy monitoring capabilities",
+    "location": "Building Rooftop - Unit 1",
+    "manufacturer": "Carrier",
+    "hasWarranty": true,
+    "warrantyFrom": "2024-01-15T00:00:00.000Z",
+    "warrantyTo": "2029-01-15T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-001",
+      "company": "TechCorp Industries",
+      "contactPerson": "John Smith",
+      "phone": "+1-555-0123",
+      "email": "john.smith@techcorp.com",
+      "address": {
+        "street": "123 Business Ave",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10001",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": ["so-001"],
+    "createdAt": "2024-01-15T11:00:00.000Z",
+    "updatedAt": "2024-01-20T14:30:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "inst-006",
+    "name": "Backup Power Generator",
+    "model": "Caterpillar C32 ACERT",
+    "description": "Emergency backup diesel generator providing 1000kW power capacity for facility operations",
+    "location": "Generator Building - East Wing",
+    "manufacturer": "Caterpillar Inc.",
+    "hasWarranty": false,
+    "type": "external",
+    "customer": {
+      "id": "contact-004",
+      "company": "Acme Corporation",
+      "contactPerson": "Mark Brown",
+      "phone": "+1 555 123 4567",
+      "email": "mark.brown@acme.com",
+      "address": {
+        "street": "100 Corporate Blvd",
+        "city": "Boston",
+        "state": "MA",
+        "zipCode": "02101",
+        "country": "United States"
+      }
+    },
+    "relatedServiceOrders": ["so-002"],
+    "createdAt": "2022-08-10T08:30:00.000Z",
+    "updatedAt": "2024-01-12T16:45:00.000Z",
+    "createdBy": "user-002",
+    "modifiedBy": "user-002"
+  },
+  {
+    "id": "inst-007",
+    "name": "Robotic Assembly Line",
+    "model": "KUKA KR 1000 titan",
+    "description": "High-precision robotic arm system for automated manufacturing and assembly operations",
+    "location": "Production Floor - Line C",
+    "manufacturer": "KUKA Robotics",
+    "hasWarranty": true,
+    "warrantyFrom": "2023-09-01T00:00:00.000Z",
+    "warrantyTo": "2025-09-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-002",
+      "company": "Manufacturing Plus",
+      "contactPerson": "Sarah Johnson",
+      "phone": "+1-555-0456",
+      "email": "sarah.j@manufplus.com",
+      "address": {
+        "street": "456 Industrial Blvd",
+        "city": "Chicago",
+        "state": "IL",
+        "zipCode": "60601",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2023-09-01T10:15:00.000Z",
+    "updatedAt": "2024-01-18T13:20:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-003"
+  },
+  {
+    "id": "inst-008",
+    "name": "Security Camera System",
+    "model": "Hikvision DS-2CD2385G1-I",
+    "description": "IP surveillance camera network with night vision and motion detection across facility perimeter",
+    "location": "Multiple Locations - Perimeter",
+    "manufacturer": "Hikvision",
+    "hasWarranty": true,
+    "warrantyFrom": "2023-11-01T00:00:00.000Z",
+    "warrantyTo": "2026-11-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-005",
+      "company": "Global Solutions Inc",
+      "contactPerson": "Michael Davis",
+      "phone": "+1-555-0789",
+      "email": "m.davis@globalsolutions.com",
+      "address": {
+        "street": "789 Enterprise Way",
+        "city": "San Francisco",
+        "state": "CA",
+        "zipCode": "94105",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2023-11-01T14:20:00.000Z",
+    "updatedAt": "2024-01-08T11:30:00.000Z",
+    "createdBy": "user-003",
+    "modifiedBy": "user-003"
+  },
+  {
+    "id": "inst-009",
+    "name": "Water Treatment Plant",
+    "model": "Evoqua MEMCOR CS",
+    "description": "Municipal water treatment facility with membrane filtration and chemical dosing systems",
+    "location": "Water Treatment Facility",
+    "manufacturer": "Evoqua Water Technologies",
+    "hasWarranty": true,
+    "warrantyFrom": "2022-05-01T00:00:00.000Z",
+    "warrantyTo": "2024-05-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-006",
+      "company": "City Water Department",
+      "contactPerson": "Robert Wilson",
+      "phone": "+1-555-0321",
+      "email": "r.wilson@citywater.gov",
+      "address": {
+        "street": "500 Municipal Plaza",
+        "city": "Phoenix",
+        "state": "AZ",
+        "zipCode": "85001",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2022-05-01T09:00:00.000Z",
+    "updatedAt": "2024-01-25T15:10:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-002"
+  },
+  {
+    "id": "inst-010",
+    "name": "Customer Fleet Tracking System",
+    "model": "Geotab GO9",
+    "description": "GPS fleet management system installed in customer's delivery vehicles for route optimization",
+    "location": "Customer Vehicle Fleet",
+    "manufacturer": "Geotab Inc.",
+    "hasWarranty": false,
+    "type": "external",
+    "customer": {
+      "id": "contact-007",
+      "company": "FastTrack Logistics",
+      "contactPerson": "Emily Chen",
+      "phone": "+1-555-0654",
+      "email": "e.chen@fasttrack.com",
+      "address": {
+        "street": "200 Logistics Drive",
+        "city": "Atlanta",
+        "state": "GA",
+        "zipCode": "30309",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2023-07-15T12:45:00.000Z",
+    "updatedAt": "2024-01-10T08:25:00.000Z",
+    "createdBy": "user-002",
+    "modifiedBy": "user-002"
+  },
+  {
+    "id": "inst-011",
+    "name": "Solar Panel Array",
+    "model": "Tesla Solar Roof V3",
+    "description": "Integrated solar panel installation with battery storage system for renewable energy generation",
+    "location": "Building Rooftop - South Facing",
+    "manufacturer": "Tesla Energy",
+    "hasWarranty": true,
+    "warrantyFrom": "2023-06-01T00:00:00.000Z",
+    "warrantyTo": "2043-06-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-001",
+      "company": "TechCorp Industries",
+      "contactPerson": "John Smith",
+      "phone": "+1-555-0123",
+      "email": "john.smith@techcorp.com",
+      "address": {
+        "street": "123 Business Ave",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10001",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": ["so-001"],
+    "createdAt": "2023-06-01T13:30:00.000Z",
+    "updatedAt": "2024-01-22T10:15:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "inst-012",
+    "name": "Compressed Air System",
+    "model": "Atlas Copco GA 90",
+    "description": "Industrial rotary screw air compressor with integrated dryer and filtration system",
+    "location": "Utility Room - Basement Level",
+    "manufacturer": "Atlas Copco",
+    "hasWarranty": true,
+    "warrantyFrom": "2024-01-01T00:00:00.000Z",
+    "warrantyTo": "2026-01-01T00:00:00.000Z",
+    "type": "internal",
+    "customer": {
+      "id": "contact-002",
+      "company": "Manufacturing Plus",
+      "contactPerson": "Sarah Johnson",
+      "phone": "+1-555-0456",
+      "email": "sarah.j@manufplus.com",
+      "address": {
+        "street": "456 Industrial Blvd",
+        "city": "Chicago",
+        "state": "IL",
+        "zipCode": "60601",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2024-01-01T07:00:00.000Z",
+    "updatedAt": "2024-01-15T12:40:00.000Z",
+    "createdBy": "user-003",
+    "modifiedBy": "user-003"
+  },
+  {
+    "id": "inst-013",
+    "name": "Customer Printing Equipment",
+    "model": "Xerox VersaLink C7000",
+    "description": "High-volume color laser printer with finishing capabilities for customer's document production",
+    "location": "Customer Office - Print Room",
+    "manufacturer": "Xerox Corporation",
+    "hasWarranty": true,
+    "warrantyFrom": "2023-10-15T00:00:00.000Z",
+    "warrantyTo": "2024-10-15T00:00:00.000Z",
+    "type": "external",
+    "customer": {
+      "id": "contact-008",
+      "company": "PrintPro Services",
+      "contactPerson": "David Martinez",
+      "phone": "+1-555-0987",
+      "email": "d.martinez@printpro.com",
+      "address": {
+        "street": "350 Print Avenue",
+        "city": "Denver",
+        "state": "CO",
+        "zipCode": "80202",
+        "country": "USA"
+      }
+    },
+    "relatedServiceOrders": [],
+    "createdAt": "2023-10-15T16:20:00.000Z",
+    "updatedAt": "2024-01-14T09:50:00.000Z",
+    "createdBy": "user-002",
+    "modifiedBy": "user-001"
+  }
+]

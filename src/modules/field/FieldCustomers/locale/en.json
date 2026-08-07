@@ -1,0 +1,72 @@
+{
+  "title": "Field Customers",
+  "subtitle": "Manage customers on the field — clients and to-dos",
+  "add_client": "Add Client",
+  "search_placeholder": "Search clients...",
+  "filters": "Filters",
+  "list": "List",
+  "grid": "Grid",
+  "all_clients": "All Clients",
+  "clients_count": "{{count}} clients in your database",
+  "view_details": "View Details",
+  "edit": "Edit",
+  "delete": "Delete",
+  "overview": "Overview",
+  "todos": "To-Dos",
+  "documents": "Documents",
+  "service_orders": "Service Orders",
+  "detail": {
+    "contact_info": "Contact Information",
+    "company_details": "Company Details",
+    "company_label": "Company",
+    "industry": "Industry",
+    "website": "Website",
+    "key_users": "Key Users",
+    "last_contact": "Last contact",
+    "tags": "Tags",
+    "add_tag": "Add Tag",
+    "summary": "Summary",
+    "open_todos": "Open to-dos",
+    "completed_todos": "Completed to-dos",
+    "documents_count": "Documents",
+    "customer_since": "Customer since {{year}} • Active account",
+    "new_task": "New Task",
+    "back": "Back"
+  },
+  "todos_section": {
+    "title": "To-Dos",
+    "add_todo": "Add To-Do",
+    "loading": "Loading to-dos...",
+    "no_todos": "No to-dos yet.",
+    "table": {
+      "title": "Title",
+      "status": "Status",
+      "due": "Due",
+      "actions": "Actions"
+    },
+    "status": {
+      "done": "Done",
+      "open": "Open"
+    },
+    "mark_open": "Mark Open",
+    "mark_done": "Mark Done"
+  },
+  "documents_section": {
+    "title": "Documents",
+    "upload_files": "Upload Files",
+    "no_documents": "No documents uploaded yet.",
+    "no_documents_description": "Upload documents, images, or other files related to this client.",
+    "table": {
+      "file_name": "File Name",
+      "type": "Type",
+      "size": "Size",
+      "uploaded": "Uploaded",
+      "actions": "Actions"
+    },
+    "download": "Download"
+  },
+  "service_orders_section": {
+    "title": "Service Orders",
+    "no_orders": "No service orders yet."
+  }
+}

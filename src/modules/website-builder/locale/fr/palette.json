@@ -1,0 +1,15 @@
+{
+  "searchBlocks": "Rechercher des blocs...",
+  "dragHint": "Glissez les blocs vers le canevas ou cliquez pour ajouter",
+  "results": "{{count}} résultat",
+  "results_plural": "{{count}} résultats",
+  "noBlocksMatch": "Aucun bloc ne correspond à \"{{term}}\"",
+  "layout": "Mise en page",
+  "navigation": "Navigation",
+  "textContent": "Texte & Contenu",
+  "media": "Médias",
+  "business": "Entreprise",
+  "interactive": "Interactif",
+  "blogProducts": "Blog & Produits",
+  "advanced": "Avancé"
+}

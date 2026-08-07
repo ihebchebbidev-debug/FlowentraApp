@@ -1,0 +1,16 @@
+{
+  "brandProfiles": "Brand Profiles",
+  "brandDesc": "Save and switch brand themes instantly. Apply to any site with one click.",
+  "loadingProfiles": "Loading profiles…",
+  "saveCurrentTheme": "Save Current Theme as Brand",
+  "createBrandProfile": "Create Brand Profile",
+  "brandNamePlaceholder": "Brand name (e.g., Corporate, Playful)",
+  "descriptionPlaceholder": "Description (optional)",
+  "createBrandDesc": "This will save your current theme colors, fonts, and spacing as a reusable brand profile.",
+  "createBrand": "Create Brand",
+  "profileCreated": "Brand profile \"{{name}}\" created from current theme",
+  "profileApplied": "Applied \"{{name}}\" brand",
+  "profileDeleted": "Brand profile deleted",
+  "failedToCreate": "Failed to create profile",
+  "failedToDelete": "Failed to delete profile"
+}

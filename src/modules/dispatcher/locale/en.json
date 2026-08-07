@@ -1,0 +1,123 @@
+{
+  "calendar": {
+    "includeWeekends": "Include weekends"
+  },
+  "common": {
+    "calendarView": "Calendar view",
+    "listView": "List view",
+    "mapView": "Map view",
+    "createDispatch": "Create Operation",
+    "assign": "Assign",
+    "schedule": "Schedule",
+    "start": "Start",
+    "end": "End",
+    "save": "Save",
+    "cancel": "Cancel",
+    "searchPlaceholder": "Search operations..."
+  },
+  "planningMode": {
+    "label": "Planning Mode",
+    "job": "Job by Job",
+    "jobDescription": "Drag individual jobs to assign",
+    "serviceOrder": "Service Order",
+    "serviceOrderDescription": "Drag entire service order to assign all jobs"
+  },
+  "batchAssignment": {
+    "title": "Batch Job Assignment",
+    "jobs": "jobs",
+    "total": "total",
+    "jobsToAssign": "Jobs to be assigned",
+    "assignmentDetails": "Assignment Details",
+    "technician": "Technician",
+    "date": "Date",
+    "timeRange": "Time Range",
+    "location": "Location",
+    "infoNote": "This will create {{count}} operations for all jobs in this service order, assigned sequentially to the selected technician.",
+    "creating": "Creating operations...",
+    "confirmAll": "Assign All {{count}} Jobs",
+    "success": "Successfully assigned {{count}} jobs!",
+    "error": "Failed to assign some jobs"
+  },
+  "map": {
+    "title": "Map View",
+    "showMap": "Show Map",
+    "hideMap": "Hide Map",
+    "noLocationsTitle": "No locations to display",
+    "noLocationsDescription": "Jobs with location data from contacts will appear here on the map.",
+    "legend": "Legend",
+    "pinShowsTechnician": "Pins show assigned technician initials",
+    "openInMaps": "Open in Maps",
+    "jobsOnMap": "jobs on map",
+    "unassigned": "Unassigned",
+    "unknownTechnician": "Unknown",
+    "assignedTechnician": "Assigned Technician",
+    "job": "Job",
+    "noCustomer": "N/A",
+    "noAddress": "No address",
+    "priority": "Priority",
+    "status": "Status",
+    "viewDetails": "View Details"
+  },
+  "dispatcher": {
+    "statuses": {
+      "pending": "Pending",
+      "assigned": "Assigned",
+      "acknowledged": "Acknowledged",
+      "en_route": "En Route",
+      "on_site": "On Site",
+      "in_progress": "In Progress",
+      "technically_completed": "Technically Completed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "not_scheduled": "Not Scheduled",
+      "scheduled": "Scheduled"
+    },
+    "selected_count": "{{count}} operation(s) selected",
+    "deselect_all": "Deselect All",
+    "bulk_delete": "Delete Selected",
+    "bulk_delete_confirm_title": "Delete {{count}} Operation(s)?",
+    "bulk_delete_confirm_description": "This will permanently delete {{count}} operation(s) and all associated data. The associated jobs will be reset to unplanned status.",
+    "bulk_deleting": "Deleting...",
+    "confirm_delete": "Delete",
+    "cancel": "Cancel",
+    "available_until": "Available until {{time}}",
+    "workload": {
+      "light": "Light workload",
+      "normal": "Normal workload",
+      "heavy": "Heavy workload",
+      "overloaded": "Overloaded"
+    },
+    "technician_details": "Technician Details",
+    "email": "Email",
+    "phone": "Phone",
+    "working_hours": "Working Hours",
+    "working_hours_today": "Today's Hours",
+    "skills": "Skills",
+    "schedule_status": "Schedule Status",
+    "not_working_today": "Not working today",
+    "on_leave": "On Leave",
+    "day_off": "Day off",
+    "leave_type": "Leave type",
+    "operation": "Operation",
+    "dispatch_already_locked": "This operation is already locked"
+  },
+  "mapAssign": {
+    "nearbyTechnicians": "Nearby Technicians",
+    "assignJob": "Assign Job",
+    "noNearbyTechs": "No available technicians nearby",
+    "distance": "{{distance}} km away",
+    "skills": "Skills",
+    "assign": "Assign",
+    "selectTimeSlot": "Select Time Slot",
+    "assignToTechnician": "Assign to {{name}}",
+    "availableSlots": "Available Slots",
+    "noAvailableSlots": "No available slots today",
+    "assigned_successfully": "Job assigned successfully",
+    "assignment_failed": "Failed to assign job"
+  },
+  "plugin": {
+    "name": "Dispatcher",
+    "description": "Real-time operations and technician assignment.",
+    "category": "Field"
+  }
+}

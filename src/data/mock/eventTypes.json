@@ -1,0 +1,62 @@
+[
+  {
+    "id": "meeting",
+    "name": "Meeting",
+    "color": "#3b82f6",
+    "description": "Business meetings",
+    "isDefault": true,
+    "position": 0,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "appointment",
+    "name": "Appointment", 
+    "color": "#10b981",
+    "description": "Client appointments",
+    "isDefault": true,
+    "position": 1,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "deadline",
+    "name": "Deadline",
+    "color": "#ef4444",
+    "description": "Project deadlines",
+    "isDefault": true,
+    "position": 2,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "training",
+    "name": "Training",
+    "color": "#f59e0b",
+    "description": "Training sessions",
+    "isDefault": true,
+    "position": 3,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "holiday",
+    "name": "Holiday",
+    "color": "#8b5cf6",
+    "description": "Holidays and time off",
+    "isDefault": true,
+    "position": 4,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "maintenance",
+    "name": "Maintenance",
+    "color": "#06b6d4",
+    "description": "System maintenance",
+    "isDefault": false,
+    "position": 5,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

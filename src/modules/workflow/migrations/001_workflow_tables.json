@@ -1,0 +1,45 @@
+{
+  "module": "workflow",
+  "version": "001",
+  "description": "Workflow Automation Tables",
+  "tables": [
+    {
+      "name": "WF.workflows",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "isActive": { "type": "boolean", "default": true },
+        "triggerType": { "type": "string", "required": true, "enum": ["manual", "schedule", "event"] },
+        "triggerConfig": { "type": "json", "required": true },
+        "steps": { "type": "json", "required": true },
+        "category": { "type": "string", "required": false },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "version": { "type": "integer", "default": 1 },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["isActive", "triggerType", "category", "createdAt"]
+    },
+    {
+      "name": "WF.workflow_executions",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "workflowId": { "type": "string", "required": true, "foreignKey": "WF.workflows.id" },
+        "status": { "type": "string", "required": true, "enum": ["pending", "running", "completed", "failed", "cancelled"] },
+        "startedAt": { "type": "datetime", "required": true },
+        "completedAt": { "type": "datetime", "required": false },
+        "input": { "type": "json", "required": false },
+        "output": { "type": "json", "required": false },
+        "error": { "type": "text", "required": false },
+        "stepResults": { "type": "json", "required": false },
+        "triggeredBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["workflowId", "status", "startedAt"]
+    }
+  ]
+}

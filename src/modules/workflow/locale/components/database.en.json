@@ -1,0 +1,8 @@
+{
+  "database": {
+    "title": "Database",
+    "fullDescription": "Performs database operations like create, update, delete or query records.",
+    "how": "Configure the database action, table/collection and field mappings. Use queries to fetch data for decisions.",
+    "examples": ["Insert a record on new lead","Update status after processing"]
+  }
+}

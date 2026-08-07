@@ -1,0 +1,8 @@
+{
+  "filter": {
+    "title": "Filter",
+    "fullDescription": "Filters items based on criteria to pass only matching items down the flow.",
+    "how": "Define filter conditions and pass-through settings. Useful to prune lists or events before processing.",
+    "examples": ["Filter orders with total > 100","Filter leads from specific campaigns"]
+  }
+}

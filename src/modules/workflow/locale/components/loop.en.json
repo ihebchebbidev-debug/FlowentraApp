@@ -1,0 +1,9 @@
+{
+  "loop": {
+    "title": "Loop",
+    "fullDescription": "Repeats actions while a condition remains true or for a fixed number of iterations.",
+  "configureDescription": "Process items or retry operations; set iteration mode and max attempts.",
+  "how": "Configure the loop condition or iteration count and define the loop body actions.",
+    "examples": ["Process each item in a list","Retry an operation N times until success"]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "if-else": {
+    "title": "If / Else",
+    "fullDescription": "Evaluates a condition and routes the workflow through two branches: true or false.",
+    "how": "Define a condition based on fields or data and configure actions for both true and false paths.",
+    "examples": ["If customer credit > 1000 then approve","If order total is 0 then skip payment step"]
+  }
+}

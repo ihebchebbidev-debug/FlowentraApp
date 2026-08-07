@@ -1,0 +1,10 @@
+{
+  "animation": "Animation",
+  "entranceEffect": "Effet d'Entrée",
+  "hoverEffect": "Effet de Survol",
+  "speed": "Vitesse",
+  "delay": "Délai",
+  "stagger": "Décalage (enfants)",
+  "replayOnScroll": "Rejouer au défilement",
+  "previewHint": "Utilisez l'Aperçu pour voir les animations en action"
+}

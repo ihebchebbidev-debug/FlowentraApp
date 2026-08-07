@@ -1,0 +1,36 @@
+{
+  "module": "calendar",
+  "version": "001",
+  "description": "CRM Calendar and Event Management Tables",
+  "tables": [
+    {
+      "name": "CRM.calendar_events",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "start": { "type": "datetime", "required": true },
+        "end": { "type": "datetime", "required": true },
+        "allDay": { "type": "boolean", "default": false },
+        "type": { "type": "string", "required": true, "foreignKey": "LU.event_types.id" },
+        "status": { "type": "string", "required": true, "enum": ["scheduled", "confirmed", "cancelled", "completed"] },
+        "location": { "type": "string", "required": false },
+        "relatedType": { "type": "string", "required": false, "enum": ["contact", "sale", "offer", "project", "service_order"] },
+        "relatedId": { "type": "string", "required": false },
+        "contactId": { "type": "string", "required": false, "foreignKey": "CRM.contacts.id" },
+        "attendees": { "type": "array", "items": "string" },
+        "reminders": { "type": "array", "items": "json" },
+        "recurring": { "type": "json", "required": false },
+        "color": { "type": "string", "required": false },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "isPrivate": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["start", "end", "type", "status", "contactId", "relatedType", "relatedId"]
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "blocks": {
+    "hero": {
+      "dropImage": "Déposez l'image ici",
+      "upload": "Télécharger",
+      "carousel": "Carrousel",
+      "slides": "diapositives",
+      "auto": "auto",
+      "manual": "manuel",
+      "splitHero": "Héro divisé",
+      "imagePosition": "Image",
+      "gradientHero": "Héro dégradé",
+      "videoHero": "Héro vidéo",
+      "videoSet": "Vidéo définie",
+      "noVideoUrl": "Pas d'URL vidéo"
+    },
+    "section": {
+      "dropHere": "Déposez les composants ici",
+      "glass": "section vitreuse",
+      "gradient": "section dégradée",
+      "pattern": "section motif",
+      "wave": "section vague",
+      "bordered": "section bordée"
+    },
+    "columns": {
+      "column": "Colonne"
+    },
+    "tabs": {
+      "addTab": "Ajouter un onglet",
+      "addSubtitle": "Ajouter un sous-titre..."
+    },
+    "faq": {
+      "addFaq": "Ajouter une FAQ",
+      "addSubtitle": "Ajouter un sous-titre..."
+    },
+    "form": {
+      "addField": "Ajouter un champ",
+      "configHint": "Configurez l'URL du webhook, le message de succès et les actions dans le panneau Propriétés → Paramètres du formulaire",
+      "submitAnother": "Soumettre une autre réponse",
+      "required": "Obligatoire",
+      "fullWidth": "Pleine largeur",
+      "halfWidth": "Demi largeur",
+      "selectPlaceholder": "Sélectionner..."
+    },
+    "contactForm": {
+      "sendAnother": "Envoyer un autre message",
+      "configHint": "Définissez l'URL du webhook et les actions dans Propriétés → Paramètres du formulaire",
+      "failedToSubmit": "Échec de l'envoi. Veuillez réessayer."
+    },
+    "pricing": {
+      "addPlan": "Ajouter un forfait",
+      "addFeature": "Ajouter une fonctionnalité",
+      "mostPopular": "Le plus populaire",
+      "choosePlan": "Choisir le forfait",
+      "choose": "Choisir",
+      "addSubtitle": "Ajouter un sous-titre..."
+    },
+    "product": {
+      "addToCart": "Ajouter au panier",
+      "inCart": "Dans le panier",
+      "add": "Ajouter",
+      "added": "Ajouté",
+      "quickView": "Aperçu rapide",
+      "addedToCart": "{{name}} ajouté au panier",
+      "removedFromWishlist": "{{name}} retiré des favoris",
+      "addedToWishlist": "{{name}} ajouté aux favoris"
+    }
+  }
+}

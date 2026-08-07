@@ -1,0 +1,72 @@
+{
+  "dashboard": "Tableau de Bord Terrain",
+  "reports": "Rapports",
+  "calendar": {
+    "monthView": "Vue Mensuelle",
+    "weekView": "Vue Hebdomadaire",
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette Semaine",
+    "thisMonth": "Ce Mois",
+    "noDispatches": "Aucune opération planifiée",
+    "viewDetails": "Voir Détails"
+  },
+  "kpis": {
+    "activeServiceOrders": "Ordres de Service Actifs",
+    "technicianWorking": "Techniciens Travaillant Aujourd'hui",
+    "todayDispatches": "Opérations d'Aujourd'hui",
+    "firstTimeFixRate": "Taux de Résolution au Premier Passage"
+  },
+  "analytics": {
+    "technicianPerformance": "Performance des Techniciens",
+    "serviceOrdersWorked": "Ordres de Service Traités",
+    "timePostingsDone": "Pointages Effectués",
+    "dispatchesTotal": "Total des Opérations",
+    "jobCompletionTimes": "Temps de Réalisation des Tâches",
+    "revenueInsights": "Analyse des Revenus et Coûts"
+  },
+  "status": {
+    "pending": "En Attente",
+    "assigned": "Assigné",
+    "inProgress": "En Cours",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "serviceOrders": {
+    "contactPhone": "Téléphone du Contact",
+    "targetCompletionDate": "Date d'Achèvement Cible",
+    "notSpecified": "Non spécifié"
+  },
+  "installations": {
+    "deleteConfirm": {
+      "title": "Supprimer l'installation",
+      "description": "Êtes-vous sûr de vouloir supprimer cette installation ? Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    }
+  },
+  "actions": "Actions",
+  "dispatches": {
+    "material": {
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "rejectionReason": "Motif du rejet",
+      "approvedBy": "Approuvé par",
+      "approvedAt": "Approuvé le",
+      "insufficientStock": "Stock insuffisant pour cet article",
+      "stockAdjusted": "Stock ajusté : -{{qty}} {{unit}}",
+      "status": {
+        "pending": "En attente",
+        "approved": "Approuvé",
+        "rejected": "Rejeté"
+      }
+    }
+  },
+  "plugin": {
+    "installations": {
+      "name": "Installations",
+      "description": "Equipements installes chez les clients, lies aux ordres de service et aux articles."
+    }
+  }
+}

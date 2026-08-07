@@ -1,0 +1,4 @@
+{
+  "blockFailedToRender": "Échec du rendu du bloc",
+  "blockEncounteredError": "{{label}} ({{type}}) a rencontré une erreur."
+}

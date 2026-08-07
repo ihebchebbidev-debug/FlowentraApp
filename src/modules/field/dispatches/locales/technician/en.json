@@ -1,0 +1,13 @@
+{
+  "title": "Technician Information",
+  "assigned_technicians": "Assigned Technicians",
+  "name": "Name",
+  "email": "Email",
+  "phone": "Phone",
+  "skills": "Skills",
+  "status": "Status",
+  "no_technicians": "No technicians assigned",
+  "call": "Call",
+  "email_action": "Email",
+  "locate": "Locate"
+}

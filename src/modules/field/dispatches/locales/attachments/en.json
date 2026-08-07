@@ -1,0 +1,25 @@
+{
+  "title": "Attachments & Photos",
+  "upload_files": "Upload Files",
+  "take_photo": "Take Photo",
+  "drag_drop": "Drag and drop files here, or click to select",
+  "max_file_size": "Maximum file size: 10MB",
+  "supported_formats": "Supported formats: JPG, PNG, PDF, DOC, DOCX",
+  "no_attachments": "No attachments uploaded",
+  "category": "Category",
+  "file_name": "File Name",
+  "file_size": "File Size",
+  "uploaded_by": "Uploaded By",
+  "uploaded_at": "Uploaded At",
+  "file_description_placeholder": "File description...",
+  "upload": "Upload",
+  "download": "Download",
+  "view": "View",
+  "categories": {
+    "photo": "Photo",
+    "document": "Document",
+    "diagnostic": "Diagnostic",
+    "completion": "Completion",
+    "other": "Other"
+  }
+}

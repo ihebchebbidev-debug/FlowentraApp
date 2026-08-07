@@ -1,0 +1,16 @@
+{
+  "width": "Largeur",
+  "height": "Hauteur",
+  "minH": "H Min",
+  "maxW": "L Max",
+  "padding": "Rembourrage",
+  "margin": "Marge",
+  "top": "Haut",
+  "right": "Droite",
+  "bottom": "Bas",
+  "left": "Gauche",
+  "unlinkSides": "Délier les côtés",
+  "linkAllSides": "Lier tous les côtés",
+  "tabletOverrides": "Surcharges tablette. Vide = hérite du bureau.",
+  "mobileOverrides": "Surcharges mobile. Vide = hérite du bureau."
+}

@@ -1,0 +1,93 @@
+{
+  "field": {
+    "service_orders": "Ordres de Service",
+    "dispatches": "Opérations",
+    "dispatch": "Opérations",
+    "dispatch_placeholder": "Calendrier interactif et carte, glisser-déposer des affectations, disponibilité des techniciens.",
+    "customers_lite": "Gestion des Clients",
+    "inventory": "Gestion des Stocks et des Actifs",
+    "reports": {
+      "title": "Rapports et Analyses",
+      "serviceOrders": "Ordres de Service",
+      "jobs": "Travaux",
+      "dispatches": "Opérations",
+      "installations": "Installations",
+      "tabs": {
+        "serviceOrders": "Ordres de Service",
+        "dispatchCalendar": "Calendrier des Opérations"
+      },
+      "calendar": {
+        "filterTitle": "Filtrer l'affichage du calendrier",
+        "plannedDispatches": "Opérations planifiées",
+        "technicianAbsences": "Absences des techniciens",
+        "holidays": "Jours fériés",
+        "summary": "Résumé",
+        "byStatus": "Par Statut",
+        "noDispatches": "Aucune opération ce mois-ci",
+        "dispatch": "opération",
+        "dispatches": "opérations"
+      },
+      "status": {
+        "total": "Total",
+        "completed": "Terminé",
+        "inProgress": "En cours",
+        "scheduled": "Planifié",
+        "pending": "En attente",
+        "assigned": "Assigné",
+        "draft": "Brouillon",
+        "ready": "Prêt",
+        "onHold": "En pause",
+        "cancelled": "Annulé"
+      },
+      "priority": {
+        "all": "Toutes les priorités",
+        "urgent": "Urgent",
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Basse"
+      },
+      "table": {
+        "orderNumber": "N° Ordre",
+        "customer": "Client",
+        "status": "Statut",
+        "priority": "Priorité",
+        "targetDate": "Date cible",
+        "createdBy": "Créé par"
+      },
+      "filters": {
+        "allStatus": "Tous les statuts",
+        "allPriority": "Toutes les priorités",
+        "searchOrders": "Rechercher des ordres...",
+        "clear": "Effacer",
+        "clearFilters": "Effacer les filtres"
+      },
+      "pagination": {
+        "page": "Page",
+        "of": "sur",
+        "showing": "Affichage",
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
+      "empty": {
+        "noServiceOrders": "Aucun ordre de service trouvé"
+      },
+      "weekdays": {
+        "sun": "Dim",
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam"
+      }
+    },
+    "time-expenses": "Temps et Dépenses",
+    "userNote": "Note Utilisateur",
+    "systemActivity": "Activité Système"
+  },
+  "plugin": {
+    "name": "Service terrain",
+    "description": "Centre des opérations terrain.",
+    "category": "Terrain"
+  }
+}

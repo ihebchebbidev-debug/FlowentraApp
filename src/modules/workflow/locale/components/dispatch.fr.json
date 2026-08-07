@@ -1,0 +1,13 @@
+{
+  "dispatch": {
+    "title": "Dispatch",
+    "fullDescription": "Crée ou met à jour une fiche d'intervention pour assigner des techniciens, planifier des tâches et suivre le statut des interventions. S'intègre avec la vue calendrier et la carte pour la planification et le routage.",
+  "configureDescription": "Créer ou mettre à jour des interventions ; configurez l'affectation, la priorité et les notifications.",
+  "how": "Mappez les données source (ordre de service, client, adresse, plage horaire) pour créer une intervention. Configurez les règles d'affectation des techniciens, la priorité et les notifications. Utilisez ce nœud lorsqu'un service doit être planifié ou lorsqu'une commande nécessite une intervention sur site.",
+    "examples": [
+      "Créer une intervention lorsque l'ordre de service est confirmé",
+      "Assigner automatiquement le technicien selon les compétences et la disponibilité",
+      "Mettre à jour le statut de l'intervention et notifier le client lorsque le technicien est en route"
+    ]
+  }
+}

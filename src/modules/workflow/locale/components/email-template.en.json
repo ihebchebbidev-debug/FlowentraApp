@@ -1,0 +1,12 @@
+{
+  "email-template": {
+    "title": "Email Template",
+    "fullDescription": "Sends an email using a selected template, with variables and attachments support.",
+  "configureDescription": "Select a template and map variables to personalize the message.",
+  "how": "Select a template, set recipients and optional attachments. Use variables to personalize content.",
+    "examples": [
+      "Send invoice email using the invoice template",
+      "Send appointment confirmation using a template"
+    ]
+  }
+}

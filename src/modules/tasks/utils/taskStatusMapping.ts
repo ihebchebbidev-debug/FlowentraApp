@@ -1,0 +1,137 @@
+import type { Column } from '../types';
+
+/** Normalize UI / legacy status values to backend ProjectTask.Status values. */
+export function normalizeTaskStatus(status: unknown): string {
+  const raw = String(status ?? 'open').trim().toLowerCase();
+  if (!raw || /^\d+$/.test(raw)) return 'open';
+  if (raw === 'todo' || raw === 'open') return 'open';
+  if (raw === 'in-progress' || raw === 'in progress' || raw === 'in_progress') return 'in progress';
+  if (raw === 'done' || raw === 'completed') return 'completed';
+  if (raw === 'cancelled' || raw === 'canceled') return 'cancelled';
+  if (raw === 'review') return 'in progress';
+  return raw;
+}
+
+export function isCompletedTaskStatus(status: unknown): boolean {
+  const s = normalizeTaskStatus(status);
+  return s === 'completed' || s === 'cancelled';
+}
+
+/** Map backend status to a kanban column id for display. */
+export function mapTaskStatusToColumnId(status: unknown, columns: Column[] = []): string {
+  const normalized = normalizeTaskStatus(status);
+
+  if (columns.length > 0) {
+    const byTitle = (pattern: RegExp) =>
+      columns.find((c) => pattern.test(String(c.title || '').toLowerCase()));
+
+    if (normalized === 'completed' || normalized === 'cancelled') {
+      return String(byTitle(/done|completed|termin|fini/)?.id ?? columns[columns.length - 1].id);
+    }
+    if (normalized === 'in progress') {
+      return String(byTitle(/progress|cours|review|révision/)?.id ?? columns[Math.min(1, columns.length - 1)].id);
+    }
+    return String(byTitle(/todo|open|faire|backlog|à faire/)?.id ?? columns[0].id);
+  }
+
+  if (normalized === 'completed' || normalized === 'cancelled') return 'done';
+  if (normalized === 'in progress') return 'in-progress';
+  return 'todo';
+}
+
+/** Map a kanban column id to the backend ProjectTask.Status value. */
+export function mapColumnIdToTaskStatus(columnId: unknown, columns: Column[] = []): string {
+  const id = String(columnId ?? '').trim();
+  if (!id) return 'open';
+
+  if (columns.length > 0) {
+    const col = columns.find((c) => String(c.id) === id);
+    if (col) {
+      const title = String(col.title || '').toLowerCase();
+      if (/done|completed|termin|fini/.test(title)) return 'completed';
+      if (/cancel/.test(title)) return 'cancelled';
+      if (/progress|cours|review|révision/.test(title)) return 'in progress';
+      if (/todo|open|faire|backlog|à faire/.test(title)) return 'open';
+
+      const sorted = [...columns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const idx = sorted.findIndex((c) => String(c.id) === id);
+      if (idx >= 0) {
+        if (idx === sorted.length - 1 && sorted.length > 1) return 'completed';
+        if (idx === 1) return 'in progress';
+        return 'open';
+      }
+    }
+  }
+
+  const normalized = normalizeTaskStatus(id);
+  if (normalized === 'open' || normalized === 'in progress' || normalized === 'completed' || normalized === 'cancelled') {
+    return normalized;
+  }
+  if (id === 'todo') return 'open';
+  if (id === 'in-progress') return 'in progress';
+  if (id === 'done') return 'completed';
+  return 'open';
+}
+
+export type UiTaskFilterStatus = 'all' | 'todo' | 'in-progress' | 'review' | 'done';
+
+/** Match a task against UI filter chips (todo / in-progress / review / done). */
+export function taskMatchesUiFilterStatus(
+  task: { status?: unknown; columnId?: unknown },
+  filter: UiTaskFilterStatus,
+  columns: Column[] = []
+): boolean {
+  if (filter === 'all') return true;
+
+  const expectedColumnId = (() => {
+    switch (filter) {
+      case 'todo':
+        return mapTaskStatusToColumnId('open', columns);
+      case 'in-progress':
+      case 'review':
+        return mapTaskStatusToColumnId('in progress', columns);
+      case 'done':
+        return mapTaskStatusToColumnId('completed', columns);
+      default:
+        return String(filter);
+    }
+  })();
+
+  const taskColumnId = mapTaskStatusToColumnId(task.status ?? task.columnId, columns);
+  return String(taskColumnId) === String(expectedColumnId);
+}
+
+export function buildCreateProjectTaskPayload(
+  input: Record<string, unknown>,
+  fallbackProjectId?: number
+) {
+  const relatedEntityIdRaw =
+    input.relatedEntityId ??
+    input.projectId ??
+    (fallbackProjectId != null ? fallbackProjectId : undefined);
+  const relatedEntityId =
+    relatedEntityIdRaw != null ? parseInt(String(relatedEntityIdRaw), 10) : undefined;
+
+  const assignedUserIdRaw = input.assignedUserId ?? input.assigneeId;
+  const assignedUserId =
+    assignedUserIdRaw != null ? parseInt(String(assignedUserIdRaw), 10) : undefined;
+
+  const dueDateRaw = input.dueDate;
+  let dueDate: string | undefined;
+  if (dueDateRaw instanceof Date) {
+    dueDate = dueDateRaw.toISOString();
+  } else if (dueDateRaw) {
+    dueDate = new Date(String(dueDateRaw)).toISOString();
+  }
+
+  return {
+    title: String(input.title || '').trim(),
+    description: input.description ? String(input.description) : undefined,
+    taskType: String(input.taskType || 'follow-up'),
+    status: normalizeTaskStatus(input.status),
+    relatedEntityType: String(input.relatedEntityType || (relatedEntityId ? 'project' : '')) || undefined,
+    relatedEntityId: relatedEntityId != null && !isNaN(relatedEntityId) ? relatedEntityId : undefined,
+    assignedUserId: assignedUserId != null && !isNaN(assignedUserId) ? assignedUserId : undefined,
+    dueDate,
+  };
+}

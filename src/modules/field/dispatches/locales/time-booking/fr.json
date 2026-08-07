@@ -1,0 +1,47 @@
+{
+  "title": "Réservation de Temps",
+  "new_entry": "Nouvelle Entrée de Temps",
+  "work_type": "Type de Travail",
+  "duration": "Durée",
+  "duration_minutes": "Durée (minutes)",
+  "duration_hours": "Durée (heures)",
+  "minutes": "minutes",
+  "billable": "Facturable",
+  "hourly_rate": "Taux Horaire",
+  "total_cost": "Coût Total",
+  "status": "Statut",
+  "book_time": "Réserver Temps",
+  "no_time_entries": "Aucune entrée de temps enregistrée",
+  "description": "Description",
+  "work_description_placeholder": "Décrivez le travail effectué...",
+  "types": {
+    "travel": "Déplacement",
+    "work": "Travail",
+    "waiting": "Attente",
+    "preparation": "Préparation",
+    "break": "Pause"
+  },
+  "statuses": {
+    "active": "Actif",
+    "completed": "Terminé",
+    "approved": "Approuvé",
+    "rejected": "Rejeté"
+  },
+  "edit_entry": "Modifier l'entrée de temps",
+  "save_changes": "Enregistrer les modifications",
+  "entry_mode": "Mode de saisie",
+  "mode_duration": "Durée",
+  "mode_range": "De / À",
+  "time_from": "De",
+  "time_to": "À",
+  "calculated_duration": "Durée calculée",
+  "toast": {
+    "duration_required": "Veuillez entrer une durée",
+    "added_success": "Entrée de temps ajoutée avec succès",
+    "add_error": "Échec de l'ajout de l'entrée de temps",
+    "updated_success": "Entrée de temps mise à jour avec succès",
+    "update_error": "Échec de la mise à jour de l'entrée de temps",
+    "deleted_success": "Entrée de temps supprimée avec succès",
+    "delete_error": "Échec de la suppression de l'entrée de temps"
+  }
+}

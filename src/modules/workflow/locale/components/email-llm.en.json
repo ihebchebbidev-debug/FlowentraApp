@@ -1,0 +1,11 @@
+{
+  "email-llm": {
+    "title": "AI Email",
+    "fullDescription": "Generates personalized email content using an LLM model and sends it to recipients.",
+    "how": "Provide a prompt or template and let the model generate the email body. Review or auto-send based on workflow rules.",
+    "examples": [
+      "Generate a personalized outreach email for a lead",
+      "Create a follow-up message based on recent activity"
+    ]
+  }
+}

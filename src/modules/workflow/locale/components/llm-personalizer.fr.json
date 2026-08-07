@@ -1,0 +1,8 @@
+{
+  "llm-personalizer": {
+    "title": "Personnaliseur IA",
+    "fullDescription": "Personnalise les messages ou contenus par destinataire en utilisant des données et modèles IA.",
+    "how": "Fournissez les données du destinataire et un modèle ; le personnalisateur remplit les variables et adapte le ton ou le contenu.",
+    "examples": ["Personnaliser le corps de l'email avec les informations client","Adapter le texte marketing par segment"]
+  }
+}

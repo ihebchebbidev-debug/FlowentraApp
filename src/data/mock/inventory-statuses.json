@@ -1,0 +1,7 @@
+[
+  { "id": "All", "name": "All" },
+  { "id": "Available", "name": "Available" },
+  { "id": "In Use", "name": "In Use" },
+  { "id": "Maintenance", "name": "Maintenance" },
+  { "id": "Out of Stock", "name": "Out of Stock" }
+]

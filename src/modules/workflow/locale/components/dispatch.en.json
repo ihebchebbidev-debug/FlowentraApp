@@ -1,0 +1,13 @@
+{
+  "dispatch": {
+    "title": "Dispatch",
+    "fullDescription": "Creates or updates a dispatch entry to assign field technicians, schedule jobs, and track the status of service tasks. Integrates with calendar and map views for planning and routing.",
+  "configureDescription": "Create or update dispatches; configure assignment rules and notifications.",
+  "how": "Map the source data (service order, customer, address, time window) to create a dispatch. Configure technician assignment rules, priority, and notifications. Use this node when a service needs scheduling or when an order requires field execution.",
+    "examples": [
+      "Create a dispatch when a service order is confirmed",
+      "Assign technician automatically based on skills and availability",
+      "Update dispatch status and notify the customer when technician is en route"
+    ]
+  }
+}

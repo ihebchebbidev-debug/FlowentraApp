@@ -1,0 +1,9 @@
+{
+  "action": {
+    "title": "Action",
+    "fullDescription": "Exécute une action personnalisée, comme mettre à jour des enregistrements, appeler des APIs ou exécuter des scripts.",
+  "configureDescription": "Sélectionnez une action et mappez les entrées/sorties pour effectuer des mises à jour ou appels.",
+  "how": "Configurez le type d'action et fournissez les paramètres nécessaires. Utilisez les actions pour muter des données ou déclencher des effets de bord.",
+    "examples": ["Mettre à jour un enregistrement dans le CRM","Appeler une API externe pour pousser des données"]
+  }
+}

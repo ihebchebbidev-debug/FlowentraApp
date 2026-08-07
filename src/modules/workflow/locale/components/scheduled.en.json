@@ -1,0 +1,9 @@
+{
+  "scheduled": {
+    "title": "Scheduled",
+    "fullDescription": "Runs the workflow on a defined schedule (cron or time-based rules).",
+  "configureDescription": "Set cron or time rules to run this workflow on a schedule.",
+  "how": "Define cron expressions or time windows to automatically run workflows at specific times or intervals.",
+    "examples": ["Run nightly maintenance workflows","Send weekly summary emails"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "proj-1": {
+    "totalTasks": 12,
+    "completedTasks": 8,
+    "overdueTasks": 1,
+    "activeMembers": 3,
+    "completionPercentage": 67
+  },
+  "proj-2": {
+    "totalTasks": 8,
+    "completedTasks": 3,
+    "overdueTasks": 0,
+    "activeMembers": 2,
+    "completionPercentage": 38
+  }
+}

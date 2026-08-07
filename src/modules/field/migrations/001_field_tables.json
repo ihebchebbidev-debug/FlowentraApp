@@ -1,0 +1,276 @@
+{
+  "module": "field",
+  "version": "001",
+  "description": "Field Service Management Tables - Updated for proper business flow",
+  "tables": [
+    {
+      "name": "FIELD.service_orders",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orderNumber": { "type": "string", "required": true, "unique": true },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "salesOrderId": { "type": "string", "required": true, "foreignKey": "CRM.sales_orders.id" },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "status": { "type": "string", "required": true, "enum": ["open", "ready_for_planning", "planned", "partially_completed", "technically_completed", "invoiced", "closed"] },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "promisedDate": { "type": "datetime", "required": false },
+        "contractAmount": { "type": "decimal", "required": true },
+        "actualCost": { "type": "decimal", "required": false, "default": 0 },
+        "profitMargin": { "type": "decimal", "required": false, "default": 0 },
+        "serviceLocation": { "type": "json", "required": true },
+        "skills": { "type": "array", "items": "string" },
+        "notes": { "type": "text", "required": false },
+        "internalNotes": { "type": "text", "required": false },
+        "tags": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["orderNumber", "status", "priority", "contactId", "salesOrderId"]
+    },
+    {
+      "name": "FIELD.jobs",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "jobNumber": { "type": "string", "required": true, "unique": true },
+        "serviceOrderId": { "type": "string", "required": true, "foreignKey": "FIELD.service_orders.id" },
+        "installationId": { "type": "string", "required": true, "foreignKey": "FIELD.installations.id" },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": true },
+        "status": { "type": "string", "required": true, "enum": ["pending", "ready", "assigned", "in_progress", "completed", "cancelled"] },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "workType": { "type": "string", "required": true, "enum": ["maintenance", "repair", "installation", "inspection", "upgrade"] },
+        "workLocation": { "type": "string", "required": true },
+        "locationDetails": { "type": "json", "required": false, "description": "Location with longitude, latitude, hasLocation fields" },
+        "requiredSkills": { "type": "array", "items": "string" },
+        "estimatedDuration": { "type": "integer", "required": true },
+        "estimatedCost": { "type": "decimal", "required": true },
+        "assignedTechnicians": { "type": "array", "items": "string" },
+        "scheduledDate": { "type": "datetime", "required": false },
+        "scheduledStartTime": { "type": "string", "required": false },
+        "scheduledEndTime": { "type": "string", "required": false },
+        "completionPercentage": { "type": "integer", "required": true, "default": 0 },
+        "actualStartTime": { "type": "datetime", "required": false },
+        "actualEndTime": { "type": "datetime", "required": false },
+        "actualDuration": { "type": "integer", "required": false },
+        "actualCost": { "type": "decimal", "required": false },
+        "specialInstructions": { "type": "text", "required": false },
+        "notes": { "type": "text", "required": false },
+        "internalNotes": { "type": "text", "required": false },
+        "issues": { "type": "array", "items": "json" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["jobNumber", "serviceOrderId", "installationId", "status", "priority", "workType"]
+    },
+    {
+      "name": "FIELD.job_articles",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "jobId": { "type": "string", "required": true, "foreignKey": "FIELD.jobs.id" },
+        "articleId": { "type": "string", "required": true, "foreignKey": "CRM.articles.id" },
+        "quantity": { "type": "decimal", "required": true, "default": 1 },
+        "unitPrice": { "type": "decimal", "required": false },
+        "totalPrice": { "type": "decimal", "required": false },
+        "isRequired": { "type": "boolean", "required": true, "default": true },
+        "notes": { "type": "text", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["jobId", "articleId"]
+    },
+    {
+      "name": "FIELD.job_issues",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "jobId": { "type": "string", "required": true, "foreignKey": "FIELD.jobs.id" },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": true },
+        "severity": { "type": "string", "required": true, "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "required": true, "enum": ["open", "in_progress", "resolved", "closed"] },
+        "reportedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "reportedAt": { "type": "datetime", "required": true },
+        "resolvedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "resolvedAt": { "type": "datetime", "required": false },
+        "resolution": { "type": "text", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["jobId", "status", "severity", "reportedBy"]
+    },
+    {
+      "name": "FIELD.dispatches",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "dispatchNumber": { "type": "string", "required": true, "unique": true },
+        "jobId": { "type": "string", "required": true, "foreignKey": "FIELD.jobs.id" },
+        "technicianId": { "type": "string", "required": true, "foreignKey": "FIELD.technicians.id" },
+        "status": { "type": "string", "required": true, "enum": ["planned", "started", "technically_completed", "reviewed", "closed"] },
+        "scheduledStartAt": { "type": "datetime", "required": true },
+        "scheduledEndAt": { "type": "datetime", "required": true },
+        "actualStartAt": { "type": "datetime", "required": false },
+        "actualEndAt": { "type": "datetime", "required": false },
+        "estimatedDuration": { "type": "integer", "required": true },
+        "actualDuration": { "type": "integer", "required": false },
+        "workNotes": { "type": "text", "required": false },
+        "materialsUsed": { "type": "array", "items": "json" },
+        "timeBooked": { "type": "decimal", "required": false },
+        "filesUploaded": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["dispatchNumber", "jobId", "technicianId", "status", "scheduledStartAt"]
+    },
+    {
+      "name": "FIELD.technicians",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "firstName": { "type": "string", "required": true },
+        "lastName": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true, "unique": true },
+        "phone": { "type": "string", "required": true },
+        "position": { "type": "string", "required": false },
+        "skills": { "type": "array", "items": "string" },
+        "hourlyRate": { "type": "decimal", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["available", "busy", "offline", "on_leave", "not_working", "over_capacity"] },
+        "location": { "type": "json", "required": false },
+        "avatar": { "type": "string", "required": false },
+        "workingHours": { "type": "json", "required": true },
+        "roleId": { "type": "string", "required": false, "foreignKey": "SYS.roles.id" },
+        "employeeId": { "type": "string", "required": false },
+        "department": { "type": "string", "required": false },
+        "certifications": { "type": "array", "items": "string" },
+        "emergencyContact": { "type": "json", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["email", "status", "skills"]
+    },
+    {
+      "name": "FIELD.installations",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "installationNumber": { "type": "string", "required": true, "unique": true },
+        "name": { "type": "string", "required": true },
+        "model": { "type": "string", "required": true },
+        "description": { "type": "text", "required": true },
+        "location": { "type": "string", "required": true },
+        "manufacturer": { "type": "string", "required": true },
+        "hasWarranty": { "type": "boolean", "required": true },
+        "warrantyFrom": { "type": "datetime", "required": false },
+        "warrantyTo": { "type": "datetime", "required": false },
+        "type": { "type": "string", "required": true, "enum": ["internal", "external"] },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["installationNumber", "manufacturer", "type", "hasWarranty", "contactId"]
+    },
+    {
+      "name": "FIELD.time_entries",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "serviceOrderId": { "type": "string", "required": false, "foreignKey": "FIELD.service_orders.id" },
+        "dispatchId": { "type": "string", "required": false, "foreignKey": "FIELD.dispatches.id" },
+        "technicianId": { "type": "string", "required": true, "foreignKey": "FIELD.technicians.id" },
+        "workType": { "type": "string", "required": true, "enum": ["maintenance", "repair", "installation", "inspection", "upgrade", "travel", "administrative"] },
+        "startTime": { "type": "datetime", "required": true },
+        "endTime": { "type": "datetime", "required": false },
+        "duration": { "type": "integer", "required": false },
+        "description": { "type": "text", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["active", "paused", "completed", "cancelled"], "default": "active" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["serviceOrderId", "dispatchId", "technicianId", "workType", "startTime", "status"],
+      "constraints": [
+        {
+          "type": "check", 
+          "name": "time_entry_parent_check",
+          "condition": "(serviceOrderId IS NOT NULL OR dispatchId IS NOT NULL) AND NOT (serviceOrderId IS NOT NULL AND dispatchId IS NOT NULL)"
+        }
+      ]
+    },
+    {
+      "name": "FIELD.expenses",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "serviceOrderId": { "type": "string", "required": false, "foreignKey": "FIELD.service_orders.id" },
+        "dispatchId": { "type": "string", "required": false, "foreignKey": "FIELD.dispatches.id" },
+        "technicianId": { "type": "string", "required": true, "foreignKey": "FIELD.technicians.id" },
+        "type": { "type": "string", "required": true, "enum": ["travel", "meal", "accommodation", "materials", "tools", "fuel", "parking", "other"] },
+        "amount": { "type": "decimal", "required": true },
+        "currency": { "type": "string", "required": true, "default": "TND" },
+        "date": { "type": "date", "required": true },
+        "description": { "type": "text", "required": false },
+        "receiptUrl": { "type": "string", "required": false },
+        "receiptFileName": { "type": "string", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["pending", "approved", "rejected", "reimbursed"], "default": "pending" },
+        "approvedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "approvedAt": { "type": "datetime", "required": false },
+        "rejectionReason": { "type": "text", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["serviceOrderId", "dispatchId", "technicianId", "type", "date", "status"],
+      "constraints": [
+        {
+          "type": "check",
+          "name": "expense_parent_check", 
+          "condition": "(serviceOrderId IS NOT NULL OR dispatchId IS NOT NULL) AND NOT (serviceOrderId IS NOT NULL AND dispatchId IS NOT NULL)"
+        }
+    },
+    {
+      "name": "FIELD.material_usage",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "serviceOrderId": { "type": "string", "required": false, "foreignKey": "FIELD.service_orders.id" },
+        "jobId": { "type": "string", "required": false, "foreignKey": "FIELD.jobs.id" },
+        "dispatchId": { "type": "string", "required": false, "foreignKey": "FIELD.dispatches.id" },
+        "articleId": { "type": "string", "required": true, "foreignKey": "CRM.articles.id" },
+        "quantity": { "type": "decimal", "required": true },
+        "unitPrice": { "type": "decimal", "required": true },
+        "totalPrice": { "type": "decimal", "required": true },
+        "usedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "usedAt": { "type": "datetime", "required": true },
+        "internalComment": { "type": "text", "required": false },
+        "externalComment": { "type": "text", "required": false },
+        "replacing": { "type": "boolean", "required": true, "default": false },
+        "oldArticleModel": { "type": "string", "required": false },
+        "oldArticleStatus": { "type": "string", "required": false, "enum": ["broken", "not_broken", "unknown"] },
+        "oldPhotoUrl": { "type": "string", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["serviceOrderId", "jobId", "dispatchId", "articleId", "usedBy", "usedAt"],
+      "constraints": [
+        {
+          "type": "check",
+          "name": "material_usage_parent_check",
+          "condition": "(serviceOrderId IS NOT NULL OR dispatchId IS NOT NULL)"
+        }
+      ]
+    }
+  ]
+}

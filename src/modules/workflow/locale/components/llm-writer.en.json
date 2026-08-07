@@ -1,0 +1,8 @@
+{
+  "llm-writer": {
+    "title": "AI Writer",
+    "fullDescription": "Generates text content using a language model for emails, descriptions, or other text fields.",
+    "how": "Provide a prompt and parameters (tone, length). The model will generate content which you can review or send automatically.",
+    "examples": ["Generate an email follow-up for a lead","Create a product description from item details"]
+  }
+}

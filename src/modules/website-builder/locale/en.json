@@ -1,0 +1,7 @@
+{
+  "plugin": {
+    "name": "Website Builder",
+    "description": "Build and publish public websites.",
+    "category": "System"
+  }
+}

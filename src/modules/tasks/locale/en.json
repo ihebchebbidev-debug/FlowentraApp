@@ -1,0 +1,914 @@
+{
+  "projects": {
+    "title": "Project & Tasks",
+    "description": "Organize tasks into projects with custom workflows",
+    "header": {
+      "back": "Back to Projects",
+      "backShort": "Back",
+      "loadingTasks": "Loading tasks...",
+      "add": "Add",
+      "addTask": "Add Task",
+      "manage": "Manage",
+      "loadingProject": "Loading project...",
+      "notFoundTitle": "Project Not Found",
+      "notFoundDesc": "The project you're looking for doesn't exist.",
+      "searchPlaceholder": "Search project tasks"
+    },
+    "filters": {
+      "filters": "Filters",
+      "all": "All",
+      "todo": "Todo",
+      "inProgress": "In progress",
+      "review": "Review",
+      "done": "Done",
+      "clear": "Clear",
+      "allAssignees": "All Assignees",
+      "anyTime": "Any time",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last365": "Last year"
+    },
+    "dateFilter": {
+      "allDates": "All Dates",
+      "showingAll": "Showing All",
+      "filterByDate": "Filter by Date"
+    },
+    "completedSection": {
+      "completed": "Completed Tasks"
+    },
+    "noTasks": {
+      "none": "No tasks found for this project.",
+      "refresh": "Refresh"
+    },
+    "listView": {
+      "searchPlaceholder": "Search tasks...",
+      "all": "All",
+      "pending": "Pending",
+      "completed": "Completed",
+      "addTask": "Add Task",
+      "tasks": "Tasks",
+      "noTasksMatch": "No tasks match your filters",
+      "noTasks": "No tasks yet",
+      "noTasksInCategory": "No tasks in this category"
+    },
+    "manager": {
+      "allStatuses": "All Statuses",
+      "active": "Active",
+      "completed": "Completed",
+      "onHold": "On Hold",
+      "cancelled": "Cancelled",
+      "allTypes": "All Types",
+      "service": "Service",
+      "sales": "Sales",
+      "internal": "Internal",
+      "custom": "Custom",
+      "allOwners": "All Owners",
+      "anyTime": "Any time",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last365": "Last 12 months",
+      "clear": "Clear"
+    },
+    "form": {
+      "editTitle": "Edit Project: {{name}}",
+      "errorTitle": "Error",
+      "nameRequired": "Project name is required.",
+      "labels": {
+        "projectName": "Project Name *",
+        "description": "Description",
+        "projectType": "Project Type",
+        "selectProjectType": "Select project type",
+        "projectStatus": "Project Status",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "teamMembers": "Team Members",
+        "customColumns": "Custom Columns",
+        "addNewColumn": "Add new column..."
+      },
+      "placeholders": {
+        "enterProjectName": "Enter project name",
+        "describeProject": "Describe your project..."
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "updateProject": "Update Project",
+        "pickDate": "Pick a date",
+        "addTeamMember": "Add team members"
+      },
+      "projectTypes": {
+        "service": "Service Project",
+        "sales": "Sales Project",
+        "internal": "Internal Project",
+        "custom": "Custom Project"
+      }
+    },
+    "createModal": {
+      "title": "Create New Project",
+      "titleSubProject": "Create Sub-Project",
+      "under": "Under:",
+      "projectName": "Project Name *",
+      "projectNamePlaceholder": "Enter project name",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your project...",
+      "projectType": "Project Type",
+      "selectProjectType": "Select project type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "pickDate": "Pick a date",
+      "teamMembers": "Team Members",
+      "loadingUsers": "Loading users...",
+      "selectTeamMember": "Select a team member to add...",
+      "noUsersAvailable": "No users available",
+      "columns": "Columns (default: Todo, In Progress, Review, Done)",
+      "addNewColumn": "Add new column...",
+      "cancel": "Cancel",
+      "createProject": "Create Project",
+      "createSubProject": "Create Sub-Project",
+      "projectTypes": {
+        "service": "Service Project",
+        "sales": "Sales Project",
+        "internal": "Internal Project",
+        "custom": "Custom Project"
+      },
+      "defaultColumns": {
+        "todo": "Todo",
+        "inProgress": "In Progress",
+        "review": "Review",
+        "done": "Done"
+      },
+      "warnings": {
+        "couldNotLoadTeam": "Could not load team members list"
+      },
+      "errors": {
+        "nameRequired": "Project name is required."
+      }
+    },
+    "stats": {
+      "total": "Total",
+      "active": "Active",
+      "completed": "Completed",
+      "late": "Late"
+    },
+    "searchPlaceholder": "Search projects...",
+    "buttons": {
+      "quickTask": "Quick Task",
+      "dailyTasks": "Daily Tasks",
+      "newProject": "New Project"
+    },
+    "loading": "Loading projects...",
+    "empty": {
+      "title": "No projects found",
+      "createHint": "Create a project to get started",
+      "searchHint": "Try adjusting your search criteria"
+    },
+    "toast": {
+      "loadError": "Failed to load projects",
+      "createSuccess": "Project created successfully!",
+      "createError": "Failed to create project",
+      "updateSuccess": "Project updated successfully!",
+      "updateError": "Failed to update project",
+      "deleteSuccess": "Project deleted successfully!",
+      "deleteError": "Failed to delete project",
+      "statusError": "Failed to update status",
+      "invalidId": "Invalid project ID"
+    },
+    "deleteConfirm": {
+      "title": "Delete Project",
+      "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone and will remove all associated tasks.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "list": {
+      "tasks": "tasks",
+      "members": "members",
+      "open": "Open",
+      "editProject": "Edit Project",
+      "pauseProject": "Pause Project",
+      "resumeProject": "Resume Project",
+      "markComplete": "Mark Complete",
+      "deleteProject": "Delete Project",
+      "overdue": "Overdue",
+      "progress": "Progress",
+      "table": {
+        "project": "Project",
+        "type": "Type",
+        "status": "Status",
+        "progress": "Progress",
+        "team": "Team",
+        "startDate": "Start Date",
+        "showing": "Showing {{from}} to {{to}} of {{total}} results",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "card": {
+        "openProject": "Open Project",
+        "overdue": "Overdue",
+        "tasks": "Tasks:",
+        "team": "Team:",
+        "due": "Due:"
+      },
+      "status": {
+        "active": "Active",
+        "completed": "Completed",
+        "on-hold": "On Hold",
+        "on_hold": "On Hold",
+        "cancelled": "Cancelled",
+        "planning": "Planning",
+        "in_progress": "In Progress"
+      },
+      "type": {
+        "client": "Client",
+        "internal": "Internal",
+        "service": "Service",
+        "sales": "Sales",
+        "custom": "Custom",
+        "development": "Development"
+      },
+      "detail": {
+        "tabs": {
+          "overview": "Overview",
+          "tasks": "Tasks",
+          "team": "Team",
+          "notes": "Notes",
+          "documents": "Documents",
+          "activity": "Activity",
+          "settings": "Settings"
+        },
+        "overview": {
+          "projectInfo": "Project Information",
+          "description": "Description",
+          "noDescription": "No description provided",
+          "status": "Status",
+          "priority": "Priority",
+          "type": "Type",
+          "owner": "Owner",
+          "startDate": "Start Date",
+          "endDate": "End Date",
+          "createdDate": "Created",
+          "lastUpdated": "Last Updated",
+          "notSet": "Not set",
+          "relatedContact": "Related Contact",
+          "noContact": "No contact linked",
+          "viewContact": "View Contact",
+          "taskSummary": "Task Summary",
+          "totalTasks": "Total Tasks",
+          "completed": "Completed",
+          "inProgress": "In Progress",
+          "overdue": "Overdue",
+          "completion": "Completion",
+          "hoursTracked": "Hours Tracked",
+          "estimatedHours": "Estimated Hours",
+          "actualHours": "Actual Hours",
+          "progress": "Progress",
+          "quickStats": "Quick Stats",
+          "projectDates": "Project Dates"
+        },
+        "team": {
+          "title": "Team Members",
+          "owner": "Owner",
+          "member": "Member",
+          "tasksAssigned": "Tasks assigned",
+          "tasksCompleted": "Tasks completed",
+          "addMember": "Add Member",
+          "removeMember": "Remove",
+          "noMembers": "No team members yet",
+          "noMembersHint": "Add team members to collaborate on this project",
+          "confirmRemove": "Remove {{name}} from the team?",
+          "confirmRemoveDesc": "This member will no longer have access to this project.",
+          "selectMember": "Select a team member to add...",
+          "allAdded": "All available users are already in the team",
+          "workload": "Workload"
+        },
+        "notes": {
+          "title": "Project Notes",
+          "addNote": "Add Note",
+          "placeholder": "Write a note about this project...",
+          "noNotes": "No notes yet",
+          "noNotesHint": "Add notes to keep track of important information",
+          "post": "Post Note",
+          "deleteConfirm": "Delete this note?",
+          "by": "by",
+          "loadError": "Failed to load notes",
+          "emptyError": "Note cannot be empty",
+          "postSuccess": "Note posted successfully",
+          "postError": "Failed to post note",
+          "deleteSuccess": "Note deleted successfully",
+          "deleteError": "Failed to delete note"
+        },
+        "documents": {
+          "title": "Project Documents"
+        },
+        "activity": {
+          "title": "Activity Timeline",
+          "noActivity": "No activity recorded yet",
+          "noActivityHint": "Activity will appear here as you work on this project",
+          "actions": {
+            "created": "Project created",
+            "updated": "Project updated",
+            "taskAdded": "Task added",
+            "taskCompleted": "Task completed",
+            "memberAdded": "Member added",
+            "memberRemoved": "Member removed",
+            "statusChanged": "Status changed",
+            "documentUploaded": "Document uploaded",
+            "noteAdded": "Note added"
+          },
+          "filters": {
+            "all": "All Activity",
+            "tasks": "Tasks",
+            "team": "Team",
+            "notes": "Notes",
+            "status": "Status Changes"
+          }
+        },
+        "settings": {
+          "title": "Project Settings",
+          "editProject": "Edit Project",
+          "dangerZone": "Danger Zone",
+          "deleteProject": "Delete Project",
+          "deleteWarning": "This will permanently delete the project and all its tasks."
+        }
+      }
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Overview",
+        "summary": "Summary",
+        "offers": "Offers",
+        "deals": "Deals",
+        "tasks": "Tasks",
+        "team": "Team",
+        "notes": "Notes",
+        "documents": "Documents",
+        "checklists": "Checklists",
+        "activity": "Activity",
+        "settings": "Settings"
+      },
+      "overview": {
+        "projectInfo": "Project Information",
+        "description": "Description",
+        "noDescription": "No description provided",
+        "status": "Status",
+        "priority": "Priority",
+        "type": "Type",
+        "owner": "Owner",
+        "budget": "Budget",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "createdDate": "Created",
+        "lastUpdated": "Last Updated",
+        "notSet": "Not set",
+        "relatedContact": "Related Contact",
+        "noContact": "No contact linked",
+        "viewContact": "View Contact",
+        "taskSummary": "Task Summary",
+        "totalTasks": "Total Tasks",
+        "completed": "Completed",
+        "inProgress": "In Progress",
+        "overdue": "Overdue",
+        "completion": "Completion",
+        "hoursTracked": "Hours Tracked",
+        "estimatedHours": "Estimated Hours",
+        "actualHours": "Actual Hours",
+        "progress": "Progress",
+        "quickStats": "Quick Stats",
+        "projectDates": "Project Dates",
+        "linkedRecords": "Linked records",
+        "linkedOffers": "Offers",
+        "linkedSales": "Sales",
+        "linkedServiceOrders": "Service Orders",
+        "linkedDispatches": "Dispatches"
+      },
+      "team": {
+        "title": "Team Members",
+        "owner": "Owner",
+        "member": "Member",
+        "tasksAssigned": "Tasks assigned",
+        "tasksCompleted": "Tasks completed",
+        "addMember": "Add Member",
+        "removeMember": "Remove",
+        "noMembers": "No team members yet",
+        "noMembersHint": "Add team members to collaborate on this project",
+        "confirmRemove": "Remove {{name}} from the team?",
+        "confirmRemoveDesc": "This member will no longer have access to this project.",
+        "selectMember": "Select a team member to add...",
+        "allAdded": "All available users are already in the team",
+        "workload": "Workload",
+        "memberAdded": "Member added",
+        "memberAddedDesc": "{{name}} added to {{project}}.",
+        "addFailed": "Failed to add member",
+        "memberRemoved": "Member removed",
+        "removeFailed": "Failed to remove member"
+      },
+      "notes": {
+        "title": "Project Notes",
+        "addNote": "Add Note",
+        "placeholder": "Write a note about this project...",
+        "noNotes": "No notes yet",
+        "noNotesHint": "Add notes to keep track of important information",
+        "post": "Post Note",
+        "deleteConfirm": "Delete this note?",
+        "deleteDescription": "This action cannot be undone.",
+        "by": "by",
+        "loadError": "Failed to load notes",
+        "emptyError": "Note cannot be empty",
+        "postSuccess": "Note posted successfully",
+        "postError": "Failed to post note",
+        "deleteSuccess": "Note deleted successfully",
+        "deleteError": "Failed to delete note"
+      },
+      "notesActivity": {
+        "title": "Notes & Activity",
+        "postedNote": "posted a note",
+        "noEntries": "No notes or activity yet",
+        "noEntriesHint": "Add a note or work on the project to see activity here"
+      },
+      "documents": {
+        "title": "Project Documents"
+      },
+      "activity": {
+        "title": "Activity Timeline",
+        "noActivity": "No activity recorded yet",
+        "noActivityHint": "Activity will appear here as you work on this project",
+        "actions": {
+          "created": "Project created",
+          "updated": "Project updated",
+          "taskAdded": "Task added",
+          "taskCompleted": "Task completed",
+          "memberAdded": "Member added",
+          "memberRemoved": "Member removed",
+          "statusChanged": "Status changed",
+          "documentUploaded": "Document uploaded",
+          "noteAdded": "Note added"
+        },
+        "filters": {
+          "all": "All Activity",
+          "tasks": "Tasks",
+          "team": "Team",
+          "notes": "Notes",
+          "status": "Status Changes"
+        }
+      },
+      "settings": {
+        "title": "Project Settings",
+        "editProject": "Edit Project",
+        "dangerZone": "Danger Zone",
+        "deleteProject": "Delete Project",
+        "deleteWarning": "This will permanently delete the project and all its tasks."
+      },
+      "summary": {
+        "title": "Project Summary",
+        "total": "total",
+        "won": "won",
+        "open": "open",
+        "winRate": "Win rate",
+        "serviceOrders": "Service Orders",
+        "overallStatus": "Overall Status",
+        "kind": "Kind",
+        "priority": "Priority",
+        "contact": "Contact",
+        "recentActivity": "Recent Activity",
+        "noActivity": "No linked offers, deals or service orders yet."
+      },
+      "offers": {
+        "title": "Project Offers",
+        "empty": "No offers yet for this project.",
+        "total": "Total value"
+      },
+      "deals": {
+        "title": "Won Deals",
+        "empty": "No deals won yet. Convert an offer to mark it as a deal.",
+        "badge": "Deal"
+      }
+    }
+  },
+  "daily": {
+    "title": "Daily Tasks",
+    "subtitle": "Manage your personal daily tasks and to-dos",
+    "backToProjects": "Back to Projects",
+    "back": "Back",
+    "addTask": "Add Task",
+    "add": "Add",
+    "searchPlaceholder": "Search tasks",
+    "today": "Today",
+    "showAllDates": "Show All Dates",
+    "showingAll": "Showing All",
+    "dropHere": "Drop tasks here",
+    "filters": {
+      "title": "Filters",
+      "status": "Status",
+      "priority": "Priority",
+      "all": "All",
+      "todo": "Todo",
+      "inProgress": "In progress",
+      "done": "Done",
+      "urgent": "Urgent",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "columns": {
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "done": "Done"
+    },
+    "loading": "Loading tasks...",
+    "noTasks": "No daily tasks found. Create your first task!",
+    "noTasksYet": "No daily tasks yet.",
+    "addFirstTask": "Add your first task",
+    "overdue": "overdue",
+    "daysLate": "{{count}}d late",
+    "dayOverdue": "{{count}} day overdue",
+    "daysOverdue": "{{count}} days overdue",
+    "due": "Due:",
+    "completed": "Completed",
+    "completedDate": "Completed {{date}}",
+    "reopen": "Reopen",
+    "complete": "Complete",
+    "delete": "Delete",
+    "addDialog": {
+      "title": "Add New Task",
+      "description": "Create a new daily task. It will be added to the \"To Do\" column.",
+      "titleLabel": "Title *",
+      "titlePlaceholder": "Enter task title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter task description",
+      "priorityLabel": "Priority",
+      "dueDateLabel": "Due Date",
+      "cancel": "Cancel",
+      "submit": "Add Task"
+    },
+    "completedSection": {
+      "title": "Completed Tasks",
+      "todayCompleted": "Completed today",
+      "clearAll": "Clear All"
+    },
+    "clearDialog": {
+      "title": "Clear All Completed Tasks?",
+      "description": "This will permanently delete {{count}} completed task{{plural}}. This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Clear All"
+    },
+    "toast": {
+      "taskCreated": "Task created successfully",
+      "taskMoved": "Task moved successfully",
+      "taskCompleted": "Task completed",
+      "taskReopened": "Task reopened",
+      "taskDeleted": "Task deleted",
+      "taskCheckedOff": "Task checked off!",
+      "clearedTasks": "Cleared {{count}} completed task(s)",
+      "errorCreate": "Failed to create task",
+      "errorMove": "Failed to move task",
+      "errorUpdate": "Failed to update task",
+      "errorDelete": "Failed to delete task",
+      "errorClear": "Failed to clear completed tasks",
+      "enterTitle": "Please enter a task title",
+      "commentAdded": "Comment added",
+      "commentAddedDesc": "Your comment was posted successfully.",
+      "commentDeleted": "Comment deleted",
+      "commentDeletedDesc": "The comment was removed.",
+      "commentError": "Error",
+      "commentAddFailed": "Failed to add comment.",
+      "commentDeleteFailed": "Failed to delete comment."
+    },
+    "comments": {
+      "title": "Comments",
+      "placeholder": "Add a comment...",
+      "postButton": "Post Comment",
+      "noComments": "No comments yet. Be the first to comment!"
+    }
+  },
+  "columnManager": {
+    "selectTeamMember": "Select a team member to add...",
+    "loading": "Loading...",
+    "allUsersInTeam": "All users are already in the team"
+  },
+  "kanban": {
+    "byStatus": "By Status",
+    "byTechnician": "By Technician",
+    "status": "Status",
+    "people": "People"
+  },
+  "settings": {
+    "title": "Manage Project Settings",
+    "tabs": {
+      "columns": "Columns",
+      "teamMembers": "Team Members"
+    },
+    "columns": {
+      "description": "Customize your workflow by adding, editing, or removing columns.",
+      "addColumn": "Add Column",
+      "cannotDelete": "Cannot Delete",
+      "cannotDeleteDesc": "You must have at least one column."
+    },
+    "team": {
+      "description": "Add or remove team members from this project.",
+      "loadingUsers": "Loading users...",
+      "selectPlaceholder": "Select a team member to add...",
+      "allInTeam": "All users are already in the team",
+      "noMembers": "No team members assigned",
+      "noMembersHint": "Add team members using the dropdown above",
+      "quickView": "Quick view:"
+    },
+    "toast": {
+      "success": "Success",
+      "saved": "Project settings saved!"
+    },
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes"
+  },
+  "taskDetail": {
+    "title": "Task Details",
+    "description": "Description",
+    "noDescription": "No description provided",
+    "addDescription": "Add a description...",
+    "assignee": "Assignee",
+    "unassigned": "Unassigned",
+    "dueDate": "Due Date",
+    "noDueDate": "No due date",
+    "timeline": "Timeline",
+    "created": "Created:",
+    "lastMoved": "Last moved:",
+    "status": "Status:",
+    "comments": "Comments",
+    "taskTitle": "Task title",
+    "select": "Select...",
+    "assignToTechnician": "Assign to technician",
+    "unassignTask": "Unassign task",
+    "editTask": "Edit Task",
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "statusLabels": {
+      "todo": "To Do",
+      "progress": "In Progress",
+      "review": "Review",
+      "done": "Done"
+    },
+    "deleteConfirm": {
+      "title": "Delete Task",
+      "description": "Are you sure you want to delete this task? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    }
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "validationError": "Validation Error",
+    "taskAssigned": "Task assigned to {{name}}",
+    "taskUnassigned": "Task unassigned",
+    "taskUpdated": "Task updated successfully!",
+    "taskDeleted": "Task deleted successfully!",
+    "taskCreated": "Task created successfully!",
+    "taskCreatedLocal": "Task created locally.",
+    "taskReassigned": "Task Reassigned",
+    "taskCompleted": "Task marked as complete",
+    "taskStatusUpdated": "Task status updated",
+    "teamUpdated": "Team updated! {{count}} members assigned to project.",
+    "teamMembersUpdated": "Team members updated successfully!",
+    "failedAssign": "Failed to assign task. Please try again.",
+    "failedUnassign": "Failed to unassign task. Please try again.",
+    "failedUpdate": "Failed to update task. Please try again.",
+    "failedDelete": "Failed to delete task. Please try again.",
+    "failedCreate": "Failed to create task. Please try again.",
+    "failedTeamUpdate": "Failed to update team members. Please try again.",
+    "failedStatus": "Failed to update task status. Please try again.",
+    "titleRequired": "Task title is required"
+  },
+  "quickTask": {
+    "title": "Create Quick Task",
+    "taskTitle": "Task Title *",
+    "taskTitlePlaceholder": "Enter task title",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the task...",
+    "priority": "Priority",
+    "selectPriority": "Select priority",
+    "project": "Project",
+    "selectProject": "Select project",
+    "noProject": "No Project",
+    "assignTo": "Assign To",
+    "assignPlaceholder": "Assign to someone",
+    "myself": "Myself",
+    "unassigned": "Unassigned",
+    "column": "Column",
+    "selectColumn": "Select column",
+    "dueDate": "Due Date",
+    "cancel": "Cancel",
+    "createTask": "Create Task"
+  },
+  "teamManagement": {
+    "title": "Manage Team - {{name}}",
+    "teamMembers": "Team Members",
+    "owner": "Owner",
+    "noMembers": "No team members assigned yet",
+    "noMembersHint": "Add team members to collaborate on this project",
+    "addMembers": "Add Team Members",
+    "searchPlaceholder": "Search technicians...",
+    "quickAdd": "Quick add team member",
+    "noTechsFound": "No technicians found matching your search",
+    "allOnTeam": "All available technicians are already on the team",
+    "add": "Add",
+    "autoUpdate": "Auto-update Technician Columns",
+    "autoUpdateHint": "Team members will automatically appear in the \"By Technicians\" view for better task organization.",
+    "cancel": "Cancel",
+    "updateTeam": "Update Team ({{count}} members)"
+  },
+  "timeTracking": {
+    "title": "Time Tracking",
+    "startTimer": "Start Timer",
+    "stopTimer": "Stop Timer",
+    "addEntry": "Add Entry",
+    "editEntry": "Edit Time Entry",
+    "timerRunning": "Timer Running",
+    "totalLogged": "Total Logged",
+    "estimated": "Estimated",
+    "billable": "Billable",
+    "entries": "Entries",
+    "progress": "Progress",
+    "overEstimate": "{{hours}}h over estimate",
+    "recentEntries": "Recent Entries",
+    "noEntries": "No time entries yet. Start tracking your work!",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "duration": "Duration",
+    "workType": "Work Type",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the work performed...",
+    "hourlyRate": "Hourly Rate",
+    "workTypes": {
+      "work": "Work",
+      "break": "Break",
+      "meeting": "Meeting",
+      "review": "Review",
+      "travel": "Travel",
+      "other": "Other"
+    },
+    "approvalStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "deleteConfirm": {
+      "title": "Delete Time Entry",
+      "description": "Are you sure you want to delete this time entry? This action cannot be undone."
+    },
+    "toast": {
+      "timerStarted": "Timer started",
+      "timerStopped": "Timer stopped and time logged",
+      "timerStartError": "Failed to start timer",
+      "timerStopError": "Failed to stop timer",
+      "entryCreated": "Time entry added",
+      "entryUpdated": "Time entry updated",
+      "entryDeleted": "Time entry deleted",
+      "createError": "Failed to add time entry",
+      "updateError": "Failed to update time entry",
+      "deleteError": "Failed to delete time entry",
+      "startTimeRequired": "Start time is required",
+      "endTimeRequired": "End time is required",
+      "endAfterStart": "End time must be after start time"
+    }
+  },
+  "checklist": {
+    "title": "Checklists",
+    "addChecklist": "Add Checklist",
+    "noChecklists": "No checklists yet",
+    "addChecklistHint": "Add a checklist to track subtasks",
+    "checklistTitlePlaceholder": "Checklist title...",
+    "itemPlaceholder": "Add an item...",
+    "addItem": "Add item",
+    "complete": "complete",
+    "convertToTask": "Convert to task",
+    "deleteConfirm": {
+      "title": "Delete Checklist",
+      "description": "This will delete the checklist and all its items. This action cannot be undone."
+    },
+    "toast": {
+      "checklistCreated": "Checklist created",
+      "checklistUpdated": "Checklist updated",
+      "checklistDeleted": "Checklist deleted",
+      "loadError": "Failed to load checklists",
+      "createError": "Failed to create checklist",
+      "updateError": "Failed to update checklist",
+      "deleteError": "Failed to delete checklist",
+      "itemCreateError": "Failed to add item",
+      "itemUpdateError": "Failed to update item",
+      "itemDeleteError": "Failed to delete item",
+      "toggleError": "Failed to update item",
+      "convertedToTask": "Converted to task",
+      "convertedToTaskDesc": "Item has been converted to a new task",
+      "convertError": "Failed to convert to task",
+      "reorderError": "Failed to reorder items"
+    }
+  },
+  "recurring": {
+    "title": "Recurring",
+    "makeRecurring": "Make Recurring",
+    "noRecurring": "Not a recurring task",
+    "makeRecurringHint": "Make this task repeat automatically",
+    "createRecurring": "Create Recurring Task",
+    "repeatEvery": "Repeat every",
+    "onDays": "On days",
+    "onDay": "On day",
+    "startDate": "Start date",
+    "endDate": "End date (optional)",
+    "noEndDate": "No end date",
+    "clearEndDate": "Clear end date",
+    "maxOccurrences": "Max occurrences (optional)",
+    "unlimited": "Unlimited",
+    "lastDay": "Last day of month",
+    "nextOn": "Next:",
+    "generated": "generated",
+    "active": "Active",
+    "paused": "Paused",
+    "types": {
+      "day": "Day(s)",
+      "week": "Week(s)",
+      "month": "Month(s)",
+      "year": "Year(s)"
+    },
+    "days": {
+      "sun": "Su",
+      "mon": "Mo",
+      "tue": "Tu",
+      "wed": "We",
+      "thu": "Th",
+      "fri": "Fr",
+      "sat": "Sa"
+    },
+    "deleteConfirm": {
+      "title": "Delete Recurring Rule",
+      "description": "This will stop the task from recurring. Already generated tasks will not be affected."
+    },
+    "toast": {
+      "created": "Recurring task created",
+      "createError": "Failed to create recurring task",
+      "paused": "Recurring task paused",
+      "resumed": "Recurring task resumed",
+      "deleted": "Recurring task deleted",
+      "deleteError": "Failed to delete recurring task"
+    }
+  },
+  "dynamicForms": {
+    "title": "Forms",
+    "attachForm": "Attach Form",
+    "noForms": "No forms attached",
+    "attachHint": "Attach a form to collect structured data",
+    "noAvailableForms": "No available forms",
+    "noReleasedForms": "No released forms available. Create and release a form first.",
+    "selectForm": "Select Form",
+    "selectFormDescription": "Choose a form to attach to this task",
+    "fillFormDescription": "Fill out the form below. You can save as draft and continue later.",
+    "fields": "fields",
+    "completed": "Completed",
+    "draft": "Created",
+    "progress": "Progress",
+    "viewResponse": "View Response",
+    "editResponse": "Edit Response",
+    "continueFilling": "Continue Filling",
+    "deleteDraft": "Delete Created",
+    "saveDraft": "Save Created",
+    "draftSaved": "Created saved",
+    "draftSaveError": "Failed to save draft",
+    "draftDeleted": "Created deleted",
+    "download": "Download PDF",
+    "submittedOn": "Submitted on",
+    "submit": "Submit",
+    "requiredFieldsMissing": "Please fill in all required fields",
+    "formSubmitted": "Form submitted successfully",
+    "submitError": "Failed to submit form",
+    "popupBlocked": "Please allow popups to download",
+    "task": "Task",
+    "submitted": "Submitted"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "dismiss": "Dismiss",
+    "retry": "Retry"
+  },
+  "deployment": {
+    "updateAvailable": "New Version Available",
+    "updateDescription": "A new version of the app has been deployed. Please refresh to get the latest features and fixes.",
+    "refresh": "Refresh Now"
+  },
+  "connection": {
+    "offline": "No Internet Connection",
+    "backendDown": "Backend Unavailable",
+    "backendIssue": "Backend Issue",
+    "checkFailed": "Failed to reach server",
+    "retrying": "Retrying connection..."
+  },
+  "plugin": {
+    "name": "Tasks",
+    "description": "Personal and team to-do lists.",
+    "category": "System"
+  }
+}

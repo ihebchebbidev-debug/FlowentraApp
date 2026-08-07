@@ -1,0 +1,224 @@
+{
+  "pdf": {
+    "documentType": "Deal",
+    "documentNumber": "Deal Number",
+    "documentDetails": "Deal Details",
+    "documentItems": "Deal Items",
+    "thankYouMessage": "Thank you for your business."
+  },
+  "tenant": {
+    "selectCompany": "Select a company from the top bar first.",
+    "selectCompanyHint": "You're viewing all companies. Select this deal's company from the top bar to convert it.",
+    "selectCompanyHintAdd": "You're viewing all companies. Select the company you want to add this deal to from the top bar."
+  },
+  "header": {
+    "title": "Deals",
+    "subtitle": "Track your sales pipeline from lead to close",
+    "add": "Add Deal",
+    "watchDemo": "Watch Demo"
+  },
+  "forecast": {
+    "weighted": "Weighted pipeline",
+    "openValue": "Open value",
+    "atRisk": "At risk",
+    "avgAge": "Avg. age",
+    "daysShort": "d"
+  },
+  "stats": {
+    "total": "Total Deals",
+    "open": "Open Pipeline",
+    "won": "Won",
+    "lost": "Lost",
+    "totalValue": "Total Value",
+    "openValue": "Open Value",
+    "wonValue": "Won Value",
+    "avgValue": "Avg Deal Size",
+    "winRate": "Win Rate"
+  },
+  "view": {
+    "list": "List",
+    "kanban": "Kanban"
+  },
+  "search": {
+    "placeholder": "Search deals…"
+  },
+  "filters": {
+    "all": "All stages",
+    "filters": "Filters"
+  },
+  "stages": {
+    "lead": "Lead",
+    "qualified": "Qualified",
+    "proposal": "Proposal",
+    "negotiation": "Negotiation",
+    "won": "Won",
+    "lost": "Lost"
+  },
+  "table": {
+    "deal": "Deal",
+    "customer": "Customer",
+    "stage": "Stage",
+    "value": "Value",
+    "probability": "Probability",
+    "closeDate": "Expected Close",
+    "owner": "Owner",
+    "actions": "Actions"
+  },
+  "empty": {
+    "title": "No deals yet",
+    "description": "Create your first deal to start tracking opportunities.",
+    "cta": "Add your first deal"
+  },
+  "actions": {
+    "view": "View",
+    "edit": "Edit",
+    "pdf": "PDF",
+    "delete": "Delete",
+    "convert": "Convert",
+    "create": "Create Deal",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "back": "Back to deals",
+    "manage": "Manage"
+  },
+  "detail": {
+    "tabs": {
+      "overview": "Overview",
+      "items": "Items",
+      "activity": "Activity",
+      "notes": "Notes",
+      "documents": "Documents",
+      "checklists": "Checklists"
+    },
+    "followUp": "Follow up",
+    "followUpOverdue": "Follow-up overdue",
+    "lostReason": "Lost reason",
+    "dealNumber": "Deal number",
+    "title": "Title",
+    "notSpecified": "Not specified",
+    "customerInfo": "Customer",
+    "installations": "Installations",
+    "customer": "Customer",
+    "stage": "Stage",
+    "value": "Estimated Value",
+    "probability": "Probability",
+    "expectedClose": "Expected Close",
+    "actualClose": "Closed On",
+    "source": "Source",
+    "category": "Category",
+    "created": "Created",
+    "owner": "Owner",
+    "description": "Description",
+    "project": "Project",
+    "noDescription": "No description provided.",
+    "convertedBanner": "This deal was converted",
+    "viewSale": "View Sale",
+    "viewProject": "View Project",
+    "viewOffer": "View Offer"
+  },
+  "form": {
+    "addTitle": "Add Deal",
+    "editTitle": "Edit Deal",
+    "title": "Deal title",
+    "titlePlaceholder": "e.g. Annual support contract — Acme Corp",
+    "customer": "Customer",
+    "selectCustomer": "Select a customer",
+    "stage": "Stage",
+    "value": "Estimated value",
+    "currency": "Currency",
+    "probability": "Probability (%)",
+    "expectedClose": "Expected close date",
+    "category": "Category",
+    "source": "Source",
+    "selectCategory": "Select a category",
+    "selectSource": "Select a source",
+    "nextAction": "Next action",
+    "nextActionPlaceholder": "e.g. Call to confirm budget",
+    "nextActionDate": "Follow-up date",
+    "lostReason": "Lost reason",
+    "lostReasonPlaceholder": "Why was this deal lost?",
+    "description": "Description",
+    "notes": "Notes",
+    "items": "Line items",
+    "required": "Please fill in the required fields",
+    "backToDeals": "Back to deals",
+    "dealSettings": "Deal settings",
+    "valueSummary": "Value",
+    "valueHint": "Add items to compute this automatically.",
+    "itemsSubtotal": "Items subtotal",
+    "installationSerial": "Serial"
+  },
+  "items": {
+    "add": "Add item",
+    "name": "Item",
+    "type": "Type",
+    "article": "Article",
+    "service": "Service",
+    "quantity": "Qty",
+    "unitPrice": "Unit price",
+    "discount": "Discount",
+    "lineTotal": "Total",
+    "none": "No line items. The estimated value is used instead.",
+    "fromCatalog": "Pick from catalog",
+    "selectArticle": "Select an article",
+    "installation": "Installation",
+    "viewInstallation": "View"
+  },
+  "activity": {
+    "add": "Add note",
+    "placeholder": "Write a note about this deal…",
+    "none": "No activity yet.",
+    "types": {
+      "note": "Note",
+      "call": "Call",
+      "email": "Email",
+      "meeting": "Meeting",
+      "status_change": "Stage change",
+      "created": "Created",
+      "converted": "Converted"
+    }
+  },
+  "convert": {
+    "title": "Convert deal",
+    "description": "Turn this won deal into the next step of your workflow.",
+    "toSale": "Convert to Sale",
+    "toSaleDesc": "Create a sales order with the same customer and line items.",
+    "toProject": "Convert to Project",
+    "toProjectDesc": "Spin up a project to deliver the work, linked to this deal.",
+    "toOffer": "Convert to Offer",
+    "toOfferDesc": "Generate a formal, priced quote from this deal.",
+    "confirm": "Convert",
+    "converting": "Converting…",
+    "pickOne": "Choose at least one target",
+    "alreadySale": "Already converted to a sale",
+    "alreadyProject": "Already converted to a project",
+    "alreadyOffer": "Already converted to an offer",
+    "errors": {
+      "alreadyConvertedToProject": "This deal has already been converted to project #{{id}}.",
+      "alreadyConvertedToSale": "This deal has already been converted to sale #{{id}}.",
+      "alreadyConvertedToOffer": "This deal has already been converted to offer #{{id}}.",
+      "generic": "Failed to convert deal"
+    }
+  },
+  "toast": {
+    "created": "Deal created",
+    "updated": "Deal updated",
+    "deleted": "Deal deleted",
+    "converted": "Deal converted",
+    "loadError": "Failed to load deals",
+    "saveError": "Failed to save deal",
+    "deleteError": "Failed to delete deal",
+    "convertError": "Failed to convert deal"
+  },
+  "delete": {
+    "title": "Delete this deal?",
+    "description": "This action cannot be undone. The deal will be permanently removed.",
+    "confirm": "Delete"
+  },
+  "plugin": {
+    "name": "Deals",
+    "description": "Manage opportunities from lead to close — convert won deals into sales or projects.",
+    "category": "CRM"
+  }
+}

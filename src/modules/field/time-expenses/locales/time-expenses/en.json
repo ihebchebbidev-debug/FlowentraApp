@@ -1,0 +1,148 @@
+{
+  "title": "Time & Expenses",
+  "subtitle": "Track and manage time entries and expenses for technicians",
+  "overview": "Overview",
+  "calendar": "Calendar",
+  "summary": "Summary",
+  "details": "Details",
+  "filters": {
+    "title": "Filters",
+    "date_range": "Date Range",
+    "users": "Technicians",
+    "all_users": "All Technicians",
+    "select_users": "Select Technicians",
+    "entry_types": "Entry Types",
+    "status": "Status",
+    "view_type": "View Type"
+  },
+  "view_types": {
+    "day": "Day View",
+    "week": "Week View", 
+    "month": "Month View"
+  },
+  "entry_types": {
+    "time": "Time Only",
+    "expense": "Expense Only",
+    "both": "Time & Expense"
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "totals": {
+    "total_time": "Total Time",
+    "total_expenses": "Total Expenses",
+    "total_earnings": "Total Earnings",
+    "average_hourly": "Average Hourly Rate",
+    "entries_count": "Total Entries"
+  },
+  "time_format": {
+    "hours": "hours",
+    "minutes": "minutes",
+    "hour_short": "h",
+    "minute_short": "m"
+  },
+  "calendar": {
+    "today": "Today",
+    "previous": "Previous",
+    "next": "Next",
+    "no_entries": "No entries for this date",
+    "select_date": "Select a date to view entries",
+    "time_entries": "Time entries",
+    "expenses": "Expenses",
+    "weekdays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  },
+  "summary_cards": {
+    "time_booked": "Time Booked",
+    "expenses_total": "Total Expenses", 
+    "earnings_total": "Total Earnings",
+    "technicians_active": "Active Technicians"
+  },
+  "stats": {
+    "total_time": "Total Time",
+    "total_expenses": "Total Expenses",
+    "users": "Users",
+    "service_orders": "Service Orders"
+  },
+  "table": {
+    "technician": "Technician",
+    "date": "Date",
+    "time_booked": "Time Booked",
+    "expenses": "Expenses",
+    "earnings": "Earnings",
+    "description": "Description",
+    "type": "Type",
+    "status": "Status",
+    "service_order": "Service Order",
+    "dispatch": "Dispatch",
+    "hourly_rate": "Hourly Rate"
+  },
+  "empty_states": {
+    "no_entries": "No Time & Expense Entries",
+    "no_entries_description": "No entries found for the selected filters.",
+    "no_data": "No data available",
+    "select_filters": "Please select filters to view data"
+  },
+  "export": {
+    "title": "Export Time & Expenses",
+    "format": "Export Format",
+    "csv": "CSV File",
+    "pdf": "PDF Report",
+    "excel": "Excel File",
+    "date_range": "Date Range",
+    "include_summary": "Include Summary",
+    "include_details": "Include Details"
+  },
+  "add_entry": {
+    "button": "Add Entry",
+    "title": "Add Time or Expense Entry",
+    "tab_time": "Time Entry",
+    "tab_expense": "Expense",
+    "dispatch": "Dispatch",
+    "dispatch_placeholder": "Select a dispatch",
+    "dispatch_search": "Search dispatches...",
+    "no_dispatches": "No dispatches found",
+    "technician": "Technician",
+    "technician_placeholder": "Select a technician",
+    "assign_myself": "Assign myself",
+    "work_type": "Work Type",
+    "work_type_placeholder": "e.g. Maintenance, Repair...",
+    "duration": "Duration",
+    "hours": "h",
+    "minutes": "min",
+    "description": "Description",
+    "description_placeholder": "Optional description...",
+    "billable": "Billable",
+    "hourly_rate": "Hourly Rate",
+    "expense_type": "Expense Type",
+    "expense_type_placeholder": "e.g. Travel, Parts, Meals...",
+    "amount": "Amount",
+    "currency": "Currency",
+    "date": "Date",
+    "submit_time": "Add Time Entry",
+    "submit_expense": "Add Expense",
+    "submitting": "Submitting...",
+    "success_time": "Time entry added successfully",
+    "success_expense": "Expense added successfully",
+    "error_time": "Failed to add time entry",
+    "error_expense": "Failed to add expense",
+    "validation": {
+      "dispatch_required": "Please select a dispatch",
+      "technician_required": "Please select a technician",
+      "work_type_required": "Work type is required",
+      "duration_required": "Duration must be greater than 0",
+      "expense_type_required": "Expense type is required",
+      "amount_required": "Amount must be greater than 0",
+      "date_required": "Date is required"
+    }
+  }
+}
