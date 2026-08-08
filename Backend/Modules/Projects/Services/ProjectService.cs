@@ -160,7 +160,14 @@ namespace MyApi.Modules.Projects.Services
             }
         }
 
-        public async Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto createDto, string createdByUser)
+        // Npgsql is configured with a retrying execution strategy, which forbids
+        // user-initiated transactions unless the whole unit runs inside the strategy.
+        // Every transactional method below therefore goes through CreateExecutionStrategy().
+        public Task<ProjectResponseDto> CreateProjectAsync(CreateProjectRequestDto createDto, string createdByUser) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => CreateProjectCoreAsync(createDto, createdByUser));
+
+        private async Task<ProjectResponseDto> CreateProjectCoreAsync(CreateProjectRequestDto createDto, string createdByUser)
         {
             // Validate enum-like fields up front so a typo can never reach the DB
             // (statistics/kanban grouping silently break on unknown values).
@@ -226,7 +233,11 @@ namespace MyApi.Modules.Projects.Services
         }
 
 
-        public async Task<ProjectResponseDto?> UpdateProjectAsync(int id, UpdateProjectRequestDto updateDto, string modifiedByUser)
+        public Task<ProjectResponseDto?> UpdateProjectAsync(int id, UpdateProjectRequestDto updateDto, string modifiedByUser) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => UpdateProjectCoreAsync(id, updateDto, modifiedByUser));
+
+        private async Task<ProjectResponseDto?> UpdateProjectCoreAsync(int id, UpdateProjectRequestDto updateDto, string modifiedByUser)
         {
             await using var tx = await _context.Database.BeginTransactionAsync();
             try
@@ -312,7 +323,11 @@ namespace MyApi.Modules.Projects.Services
             }
         }
 
-        public async Task<bool> DeleteProjectAsync(int id, string deletedByUser)
+        public Task<bool> DeleteProjectAsync(int id, string deletedByUser) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => DeleteProjectCoreAsync(id, deletedByUser));
+
+        private async Task<bool> DeleteProjectCoreAsync(int id, string deletedByUser)
         {
             // ProjectTask/ProjectColumn/ProjectNote/ProjectActivity have no FK to Projects
             // (ProjectTask is entity-agnostic), so there is no DB-level cascade. Clean up
@@ -524,7 +539,11 @@ namespace MyApi.Modules.Projects.Services
             }
         }
 
-        public async Task<ProjectNoteDto> CreateProjectNoteAsync(int projectId, CreateProjectNoteRequestDto createDto, string createdByUser)
+        public Task<ProjectNoteDto> CreateProjectNoteAsync(int projectId, CreateProjectNoteRequestDto createDto, string createdByUser) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => CreateProjectNoteCoreAsync(projectId, createDto, createdByUser));
+
+        private async Task<ProjectNoteDto> CreateProjectNoteCoreAsync(int projectId, CreateProjectNoteRequestDto createDto, string createdByUser)
         {
             if (string.IsNullOrWhiteSpace(createDto.Content))
                 throw new InvalidOperationException("Note content is required");
@@ -805,7 +824,11 @@ namespace MyApi.Modules.Projects.Services
         private Task LockProjectRowAsync(int projectId) =>
             _context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Projects\" WHERE \"Id\" = {projectId} FOR UPDATE");
 
-        public async Task<bool> AssignTeamMemberAsync(int projectId, AssignTeamMemberRequestDto dto, string userId)
+        public Task<bool> AssignTeamMemberAsync(int projectId, AssignTeamMemberRequestDto dto, string userId) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => AssignTeamMemberCoreAsync(projectId, dto, userId));
+
+        private async Task<bool> AssignTeamMemberCoreAsync(int projectId, AssignTeamMemberRequestDto dto, string userId)
         {
             if (dto.UserId <= 0) throw new InvalidOperationException("userId must be greater than 0");
 
@@ -852,7 +875,11 @@ namespace MyApi.Modules.Projects.Services
             }
         }
 
-        public async Task<bool> RemoveTeamMemberAsync(int projectId, int userIdToRemove, string userId)
+        public Task<bool> RemoveTeamMemberAsync(int projectId, int userIdToRemove, string userId) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => RemoveTeamMemberCoreAsync(projectId, userIdToRemove, userId));
+
+        private async Task<bool> RemoveTeamMemberCoreAsync(int projectId, int userIdToRemove, string userId)
         {
             if (userIdToRemove <= 0) throw new InvalidOperationException("userId must be greater than 0");
 

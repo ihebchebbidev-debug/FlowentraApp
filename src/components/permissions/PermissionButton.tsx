@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Button, ButtonProps } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionModule, PermissionAction } from "@/types/permissions";
@@ -15,7 +16,7 @@ interface PermissionButtonProps extends ButtonProps {
  * A button that is disabled or hidden based on user permissions.
  * Use this for create, edit, delete actions throughout the app.
  */
-export function PermissionButton({
+export const PermissionButton = forwardRef<HTMLButtonElement, PermissionButtonProps>(function PermissionButton({
   module,
   action,
   hideWhenDisabled = false,
@@ -24,7 +25,7 @@ export function PermissionButton({
   disabled,
   onClick,
   ...props
-}: PermissionButtonProps) {
+}, ref) {
   const { isMainAdmin, hasPermission, isLoading } = usePermissions();
   // For any mutating action (create / update / delete) gate on cross-company
   // view-all mode requiring a target company to be selected.
@@ -50,7 +51,7 @@ export function PermissionButton({
         <Tooltip>
           <TooltipTrigger asChild>
             <span>
-              <Button {...props} disabled={true}>
+              <Button ref={ref} {...props} disabled={true}>
                 {children}
               </Button>
             </span>
@@ -72,6 +73,7 @@ export function PermissionButton({
           <TooltipTrigger asChild>
             <span tabIndex={0} className="inline-flex">
               <Button
+                ref={ref}
                 {...props}
                 disabled={true}
                 aria-disabled
@@ -93,10 +95,10 @@ export function PermissionButton({
   }
 
   return (
-    <Button {...props} onClick={onClick} disabled={isDisabled}>
+    <Button ref={ref} {...props} onClick={onClick} disabled={isDisabled}>
       {children}
     </Button>
   );
-}
+});
 
 export default PermissionButton;

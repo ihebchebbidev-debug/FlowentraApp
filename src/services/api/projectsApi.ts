@@ -161,6 +161,30 @@ export interface ProjectListResponseDto {
   hasPreviousPage: boolean;
 }
 
+/**
+ * Backend `Project.ProjectKind` is a varchar(20) and `ProjectService.NormalizeKind`
+ * only accepts "client" or "internal". Lookup-driven project types are slugified from
+ * their label (e.g. "Internal / Improvement"), which broke every create/update with a
+ * 400. Map any incoming type onto the allowed contract.
+ */
+const normalizeProjectKind = (kind?: string): string | undefined => {
+  if (!kind) return kind;
+  const slug = kind.toLowerCase().trim();
+  if (slug === 'client' || slug === 'internal') return slug;
+  return /client|customer|contact/.test(slug) ? 'client' : 'internal';
+};
+
+/** Extract a readable message from an ASP.NET ProblemDetails / validation payload. */
+const readApiError = async (response: Response, fallback: string): Promise<string> => {
+  const body = await response.json().catch(() => null as any);
+  if (!body) return fallback;
+  if (body.errors && typeof body.errors === 'object') {
+    const first = Object.values(body.errors as Record<string, string[]>)[0];
+    if (Array.isArray(first) && first[0]) return first[0];
+  }
+  return body.message || body.title || fallback;
+};
+
 // Request DTOs — matches CreateProjectRequestDto / UpdateProjectRequestDto in ProjectDTOs.cs
 export interface CreateProjectRequestDto {
   name: string;
@@ -374,12 +398,11 @@ export const projectsApi = {
     const response = await fetch(`${API_URL}/api/Projects`, {
       method: 'POST',
       headers: getMutationHeaders(),
-      body: JSON.stringify(request),
+      body: JSON.stringify({ ...request, projectKind: normalizeProjectKind(request.projectKind) }),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to create project' }));
-      throw new Error(error.message || 'Failed to create project');
+      throw new Error(await readApiError(response, 'Failed to create project'));
     }
 
     const data: ProjectResponseDto = await response.json();
@@ -391,12 +414,11 @@ export const projectsApi = {
     const response = await fetch(`${API_URL}/api/Projects/${id}`, {
       method: 'PUT',
       headers: getMutationHeaders(),
-      body: JSON.stringify(request),
+      body: JSON.stringify({ ...request, projectKind: normalizeProjectKind(request.projectKind) }),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to update project' }));
-      throw new Error(error.message || 'Failed to update project');
+      throw new Error(await readApiError(response, 'Failed to update project'));
     }
 
     const data: ProjectResponseDto = await response.json();
