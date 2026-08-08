@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,30 +45,62 @@ export function GoalsTab() {
   const users = useMemo(() => (employeesQuery.data ?? []).map((r: any) => r.user).filter(Boolean), [employeesQuery.data]);
 
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [userId, setUserId] = useState('');
   const [cycleId, setCycleId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<GoalCategory>('smart');
   const [weight, setWeight] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<GoalStatus>('not_started');
   const [dueDate, setDueDate] = useState('');
+
+  const resetForm = () => {
+    setEditingId(null);
+    setUserId(''); setCycleId(''); setTitle(''); setDescription('');
+    setCategory('smart'); setWeight(0); setProgress(0); setStatus('not_started'); setDueDate('');
+  };
+
+  const openCreate = () => { resetForm(); setOpen(true); };
+
+  const openEdit = (g: any) => {
+    setEditingId(g.id);
+    setUserId(String(g.userId ?? ''));
+    setCycleId(g.cycleId ? String(g.cycleId) : '');
+    setTitle(g.title ?? '');
+    setDescription(g.description ?? '');
+    setCategory((g.category ?? 'smart') as GoalCategory);
+    setWeight(Number(g.weight ?? 0));
+    setProgress(Number(g.progress ?? 0));
+    setStatus((g.status ?? 'not_started') as GoalStatus);
+    setDueDate(g.dueDate ? String(g.dueDate).slice(0, 10) : '');
+    setOpen(true);
+  };
 
   const submit = async () => {
     if (!userId || !title) {
       toast({ title: t('performancePage.goals.requiredError'), variant: 'destructive' });
       return;
     }
-    await createGoal.mutateAsync({
+    const payload = {
       userId: Number(userId),
       cycleId: cycleId ? Number(cycleId) : null,
       title, description, category, weight,
       dueDate: dueDate || undefined,
-      progress: 0, status: 'not_started',
-    });
-    toast({ title: t('performancePage.goals.addedToast') });
+      progress, status,
+    };
+    if (editingId) {
+      await updateGoal.mutateAsync({ id: editingId, payload });
+      toast({ title: t('performancePage.goals.updatedToast', { defaultValue: 'Goal updated' }) });
+    } else {
+      await createGoal.mutateAsync(payload);
+      toast({ title: t('performancePage.goals.addedToast') });
+    }
     setOpen(false);
-    setTitle(''); setDescription(''); setWeight(0); setDueDate(''); setCycleId('');
+    resetForm();
   };
+
 
   const goals = goalsQuery.data ?? [];
 
@@ -76,12 +108,13 @@ export function GoalsTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{t('performancePage.goals.title')}</CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-2" />{t('performancePage.goals.addGoal')}</Button>
+            <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />{t('performancePage.goals.addGoal')}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{t('performancePage.goals.newGoal')}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? t('performancePage.goals.editGoal', { defaultValue: 'Edit goal' }) : t('performancePage.goals.newGoal')}</DialogTitle></DialogHeader>
+
             <div className="grid gap-3">
               <div>
                 <Label>{t('performancePage.common.employee')}</Label>
@@ -134,10 +167,30 @@ export function GoalsTab() {
                   <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
                 </div>
               </div>
+              {editingId && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>{t('performancePage.goals.table.progress')}</Label>
+                    <Input type="number" min={0} max={100} value={progress} onChange={e => setProgress(Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label>{t('performancePage.goals.table.status')}</Label>
+                    <Select value={status} onValueChange={v => setStatus(v as GoalStatus)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {GOAL_STATUSES.map(s => (
+                          <SelectItem key={s} value={s}>{t(`performancePage.status.${s}`)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setOpen(false)}>{t('performancePage.common.cancel')}</Button>
-              <Button onClick={submit} disabled={createGoal.isPending}>{t('performancePage.common.save')}</Button>
+              <Button onClick={submit} disabled={createGoal.isPending || updateGoal.isPending}>{t('performancePage.common.save')}</Button>
+
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -216,6 +269,16 @@ export function GoalsTab() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={t('performancePage.goals.editGoal', { defaultValue: 'Edit goal' })}
+                        title={t('performancePage.goals.editGoal', { defaultValue: 'Edit goal' })}
+                        onClick={() => openEdit(g)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+
                       <ConfirmDeleteButton
                         size="icon"
                         variant="ghost"

@@ -210,7 +210,7 @@ export function HrSettingsPage() {
                       <Switch checked={holidayRecurring} onCheckedChange={setHolidayRecurring} />
                       <Label>{t('settingsPage.holidays.recurring')}</Label>
                     </div>
-                    <HrPermissionButton action="create" onClick={addHoliday} disabled={createHoliday.isPending} size="icon" className="ml-auto">
+                    <HrPermissionButton action="create" aria-label={t('settingsPage.holidays.add', 'Add holiday')} title={t('settingsPage.holidays.add', 'Add holiday')} onClick={addHoliday} disabled={createHoliday.isPending} size="icon" className="ml-auto">
                       <Plus className="h-4 w-4" />
                     </HrPermissionButton>
                   </div>
@@ -233,7 +233,7 @@ export function HrSettingsPage() {
                         <TableCell>{h.name}</TableCell>
                         <TableCell>{h.isRecurring ? '✓' : '—'}</TableCell>
                         <TableCell>
-                          <HrPermissionButton action="delete" size="icon" variant="ghost" onClick={() => { if (guardHr('delete')) deleteHoliday.mutate(h.id); }}>
+                          <HrPermissionButton action="delete" aria-label={t('settingsPage.holidays.delete', 'Delete holiday')} title={t('settingsPage.holidays.delete', 'Delete holiday')} size="icon" variant="ghost" onClick={() => { if (guardHr('delete')) deleteHoliday.mutate(h.id); }}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </HrPermissionButton>
                         </TableCell>

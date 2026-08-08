@@ -287,40 +287,66 @@ namespace MyApi.Modules.HR.Services
                 .Where(x => x.Date >= start && x.Date < end);
             if (userId.HasValue) q = q.Where(x => x.UserId == userId.Value);
 
-            // Project instead of materializing the entity: legacy/imported rows can hold
-            // NULL in `status` / `source`, which makes EF throw while filling the
-            // non-nullable string properties (surfacing as a 500 on the whole month).
-            var raw = await q.OrderBy(x => x.Date).ThenBy(x => x.UserId)
-                .Select(x => new
-                {
-                    x.Id,
-                    x.UserId,
-                    x.Date,
-                    x.CheckIn,
-                    x.CheckOut,
-                    x.BreakMinutes,
-                    x.TotalHours,
-                    x.OvertimeHours,
-                    Status = (string?)x.Status,
-                    x.Notes,
-                    Source = (string?)x.Source,
-                })
-                .ToListAsync();
+            // Only the primary keys are read through EF. Legacy/imported rows in
+            // `hr_attendance` can hold values that break Npgsql materialization
+            // (NULLs in non-nullable CLR columns, `infinity` timestamps, numerics
+            // that overflow the mapped precision) — any single bad row used to 500
+            // the entire month. Selecting ids cannot cast anything, and the payload
+            // itself is then read as text and parsed defensively below, so a corrupt
+            // row degrades to defaults instead of failing the request.
+            var ids = await q.Select(x => x.Id).ToListAsync();
+            var rows = new List<HrAttendance>();
 
-            var rows = raw.Select(x => new HrAttendance
+            if (ids.Count > 0)
             {
-                Id = x.Id,
-                UserId = x.UserId,
-                Date = x.Date,
-                CheckIn = x.CheckIn,
-                CheckOut = x.CheckOut,
-                BreakMinutes = x.BreakMinutes,
-                TotalHours = x.TotalHours,
-                OvertimeHours = x.OvertimeHours,
-                Status = string.IsNullOrWhiteSpace(x.Status) ? "present" : x.Status!,
-                Notes = x.Notes,
-                Source = string.IsNullOrWhiteSpace(x.Source) ? "manual" : x.Source!,
-            }).ToList();
+                var conn = _db.Database.GetDbConnection();
+                var opened = conn.State != System.Data.ConnectionState.Open;
+                if (opened) await conn.OpenAsync();
+                try
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText =
+                        "SELECT id, user_id::text, date::text, check_in::text, check_out::text, " +
+                        "break_minutes::text, total_hours::text, overtime_hours::text, status, notes, source " +
+                        "FROM hr_attendance WHERE id IN (" + string.Join(",", ids) + ")";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        string? S(int i) => reader.IsDBNull(i) ? null : reader.GetValue(i)?.ToString();
+                        DateTime? D(int i)
+                        {
+                            var s = S(i);
+                            return DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
+                                System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+                                out var d) ? DateTime.SpecifyKind(d, DateTimeKind.Utc) : (DateTime?)null;
+                        }
+                        decimal Dec(int i) => decimal.TryParse(S(i), System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0m;
+                        int I(int i) => int.TryParse(S(i), out var v) ? v : 0;
+
+                        rows.Add(new HrAttendance
+                        {
+                            Id = reader.GetInt32(0),
+                            UserId = I(1),
+                            Date = D(2) ?? start,
+                            CheckIn = D(3),
+                            CheckOut = D(4),
+                            BreakMinutes = I(5),
+                            TotalHours = Dec(6),
+                            OvertimeHours = Dec(7),
+                            Status = string.IsNullOrWhiteSpace(S(8)) ? "present" : S(8)!,
+                            Notes = S(9),
+                            Source = string.IsNullOrWhiteSpace(S(10)) ? "manual" : S(10)!,
+                        });
+                    }
+                }
+                finally
+                {
+                    if (opened) await conn.CloseAsync();
+                }
+            }
+
+            rows = rows.OrderBy(x => x.Date).ThenBy(x => x.UserId).ToList();
 
             var userIds = rows.Select(x => x.UserId).Distinct().ToList();
             var userMap = await _db.Users.Where(u => userIds.Contains(u.Id))
@@ -328,6 +354,7 @@ namespace MyApi.Modules.HR.Services
 
             return rows.Select(x => MapAttendanceDto(x, userMap)).ToList();
         }
+
 
         public async Task<HrAttendanceDto> UpsertAttendanceAsync(UpsertHrAttendanceDto dto, int actorUserId)
         {
@@ -577,7 +604,10 @@ namespace MyApi.Modules.HR.Services
             var salaryConfigMap = (await _db.Set<HrEmployeeSalaryConfig>().AsNoTracking().Where(x => userIds.Contains(x.UserId)).ToListAsync())
                 .GroupBy(x => x.UserId).ToDictionary(g => g.Key, g => g.First());
             // Exclude employees whose contract ended before the payroll period starts.
-            var periodStart = new DateTime(dto.Year, dto.Month, 1);
+            // Npgsql rejects DateTime with Kind=Unspecified for `timestamp with time zone`
+            // parameters, which made payroll generation fail with a 400. Anchor every
+            // period boundary to UTC.
+            var periodStart = new DateTime(dto.Year, dto.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             users = users.Where(u => !salaryConfigMap.TryGetValue(u.Id, out var c)
                                      || c.ContractEndDate == null
                                      || c.ContractEndDate.Value.Date >= periodStart).ToList();
@@ -585,8 +615,8 @@ namespace MyApi.Modules.HR.Services
             // Load every approved leave of the YEAR (not just the month): paid-leave
             // entitlement is annual, so days already consumed in earlier months
             // determine how much of this month's leave is still paid.
-            var yearStart = new DateTime(dto.Year, 1, 1);
-            var yearEnd = new DateTime(dto.Year, 12, 31);
+            var yearStart = new DateTime(dto.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var yearEnd = new DateTime(dto.Year, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var leaves = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(x => x.Status == "approved" && x.StartDate <= yearEnd && x.EndDate >= yearStart)
                 .ToListAsync();
@@ -601,10 +631,18 @@ namespace MyApi.Modules.HR.Services
                 .Where(x => !x.IsDeleted && x.Year == dto.Year && x.Month == dto.Month && x.AffectsPayroll)
                 .ToListAsync())
                 .GroupBy(b => b.UserId).ToDictionary(g => g.Key, g => g.ToList());
-            var attendanceByUser = (await _db.Set<HrAttendance>().AsNoTracking()
-                .Where(x => x.Date.Year == dto.Year && x.Date.Month == dto.Month)
-                .ToListAsync())
+            // Reuse the hardened attendance reader: it parses every payload column as
+            // text, so corrupt legacy rows cannot break payroll generation either.
+            var attendanceByUser = (await GetAttendanceAsync(dto.Year, dto.Month))
+                .Select(x => new HrAttendance
+                {
+                    UserId = x.UserId,
+                    TotalHours = x.TotalHours,
+                    OvertimeHours = x.OvertimeHours,
+                    Status = x.Status,
+                })
                 .GroupBy(a => a.UserId).ToDictionary(g => g.Key, g => g.ToList());
+
 
             var periodEnd = periodStart.AddMonths(1).AddDays(-1);
             const decimal PayrollDaysPerMonth = 26m; // same divisor used for the hourly rate
