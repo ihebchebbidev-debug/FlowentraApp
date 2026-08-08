@@ -26,6 +26,59 @@ namespace MyApi.Modules.RetenueSource.Services
             _env = env;
         }
 
+        /// <summary>
+        /// Resolve the TEJ declarant (the withholder = the current company).
+        /// Priority: the active tenant's own fiscal identity (Settings → Company),
+        /// then a company contact carrying a Matricule Fiscal. Returns null when
+        /// neither source has an MF, so callers can surface an actionable message.
+        /// </summary>
+        private async Task<TEJDeclarantDto?> ResolveDeclarantAsync()
+        {
+            var tenantId = _db.GetTenantId();
+            if (tenantId > 0)
+            {
+                var tenant = await _db.Tenants.AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.Id == tenantId);
+                if (tenant != null && !string.IsNullOrWhiteSpace(tenant.TaxId))
+                {
+                    var addressParts = new[]
+                    {
+                        tenant.CompanyAddress,
+                        tenant.CompanyPostalCode,
+                        tenant.CompanyCity,
+                        tenant.CompanyState
+                    }.Where(p => !string.IsNullOrWhiteSpace(p));
+
+                    return new TEJDeclarantDto
+                    {
+                        Name = string.IsNullOrWhiteSpace(tenant.CompanyName) ? "" : tenant.CompanyName,
+                        TaxId = tenant.TaxId!.Trim(),
+                        Address = string.Join(", ", addressParts),
+                        Email = tenant.CompanyEmail,
+                        Phone = tenant.CompanyPhone
+                    };
+                }
+            }
+
+            var settingsCompany = await _db.Contacts.AsNoTracking()
+                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
+                .OrderBy(c => c.Id)
+                .FirstOrDefaultAsync();
+            if (settingsCompany == null) return null;
+
+            return new TEJDeclarantDto
+            {
+                Name = settingsCompany.Name,
+                TaxId = settingsCompany.MatriculeFiscale ?? "",
+                Address = settingsCompany.Address ?? "",
+                Email = settingsCompany.Email,
+                Phone = settingsCompany.Phone
+            };
+        }
+
+        private const string DeclarantMissingMessage =
+            "No TEJ declarant configured — set your company Matricule Fiscal (Tax ID) in Settings → Company.";
+
         // ─── CRUD ───
 
         public async Task<PaginatedRSResponse> GetRSRecordsAsync(
@@ -410,13 +463,15 @@ namespace MyApi.Modules.RetenueSource.Services
                 throw new InvalidOperationException($"Cannot export: {ex.Message}");
             }
 
-            // Determine declarant
-            var declarant = request.Declarant ?? new TEJDeclarantDto
-            {
-                Name = records.First().PayerName,
-                TaxId = records.First().PayerTaxId,
-                Address = records.First().PayerAddress ?? ""
-            };
+            // Determine declarant: explicit request → company fiscal identity → payer on records.
+            var declarant = request.Declarant
+                ?? await ResolveDeclarantAsync()
+                ?? new TEJDeclarantDto
+                {
+                    Name = records.First().PayerName,
+                    TaxId = records.First().PayerTaxId,
+                    Address = records.First().PayerAddress ?? ""
+                };
 
             // Generate TEJ XML
             var fileName = $"{declarant.TaxId}-{request.Year}-{request.Month:D2}-0.xml";
@@ -549,14 +604,21 @@ namespace MyApi.Modules.RetenueSource.Services
                 _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
 
+            // invoice.GrandTotal is ALREADY net of the withholding (HT + TVA + stamp − RS),
+            // and AmountPaid is what the supplier actually cashes (the net). The TEJ
+            // certificate wants the gross invoice amount as the basis and the net served
+            // AFTER the withholding, so deriving netServi as "basis − RS" off the net
+            // GrandTotal deducted the RS twice (328 paid was declared as 298 served).
+            var grossPayable = invoice.GrandTotal + invoice.RsAmount + invoice.RsTvaAmount;
             var hasPayment = invoice.AmountPaid > 0;
-            var basis      = hasPayment ? invoice.AmountPaid : invoice.GrandTotal;
             var paidRatio  = (hasPayment && invoice.GrandTotal > 0)
                 ? Math.Min(invoice.AmountPaid / invoice.GrandTotal, 1m)
                 : 1m;
+            var basis         = Math.Round(grossPayable * paidRatio, 2);
             var declaredRs    = Math.Round(invoice.RsAmount    * paidRatio, 2);
             var declaredRsTva = Math.Round(invoice.RsTvaAmount * paidRatio, 2);
             var netServi      = Math.Round(basis - declaredRs - declaredRsTva, 2);
+
             // Real invoice HT / VAT, pro-rated to the declared basis (TEJ MontantHT / MontantTVA).
             var discountValue = invoice.DiscountType == "percentage"
                 ? Math.Round(invoice.SubTotal * invoice.Discount / 100m, 2)
@@ -632,8 +694,31 @@ namespace MyApi.Modules.RetenueSource.Services
             if (trackedInvoice?.RsRecordId is int existingId)
             {
                 var existing = await _db.RSRecords.FindAsync(existingId);
-                if (existing != null) return existing;
+                if (existing != null)
+                {
+                    // Refresh the declared figures from the invoice: a payment recorded
+                    // (or an amount corrected) after the first download must be reflected,
+                    // otherwise the certificate keeps declaring stale amounts forever.
+                    if (!existing.TEJExported)
+                    {
+                        existing.AmountPaid       = builtRecord.AmountPaid;
+                        existing.RSAmount         = builtRecord.RSAmount;
+                        existing.RsTvaAmount      = builtRecord.RsTvaAmount;
+                        existing.MontantNetServi  = builtRecord.MontantNetServi;
+                        existing.MontantHT        = builtRecord.MontantHT;
+                        existing.MontantTvaFacture= builtRecord.MontantTvaFacture;
+                        existing.PaymentDate      = builtRecord.PaymentDate;
+                        existing.OperationCode    = builtRecord.OperationCode;
+                        existing.RSTypeCode       = builtRecord.RSTypeCode;
+                        existing.PenaltyAmount    = builtRecord.PenaltyAmount;
+                        existing.IsOverdue        = builtRecord.IsOverdue;
+                        existing.DaysLate         = builtRecord.DaysLate;
+                        await _db.SaveChangesAsync();
+                    }
+                    return existing;
+                }
             }
+
 
             var strategy = _db.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
@@ -679,20 +764,8 @@ namespace MyApi.Modules.RetenueSource.Services
         /// </summary>
         private async Task MaterializePeriodInvoiceRecordsAsync(int month, int year, string userId)
         {
-            var settingsCompany = await _db.Contacts.AsNoTracking()
-                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
-                .OrderBy(c => c.Id)
-                .FirstOrDefaultAsync();
-            if (settingsCompany == null) return;
-
-            var declarant = new TEJDeclarantDto
-            {
-                Name = settingsCompany.Name,
-                TaxId = settingsCompany.MatriculeFiscale ?? "",
-                Address = settingsCompany.Address ?? "",
-                Email = settingsCompany.Email,
-                Phone = settingsCompany.Phone
-            };
+            var declarant = await ResolveDeclarantAsync();
+            if (declarant == null) return;
 
             var candidates = await _db.SupplierInvoices.AsNoTracking()
                 .Where(i => !i.IsDeleted
@@ -777,26 +850,15 @@ namespace MyApi.Modules.RetenueSource.Services
             if (supplier == null)
                 missing.Add("Supplier (beneficiary) not found.");
 
-            // Declarant = the tenant's own company contact (the withholder), needs an MF.
-            var settingsCompany = await _db.Contacts.AsNoTracking()
-                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
-                .OrderBy(c => c.Id)
-                .FirstOrDefaultAsync();
-            if (settingsCompany == null)
-                missing.Add("No TEJ declarant configured — create a company contact with a Matricule Fiscal in Settings.");
+            // Declarant = the current company (Settings → Company), needs an MF.
+            var declarant = await ResolveDeclarantAsync();
+            if (declarant == null)
+                missing.Add(DeclarantMissingMessage);
 
             // If we can't even build the record, return what's missing so far.
-            if (supplier == null || settingsCompany == null || !invoice.RsApplicable || invoice.RsAmount <= 0)
+            if (supplier == null || declarant == null || !invoice.RsApplicable || invoice.RsAmount <= 0)
                 return new TejInvoiceXmlResult { Ok = false, Missing = missing };
 
-            var declarant = new TEJDeclarantDto
-            {
-                Name = settingsCompany.Name,
-                TaxId = settingsCompany.MatriculeFiscale ?? "",
-                Address = settingsCompany.Address ?? "",
-                Email = settingsCompany.Email,
-                Phone = settingsCompany.Phone
-            };
 
             var record = BuildRsRecordFromInvoice(supplierInvoiceId, invoice, supplier, declarant, userId);
 
@@ -843,24 +905,9 @@ namespace MyApi.Modules.RetenueSource.Services
                     "None of the invoices for this order have Retenue à la Source enabled — open the invoice and set the RS type."
                 } };
 
-            var settingsCompany = await _db.Contacts.AsNoTracking()
-                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
-                .OrderBy(c => c.Id)
-                .FirstOrDefaultAsync();
-            if (settingsCompany == null)
-                return new TejInvoiceXmlResult { Ok = false, Missing = new()
-                {
-                    "No TEJ declarant configured — create a company contact with a Matricule Fiscal in Settings."
-                } };
-
-            var declarant = new TEJDeclarantDto
-            {
-                Name = settingsCompany.Name,
-                TaxId = settingsCompany.MatriculeFiscale ?? "",
-                Address = settingsCompany.Address ?? "",
-                Email = settingsCompany.Email,
-                Phone = settingsCompany.Phone
-            };
+            var declarant = await ResolveDeclarantAsync();
+            if (declarant == null)
+                return new TejInvoiceXmlResult { Ok = false, Missing = new() { DeclarantMissingMessage } };
 
             var missing = new List<string>();
             var records = new List<RSRecord>();

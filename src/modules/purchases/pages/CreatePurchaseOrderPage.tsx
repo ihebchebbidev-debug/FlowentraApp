@@ -228,13 +228,15 @@ export default function CreatePurchaseOrderPage() {
     const rate = (item.taxRate ?? 19) / 100;
     return sum + (item.lineTotal || 0) * rate;
   }, 0);
+  // The fiscal stamp only applies to an actual document — an empty form totals 0.
+  const effectiveFiscalStamp = items.length > 0 ? fiscalStamp : 0;
   const totals = calculateDocumentTotal({
     subtotal,
     discount: 0,
     discountType: 'fixed',
     tax: lineTaxAmount,
     taxType: 'fixed',
-    fiscalStamp,
+    fiscalStamp: effectiveFiscalStamp,
   });
   const grandTotal = totals.total;
   const taxAmount = totals.taxAmount;

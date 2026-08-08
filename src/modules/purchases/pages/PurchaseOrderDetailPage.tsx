@@ -301,7 +301,7 @@ function PurchaseOrderDetailPage() {
             {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate}><CheckCircle className="h-3.5 w-3.5 mr-1" /> {t('actions.validate')}</Button>}
             {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier}><Send className="h-3.5 w-3.5 mr-1" /> {t('actions.sendToSupplier')}</Button>}
             {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)}><Package className="h-3.5 w-3.5 mr-1" /> {t('actions.receiveGoods')}</Button>}
-            {po.status === 'received' && <CreateActionButton size="sm" variant="outline" onClick={() => navigate('/dashboard/purchases/invoices/add')}><FileText className="h-3.5 w-3.5 mr-1" /> {t('actions.createInvoice')}</CreateActionButton>}
+            {['partially_received', 'received', 'closed'].includes(po.status) && <CreateActionButton size="sm" variant="outline" onClick={() => navigate(`/dashboard/purchases/invoices/add?poId=${id}`)}><FileText className="h-3.5 w-3.5 mr-1" /> {t('actions.createInvoice')}</CreateActionButton>}
           </div>
         }
       />

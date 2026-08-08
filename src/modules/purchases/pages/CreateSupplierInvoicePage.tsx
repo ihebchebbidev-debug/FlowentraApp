@@ -1,6 +1,6 @@
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
 import { TejOperationCodePicker } from "@/modules/shared/components/TejOperationCodePicker";
 import { legacyToTejOperationCode } from "@/modules/shared/constants/tejOperationCodes";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
-import { supplierInvoiceService, newIdempotencyKey } from "../services/purchaseService";
+import { supplierInvoiceService, purchaseOrderService, newIdempotencyKey } from "../services/purchaseService";
 import { toastApiError } from "../utils/apiErrorToast";
 
 import { apiFetch } from "@/services/api/apiClient";
@@ -30,6 +30,10 @@ export default function CreateSupplierInvoicePage() {
   const { t } = useTranslation('purchases');
   const { current: currency } = useCurrency();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // When arriving from a purchase order ("Create Invoice" on the PO), keep the
+  // link so the invoice shows on the PO and feeds its aggregated TEJ XML.
+  const poId = searchParams.get('poId') || '';
   const { targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
   const [supplierId, setSupplierId] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
@@ -62,6 +66,28 @@ export default function CreateSupplierInvoicePage() {
       setSuppliers(data.map((c: any) => ({ id: String(c.id), name: c.name, mf: c.matriculeFiscale })));
     }).catch(() => {});
   }, [targetTenantId]);
+
+  // Prefill from the originating purchase order: supplier + its lines, so the
+  // invoice matches the order instead of being retyped by hand.
+  const [poNumber, setPoNumber] = useState('');
+  useEffect(() => {
+    if (!poId) return;
+    purchaseOrderService.getById(poId).then(po => {
+      if (!po) return;
+      setPoNumber(po.orderNumber || '');
+      if (po.supplierId) setSupplierId(String(po.supplierId));
+      setItems((po.items || []).map((it: any, idx: number) => ({
+        id: `po-${it.id ?? idx}`,
+        description: it.description || it.articleName || '',
+        quantity: Number(it.quantity) || 0,
+        unitPrice: Number(it.unitPrice) || 0,
+        taxRate: Number(it.taxRate ?? 19),
+        lineTotal: (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
+      })));
+    }).catch(() => {});
+  }, [poId, targetTenantId]);
+
+
 
   const addItem = () => setItems([...items, { id: `i-${Date.now()}`, description: '', quantity: 1, unitPrice: 0, taxRate: 19, lineTotal: 0 }]);
   // Sanitize numeric inputs: Number('') / Number('-') yields NaN, which would
@@ -98,7 +124,9 @@ export default function CreateSupplierInvoicePage() {
     : 0;
   const rsRate = RS_TRANSACTION_TYPES.find(r => r.code === rsTypeCode)?.rate || 0;
   const rsAmount = rsApplicable ? afterDiscount * (rsRate / 100) : 0;
-  const grandTotal = afterDiscount + taxAmount + fiscalStamp - rsAmount;
+  // The fiscal stamp only applies to an actual document — an empty form totals 0.
+  const effectiveFiscalStamp = items.length > 0 ? fiscalStamp : 0;
+  const grandTotal = afterDiscount + taxAmount + effectiveFiscalStamp - rsAmount;
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
   const handleSave = async () => {
@@ -114,6 +142,7 @@ export default function CreateSupplierInvoicePage() {
     try {
       await supplierInvoiceService.create({
         supplierId,
+        purchaseOrderId: poId || undefined,
         invoiceDate: new Date(`${invoiceDate}T00:00:00Z`).toISOString(),
         dueDate: new Date(`${dueDate}T00:00:00Z`).toISOString(),
         supplierInvoiceRef: supplierRef || undefined,
@@ -190,6 +219,9 @@ export default function CreateSupplierInvoicePage() {
                   </SelectContent>
                 </Select>
               </div>
+              {poNumber && (
+                <p className="text-xs text-muted-foreground">{t('fields.purchaseOrder', 'Purchase Order')}: {poNumber}</p>
+              )}
               <div><Label className="text-xs">{t('fields.supplierInvoiceRef')}</Label><Input className="h-8 mt-1" value={supplierRef} onChange={e => setSupplierRef(e.target.value)} /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label className="text-xs">{t('fields.invoiceDate')}</Label><Input type="date" className="h-8 mt-1" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} /></div>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { LineChart as LineIcon } from "lucide-react";
 import { articleSupplierService } from "../services/purchaseService";
+
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { ChartSkeleton } from "../components/PurchaseSkeletons";
@@ -29,18 +30,23 @@ function PriceEvolutionContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setError(null);
     setLoading(true);
-    articlesApi.getAll({ type: 'material', limit: 500 } as any)
+    // Purchasable articles are not always typed "material" — restricting the list
+    // hid articles that actually have supplier price history, so load them all.
+    articlesApi.getAll({ limit: 500 } as any)
       .then((res: any) => {
+        if (cancelled) return;
         const list: ArticleOpt[] = (res?.data || []).map((a: any) => ({
           id: String(a.id), name: a.name, sku: a.sku,
         }));
         setArticles(list);
-        if (list.length > 0 && !articleId) setArticleId(list[0].id);
+        if (list.length > 0) setArticleId(prev => prev || list[0].id);
       })
-      .catch((e: any) => setError(e?.message || 'Failed to load articles'))
-      .finally(() => setLoading(false));
+      .catch((e: any) => { if (!cancelled) setError(e?.message || 'Failed to load articles'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
