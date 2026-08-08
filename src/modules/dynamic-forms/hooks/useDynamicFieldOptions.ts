@@ -98,6 +98,16 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
   // dropdowns don't flash stale options.
   const requestTokensRef = useRef<Record<string, number>>({});
 
+  // Keep the latest fields array available without making it an effect dep
+  // (callers usually pass a fresh array literal on every render).
+  const fieldsRef = useRef<FormField[]>(fields);
+  fieldsRef.current = fields;
+
+  // Same for form values: callers often rebuild the object each render.
+  const formValuesRef = useRef<Record<string, any>>(formValues);
+  formValuesRef.current = formValues;
+  const formValuesKey = JSON.stringify(formValues);
+
   // Get fields that need dynamic data - memoized properly
   const dynamicFieldsKey = useMemo(() => {
     return fields
@@ -111,7 +121,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
   }, [fields]);
 
   const dynamicFields = useMemo(() => {
-    return fields.filter(f => 
+    return fieldsRef.current.filter(f => 
       f.use_dynamic_data && 
       f.data_source && 
       ['select', 'radio', 'checkbox'].includes(f.type)
@@ -125,23 +135,34 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
       if (field.dependency?.parent_field_id) {
         map[field.id] = {
           parentFieldId: field.dependency.parent_field_id,
-          parentField: fields.find(f => f.id === field.dependency?.parent_field_id),
+          parentField: fieldsRef.current.find(f => f.id === field.dependency?.parent_field_id),
         };
       }
     });
     return map;
-  }, [dynamicFields, fields]);
+  }, [dynamicFields]);
+
+  // Stable signature of the static (non-dynamic) options so the init effect
+  // below only runs when the options actually change — not on every render.
+  const staticOptionsKey = useMemo(() => {
+    return fields
+      .filter(f => !f.use_dynamic_data && f.options)
+      .map(f => `${f.id}:${JSON.stringify(f.options)}`)
+      .join('|');
+  }, [fields]);
 
   // Initialize with static options
   useEffect(() => {
     const staticOptions: Record<string, FieldOption[]> = {};
-    fields.forEach(field => {
+    fieldsRef.current.forEach(field => {
       if (!field.use_dynamic_data && field.options) {
         staticOptions[field.id] = field.options;
       }
     });
+    if (Object.keys(staticOptions).length === 0) return;
     setOptionsMap(prev => ({ ...prev, ...staticOptions }));
-  }, [fields]);
+  }, [staticOptionsKey]);
+
 
   // Fetch options for a field with optional parent value filter
   const fetchFieldOptions = useCallback(async (
@@ -230,7 +251,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
         
         if (dep) {
           // This field depends on another - check if parent has a value
-          const parentValue = formValues[dep.parentFieldId];
+          const parentValue = formValuesRef.current[dep.parentFieldId];
           const prevParentValue = parentValuesRef.current[dep.parentFieldId];
           
           if (parentValue === undefined || parentValue === null || parentValue === '') {
@@ -264,7 +285,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
       // Update parent values ref
       Object.keys(dependencyMap).forEach(fieldId => {
         const parentFieldId = dependencyMap[fieldId].parentFieldId;
-        parentValuesRef.current[parentFieldId] = formValues[parentFieldId];
+        parentValuesRef.current[parentFieldId] = formValuesRef.current[parentFieldId];
       });
     };
 
@@ -275,16 +296,16 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
     return () => {
       isMountedRef.current = false;
     };
-  }, [dynamicFieldsKey, dynamicFields, dependencyMap, formValues, fetchFieldOptions]);
+  }, [dynamicFieldsKey, dynamicFields, dependencyMap, formValuesKey, fetchFieldOptions]);
 
   // Watch for parent value changes and refetch dependent fields
   useEffect(() => {
     Object.entries(dependencyMap).forEach(([fieldId, { parentFieldId, parentField }]) => {
-      const currentParentValue = formValues[parentFieldId];
+      const currentParentValue = formValuesRef.current[parentFieldId];
       const prevParentValue = parentValuesRef.current[parentFieldId];
       
       if (currentParentValue !== prevParentValue) {
-        const field = fields.find(f => f.id === fieldId);
+        const field = fieldsRef.current.find(f => f.id === fieldId);
         if (field) {
           // Clear cache for this field
           const fieldKeyPattern = `${field.id}:`;
@@ -309,7 +330,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
         parentValuesRef.current[parentFieldId] = currentParentValue;
       }
     });
-  }, [formValues, dependencyMap, fields, fetchFieldOptions]);
+  }, [formValuesKey, dependencyMap, fetchFieldOptions]);
 
   const getFieldOptions = useCallback((fieldId: string): FieldOption[] => {
     return optionsMap[fieldId] || [];
@@ -329,7 +350,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
   
   // Refresh a specific field's dynamic options
   const refreshField = useCallback(async (fieldId: string) => {
-    const field = fields.find(f => f.id === fieldId);
+    const field = fieldsRef.current.find(f => f.id === fieldId);
     if (!field?.data_source || !field.use_dynamic_data) return;
     
     // Remove from fetched cache to allow re-fetch
@@ -341,10 +362,10 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
     
     // Check if has dependency
     const dep = dependencyMap[fieldId];
-    const parentValue = dep ? formValues[dep.parentFieldId] : undefined;
+    const parentValue = dep ? formValuesRef.current[dep.parentFieldId] : undefined;
     
     await fetchFieldOptions(field, parentValue);
-  }, [fields, dependencyMap, formValues, fetchFieldOptions]);
+  }, [dependencyMap, formValuesKey, fetchFieldOptions]);
 
   return {
     optionsMap,
