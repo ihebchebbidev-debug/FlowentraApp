@@ -238,15 +238,29 @@ export interface PaginatedPurchaseActivities {
 
 // ─── Stats ───
 
+/**
+ * Dashboard stats as returned by GET /api/purchase-orders/stats.
+ *
+ * The API is the source of truth for the field names below; the optional ones
+ * were added later, so every consumer must fall back (e.g.
+ * `totalSpendThisYear ?? totalSpend`) instead of rendering a hard 0.
+ */
 export interface PurchaseStats {
   totalOrders: number;
+  draftOrders?: number;
+  orderedOrders?: number;
+  receivedOrders?: number;
+  cancelledOrders?: number;
   pendingReceipts: number;
-  openInvoices: number;
+  /** Invoices that are neither paid nor cancelled. */
+  openInvoices?: number;
   monthlySpend: number;
-  totalSpendThisYear: number;
+  /** Lifetime/period spend excluding draft + cancelled orders. */
+  totalSpend?: number;
+  totalSpendThisYear?: number;
   avgLeadTime: number;
   overdueInvoices: number;
-  rsTotal: number;
+  rsTotal?: number;
 }
 
 // ─── Filters ───

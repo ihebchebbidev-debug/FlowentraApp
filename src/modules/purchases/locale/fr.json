@@ -13,7 +13,9 @@
     "invoices": "Factures",
     "compliance": "Conformité",
     "reports": "Rapports",
-    "audit": "Audit"
+    "audit": "Audit",
+    "items": "Articles",
+    "activity": "Activité"
   },
   "dashboard": {
     "title": "Achats",
@@ -71,7 +73,13 @@
       "partial": "Partielles",
       "complete": "Complètes",
       "rejected": "Rejetées"
-    }
+    },
+    "stockImpact": "Impact stock",
+    "stockImpactNote": "Les quantités acceptées ont été comptabilisées en stock. Les quantités refusées ne l'ont pas été.",
+    "deliverySheet": "Bon de livraison",
+    "accepted": "Acceptées",
+    "rejected": "Refusées",
+    "linesPosted": "Lignes comptabilisées en stock"
   },
   "invoices": {
     "title": "Factures Fournisseurs",

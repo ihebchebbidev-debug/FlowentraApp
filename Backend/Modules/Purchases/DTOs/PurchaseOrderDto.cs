@@ -166,9 +166,15 @@ namespace MyApi.Modules.Purchases.DTOs
         public long CancelledOrders { get; set; }
         public decimal TotalSpend { get; set; }
         public decimal MonthlySpend { get; set; }
+        /// <summary>Spend since Jan 1st of the current year (excludes draft + cancelled).</summary>
+        public decimal TotalSpendThisYear { get; set; }
         public decimal AvgLeadTime { get; set; }
         public long PendingReceipts { get; set; }
         public long OverdueInvoices { get; set; }
+        /// <summary>Supplier invoices that are neither paid nor cancelled.</summary>
+        public long OpenInvoices { get; set; }
+        /// <summary>Total withholding tax (retenue à la source) on supplier invoices.</summary>
+        public decimal RsTotal { get; set; }
     }
 
     public class PaginatedPurchaseOrderResponse

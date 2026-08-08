@@ -13,7 +13,9 @@
     "invoices": "Invoices",
     "compliance": "Compliance",
     "reports": "Reports",
-    "audit": "Audit"
+    "audit": "Audit",
+    "items": "Items",
+    "activity": "Activity"
   },
   "dashboard": {
     "title": "Purchases",
@@ -71,7 +73,13 @@
       "partial": "Partial",
       "complete": "Complete",
       "rejected": "Rejected"
-    }
+    },
+    "stockImpact": "Stock impact",
+    "stockImpactNote": "Accepted quantities were posted to stock. Rejected quantities were not.",
+    "deliverySheet": "Delivery sheet",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "linesPosted": "Lines posted to stock"
   },
   "invoices": {
     "title": "Supplier Invoices",

@@ -44,6 +44,7 @@ import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -232,7 +233,11 @@ function PurchaseOrderListContent() {
         const receivedCount =
           (receivedR.pagination?.total || 0) + (closedR.pagination?.total || 0);
         const unpaidCount = unpaidR.pagination?.total || 0;
-        const totalValue = dashboard?.totalSpendThisYear ?? dashboard?.monthlySpend ?? 0;
+        const totalValue =
+          dashboard?.totalSpendThisYear ??
+          dashboard?.totalSpend ??
+          dashboard?.monthlySpend ??
+          0;
         setStats({ open: openCount, received: receivedCount, unpaid: unpaidCount, totalValue });
       } catch {
         // Leave previous stats in place on transient errors; the list itself
@@ -565,7 +570,7 @@ function PurchaseOrderListContent() {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mt-2">
                             <div className="list-row-meta-item">
                               <Clock className="h-3.5 w-3.5 shrink-0" />
-                              <span>{po.orderDate}</span>
+                              <span>{formatPurchaseDate(po.orderDate)}</span>
                             </div>
                             <div className="list-row-meta-item">
                               <Badge variant="outline" className="text-px-10 px-1.5 py-0">
@@ -673,7 +678,7 @@ function PurchaseOrderListContent() {
                                     </div>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{po.orderDate}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{formatPurchaseDate(po.orderDate)}</TableCell>
                                 <TableCell>
                                   <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ""}`}>
                                     {t(`status.${po.status}`)}
@@ -763,7 +768,7 @@ function PurchaseOrderListContent() {
                               <CompanyBadge tenantId={(po as any).tenantId} className="text-px-9" />
                             </div>
                             <div className="text-xs text-muted-foreground truncate mt-0.5">
-                              {po.supplierName} · {po.orderDate}
+                              {po.supplierName} · {formatPurchaseDate(po.orderDate)}
                             </div>
                           </div>
                           <div className="text-right shrink-0">

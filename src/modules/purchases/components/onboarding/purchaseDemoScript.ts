@@ -1,4 +1,4 @@
-// Purchases module autopilot demo — 16 chapters, 93 steps.
+// Purchases module autopilot demo — 17 chapters, 99 steps.
 // Bonus chapters added (Article-Suppliers, PDF preview, TEJ XML preview with real
 // XML content, payment + Facture-en-Ligne workflow, Price Evolution, Invoice Aging)
 // to bring 100% feature coverage of the live module.
@@ -761,7 +761,52 @@ export const PO_STEPS: PurchaseDemoStep[] = [
     apply: pure(() => ({ createFormStep: 2 })),
   },
 
-  // ── Chapter 16 · Wrap-up ──────────────────────────────────────────────────
+  // ── Chapter 16 · Matching, stock & documents ─────────────────────────────
+  {
+    target: 'po-demo-gr-rejected',
+    caption:
+      'Back on a Goods Receipt: each line records not just what arrived, but what was refused. Enter a rejected quantity plus a rejection reason — rejected units never enter stock, and the PO keeps the shortfall open for a follow-up delivery.',
+    duration: 5600,
+    apply: pure(() => ({ page: 'receipt-create' as const })),
+  },
+  {
+    target: 'po-demo-gr-overreceipt',
+    caption:
+      'An over-receipt guard runs on every save: received plus previously received can never exceed the ordered quantity, and on an edit the check is applied to the delta — so correcting a receipt can never silently inflate the PO.',
+    duration: 5600,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'po-demo-gr-stock',
+    caption:
+      'Confirming a receipt posts inbound stock transactions to the chosen warehouse, article by article. Deleting the receipt — or cancelling the PO — reverses those movements automatically, so inventory can never drift out of sync with procurement.',
+    duration: 5800,
+    apply: pure(() => ({ page: 'receipt-detail' as const })),
+  },
+  {
+    target: 'po-demo-gr-print',
+    caption:
+      'Every receipt has its own printable delivery sheet — a full-page report with the linked PO, ordered versus received versus rejected quantities, and the confirming user, ready to file with the supplier delivery note.',
+    duration: 5000,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'po-demo-match',
+    caption:
+      'The three-way match panel is the heart of the module: ordered on the PO, received on the receipts, invoiced by the supplier — side by side, with the variance computed for you so you never pay for goods you did not get.',
+    duration: 6000,
+    apply: pure(() => ({ page: 'invoice-detail' as const, paymentStep: 0, felSent: false })),
+  },
+  {
+    target: 'po-demo-si-pdf',
+    caption:
+      'Supplier invoices export to PDF too — totals, RS withholding line and net-to-pay included — and any fiscally material edit re-flags the invoice for RS and TEJ resync so the compliance dashboard always reflects reality.',
+    duration: 5600,
+    apply: pure(() => ({})),
+  },
+
+  // ── Chapter 17 · Wrap-up ──────────────────────────────────────────────────
+
   {
     target: 'po-demo-title',
     caption:
@@ -801,5 +846,6 @@ export const PO_CHAPTERS: PurchaseDemoChapter[] = [
   { id: 'reports',     title: 'Reports',            start: 70, end: 81 },
   { id: 'audit',       title: 'Audit Log',          start: 81, end: 84 },
   { id: 'ux',          title: 'UX & Productivity',  start: 84, end: 90 },
-  { id: 'wrapup',      title: 'Wrap-up',            start: 90, end: PO_STEPS.length },
+  { id: 'integrity',   title: 'Matching & Docs',    start: 90, end: 96 },
+  { id: 'wrapup',      title: 'Wrap-up',            start: 96, end: PO_STEPS.length },
 ];

@@ -18,6 +18,7 @@ import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { TenantSelector } from "@/components/TenantSelector";
 import { useTargetTenant } from "@/hooks/useTargetTenant";
 import type { PurchaseOrder } from "../types";
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 export default function CreateGoodsReceiptPage() {
   const { t } = useTranslation('purchases');
@@ -159,7 +160,7 @@ export default function CreateGoodsReceiptPage() {
               {selectedPO && (
                 <div className="p-2 rounded bg-muted/50 text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.supplier')}</span><span className="font-medium">{selectedPO.supplierName}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{selectedPO.orderDate}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{formatPurchaseDate(selectedPO.orderDate)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.total')}</span><span>{selectedPO.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency.code}</span></div>
                 </div>
               )}

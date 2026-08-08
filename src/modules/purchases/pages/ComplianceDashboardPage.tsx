@@ -46,6 +46,10 @@ function ComplianceDashboardContent() {
   const felInvoices = invoices.filter(i => i.factureEnLigneStatus);
   const tejPending = invoices.filter(i => i.tejSyncStatus === 'pending' || !i.tejSynced);
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  // Prefer the server aggregate, but fall back to summing the loaded RS invoices
+  // so the card never shows 0 while RS rows are listed right beneath it.
+  const rsSum = rsInvoices.reduce((sum, i) => sum + (Number(i.rsAmount) || 0), 0);
+  const rsTotal = stats?.rsTotal && stats.rsTotal > 0 ? stats.rsTotal : rsSum;
 
   return (
     <div className="flex flex-col">
@@ -61,7 +65,7 @@ function ComplianceDashboardContent() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-amber-500" /> {t('compliance.rs')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-2xl font-bold">{fmt(stats?.rsTotal ?? 0)} <span className="text-xs font-normal text-muted-foreground">{currency.code}</span></div>
+              <div className="text-2xl font-bold">{fmt(rsTotal)} <span className="text-xs font-normal text-muted-foreground">{currency.code}</span></div>
               <p className="text-xs text-muted-foreground">{t('compliance.totalRsThisYear')}</p>
               <div className="space-y-2">
                 {rsInvoices.map(inv => (

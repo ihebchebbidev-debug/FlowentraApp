@@ -41,6 +41,7 @@ import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const rsRateForCode = (code?: string): number | null => {
   if (!code) return null;
@@ -204,7 +205,20 @@ function SupplierInvoiceListContent() {
         const paid = paidR.pagination?.total || 0;
         // Server-side overdue_only: past due date AND not paid/cancelled.
         const overdue = overdueR.pagination?.total || 0;
-        setStats((prev) => ({ ...prev, unpaid, paid, overdue }));
+        // Total value must span the FULL dataset, not the 20-row page window,
+        // so pull a wide page purely to aggregate grandTotal.
+        let totalValue = 0;
+        try {
+          const allR = await supplierInvoiceService.getAll({ search: searchArg, limit: 500 });
+          totalValue = (allR.invoices || []).reduce(
+            (sum, i) => sum + (Number(i.grandTotal) || 0),
+            0,
+          );
+        } catch {
+          /* leave 0 */
+        }
+        if (cancelled) return;
+        setStats((prev) => ({ ...prev, unpaid, paid, overdue, totalValue }));
       } catch {
         /* keep previous */
       }
@@ -605,8 +619,8 @@ function SupplierInvoiceListContent() {
                               </div>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">{inv.purchaseOrderNumber || "-"}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{inv.invoiceDate}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{inv.dueDate}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{formatPurchaseDate(inv.invoiceDate)}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{formatPurchaseDate(inv.dueDate)}</TableCell>
                             <TableCell>
                               <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[inv.status] || ""}`}>
                                 {t(`invoiceStatus.${inv.status}`)}
@@ -692,7 +706,7 @@ function SupplierInvoiceListContent() {
                               <CompanyBadge tenantId={(inv as any).tenantId} className="text-px-9" />
                             </div>
                             <div className="text-xs text-muted-foreground truncate mt-0.5">
-                              {inv.supplierName} · {t("fields.dueDate", "Due")}: {inv.dueDate}
+                              {inv.supplierName} · {t("fields.dueDate", "Due")}: {formatPurchaseDate(inv.dueDate)}
                             </div>
                           </div>
                           <div className="text-right shrink-0">

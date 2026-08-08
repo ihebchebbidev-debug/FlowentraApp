@@ -39,6 +39,7 @@ import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
   partial: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -522,7 +523,7 @@ function GoodsReceiptListContent() {
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{gr.receiptDate}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{formatPurchaseDate(gr.receiptDate)}</TableCell>
                             <TableCell>
                               <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[gr.status] || ""}`}>
                                 {t(`receiptStatus.${gr.status}`)}
@@ -599,7 +600,7 @@ function GoodsReceiptListContent() {
                               <CompanyBadge tenantId={(gr as any).tenantId} className="text-px-9" />
                             </div>
                             <div className="text-xs text-muted-foreground truncate mt-0.5">
-                              {gr.supplierName} · {gr.receiptDate}
+                              {gr.supplierName} · {formatPurchaseDate(gr.receiptDate)}
                             </div>
                           </div>
                           <TableRowActions

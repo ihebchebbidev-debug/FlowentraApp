@@ -127,8 +127,11 @@ function SupplierPerformanceContent() {
           r.leadTimeSum += lead;
           r.leadTimeSamples += 1;
         }
+        // On-time: delivered on/before the promised date. When no delivery date
+        // was ever promised there is nothing to be late against, so the receipt
+        // counts as on-time — otherwise every KPI collapsed to "—".
         const slip = diffDays(po.actualDelivery, po.expectedDelivery);
-        if (slip !== null && slip <= 0) r.onTimeCount += 1;
+        if (slip === null || slip <= 0) r.onTimeCount += 1;
       }
       map.set(key, r);
     }

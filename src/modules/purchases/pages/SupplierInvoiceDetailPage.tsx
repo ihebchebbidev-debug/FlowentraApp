@@ -26,6 +26,7 @@ import { TejMissingInfoDialog } from "../components/TejMissingInfoDialog";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { toast } from "sonner";
 import type { SupplierInvoice, SupplierInvoiceItem } from "../types";
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -486,8 +487,8 @@ function SupplierInvoiceDetailContent() {
                 <CardContent className="space-y-2 text-xs">
                   <div className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-medium">{inv.supplierName}</span></div>
                   {inv.supplierMatriculeFiscale && <div className="flex items-center gap-2 text-muted-foreground"><FileText className="h-3.5 w-3.5" />{inv.supplierMatriculeFiscale}</div>}
-                  <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />{t('fields.invoiceDate')}: {inv.invoiceDate}</div>
-                  <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />{t('fields.dueDate')}: {inv.dueDate}</div>
+                  <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />{t('fields.invoiceDate')}: {formatPurchaseDate(inv.invoiceDate)}</div>
+                  <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />{t('fields.dueDate')}: {formatPurchaseDate(inv.dueDate)}</div>
                   {inv.purchaseOrderNumber && <div className="flex items-center gap-2"><FileText className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-primary cursor-pointer" onClick={() => navigate(`/dashboard/purchases/orders/${inv.purchaseOrderId}`)}>{inv.purchaseOrderNumber}</span></div>}
                 </CardContent>
               </Card>

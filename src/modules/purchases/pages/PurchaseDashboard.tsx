@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShoppingCart, Package, FileText, TrendingDown, Plus, ArrowRight, Clock, AlertTriangle, CheckCircle, DollarSign, Play } from "lucide-react";
-import { purchaseOrderService, purchaseStatsService } from "../services/purchaseService";
+import { purchaseOrderService, purchaseStatsService, supplierInvoiceService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { DashboardSkeleton } from "../components/PurchaseSkeletons";
@@ -15,6 +15,7 @@ import type { PurchaseOrder, PurchaseStats } from "../types";
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { cn } from "@/lib/utils";
 import { PurchaseAutopilotDemo } from "../components/onboarding/PurchaseAutopilotDemo";
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -43,13 +44,27 @@ function PurchaseDashboardContent() {
       // Pending orders are fetched separately so the panel reflects ALL pending POs
       // (not just whatever happens to be in the latest 5). We fetch each "pending"
       // status independently because the backend filter is single-valued.
-      const [statsData, ordersData, orderedData, partialData] = await Promise.all([
+      const [statsData, ordersData, orderedData, partialData, openInvR] = await Promise.all([
         purchaseStatsService.getDashboardStats(),
         purchaseOrderService.getAll({ limit: 5 }),
         purchaseOrderService.getAll({ status: 'ordered', limit: 10 }).catch(() => ({ orders: [] as PurchaseOrder[] })),
         purchaseOrderService.getAll({ status: 'partially_received', limit: 10 }).catch(() => ({ orders: [] as PurchaseOrder[] })),
+        // Open invoices are counted client-side as a fallback: older backends do
+        // not return `openInvoices` on the stats payload, which made the card
+        // read 0 even with unpaid invoices on file.
+        Promise.all(
+          (['pending', 'validated', 'partially_paid'] as const).map((status) =>
+            supplierInvoiceService
+              .getAll({ status: status as any, limit: 1 })
+              .then((r) => r.pagination?.total || 0)
+              .catch(() => 0),
+          ),
+        ).then((counts) => counts.reduce((a, b) => a + b, 0)),
       ]);
-      setStats(statsData);
+      setStats({
+        ...statsData,
+        openInvoices: statsData?.openInvoices ?? openInvR,
+      });
       setRecentOrders(ordersData.orders || []);
       // Combine and dedupe by id, then sort by expectedDelivery (soonest first).
       const combined = [...(orderedData.orders || []), ...(partialData.orders || [])];
@@ -117,7 +132,7 @@ function PurchaseDashboardContent() {
               },
               {
                 label: t('dashboard.openInvoices'),
-                value: stats?.openInvoices ?? 0,
+                value: stats?.openInvoices ?? stats?.overdueInvoices ?? 0,
                 icon: FileText,
                 color: 'text-chart-3',
                 bg: 'bg-chart-3/10',
@@ -125,7 +140,7 @@ function PurchaseDashboardContent() {
               },
               {
                 label: t('dashboard.monthlySpend'),
-                value: `${fmt(stats?.monthlySpend ?? 0)} ${currency.code}`,
+                value: `${fmt(stats?.monthlySpend || stats?.totalSpend || stats?.totalSpendThisYear || 0)} ${currency.code}`,
                 icon: DollarSign,
                 color: 'text-chart-4',
                 bg: 'bg-chart-4/10',
@@ -212,7 +227,7 @@ function PurchaseDashboardContent() {
                       <TableRow key={po.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}>
                         <TableCell className="text-xs font-medium">{po.orderNumber}</TableCell>
                         <TableCell className="text-xs">{po.supplierName}</TableCell>
-                        <TableCell className="text-xs">{po.expectedDelivery || '-'}</TableCell>
+                        <TableCell className="text-xs">{formatPurchaseDate(po.expectedDelivery)}</TableCell>
                         <TableCell><Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ''}`}>{t(`status.${po.status}`)}</Badge></TableCell>
                       </TableRow>
                     ))}

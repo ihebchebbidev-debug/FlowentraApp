@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Building2, Calendar, FileText, Pencil } from "lucide-react";
+import { Package, Building2, Calendar, FileText, Pencil, Printer, Boxes } from "lucide-react";
 import { goodsReceiptService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import type { GoodsReceipt } from "../types";
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 function GoodsReceiptDetailContent() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +43,12 @@ function GoodsReceiptDetailContent() {
   // don't try to act on a record that's no longer part of the working set.
   const isDeleted = gr.isDeleted === true;
 
+  // Stock impact: only accepted (received) quantities are posted to stock —
+  // rejected quantities stay with the supplier, matching GoodsReceiptService.
+  const acceptedQty = (gr.items || []).reduce((sum, it) => sum + (Number(it.quantityReceived) || 0), 0);
+  const rejectedQty = (gr.items || []).reduce((sum, it) => sum + (Number(it.quantityRejected) || 0), 0);
+  const postedLines = (gr.items || []).filter(it => (Number(it.quantityReceived) || 0) > 0).length;
+
   return (
     <div className="flex flex-col">
       <PurchasePageHeader
@@ -56,6 +63,14 @@ function GoodsReceiptDetailContent() {
             <Badge className={gr.status === 'complete' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}>
               {t(`receiptStatus.${gr.status}`)}
             </Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/dashboard/purchases/receipts/${gr.id}/report`)}
+            >
+              <Printer className="h-3.5 w-3.5 mr-1" />
+              {t('receipts.deliverySheet', 'Delivery sheet')}
+            </Button>
             {!isDeleted && (
               <Button
                 size="sm"
@@ -83,8 +98,40 @@ function GoodsReceiptDetailContent() {
             <CardContent className="space-y-2 text-xs">
               <div className="flex items-center gap-2"><FileText className="h-3.5 w-3.5 text-muted-foreground" /><span>{t('fields.orderNumber')}: <span className="font-medium text-primary cursor-pointer" onClick={() => navigate(`/dashboard/purchases/orders/${gr.purchaseOrderId}`)}>{gr.purchaseOrderNumber}</span></span></div>
               <div className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 text-muted-foreground" /><span>{gr.supplierName}</span></div>
-              <div className="flex items-center gap-2"><Calendar className="h-3.5 w-3.5 text-muted-foreground" /><span>{gr.receiptDate}</span></div>
+              <div className="flex items-center gap-2"><Calendar className="h-3.5 w-3.5 text-muted-foreground" /><span>{formatPurchaseDate(gr.receiptDate)}</span></div>
               {gr.deliveryNoteRef && <div className="flex items-center gap-2"><Package className="h-3.5 w-3.5 text-muted-foreground" /><span>{t('fields.deliveryNote')}: {gr.deliveryNoteRef}</span></div>}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Boxes className="h-3.5 w-3.5 text-muted-foreground" />
+                {t('receipts.stockImpact', 'Stock impact')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('receipts.accepted', 'Accepted')}</span>
+                <span className="font-medium text-green-600">
+                  +{acceptedQty.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('receipts.rejected', 'Rejected')}</span>
+                <span className={rejectedQty > 0 ? 'font-medium text-destructive' : 'font-medium'}>
+                  {rejectedQty.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t('receipts.linesPosted', 'Lines posted to stock')}</span>
+                <span className="font-medium">{postedLines}</span>
+              </div>
+              <p className="text-muted-foreground pt-1 border-t border-border">
+                {isDeleted
+                  ? t('receipts.deletedNotice')
+                  : t('receipts.stockImpactNote', 'Accepted quantities were posted to stock. Rejected quantities were not.')}
+              </p>
             </CardContent>
           </Card>
         </div>

@@ -9,7 +9,9 @@
     "invoices": "الفواتير",
     "compliance": "الامتثال",
     "reports": "التقارير",
-    "audit": "السجل"
+    "audit": "السجل",
+    "items": "العناصر",
+    "activity": "النشاط"
   },
   "dashboard": {
     "title": "المشتريات",
@@ -67,7 +69,13 @@
       "partial": "جزئية",
       "complete": "مكتملة",
       "rejected": "مرفوضة"
-    }
+    },
+    "stockImpact": "تأثير المخزون",
+    "stockImpactNote": "تمت إضافة الكميات المقبولة إلى المخزون، بخلاف الكميات المرفوضة.",
+    "deliverySheet": "وصل التسليم",
+    "accepted": "مقبولة",
+    "rejected": "مرفوضة",
+    "linesPosted": "سطور مضافة للمخزون"
   },
   "invoices": {
     "title": "فواتير الموردين",

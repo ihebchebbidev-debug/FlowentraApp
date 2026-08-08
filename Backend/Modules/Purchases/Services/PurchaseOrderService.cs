@@ -473,6 +473,7 @@ namespace MyApi.Modules.Purchases.Services
 
             var now = DateTime.UtcNow;
             var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var yearStart = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             // Single SQL aggregate instead of materializing every order into memory.
             var agg = await query
@@ -486,6 +487,7 @@ namespace MyApi.Modules.Purchases.Services
                     Cancelled = g.Sum(o => o.Status == "cancelled" ? 1 : 0),
                     TotalSpend = g.Sum(o => o.Status != "cancelled" && o.Status != "draft" ? o.GrandTotal : 0m),
                     MonthlySpend = g.Sum(o => o.OrderDate >= monthStart && o.Status != "cancelled" && o.Status != "draft" ? o.GrandTotal : 0m),
+                    YearSpend = g.Sum(o => o.OrderDate >= yearStart && o.Status != "cancelled" && o.Status != "draft" ? o.GrandTotal : 0m),
                     Pending = g.Sum(o => o.Status == "ordered" || o.Status == "partially_received" ? 1 : 0)
                 })
                 .FirstOrDefaultAsync();
@@ -500,6 +502,15 @@ namespace MyApi.Modules.Purchases.Services
             var overdueInvoices = await _context.SupplierInvoices
                 .CountAsync(i => !i.IsDeleted && i.DueDate < now && i.Status != "paid" && i.Status != "cancelled");
 
+            // Open = still owed (any due date). Kept separate from overdue so the
+            // dashboard "Open invoices" card is not a subset of overdue ones.
+            var openInvoices = await _context.SupplierInvoices
+                .CountAsync(i => !i.IsDeleted && i.Status != "paid" && i.Status != "cancelled");
+
+            var rsTotal = await _context.SupplierInvoices
+                .Where(i => !i.IsDeleted && i.Status != "cancelled")
+                .SumAsync(i => (decimal?)i.RsAmount) ?? 0m;
+
             return new PurchaseOrderStatsDto
             {
                 TotalOrders = agg?.Total ?? 0,
@@ -509,6 +520,7 @@ namespace MyApi.Modules.Purchases.Services
                 CancelledOrders = agg?.Cancelled ?? 0,
                 TotalSpend = agg?.TotalSpend ?? 0m,
                 MonthlySpend = agg?.MonthlySpend ?? 0m,
+                TotalSpendThisYear = agg?.YearSpend ?? 0m,
                 // Clamp at 0: a back-dated OrderDate later than ActualDelivery would
                 // otherwise contribute a negative lead time and skew the average.
                 AvgLeadTime = (decimal)deliveredDates
@@ -516,7 +528,9 @@ namespace MyApi.Modules.Purchases.Services
                     .DefaultIfEmpty(0)
                     .Average(),
                 PendingReceipts = agg?.Pending ?? 0,
-                OverdueInvoices = overdueInvoices
+                OverdueInvoices = overdueInvoices,
+                OpenInvoices = openInvoices,
+                RsTotal = rsTotal
             };
         }
 

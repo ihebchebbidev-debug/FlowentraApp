@@ -858,6 +858,8 @@ function PageReceiptCreate() {
                 <th className="text-right px-4 py-2 text-muted-foreground font-medium">Ordered</th>
                 <th className="text-right px-4 py-2 text-muted-foreground font-medium">Previously Received</th>
                 <th className="text-right px-4 py-2 text-muted-foreground font-medium">Receiving Now</th>
+                <th className="text-right px-4 py-2 text-muted-foreground font-medium">Rejected</th>
+                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Rejection reason</th>
               </tr></thead>
               <tbody>
                 <tr className="border-b border-border/40">
@@ -865,8 +867,12 @@ function PageReceiptCreate() {
                   <td className="px-4 py-2.5 text-right">20</td>
                   <td className="px-4 py-2.5 text-right text-amber-600">12</td>
                   <td className="px-4 py-2.5 text-right">
-                    <div className="inline-flex h-7 w-16 rounded border border-primary bg-primary/5 items-center justify-center font-medium text-primary">8</div>
+                    <div className="inline-flex h-7 w-16 rounded border border-primary bg-primary/5 items-center justify-center font-medium text-primary">6</div>
                   </td>
+                  <td id="po-demo-gr-rejected" className="px-4 py-2.5 text-right">
+                    <div className="inline-flex h-7 w-16 rounded border border-destructive/40 bg-destructive/5 items-center justify-center font-medium text-destructive">2</div>
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">Seal damaged in transit</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5">Mounting Bracket MB-45</td>
@@ -875,9 +881,20 @@ function PageReceiptCreate() {
                   <td className="px-4 py-2.5 text-right">
                     <div className="inline-flex h-7 w-16 rounded border border-border bg-muted items-center justify-center text-muted-foreground">0</div>
                   </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <div className="inline-flex h-7 w-16 rounded border border-border bg-muted items-center justify-center text-muted-foreground">0</div>
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">—</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div id="po-demo-gr-overreceipt" className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-px-11 text-amber-700">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>
+              Over-receipt guard: received + previously received can never exceed the ordered quantity
+              (line 1 remaining: 8). On an edit, the same check runs on the delta.
+            </span>
           </div>
         </div>
       </div>
@@ -905,6 +922,9 @@ function PageReceiptDetail() {
         </div>
         <div id="po-demo-gr-edit" className="ml-auto h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
           <Edit className="h-3.5 w-3.5" /> Edit
+        </div>
+        <div id="po-demo-gr-print" className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
+          <FileDown className="h-3.5 w-3.5" /> Delivery sheet
         </div>
       </div>
 
@@ -948,6 +968,15 @@ function PageReceiptDetail() {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div id="po-demo-gr-stock" className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
+        <p className="text-xs font-semibold flex items-center gap-1.5"><Package className="h-3.5 w-3.5 text-primary" /> Stock impact</p>
+        <div className="flex justify-between"><span className="text-muted-foreground">Hydraulic Cylinder HY-200</span><span className="text-green-600 font-medium">+12 in · Sfax Main Warehouse</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Mounting Bracket MB-45</span><span className="text-green-600 font-medium">+50 in · Sfax Main Warehouse</span></div>
+        <p className="text-muted-foreground pt-1 border-t border-border/60">
+          Deleting this receipt — or cancelling the linked PO — reverses these stock transactions automatically.
+        </p>
       </div>
     </div>
   );
@@ -1076,7 +1105,7 @@ function PageInvoiceDetail() {
           </div>
           <p className="text-xs text-muted-foreground">{INV.supplier} · {INV.date}</p>
         </div>
-        <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
+        <div id="po-demo-si-pdf" className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
           <FileDown className="h-3.5 w-3.5" /> PDF
         </div>
       </div>
@@ -1112,6 +1141,38 @@ function PageInvoiceDetail() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div id="po-demo-match" className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
+          <span className="text-sm font-medium">Three-way match</span>
+          <span className="text-px-10 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Variance detected</span>
+        </div>
+        <table className="w-full text-xs">
+          <thead><tr className="bg-muted/30 border-b border-border">
+            <th className="text-left px-4 py-2 text-muted-foreground font-medium">Article</th>
+            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Ordered (PO)</th>
+            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Received (GR)</th>
+            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Invoiced</th>
+            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Variance</th>
+          </tr></thead>
+          <tbody>
+            <tr className="border-b border-border/40">
+              <td className="px-4 py-2.5">Hydraulic Cylinder HY-200</td>
+              <td className="px-4 py-2.5 text-right">20</td>
+              <td className="px-4 py-2.5 text-right text-amber-600 font-medium">12</td>
+              <td className="px-4 py-2.5 text-right">14</td>
+              <td className="px-4 py-2.5 text-right text-destructive font-medium">+2 invoiced</td>
+            </tr>
+            <tr>
+              <td className="px-4 py-2.5">Mounting Bracket MB-45</td>
+              <td className="px-4 py-2.5 text-right">50</td>
+              <td className="px-4 py-2.5 text-right text-green-600 font-medium">50</td>
+              <td className="px-4 py-2.5 text-right">50</td>
+              <td className="px-4 py-2.5 text-right text-green-600">Matched</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );

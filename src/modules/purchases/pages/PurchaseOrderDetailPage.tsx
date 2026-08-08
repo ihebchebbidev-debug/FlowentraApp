@@ -24,6 +24,7 @@ import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
 import { toast } from "sonner";
 import type { PurchaseOrder, GoodsReceipt, SupplierInvoice, PurchaseActivity, PurchaseOrderItem } from "../types";
 import { CreateActionButton } from '@/components/CreateActionButton';
+import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -384,9 +385,9 @@ function PurchaseOrderDetailPage() {
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">{t('detail.orderSummary')}</CardTitle></CardHeader>
                 <CardContent className="space-y-2 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{po.orderDate}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{formatPurchaseDate(po.orderDate)}</span></div>
                   {po.expectedDelivery && <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.expectedDelivery')}</span><span>{po.expectedDelivery}</span></div>}
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.paymentTerms')}</span><span>{po.paymentTerms}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.paymentTerms')}</span><span>{formatPaymentTerms(t, po.paymentTerms)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.currency')}</span><span>{po.currency}</span></div>
                   <Separator className="my-2" />
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.subtotal')}</span><span>{fmt(po.subTotal)}</span></div>
@@ -541,7 +542,7 @@ function PurchaseOrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">{gr.receiptNumber}</p>
-                          <p className="text-xs text-muted-foreground">{gr.receiptDate} &bull; {gr.receivedByName}</p>
+                          <p className="text-xs text-muted-foreground">{formatPurchaseDate(gr.receiptDate)} &bull; {gr.receivedByName}</p>
                         </div>
                         <Badge className={gr.status === 'complete' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}>
                           {t(`receiptStatus.${gr.status}`)}
@@ -565,7 +566,7 @@ function PurchaseOrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">{inv.invoiceNumber}</p>
-                          <p className="text-xs text-muted-foreground">{inv.invoiceDate} &bull; {fmt(inv.grandTotal)} {currency.code}</p>
+                          <p className="text-xs text-muted-foreground">{formatPurchaseDate(inv.invoiceDate)} &bull; {fmt(inv.grandTotal)} {currency.code}</p>
                         </div>
                         <Badge variant="outline">{t(`invoiceStatus.${inv.status}`)}</Badge>
                       </div>
