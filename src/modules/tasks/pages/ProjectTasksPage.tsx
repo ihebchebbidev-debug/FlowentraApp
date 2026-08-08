@@ -27,6 +27,7 @@ import { ProjectOverviewTab } from '../components/project-detail/ProjectOverview
 import { ProjectTasksTab } from '../components/project-detail/ProjectTasksTab';
 import { ProjectTeamTab } from '../components/project-detail/ProjectTeamTab';
 import { ProjectNotesActivityTab } from '../components/project-detail/ProjectNotesActivityTab';
+import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
 import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumentsTab';
 import { ChecklistsSection } from '@/modules/shared/components/documents';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
@@ -146,25 +147,11 @@ export default function ProjectTasksPage() {
   const fetchTechnicians = useCallback(async () => {
     try {
       const techList: Technician[] = [];
-      
-      const userData = localStorage.getItem('user_data');
-      if (userData) {
-        try {
-          const mainAdmin = JSON.parse(userData);
-          if (mainAdmin && mainAdmin.id) {
-            techList.push({
-              id: String(mainAdmin.id),
-              name: `${mainAdmin.firstName || ''} ${mainAdmin.lastName || ''}`.trim() || mainAdmin.email || 'Admin',
-              email: mainAdmin.email,
-              profilePictureUrl: mainAdmin.profilePictureUrl,
-              avatar: mainAdmin.profilePictureUrl,
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to parse user_data for MainAdminUser');
-        }
-      }
-      
+
+      // Real, assignable users come from the Users API only. The locally stored
+      // account (user_data) may be a tenant/main-admin record whose id does not
+      // exist in Users, so it must never be offered for assignment on its own —
+      // the backend rejects it with "User {id} not found".
       try {
         const usersResult = await usersApi.getAll();
         if (usersResult.users) {
@@ -183,12 +170,31 @@ export default function ProjectTasksPage() {
       } catch (e) {
         console.warn('Failed to fetch users from API:', e);
       }
-      
+
+      // Enrich (never add) the current account's entry when it is a real user.
+      const userData = localStorage.getItem('user_data');
+      if (userData) {
+        try {
+          const me = JSON.parse(userData);
+          const existing = me?.id ? techList.find(t => t.id === String(me.id)) : undefined;
+          if (existing) {
+            const fullName = `${me.firstName || ''} ${me.lastName || ''}`.trim();
+            if (fullName) existing.name = fullName;
+            existing.email = existing.email || me.email;
+            existing.profilePictureUrl = existing.profilePictureUrl || me.profilePictureUrl;
+            existing.avatar = existing.avatar || me.profilePictureUrl;
+          }
+        } catch (e) {
+          console.warn('Failed to parse user_data');
+        }
+      }
+
       setTechnicians(techList);
     } catch (error) {
       console.error('Failed to fetch technicians:', error);
     }
   }, []);
+
 
   useEffect(() => {
     fetchTechnicians();
@@ -583,10 +589,14 @@ export default function ProjectTasksPage() {
                 <SelectTrigger className="w-full bg-background">
                   <SelectValue>
                     {activeTab === 'overview' && t('projects.detail.tabs.overview')}
+                    {activeTab === 'offers' && t('projects.detail.tabs.offers')}
+                    {activeTab === 'deals' && t('projects.detail.tabs.deals')}
                     {activeTab === 'tasks' && t('projects.detail.tabs.tasks')}
                     {activeTab === 'team' && t('projects.detail.tabs.team')}
                     {activeTab === 'documents' && t('projects.detail.tabs.documents')}
+                    {activeTab === 'checklists' && t('projects.detail.tabs.checklists', 'Checklists')}
                     {activeTab === 'activity' && t('projects.detail.tabs.notesActivity', 'Notes & Activity')}
+                    {activeTab === 'settings' && t('projects.detail.tabs.settings', 'Settings')}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-card">
@@ -598,6 +608,7 @@ export default function ProjectTasksPage() {
                   <SelectItem value="documents">{t('projects.detail.tabs.documents')}</SelectItem>
                   <SelectItem value="checklists">{t('projects.detail.tabs.checklists', 'Checklists')}</SelectItem>
                   <SelectItem value="activity">{t('projects.detail.tabs.notesActivity', 'Notes & Activity')}</SelectItem>
+                  <SelectItem value="settings">{t('projects.detail.tabs.settings', 'Settings')}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
@@ -610,7 +621,9 @@ export default function ProjectTasksPage() {
                 <TabsTrigger value="documents">{t('projects.detail.tabs.documents')}</TabsTrigger>
                 <TabsTrigger value="checklists">{t('projects.detail.tabs.checklists', 'Checklists')}</TabsTrigger>
                 <TabsTrigger value="activity">{t('projects.detail.tabs.notesActivity', 'Notes & Activity')}</TabsTrigger>
+                <TabsTrigger value="settings">{t('projects.detail.tabs.settings', 'Settings')}</TabsTrigger>
               </TabsList>
+
 
             )}
           </div>
@@ -696,6 +709,12 @@ export default function ProjectTasksPage() {
               <TabsContent value="activity" className="mt-0">
                 <ProjectNotesActivityTab project={project} />
               </TabsContent>
+
+              {/* Module-wide project settings (backed by GET/PUT /api/Projects/settings) */}
+              <TabsContent value="settings" className="mt-0">
+                <ProjectSettingsTab />
+              </TabsContent>
+
             </div>
           </div>
         </Tabs>
