@@ -39,6 +39,8 @@ const CODE_TO_KEY: Record<string, string> = {
   'attendance.range_too_long': 'attendanceErrors.rangeTooLong',
   'attendance.checkout_without_checkin': 'attendanceErrors.checkoutWithoutCheckin',
   'attendance.invalid_status': 'attendanceErrors.statusInvalid',
+  'attendance.save_failed': 'serverErrors.attendanceSaveFailed',
+  'attendance.delete_failed': 'serverErrors.attendanceDeleteFailed',
 };
 
 export function extractHrErrorCode(error: unknown): string | undefined {

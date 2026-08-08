@@ -392,14 +392,31 @@ namespace MyApi.Modules.HR.Services
             if (!string.IsNullOrWhiteSpace(dto.Status) && Array.IndexOf(allowedStatuses, dto.Status.Trim()) < 0)
                 throw new ArgumentException("attendance.invalid_status", nameof(dto.Status));
 
-            var row = await _db.Set<HrAttendance>().FirstOrDefaultAsync(x => x.UserId == dto.UserId && x.Date == date);
+            var set = _db.Set<HrAttendance>();
+            // Match the stored row on the whole calendar day rather than on an exact
+            // timestamp: `date` is a `timestamp with time zone` column, so a row written
+            // with a non-UTC midnight (older imports/seeds) never equals our UTC midnight
+            // and the equality lookup silently fell through to an INSERT, which then hit
+            // the (tenant, user, date) unique index and surfaced as a 500.
+            var dayEnd = date.AddDays(1);
+            var target = await set.FirstOrDefaultAsync(x => x.UserId == dto.UserId && x.Date >= date && x.Date < dayEnd);
+            // The edit dialog posts the row id. Honour it so changing the employee or the
+            // date of an existing entry moves that row instead of creating a duplicate.
+            var byId = dto.Id > 0 ? await set.FirstOrDefaultAsync(x => x.Id == dto.Id) : null;
+            if (target != null && byId != null && target.Id != byId.Id)
+            {
+                // Entry was moved onto a day that already has a record — keep one row per day.
+                set.Remove(byId);
+            }
+            var row = target ?? byId;
             var isNew = row == null;
             if (row == null)
             {
                 row = new HrAttendance { UserId = dto.UserId, Date = date };
-                _db.Set<HrAttendance>().Add(row);
+                set.Add(row);
             }
 
+            row.UserId = dto.UserId;
             row.Date = date;
             row.CheckIn = checkIn;
             row.CheckOut = checkOut;
@@ -421,26 +438,43 @@ namespace MyApi.Modules.HR.Services
             {
                 await _db.SaveChangesAsync();
             }
-            catch (DbUpdateException) when (isNew)
+            catch (DbUpdateException)
             {
-                // Concurrent insert for the same (user, date) won the race — reload the
-                // existing row and apply the same values as an update instead of failing.
+                // Either a concurrent insert won the (user, date) race, or the row we tried
+                // to insert already exists under a different timestamp. Reload the day's row
+                // and re-apply the values as an update instead of failing with a 500.
+                var pending = new
+                {
+                    row.CheckIn, row.CheckOut, row.BreakMinutes, row.Status,
+                    row.Notes, row.Source, row.TotalHours, row.OvertimeHours,
+                };
                 _db.Entry(row).State = EntityState.Detached;
-                var existing = await _db.Set<HrAttendance>().FirstOrDefaultAsync(x => x.UserId == dto.UserId && x.Date == date);
-                if (existing == null) throw;
-                existing.CheckIn = row.CheckIn;
-                existing.CheckOut = row.CheckOut;
-                existing.BreakMinutes = row.BreakMinutes;
-                existing.Status = row.Status;
-                existing.Notes = row.Notes;
-                existing.Source = row.Source;
-                existing.TotalHours = row.TotalHours;
-                existing.OvertimeHours = row.OvertimeHours;
-                existing.UpdatedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
-                row = existing;
+                var existing = await set.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.UserId == dto.UserId && x.Date >= date && x.Date < dayEnd);
+                if (existing == null) throw new InvalidOperationException("attendance.save_failed");
+                var tracked = await set.FirstOrDefaultAsync(x => x.Id == existing.Id);
+                if (tracked == null) throw new InvalidOperationException("attendance.save_failed");
+                tracked.CheckIn = pending.CheckIn;
+                tracked.CheckOut = pending.CheckOut;
+                tracked.BreakMinutes = pending.BreakMinutes;
+                tracked.Status = pending.Status;
+                tracked.Notes = pending.Notes;
+                tracked.Source = pending.Source;
+                tracked.TotalHours = pending.TotalHours;
+                tracked.OvertimeHours = pending.OvertimeHours;
+                tracked.UpdatedAt = DateTime.UtcNow;
+                try
+                {
+                    await _db.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    throw new InvalidOperationException("attendance.save_failed");
+                }
+                row = tracked;
                 isNew = false;
             }
+
             await LogAsync(dto.UserId, isNew ? "attendance_added" : "attendance_updated", $"Attendance saved for {date:yyyy-MM-dd}", new { dto.UserId, date, row.TotalHours, row.OvertimeHours }, actorUserId);
 
             var userMap = await _db.Users.Where(u => u.Id == dto.UserId)
@@ -452,9 +486,20 @@ namespace MyApi.Modules.HR.Services
         {
             var row = await _db.Set<HrAttendance>().FirstOrDefaultAsync(x => x.Id == id);
             if (row == null) throw new KeyNotFoundException("hr.attendance_not_found");
+            var userId = row.UserId;
+            var day = row.Date;
             _db.Set<HrAttendance>().Remove(row);
-            await _db.SaveChangesAsync();
-            await LogAsync(row.UserId, "attendance_deleted", $"Attendance deleted for {row.Date:yyyy-MM-dd}", new { id }, actorUserId);
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Row is referenced elsewhere (or vanished mid-request) — report a
+                // translatable business error instead of an opaque 500.
+                throw new InvalidOperationException("attendance.delete_failed");
+            }
+            await LogAsync(userId, "attendance_deleted", $"Attendance deleted for {day:yyyy-MM-dd}", new { id }, actorUserId);
         }
 
         public async Task<HrAttendanceSettingsDto> GetAttendanceSettingsAsync()
@@ -1157,7 +1202,21 @@ namespace MyApi.Modules.HR.Services
                 ActorName = actor != null ? $"{actor.FirstName} {actor.LastName}".Trim() : null,
                 CreatedAt = DateTime.UtcNow
             });
-            // Caller is responsible for SaveChangesAsync (we batch in same tx)
+            // Persist here: almost every caller logs AFTER its own SaveChangesAsync (so the
+            // generated row id is available), which meant the queued audit entry was never
+            // written. Saving inside LogAsync makes the trail reliable for every HR action.
+            // A failed audit write must never fail the business operation it describes.
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                foreach (var entry in _db.ChangeTracker.Entries<HrAuditLog>().ToList())
+                {
+                    if (entry.State == EntityState.Added) entry.State = EntityState.Detached;
+                }
+            }
         }
 
         // ===========================================================================

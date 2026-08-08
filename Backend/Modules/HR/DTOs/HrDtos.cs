@@ -96,6 +96,8 @@ namespace MyApi.Modules.HR.DTOs
 
     public class UpsertHrAttendanceDto
     {
+        /// <summary>Existing row id when editing. 0/absent means "create or match by (user, day)".</summary>
+        public int Id { get; set; }
         [Required] public int UserId { get; set; }
         [Required] public DateTime Date { get; set; }
         public DateTime? CheckIn { get; set; }

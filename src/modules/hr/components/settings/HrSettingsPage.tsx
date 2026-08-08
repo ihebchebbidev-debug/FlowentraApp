@@ -7,18 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { Plus, Trash2, Pencil, Settings as SettingsIcon } from 'lucide-react';
 import { HRPageHeader } from '../HRPageHeader';
 import { useCnssRates } from '../../hooks/useCnss';
 import { usePublicHolidays } from '../../hooks/useHolidays';
 import { useAttendanceSettings } from '../../hooks/useAttendance';
-import type { AttendanceSettings } from '../../types/hr.types';
+import type { AttendanceSettings, PublicHoliday } from '../../types/hr.types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import dayjs from 'dayjs';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
+import { EditHolidayDialog } from './EditHolidayDialog';
+
 
 
 
@@ -52,6 +54,8 @@ export function HrSettingsPage() {
   const [holidayDate, setHolidayDate] = useState('');
   const [holidayName, setHolidayName] = useState('');
   const [holidayRecurring, setHolidayRecurring] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState<PublicHoliday | null>(null);
+
 
   const addHoliday = async () => {
     if (!guardHr('create')) return;
@@ -223,19 +227,29 @@ export function HrSettingsPage() {
                       <TableHead>{t('settingsPage.holidays.date')}</TableHead>
                       <TableHead>{t('settingsPage.holidays.name')}</TableHead>
                       <TableHead>{t('settingsPage.holidays.recurring')}</TableHead>
-                      <TableHead className="w-10"></TableHead>
+                      <TableHead className="w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {(holidaysQuery.data ?? []).length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">{t('settingsPage.holidays.empty')}</TableCell>
+                      </TableRow>
+                    )}
                     {(holidaysQuery.data ?? []).map(h => (
                       <TableRow key={h.id}>
                         <TableCell>{h.date}</TableCell>
                         <TableCell>{h.name}</TableCell>
                         <TableCell>{h.isRecurring ? '✓' : '—'}</TableCell>
                         <TableCell>
-                          <HrPermissionButton action="delete" aria-label={t('settingsPage.holidays.delete', 'Delete holiday')} title={t('settingsPage.holidays.delete', 'Delete holiday')} size="icon" variant="ghost" onClick={() => { if (guardHr('delete')) deleteHoliday.mutate(h.id); }}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </HrPermissionButton>
+                          <div className="flex items-center gap-1">
+                            <HrPermissionButton action="update" aria-label={t('settingsPage.holidays.editTitle')} title={t('settingsPage.holidays.editTitle')} size="icon" variant="ghost" onClick={() => setEditingHoliday(h)}>
+                              <Pencil className="h-4 w-4" />
+                            </HrPermissionButton>
+                            <HrPermissionButton action="delete" aria-label={t('settingsPage.holidays.delete', 'Delete holiday')} title={t('settingsPage.holidays.delete', 'Delete holiday')} size="icon" variant="ghost" onClick={() => { if (guardHr('delete')) deleteHoliday.mutate(h.id); }}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </HrPermissionButton>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -244,7 +258,14 @@ export function HrSettingsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <EditHolidayDialog
+              holiday={editingHoliday}
+              year={year}
+              onOpenChange={(v) => { if (!v) setEditingHoliday(null); }}
+            />
           </TabsContent>
+
 
           <TabsContent value="general" className="mt-3">
             <Card className="shadow-card border-0 bg-card">

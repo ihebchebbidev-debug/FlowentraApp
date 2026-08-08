@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Briefcase, Plus, Trash2, Users } from 'lucide-react';
+import { Briefcase, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,9 @@ import {
   useApplicants, useApplicantNotes, useInterviews, useJobOpenings,
   useRecruitmentDashboard,
 } from '../../hooks/useRecruitment';
-import { APPLICANT_STAGES, type ApplicantStage, type JobOpeningStatus } from '../../types/recruitment.types';
+import { APPLICANT_STAGES, type ApplicantStage, type HrApplicant, type JobOpeningStatus } from '../../types/recruitment.types';
+import { EditApplicantDialog } from './EditApplicantDialog';
+
 
 const STAGE_COLOR: Record<ApplicantStage, string> = {
   applied: 'bg-muted text-foreground',
@@ -278,6 +280,8 @@ function ApplicantsTab() {
 
   // Notes dialog
   const [notesFor, setNotesFor] = useState<number | null>(null);
+  const [editingApplicant, setEditingApplicant] = useState<HrApplicant | null>(null);
+
   const { notesQuery, addNote, deleteNote } = useApplicantNotes(notesFor ?? undefined);
   const [noteBody, setNoteBody] = useState('');
 
@@ -391,7 +395,17 @@ function ApplicantsTab() {
                           {APPLICANT_STAGES.map(s => <SelectItem key={s} value={s}>{t(`recruitmentPage.stages.${s}`)}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={t('recruitmentPage.applicants.editDialogTitle')}
+                        title={t('recruitmentPage.applicants.editDialogTitle')}
+                        onClick={() => setEditingApplicant(a)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => setNotesFor(a.id)}>{t('recruitmentPage.applicants.notesButton')}</Button>
+
                       <ConfirmDeleteButton
                         size="icon"
                         variant="ghost"
@@ -408,6 +422,14 @@ function ApplicantsTab() {
           </Table>
         </div>
       </CardContent>
+
+      <EditApplicantDialog
+        applicant={editingApplicant}
+        openings={openingsQuery.data ?? []}
+        onOpenChange={(v) => { if (!v) setEditingApplicant(null); }}
+      />
+
+
 
       <Dialog open={!!notesFor} onOpenChange={(o) => !o && setNotesFor(null)}>
         <DialogContent>

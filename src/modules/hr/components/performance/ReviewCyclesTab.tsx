@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useReviewCycles } from '../../hooks/usePerformance';
-import type { ReviewCycleFrequency, ReviewCycleStatus } from '../../types/performance.types';
+import type { HrReviewCycle, ReviewCycleFrequency, ReviewCycleStatus } from '../../types/performance.types';
 import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
+import { EditCycleDialog } from './EditCycleDialog';
+
 
 const FREQUENCIES: ReviewCycleFrequency[] = ['annual', 'semi_annual', 'quarterly', 'custom'];
 const CYCLE_STATUSES: ReviewCycleStatus[] = ['draft', 'open', 'closed'];
@@ -29,6 +31,8 @@ export function ReviewCyclesTab() {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [selfReq, setSelfReq] = useState(true);
+  const [editingCycle, setEditingCycle] = useState<HrReviewCycle | null>(null);
+
 
   const submit = async () => {
     if (!name || !periodStart || !periodEnd) {
@@ -131,6 +135,15 @@ export function ReviewCyclesTab() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={t('performancePage.cycles.editCycle')}
+                        title={t('performancePage.cycles.editCycle')}
+                        onClick={() => setEditingCycle(c)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <ConfirmDeleteButton
                         size="icon"
                         variant="ghost"
@@ -147,6 +160,9 @@ export function ReviewCyclesTab() {
           </Table>
         </div>
       </CardContent>
+
+      <EditCycleDialog cycle={editingCycle} onOpenChange={(v) => { if (!v) setEditingCycle(null); }} />
     </Card>
+
   );
 }

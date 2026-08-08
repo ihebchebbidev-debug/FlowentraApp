@@ -425,7 +425,17 @@
     "endDate": "End date",
     "reason": "Reason",
     "created": "Leave request created",
-    "createFailed": "Failed to create leave request"
+    "createFailed": "Failed to create leave request",
+    "allowanceDialog": {
+      "title": "Set allowance",
+      "editTitle": "Edit allowance",
+      "employee": "Employee",
+      "days": "Annual allowance (days)",
+      "hint": "Sets the yearly allowance for this employee and leave type.",
+      "validation": "Employee, leave type and allowance are required",
+      "saved": "Allowance saved",
+      "empty": "No leave balances yet"
+    }
   },
   "leaveStatus": {
     "pending": "Pending",
@@ -721,7 +731,9 @@
       "title": "Public holidays",
       "validation": "Name and date are required",
       "year": "Year",
-      "recurring": "Recurring (every year)"
+      "recurring": "Recurring (every year)",
+      "editTitle": "Edit holiday",
+      "updated": "Holiday updated"
     }
   },
   "documentsTab": {
@@ -784,7 +796,9 @@
     "reviewNotFound": "Review not found.",
     "openingNotFound": "Job opening not found.",
     "applicantNotFound": "Applicant not found.",
-    "interviewNotFound": "Interview not found."
+    "interviewNotFound": "Interview not found.",
+    "attendanceSaveFailed": "Could not save the attendance record. Another entry already exists for this employee on that day.",
+    "attendanceDeleteFailed": "Could not delete the attendance record. It is referenced by another record."
   },
   "bonusErrors": {
     "employeeRequired": "Employee is required.",
@@ -938,7 +952,9 @@
         "actions": "Actions"
       },
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "editCycle": "Edit cycle",
+      "updatedToast": "Review cycle updated"
     },
     "reviews": {
       "title": "Performance Reviews",
@@ -1039,7 +1055,10 @@
         "lastName": "Last name",
         "email": "Email",
         "phone": "Phone",
-        "source": "Source"
+        "source": "Source",
+        "availableFrom": "Available from",
+        "expectedSalary": "Expected salary",
+        "resumeUrl": "Resume URL"
       },
       "filters": {
         "opening": "Opening",
@@ -1067,8 +1086,10 @@
       "notesDeleteConfirmTitle": "Delete note?",
       "toasts": {
         "requiredFields": "Opening, first & last name required",
-        "added": "Applicant added"
-      }
+        "added": "Applicant added",
+        "updated": "Applicant updated"
+      },
+      "editDialogTitle": "Edit applicant"
     },
     "interviews": {
       "title": "Interviews",

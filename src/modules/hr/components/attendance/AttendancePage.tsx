@@ -375,6 +375,7 @@ export function AttendancePage() {
                                     setTargetTenantId((record as any).tenantId ?? 0);
                                     deleteAttendance.mutate(record.id, {
                                       onSuccess: () => toast.success(t('attendancePage.deleted')),
+                                      onError: (err) => toast.error(mapBackendError(t, err)),
                                       onSettled: () => clearTargetTenant(),
                                     });
                                   }}

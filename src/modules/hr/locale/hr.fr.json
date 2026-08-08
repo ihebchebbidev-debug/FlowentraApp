@@ -425,7 +425,17 @@
     "endDate": "Date fin",
     "reason": "Motif",
     "created": "Demande de congé créée",
-    "createFailed": "Échec de la création de la demande de congé"
+    "createFailed": "Échec de la création de la demande de congé",
+    "allowanceDialog": {
+      "title": "Définir le quota",
+      "editTitle": "Modifier le quota",
+      "employee": "Employé",
+      "days": "Quota annuel (jours)",
+      "hint": "Définit le quota annuel pour cet employé et ce type de congé.",
+      "validation": "Employé, type de congé et quota sont requis",
+      "saved": "Quota enregistré",
+      "empty": "Aucun solde de congé"
+    }
   },
   "leaveStatus": {
     "pending": "En attente",
@@ -721,7 +731,9 @@
       "title": "Jours fériés",
       "validation": "Nom et date obligatoires",
       "year": "Année",
-      "recurring": "Récurrent (chaque année)"
+      "recurring": "Récurrent (chaque année)",
+      "editTitle": "Modifier le jour férié",
+      "updated": "Jour férié mis à jour"
     }
   },
   "documentsTab": {
@@ -784,7 +796,9 @@
     "reviewNotFound": "Évaluation introuvable.",
     "openingNotFound": "Offre d'emploi introuvable.",
     "applicantNotFound": "Candidat introuvable.",
-    "interviewNotFound": "Entretien introuvable."
+    "interviewNotFound": "Entretien introuvable.",
+    "attendanceSaveFailed": "Impossible d'enregistrer la présence. Une autre entrée existe déjà pour cet employé à cette date.",
+    "attendanceDeleteFailed": "Impossible de supprimer la présence. Elle est référencée par un autre enregistrement."
   },
   "bonusErrors": {
     "employeeRequired": "L'employé est obligatoire.",
@@ -938,7 +952,9 @@
         "actions": "Actions"
       },
       "yes": "Oui",
-      "no": "Non"
+      "no": "Non",
+      "editCycle": "Modifier le cycle",
+      "updatedToast": "Cycle d’évaluation mis à jour"
     },
     "reviews": {
       "title": "Évaluations de performance",
@@ -1039,7 +1055,10 @@
         "lastName": "Nom",
         "email": "E-mail",
         "phone": "Téléphone",
-        "source": "Source"
+        "source": "Source",
+        "availableFrom": "Disponible à partir du",
+        "expectedSalary": "Salaire souhaité",
+        "resumeUrl": "Lien du CV"
       },
       "filters": {
         "opening": "Offre",
@@ -1067,8 +1086,10 @@
       "notesDeleteConfirmTitle": "Supprimer la note ?",
       "toasts": {
         "requiredFields": "L'offre, le prénom et le nom sont requis",
-        "added": "Candidat ajouté"
-      }
+        "added": "Candidat ajouté",
+        "updated": "Candidat mis à jour"
+      },
+      "editDialogTitle": "Modifier le candidat"
     },
     "interviews": {
       "title": "Entretiens",
