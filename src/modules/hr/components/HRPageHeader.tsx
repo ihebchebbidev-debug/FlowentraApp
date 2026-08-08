@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
  * Unified HR page header — visual parity with OffersHeader / SalesHeader.
@@ -21,6 +22,10 @@ export function HRPageHeader(props: {
   actions?: React.ReactNode;
 }) {
   const Icon = props.icon;
+  // Actions may contain dialogs/portals — render them in exactly ONE of the two
+  // layout branches, otherwise every dialog is mounted twice (duplicate modals,
+  // duplicate form ids and conflicting aria-hidden state).
+  const isMobile = useIsMobile();
   const accent = props.accentColor ?? 'chart-1';
 
   return (
@@ -47,7 +52,7 @@ export function HRPageHeader(props: {
             </Button>
           )}
         </div>
-        {props.actions && (
+        {isMobile && props.actions && (
           <div className="flex flex-wrap items-center gap-2">{props.actions}</div>
         )}
       </div>
@@ -77,7 +82,7 @@ export function HRPageHeader(props: {
               <Link to={props.backTo.to}>{props.backTo.label}</Link>
             </Button>
           )}
-          {props.actions}
+          {!isMobile && props.actions}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { useEmployees } from '../../hooks/useEmployees';
 import { SalaryConfigForm, type SalaryConfigFormValues } from './SalaryConfigForm';
 import { EmployeeEditForm, type EmployeeEditFormValues } from './EmployeeEditForm';
 import { useToast } from '@/hooks/use-toast';
+import { translateHrServerError } from '../../utils/hrServerError';
 import { HRPageHeader } from '../HRPageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Building2, BriefcaseBusiness, User, Plus, Trash2, History as HistoryIcon, DollarSign, Award, Calendar, FileText } from 'lucide-react';
@@ -104,8 +105,12 @@ export function EmployeeDetail() {
     try {
       await upsertSalaryConfig.mutateAsync({ userId, payload: hrPayload });
       toast({ title: userOk ? t('employeeEdit.saved') : t('employeeEdit.hrSavedOnly') });
-    } catch {
-      toast({ title: t('employeeEdit.hrUpdateError'), variant: 'destructive' });
+    } catch (e) {
+      toast({
+        title: t('employeeEdit.hrUpdateError'),
+        description: translateHrServerError(t as any, e),
+        variant: 'destructive',
+      });
       if (!userOk) throw new Error('Save failed');
     }
   };

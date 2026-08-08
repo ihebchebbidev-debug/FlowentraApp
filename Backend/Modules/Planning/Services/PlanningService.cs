@@ -844,9 +844,23 @@ namespace MyApi.Modules.Planning.Services
                 throw new InvalidOperationException("planning.leave_allowance_exceeded");
         }
 
+        private static DateTime AsUtcDay(DateTime value)
+            => DateTime.SpecifyKind(value.Date, DateTimeKind.Utc);
+
         public async Task<UserLeaveDto> CreateLeaveAsync(CreateLeaveDto dto)
         {
+            // User-initiated transactions must run inside the execution strategy,
+            // otherwise Npgsql's retrying strategy throws and the request 500s.
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(() => CreateLeaveCoreAsync(dto));
+        }
+
+        private async Task<UserLeaveDto> CreateLeaveCoreAsync(CreateLeaveDto dto)
+        {
             var status = string.IsNullOrWhiteSpace(dto.Status) ? "pending" : dto.Status!.ToLowerInvariant();
+            // PG columns are `timestamp with time zone` — Npgsql rejects Unspecified/Local kinds.
+            var startDate = AsUtcDay(dto.StartDate);
+            var endDate = AsUtcDay(dto.EndDate);
 
             // Serialize concurrent submissions for the same employee so two
             // overlapping requests cannot both pass the validation below.
@@ -855,14 +869,14 @@ namespace MyApi.Modules.Planning.Services
             await _db.Database.ExecuteSqlRawAsync(
                 "SELECT pg_advisory_xact_lock({0}, {1})", LeaveLockNamespace, dto.UserId);
 
-            await ValidateLeaveAsync(dto.UserId, dto.LeaveType, dto.StartDate, dto.EndDate, status, null);
+            await ValidateLeaveAsync(dto.UserId, dto.LeaveType, startDate, endDate, status, null);
 
             var leave = new UserLeave
             {
                 UserId = dto.UserId,
                 LeaveType = dto.LeaveType,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
+                StartDate = startDate,
+                EndDate = endDate,
                 Reason = dto.Reason,
                 Status = status,
                 CreatedAt = DateTime.UtcNow,
@@ -886,6 +900,12 @@ namespace MyApi.Modules.Planning.Services
 
         public async Task<UserLeaveDto> UpdateLeaveAsync(int leaveId, UpdateLeaveDto dto)
         {
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(() => UpdateLeaveCoreAsync(leaveId, dto));
+        }
+
+        private async Task<UserLeaveDto> UpdateLeaveCoreAsync(int leaveId, UpdateLeaveDto dto)
+        {
             var leave = await _db.Set<UserLeave>().FirstOrDefaultAsync(l => l.Id == leaveId);
             if (leave == null)
                 throw new KeyNotFoundException($"Leave {leaveId} not found");
@@ -898,9 +918,9 @@ namespace MyApi.Modules.Planning.Services
             if (!string.IsNullOrEmpty(dto.LeaveType))
                 leave.LeaveType = dto.LeaveType;
             if (dto.StartDate.HasValue)
-                leave.StartDate = dto.StartDate.Value;
+                leave.StartDate = AsUtcDay(dto.StartDate.Value);
             if (dto.EndDate.HasValue)
-                leave.EndDate = dto.EndDate.Value;
+                leave.EndDate = AsUtcDay(dto.EndDate.Value);
             if (!string.IsNullOrEmpty(dto.Reason))
                 leave.Reason = dto.Reason;
             if (!string.IsNullOrEmpty(dto.Status))

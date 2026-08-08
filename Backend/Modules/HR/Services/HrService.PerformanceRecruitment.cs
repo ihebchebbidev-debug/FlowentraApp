@@ -102,7 +102,7 @@ namespace MyApi.Modules.HR.Services
         {
             var entity = await _db.HrGoals.FirstOrDefaultAsync(g => g.Id == id && !g.IsDeleted)
                          ?? throw new KeyNotFoundException("hr.goal_not_found");
-            if (dto.Title != null) entity.Title = dto.Title.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Title)) entity.Title = dto.Title.Trim();
             if (dto.Description != null) entity.Description = dto.Description;
             if (dto.Category != null) entity.Category = dto.Category;
             if (dto.Weight.HasValue) entity.Weight = Math.Max(0, Math.Min(100, dto.Weight.Value));

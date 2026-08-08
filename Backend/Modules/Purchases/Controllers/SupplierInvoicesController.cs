@@ -188,11 +188,20 @@ namespace MyApi.Modules.Purchases.Controllers
                 await _systemLogService.LogSuccessAsync($"Supplier invoice deleted: {id}", "Purchases", "delete", userId, GetUserName(), "SupplierInvoice", id.ToString());
                 return Ok(new { success = true, message = "Deleted successfully" });
             }
+            // Business-rule refusals (recorded payments, already declared to the DGI) are
+            // NOT server faults: returning 500 with a generic French message made the UI
+            // silently restore the row with no explanation. Surface them as 409 + reason.
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Supplier invoice {Id} delete refused: {Message}", id, ex.Message);
+                return Conflict(new { success = false, error = new { code = "DELETE_NOT_ALLOWED", message = ex.Message } });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting supplier invoice {Id}", id);
                 return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
+
         }
 
         /// <summary>

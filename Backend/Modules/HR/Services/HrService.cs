@@ -121,6 +121,15 @@ namespace MyApi.Modules.HR.Services
 
         public async Task<HrEmployeeSalaryConfigDto> UpsertSalaryConfigAsync(int userId, UpsertSalaryConfigDto dto, int actorUserId)
         {
+            // EnableRetryOnFailure is on for Npgsql, so user-initiated transactions
+            // MUST run inside an execution strategy, otherwise BeginTransactionAsync
+            // throws "does not support user-initiated transactions" (HTTP 400).
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(() => UpsertSalaryConfigCoreAsync(userId, dto, actorUserId));
+        }
+
+        private async Task<HrEmployeeSalaryConfigDto> UpsertSalaryConfigCoreAsync(int userId, UpsertSalaryConfigDto dto, int actorUserId)
+        {
             // Serialize concurrent salary edits for the same employee. Without this,
             // two overlapping calls would each read the same `previousGross`, both
             // write their own `newGross`, and both insert HrSalaryHistory rows
@@ -278,7 +287,41 @@ namespace MyApi.Modules.HR.Services
                 .Where(x => x.Date >= start && x.Date < end);
             if (userId.HasValue) q = q.Where(x => x.UserId == userId.Value);
 
-            var rows = await q.OrderBy(x => x.Date).ThenBy(x => x.UserId).ToListAsync();
+            // Project instead of materializing the entity: legacy/imported rows can hold
+            // NULL in `status` / `source`, which makes EF throw while filling the
+            // non-nullable string properties (surfacing as a 500 on the whole month).
+            var raw = await q.OrderBy(x => x.Date).ThenBy(x => x.UserId)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.UserId,
+                    x.Date,
+                    x.CheckIn,
+                    x.CheckOut,
+                    x.BreakMinutes,
+                    x.TotalHours,
+                    x.OvertimeHours,
+                    Status = (string?)x.Status,
+                    x.Notes,
+                    Source = (string?)x.Source,
+                })
+                .ToListAsync();
+
+            var rows = raw.Select(x => new HrAttendance
+            {
+                Id = x.Id,
+                UserId = x.UserId,
+                Date = x.Date,
+                CheckIn = x.CheckIn,
+                CheckOut = x.CheckOut,
+                BreakMinutes = x.BreakMinutes,
+                TotalHours = x.TotalHours,
+                OvertimeHours = x.OvertimeHours,
+                Status = string.IsNullOrWhiteSpace(x.Status) ? "present" : x.Status!,
+                Notes = x.Notes,
+                Source = string.IsNullOrWhiteSpace(x.Source) ? "manual" : x.Source!,
+            }).ToList();
+
             var userIds = rows.Select(x => x.UserId).Distinct().ToList();
             var userMap = await _db.Users.Where(u => userIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => string.IsNullOrWhiteSpace(($"{u.FirstName} {u.LastName}").Trim()) ? (u.Email ?? $"#{u.Id}") : ($"{u.FirstName} {u.LastName}").Trim());
@@ -334,9 +377,13 @@ namespace MyApi.Modules.HR.Services
             row.CheckIn = checkIn;
             row.CheckOut = checkOut;
             row.BreakMinutes = Math.Max(0, dto.BreakMinutes);
-            row.Status = string.IsNullOrWhiteSpace(dto.Status) ? row.Status : dto.Status.Trim();
+            row.Status = string.IsNullOrWhiteSpace(dto.Status)
+                ? (string.IsNullOrWhiteSpace(row.Status) ? "present" : row.Status)
+                : dto.Status.Trim();
             row.Notes = dto.Notes;
-            row.Source = string.IsNullOrWhiteSpace(dto.Source) ? row.Source : dto.Source.Trim();
+            row.Source = string.IsNullOrWhiteSpace(dto.Source)
+                ? (string.IsNullOrWhiteSpace(row.Source) ? "manual" : row.Source)
+                : dto.Source.Trim();
             var computed = ComputeAttendanceHours(checkIn, checkOut, row.BreakMinutes, settings);
             row.TotalHours = SafeHours(dto.TotalHours ?? computed.totalHours);
             row.OvertimeHours = SafeHours(dto.OvertimeHours ?? computed.overtimeHours);
@@ -471,6 +518,14 @@ namespace MyApi.Modules.HR.Services
         // PAYROLL (Tunisia: Gross + Allowances + Bonuses → CNSS, IRPP, CSS → Net)
         // ===========================================================================
         public async Task<HrPayrollRunDto> GeneratePayrollRunAsync(CreatePayrollRunDto dto, int createdByUserId)
+        {
+            // Retrying execution strategy requires user-initiated transactions to be
+            // wrapped, otherwise payroll generation fails on the first attempt.
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(() => GeneratePayrollRunCoreAsync(dto, createdByUserId));
+        }
+
+        private async Task<HrPayrollRunDto> GeneratePayrollRunCoreAsync(CreatePayrollRunDto dto, int createdByUserId)
         {
             if (dto.Month < 1 || dto.Month > 12) throw new InvalidOperationException("hr.invalid_month");
             if (dto.Year < 2000 || dto.Year > 2100) throw new InvalidOperationException("hr.invalid_year");
@@ -935,7 +990,8 @@ namespace MyApi.Modules.HR.Services
 
             var row = new HrCnssRate
             {
-                EffectiveFrom = dto.EffectiveFrom,
+                // PG column is `timestamp with time zone` — Npgsql rejects Unspecified/Local kinds.
+                EffectiveFrom = DateTime.SpecifyKind(dto.EffectiveFrom == default ? DateTime.UtcNow : dto.EffectiveFrom, DateTimeKind.Utc),
                 EmployeeRate = dto.EmployeeRate,
                 EmployerRate = dto.EmployerRate,
                 CssRate = dto.CssRate,
@@ -1287,9 +1343,9 @@ namespace MyApi.Modules.HR.Services
             BreakMinutes = x.BreakMinutes,
             TotalHours = x.TotalHours,
             OvertimeHours = x.OvertimeHours,
-            Status = x.Status,
+            Status = string.IsNullOrWhiteSpace(x.Status) ? "present" : x.Status!,
             Notes = x.Notes,
-            Source = x.Source,
+            Source = string.IsNullOrWhiteSpace(x.Source) ? "manual" : x.Source!,
         };
 
         private static HrAttendanceSettingsDto MapAttendanceSettingsDto(HrAttendanceSettings x) => new()
