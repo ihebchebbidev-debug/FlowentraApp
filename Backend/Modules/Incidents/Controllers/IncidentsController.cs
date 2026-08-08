@@ -21,10 +21,10 @@ namespace MyApi.Modules.Incidents.Controllers
             _logger = logger;
         }
 
-        private string GetTenant() =>
-            Request.Headers.TryGetValue(TenantMiddleware.TenantHeaderName, out var t)
-                ? t.ToString()
-                : "unknown";
+        // Resolve the tenant the same way the DbContext registration does:
+        // middleware-resolved value first, header fallback, then the default
+        // shared DB (empty) — never the bogus "unknown" slug.
+        private string GetTenant() => TenantResolution.Resolve(HttpContext);
 
         /// <summary>
         /// POST /api/Incidents/auto — Evaluate an incident and create or update a support ticket.

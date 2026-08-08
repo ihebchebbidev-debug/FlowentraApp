@@ -212,6 +212,52 @@ namespace MyApi.Modules.Projects.Controllers
         }
 
         /// <summary>
+        /// Bulk update the status of several projects
+        /// </summary>
+        [HttpPost("bulk/status")]
+        public async Task<ActionResult> BulkUpdateStatus([FromBody] BulkUpdateProjectStatusRequestDto dto)
+        {
+            try
+            {
+                if (dto?.ProjectIds == null || dto.ProjectIds.Count == 0)
+                    return BadRequest("projectIds is required");
+
+                var updated = await _projectService.BulkUpdateStatusAsync(dto.ProjectIds, dto.Status, GetCurrentUser());
+                return Ok(new { updated });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk updating project status");
+                return StatusCode(500, "An error occurred while updating projects");
+            }
+        }
+
+        /// <summary>
+        /// Bulk archive / un-archive projects
+        /// </summary>
+        [HttpPost("bulk/archive")]
+        public async Task<ActionResult> BulkArchive([FromBody] BulkArchiveProjectsRequestDto dto)
+        {
+            try
+            {
+                if (dto?.ProjectIds == null || dto.ProjectIds.Count == 0)
+                    return BadRequest("projectIds is required");
+
+                var updated = await _projectService.BulkArchiveAsync(dto.ProjectIds, dto.Archive, GetCurrentUser());
+                return Ok(new { updated });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk archiving projects");
+                return StatusCode(500, "An error occurred while archiving projects");
+            }
+        }
+
+        /// <summary>
         /// Get project notes
         /// </summary>
         [HttpGet("{projectId}/notes")]

@@ -101,12 +101,14 @@ export default function EditFormPage() {
     }
   }, [canEdit, permissionsLoading, navigate, toast, t]);
   
-  // Redirect if form is released (cannot edit released forms)
+  // Archived forms are read-only. Released forms stay editable: the backend
+  // bumps the version when fields change, so already-collected responses keep
+  // pointing at the schema they were submitted against.
   useEffect(() => {
-    if (form && form.status !== 'draft') {
+    if (form && form.status === 'archived') {
       toast({
         title: t('common.access_denied'),
-        description: t('common.form_released_no_edit'),
+        description: t('common.form_archived_no_edit'),
         variant: 'destructive',
       });
       navigate(`/dashboard/settings/dynamic-forms/${formId}/preview`, { replace: true });
@@ -326,8 +328,13 @@ export default function EditFormPage() {
       {/* Content with Tabs */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-4">
+          {form.status === 'released' && (
+            <div className="mb-4 rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              {t('common.form_released_edit_warning')}
+            </div>
+          )}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full max-w-lg mb-6 ${form.is_public ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <TabsList className="grid w-full max-w-lg mb-6 grid-cols-3">
               <TabsTrigger value="info" className="gap-2">
                 <Settings className="h-4 w-4" />
                 {t('create.basic_info')}
@@ -336,12 +343,12 @@ export default function EditFormPage() {
                 <FileText className="h-4 w-4" />
                 {t('builder.title')}
               </TabsTrigger>
-              {form.is_public && (
-                <TabsTrigger value="thankyou" className="gap-2">
-                  <Gift className="h-4 w-4" />
-                  {t('thank_you.title')}
-                </TabsTrigger>
-              )}
+              {/* Thank-you rules are configurable before the form ever goes public,
+                  so the tab is always available. */}
+              <TabsTrigger value="thankyou" className="gap-2">
+                <Gift className="h-4 w-4" />
+                {t('thank_you.title')}
+              </TabsTrigger>
             </TabsList>
             
             {/* Form Builder Tab */}
@@ -492,16 +499,14 @@ export default function EditFormPage() {
               </Card>
             </TabsContent>
             
-            {/* Thank You Page Tab - Only for public forms */}
-            {form.is_public && (
-              <TabsContent value="thankyou" className="mt-0">
-                <ThankYouSettings
-                  settings={formData.thank_you_settings}
-                  fields={formData.fields}
-                  onChange={(settings) => setFormData(prev => ({ ...prev, thank_you_settings: settings }))}
-                />
-              </TabsContent>
-            )}
+            {/* Thank You Page Tab */}
+            <TabsContent value="thankyou" className="mt-0">
+              <ThankYouSettings
+                settings={formData.thank_you_settings}
+                fields={formData.fields}
+                onChange={(settings) => setFormData(prev => ({ ...prev, thank_you_settings: settings }))}
+              />
+            </TabsContent>
             
           </Tabs>
         </div>

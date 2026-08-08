@@ -109,14 +109,14 @@ export function ProjectsTable({
                       {t(`projects.list.status.${project.status}`, { defaultValue: project.status })}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     <Badge className={`text-px-10 px-1.5 py-0 ${getTypeColor(project.type)}`} variant="outline">
                       {t(`projects.list.type.${project.type}`, { defaultValue: project.type })}
                     </Badge>
                     {project.description && (
                       <span className="ml-1.5">{project.description}</span>
                     )}
-                  </p>
+                  </div>
                 </div>
               </div>
 

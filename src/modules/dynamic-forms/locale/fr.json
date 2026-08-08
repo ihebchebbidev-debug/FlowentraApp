@@ -20,6 +20,7 @@
     "release": "Publier",
     "archive": "Archiver",
     "restore": "Restaurer en Brouillon",
+    "restore_released": "Restaurer comme Publié",
     "export": "Exporter",
     "view_responses": "Voir les Réponses",
     "make_public": "Rendre Public",
@@ -328,6 +329,8 @@
     "no_edit_permission": "Vous n'avez pas la permission de modifier des formulaires.",
     "no_delete_permission": "Vous n'avez pas la permission de supprimer des formulaires.",
     "form_released_no_edit": "Les formulaires publiés ne peuvent pas être modifiés. Restaurez-les d'abord en brouillon.",
+    "form_archived_no_edit": "Les formulaires archivés ne peuvent pas être modifiés. Restaurez d'abord le formulaire.",
+    "form_released_edit_warning": "Ce formulaire est publié. Enregistrer des modifications de champs crée une nouvelle version pour les réponses futures.",
     "optional": "optionnel",
     "export_pdf": "Exporter en PDF"
   },

@@ -278,6 +278,14 @@ namespace MyApi.Modules.DynamicForms.Services
                 form.Version++;
             }
 
+            // Archiving takes the form offline: drop the public sharing state so the
+            // admin list stops advertising it as public and the slug is freed for reuse.
+            if (newStatus == FormStatus.Archived)
+            {
+                form.IsPublic = false;
+                form.PublicSlug = null;
+            }
+
             form.Status = newStatus;
             form.ModifyUser = userId;
             form.UpdatedAt = DateTime.UtcNow;
@@ -298,8 +306,11 @@ namespace MyApi.Modules.DynamicForms.Services
                 .OrderByDescending(r => r.SubmittedAt)
                 .ThenByDescending(r => r.Id);
 
-            var effectivePage = page ?? 0;
+            // pageSize alone is enough to page: an omitted page simply means the first one.
             var effectiveSize = pageSize ?? 0;
+            var effectivePage = page ?? 0;
+            if (effectiveSize > 0 && effectivePage <= 0) effectivePage = 1;
+
             if (effectivePage > 0 && effectiveSize > 0)
             {
                 effectiveSize = Math.Min(effectiveSize, 500);

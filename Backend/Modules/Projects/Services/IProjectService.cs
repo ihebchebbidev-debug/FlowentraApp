@@ -13,6 +13,10 @@ namespace MyApi.Modules.Projects.Services
         
         // Project statistics
         Task<ProjectStatisticsDto> GetStatisticsAsync();
+
+        // Bulk operations
+        Task<int> BulkUpdateStatusAsync(List<int> projectIds, string status, string userId);
+        Task<int> BulkArchiveAsync(List<int> projectIds, bool archive, string userId);
         
         // Project search
         Task<List<ProjectResponseDto>> SearchProjectsAsync(string searchTerm);

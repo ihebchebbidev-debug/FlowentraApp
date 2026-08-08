@@ -14,6 +14,7 @@ import {
   throwIfNotOkAfterOfflineCheck,
 } from '@/services/offline/offlineHttpRead';
 import { getOfflineDetailPlaceholder } from '@/services/offline/offlineDetailPlaceholders';
+import { tasksApi } from '@/services/api/tasksApi';
 
 const EMPTY_PROJECT_STATS: ProjectStats = {
   totalTasks: 0,
@@ -524,10 +525,25 @@ export const projectsApi = {
     return await response.json();
   },
 
-  // Per-project stats endpoint does not exist in backend — task-based stats are
-  // loaded separately via TasksService. Return empty to avoid 404 errors.
-  async getStats(_projectId: number): Promise<ProjectStats> {
-    return { ...EMPTY_PROJECT_STATS };
+  // Per-project roll-up: task counters come from the batched task-stats endpoint
+  // (same source as the list cards), team size from the project's team members.
+  async getStats(projectId: number): Promise<ProjectStats> {
+    try {
+      const [taskStats, members] = await Promise.all([
+        tasksApi.getBulkProjectTaskStats([projectId]),
+        projectsApi.getTeamMembers(projectId).catch(() => [] as number[]),
+      ]);
+      const s = taskStats?.[projectId];
+      return {
+        totalTasks: s?.totalTasks ?? 0,
+        completedTasks: s?.completedTasks ?? 0,
+        overdueTasks: s?.overdueTasks ?? 0,
+        activeMembers: members.length,
+        completionPercentage: Math.round(s?.completionPercentage ?? 0),
+      };
+    } catch {
+      return { ...EMPTY_PROJECT_STATS };
+    }
   },
 
   // Aggregated project statistics (server-side counts, single request).
@@ -555,14 +571,30 @@ export const projectsApi = {
     return await response.json();
   },
 
-  // Bulk update project status — not yet implemented in backend, no-op
-  async bulkUpdateStatus(_dto: BulkUpdateProjectStatusDto): Promise<void> {
-    // Backend endpoint not yet available; callers catch errors and treat them as warnings.
+  // Bulk update project status (POST /api/Projects/bulk/status)
+  async bulkUpdateStatus(dto: BulkUpdateProjectStatusDto): Promise<void> {
+    const response = await fetch(`${API_URL}/api/Projects/bulk/status`, {
+      method: 'POST',
+      headers: getMutationHeaders(),
+      body: JSON.stringify(dto),
+    });
+
+    if (!response.ok) {
+      throw new Error(await readApiError(response, 'Failed to update projects'));
+    }
   },
 
-  // Bulk archive — not yet implemented in backend, no-op
-  async bulkArchive(_projectIds: number[], _archive = true): Promise<void> {
-    // Backend endpoint not yet available; callers catch errors and treat them as warnings.
+  // Bulk archive / un-archive (POST /api/Projects/bulk/archive)
+  async bulkArchive(projectIds: number[], archive = true): Promise<void> {
+    const response = await fetch(`${API_URL}/api/Projects/bulk/archive`, {
+      method: 'POST',
+      headers: getMutationHeaders(),
+      body: JSON.stringify({ projectIds, archive }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await readApiError(response, 'Failed to archive projects'));
+    }
   },
 
   // Project Notes

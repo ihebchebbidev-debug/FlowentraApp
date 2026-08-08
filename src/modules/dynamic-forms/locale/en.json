@@ -20,6 +20,7 @@
     "release": "Release",
     "archive": "Archive",
     "restore": "Restore to Created",
+    "restore_released": "Restore as Released",
     "export": "Export",
     "view_responses": "View Responses",
     "make_public": "Make Public",
@@ -328,6 +329,8 @@
     "no_edit_permission": "You don't have permission to edit forms.",
     "no_delete_permission": "You don't have permission to delete forms.",
     "form_released_no_edit": "Released forms cannot be edited. Restore to draft first.",
+    "form_archived_no_edit": "Archived forms cannot be edited. Restore the form first.",
+    "form_released_edit_warning": "This form is released. Saving field changes creates a new version for future responses.",
     "optional": "optional",
     "export_pdf": "Export PDF"
   },

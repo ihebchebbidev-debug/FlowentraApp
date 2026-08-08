@@ -69,6 +69,12 @@ namespace MyApi.Modules.Projects.Services
                     if (searchRequest.EndDateTo.HasValue)
                         query = query.Where(p => p.EndDate <= searchRequest.EndDateTo.Value);
 
+                    // Archived projects are modelled as Status == "archived".
+                    if (searchRequest.IsArchived.HasValue)
+                        query = searchRequest.IsArchived.Value
+                            ? query.Where(p => p.Status == "archived")
+                            : query.Where(p => p.Status != "archived");
+
                     // Apply sorting
                     if (!string.IsNullOrEmpty(searchRequest.SortBy))
                     {
@@ -422,6 +428,45 @@ namespace MyApi.Modules.Projects.Services
             }
         }
 
+        public Task<int> BulkUpdateStatusAsync(List<int> projectIds, string status, string userId) =>
+            _context.Database.CreateExecutionStrategy()
+                .ExecuteAsync(() => BulkUpdateStatusCoreAsync(projectIds, status, userId));
+
+        private async Task<int> BulkUpdateStatusCoreAsync(List<int> projectIds, string status, string userId)
+        {
+            if (projectIds == null || projectIds.Count == 0) return 0;
+            var normalized = NormalizeStatus(status);
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var projects = await _context.Projects.Where(p => projectIds.Contains(p.Id)).ToListAsync();
+                foreach (var project in projects)
+                {
+                    if (project.Status == normalized) continue;
+                    var oldStatus = project.Status;
+                    project.Status = normalized;
+                    project.ModifiedBy = userId;
+                    project.ModifiedDate = DateTime.UtcNow;
+                    ProjectAutoNote.Add(_context, project.Id, $"Status changed from {oldStatus} to {normalized}", userId);
+                }
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                return projects.Count;
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Error bulk updating project status");
+                throw;
+            }
+        }
+
+        // Archiving is modelled as Status == "archived"; un-archiving restores "active".
+        public Task<int> BulkArchiveAsync(List<int> projectIds, bool archive, string userId) =>
+            BulkUpdateStatusAsync(projectIds, archive ? "archived" : "active", userId);
+
         public async Task<List<ProjectResponseDto>> SearchProjectsAsync(string searchTerm)
         {
             try
@@ -453,7 +498,7 @@ namespace MyApi.Modules.Projects.Services
 
         // ---- Enum-like field validation -------------------------------------------------
         private static readonly HashSet<string> AllowedStatuses =
-            new(StringComparer.OrdinalIgnoreCase) { "active", "completed", "on-hold", "cancelled", "planning" };
+            new(StringComparer.OrdinalIgnoreCase) { "active", "completed", "on-hold", "cancelled", "planning", "archived" };
         private static readonly HashSet<string> AllowedKinds =
             new(StringComparer.OrdinalIgnoreCase) { "client", "internal" };
         private static readonly HashSet<string> AllowedPriorities =

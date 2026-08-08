@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyApi.Infrastructure;
 using MyApi.Modules.DynamicForms.DTOs;
 using MyApi.Modules.DynamicForms.Services;
 using System.Security.Claims;
@@ -70,6 +71,7 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Create a new dynamic form
         /// </summary>
         [HttpPost]
+        [RequirePermission("dynamic_forms", "create")]
         public async Task<ActionResult<DynamicFormDto>> Create([FromBody] CreateDynamicFormDto dto)
         {
             try
@@ -89,6 +91,7 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Update an existing dynamic form
         /// </summary>
         [HttpPut("{id}")]
+        [RequirePermission("dynamic_forms", "update")]
         public async Task<ActionResult<DynamicFormDto>> Update(int id, [FromBody] UpdateDynamicFormDto dto)
         {
             try
@@ -116,6 +119,7 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Delete a dynamic form (soft delete)
         /// </summary>
         [HttpDelete("{id}")]
+        [RequirePermission("dynamic_forms", "delete")]
         public async Task<ActionResult> Delete(int id)
         {
             try
@@ -138,6 +142,7 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Duplicate an existing form
         /// </summary>
         [HttpPost("{id}/duplicate")]
+        [RequirePermission("dynamic_forms", "create")]
         public async Task<ActionResult<DynamicFormDto>> Duplicate(int id)
         {
             try
@@ -161,6 +166,7 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Change the status of a form (draft, released, archived)
         /// </summary>
         [HttpPost("{id}/status")]
+        [RequirePermission("dynamic_forms", "update")]
         public async Task<ActionResult<DynamicFormDto>> ChangeStatus(int id, [FromBody] ChangeFormStatusDto dto)
         {
             try

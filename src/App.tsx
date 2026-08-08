@@ -216,6 +216,11 @@ const App = () => {
   const alreadyDone = localStorage.getItem("app_reset_version");
 
   if (alreadyDone !== RESET_VERSION) {
+    // Public, unauthenticated pages (shared form links, public dashboards and
+    // websites) must never be hijacked by the one-time reset — a first-time
+    // visitor would be thrown onto the login page instead of the content.
+    const isPublicRoute = window.location.pathname.startsWith("/public/");
+
     // --- CLEAR EVERYTHING ---
     localStorage.clear();
     sessionStorage.clear();
@@ -232,8 +237,10 @@ const App = () => {
     // --- MARK AS DONE ---
     localStorage.setItem("app_reset_version", RESET_VERSION);
 
-    // --- REDIRECT ---
-    window.location.href = "/";
+    // --- REDIRECT (app routes only) ---
+    if (!isPublicRoute) {
+      window.location.href = "/";
+    }
   }
 }, []);
   

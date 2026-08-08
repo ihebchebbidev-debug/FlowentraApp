@@ -57,6 +57,18 @@ namespace MyApi.Modules.Projects.DTOs
         public int LowPriorityCount { get; set; }
     }
 
+    public class BulkUpdateProjectStatusRequestDto
+    {
+        public List<int> ProjectIds { get; set; } = new List<int>();
+        public string Status { get; set; } = "active";
+    }
+
+    public class BulkArchiveProjectsRequestDto
+    {
+        public List<int> ProjectIds { get; set; } = new List<int>();
+        public bool Archive { get; set; } = true;
+    }
+
     // Request DTOs
     public class CreateProjectRequestDto
     {
@@ -221,6 +233,8 @@ namespace MyApi.Modules.Projects.DTOs
         public DateTime? StartDateTo { get; set; }
         public DateTime? EndDateFrom { get; set; }
         public DateTime? EndDateTo { get; set; }
+        /// <summary>false = hide archived projects, true = only archived. Null = no filter.</summary>
+        public bool? IsArchived { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 20;
         public string? SortBy { get; set; } = "CreatedDate";

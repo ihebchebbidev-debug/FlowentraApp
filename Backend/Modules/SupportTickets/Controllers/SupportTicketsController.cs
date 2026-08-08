@@ -23,8 +23,7 @@ namespace MyApi.Modules.SupportTickets.Controllers
             _logger = logger;
         }
 
-        private string GetTenant() =>
-            Request.Headers.TryGetValue(TenantMiddleware.TenantHeaderName, out var t) ? t.ToString() : "unknown";
+        private string GetTenant() => TenantResolution.Resolve(HttpContext);
 
         /// <summary>
         /// POST /api/SupportTickets — Create a new support ticket (anonymous).

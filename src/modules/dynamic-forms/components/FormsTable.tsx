@@ -213,7 +213,12 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
         ));
         items.push(iconBtn(`arc-${form.id}`, t('actions.archive'), Archive, () => handleStatusChange(form.id, 'archived')));
       }
-      if (form.status === 'archived') items.push(iconBtn(`res-${form.id}`, t('actions.restore'), RotateCcw, () => handleStatusChange(form.id, 'draft')));
+      if (form.status === 'archived') {
+        items.push(iconBtn(`res-${form.id}`, t('actions.restore'), RotateCcw, () => handleStatusChange(form.id, 'draft')));
+        // Restoring straight back to Released keeps a previously shared form usable
+        // instead of forcing a draft round-trip that orphans distributed links.
+        items.push(iconBtn(`resrel-${form.id}`, t('actions.restore_released'), CheckCircle, () => handleStatusChange(form.id, 'released')));
+      }
     }
     if (canDelete) items.push(iconBtn(`del-${form.id}`, t('actions.delete'), Trash2, () => setDeleteId(form.id), true));
     return items;
