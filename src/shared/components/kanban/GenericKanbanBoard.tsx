@@ -28,6 +28,9 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { isTransitionAllowed } from '@/config/entity-statuses/transitions';
+import type { EntityType } from '@/config/entity-statuses/types';
 
 // ─── Types ───
 
@@ -87,6 +90,11 @@ export interface GenericKanbanBoardProps {
   priorityTranslationPrefix?: string;
   /** Slot for empty state */
   emptyLabel?: string;
+  /**
+   * When set, drag & drop is restricted to valid sequential status transitions
+   * for this entity (no skipping steps forward or backward).
+   */
+  entityType?: EntityType;
 }
 
 // ─── Priority indicators ───
@@ -390,6 +398,7 @@ export function GenericKanbanBoard({
   onItemClick,
   formatTotal,
   emptyLabel,
+  entityType,
 }: GenericKanbanBoardProps) {
   const [localItems, setLocalItems] = useState<KanbanItem[]>(items);
   const [activeItem, setActiveItem] = useState<KanbanItem | null>(null);
@@ -429,6 +438,15 @@ export function GenericKanbanBoard({
       const isValidColumn = columns.some((c) => c.id === targetStatus);
       if (!isValidColumn) return;
 
+      // Enforce step-by-step workflow: only adjacent / declared branch statuses.
+      if (
+        entityType &&
+        activeItem.status !== targetStatus &&
+        !isTransitionAllowed(entityType, activeItem.status, targetStatus)
+      ) {
+        return;
+      }
+
       if (activeItem.status !== targetStatus) {
         setLocalItems((prev) =>
           prev.map((d) =>
@@ -437,7 +455,7 @@ export function GenericKanbanBoard({
         );
       }
     },
-    [localItems, columns]
+    [localItems, columns, entityType]
   );
 
   const handleDragEnd = useCallback(
@@ -457,6 +475,15 @@ export function GenericKanbanBoard({
       // Notify parent of status change
       const originalItem = items.find((d) => d.id === activeId);
       if (originalItem && originalItem.status !== updatedItem.status) {
+        if (
+          entityType &&
+          !isTransitionAllowed(entityType, originalItem.status, updatedItem.status)
+        ) {
+          // Revert the optimistic move and explain why.
+          setLocalItems(items);
+          toast.error('Statuses must change step by step — this move skips steps.');
+          return;
+        }
         onStatusChange?.(activeId, updatedItem.status);
       }
 
@@ -481,7 +508,7 @@ export function GenericKanbanBoard({
         }
       }
     },
-    [localItems, items, activeItem, onStatusChange]
+    [localItems, items, activeItem, onStatusChange, entityType]
   );
 
   const getColumnItems = (columnId: string) =>

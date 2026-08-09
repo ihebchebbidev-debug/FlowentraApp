@@ -24,9 +24,10 @@ export const offerStatusConfig: EntityStatusConfig = {
     // Full pipeline rendered inline: Draft → Sent → Accepted (Declined shown as branch)
     steps: ['draft', 'sent', 'accepted'],
     terminalStatuses: ['accepted', 'declined', 'cancelled'],
+    // Step-by-step only: draft → sent → accepted.
+    // 'declined'/'cancelled' are negative terminals, always reachable while active.
     branchStatuses: {
-      draft: ['accepted', 'declined'],
-      sent: ['accepted', 'declined'],
+      sent: ['declined'],
     },
   },
 };

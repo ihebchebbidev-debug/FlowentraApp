@@ -44,8 +44,8 @@ export const serviceOrderStatusConfig: EntityStatusConfig = {
     branchStatuses: {
       // From in_progress, can branch to on_hold or partially_completed (based on dispatch status)
       in_progress: ['on_hold', 'partially_completed'],
-      // From scheduled, can return to ready_for_planning (if dispatch rejected)
-      scheduled: ['ready_for_planning', 'planned'],
+      // From scheduled, step back to planned (system cascades may go further back)
+      scheduled: ['planned'],
     },
   },
 };

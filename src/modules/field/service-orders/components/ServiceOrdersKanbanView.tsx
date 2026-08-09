@@ -50,6 +50,7 @@ export function ServiceOrdersKanbanView({ serviceOrders, onServiceOrderClick, on
 
   return (
     <GenericKanbanBoard
+      entityType="service_order"
       items={items}
       columns={columns}
       onItemClick={handleItemClick}

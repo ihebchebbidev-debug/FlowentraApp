@@ -76,6 +76,7 @@ export function OffersKanbanView({ offers, onOfferClick, onStatusChange, formatC
 
   return (
     <GenericKanbanBoard
+      entityType="offer"
       items={items}
       columns={columns}
       onItemClick={handleItemClick}

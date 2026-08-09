@@ -54,6 +54,7 @@ export function DispatchesKanbanView({ dispatches, onDispatchClick, onStatusChan
 
   return (
     <GenericKanbanBoard
+      entityType="dispatch"
       items={items}
       columns={columns}
       onItemClick={handleItemClick}

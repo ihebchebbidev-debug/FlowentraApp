@@ -17,6 +17,7 @@ export type ServiceOrderStatus =
   | "closed";
 
 const WORKFLOW_STEPS = serviceOrderStatusConfig.workflow.steps as ServiceOrderStatus[];
+const BRANCH_STATUSES = serviceOrderStatusConfig.workflow.branchStatuses ?? {};
 
 interface ServiceOrderStatusFlowProps {
   currentStatus: ServiceOrderStatus;
@@ -32,6 +33,8 @@ export function ServiceOrderStatusFlow({
   isUpdating = false
 }: ServiceOrderStatusFlowProps) {
   const { t } = useTranslation('serviceOrders');
+
+  const branches = BRANCH_STATUSES[currentStatus] ?? [];
 
   const getStepDef = (id: string): StatusStepDef => {
     const def = getStatusById(serviceOrderStatusConfig, id);
@@ -49,6 +52,8 @@ export function ServiceOrderStatusFlow({
       currentStatus={currentStatus}
       getStepDef={getStepDef}
       onAdvance={onStatusChange}
+      onBack={onStatusChange}
+      branches={branches as ServiceOrderStatus[]}
       disabled={disabled}
       isUpdating={isUpdating}
       updatingLabel={t('updating', { defaultValue: 'Updating...' })}

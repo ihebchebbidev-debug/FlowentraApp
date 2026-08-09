@@ -455,6 +455,7 @@
     "leaveAssignmentWarning": "Cet employé est en congé à la date sélectionnée. Affecter quand même ?"
   },
   "common": {
+    "actions": "Actions",
     "backendRequired": "Backend requis",
     "searchPlaceholder": "Rechercher...",
     "filters": "Filtres",

@@ -25,12 +25,9 @@ export const saleStatusConfig: EntityStatusConfig = {
     // Full pipeline rendered inline: Created → In Progress → Ready to Invoice → Partially Invoiced → Invoiced → Closed
     steps: ['created', 'in_progress', 'ready_to_invoice', 'partially_invoiced', 'invoiced', 'closed'],
     terminalStatuses: ['closed', 'cancelled'],
-    branchStatuses: {
-      // After 'in_progress', can jump directly to invoiced OR pass through ready_to_invoice / partially_invoiced
-      in_progress: ['ready_to_invoice', 'invoiced', 'partially_invoiced'],
-      ready_to_invoice: ['invoiced', 'partially_invoiced'],
-      partially_invoiced: ['invoiced'],
-    },
+    // Step-by-step only: every move follows the ordered pipeline above.
+    // Cancellation is always available and handled generically.
+    branchStatuses: {},
   },
 };
 

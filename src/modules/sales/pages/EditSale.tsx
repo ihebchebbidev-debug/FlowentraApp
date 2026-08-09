@@ -23,6 +23,7 @@ import offerStatuses from '@/data/mock/offer-statuses.json';
 import { useLookups } from '@/shared/contexts/LookupsContext';
 import { TenantSelector } from '@/components/TenantSelector';
 import { useTargetTenant } from '@/hooks/useTargetTenant';
+import { isTransitionAllowed } from '@/config/entity-statuses/transitions';
 
 
 const statuses = [...new Set(['new_offer', ...offerStatuses.map(s => s.id)])];
@@ -60,6 +61,13 @@ export function EditSale() {
     items: []
   });
 
+  const [originalStatus, setOriginalStatus] = useState<string>('');
+
+  // Only sequential transitions from the sale's saved status are selectable.
+  const selectableStatuses = statuses.filter(
+    (s) => !originalStatus || isTransitionAllowed('sale', originalStatus, s)
+  );
+
   // Load sale data
   useEffect(() => {
     const loadSale = async () => {
@@ -68,6 +76,7 @@ export function EditSale() {
       try {
         const sale = await SalesService.getSaleById(id);
             if (sale) {
+              setOriginalStatus(sale.status ?? '');
               setFormData(sale);
               // normalize deliveryDate to Date object when possible
               try {
@@ -265,7 +274,7 @@ export function EditSale() {
                         <SelectValue placeholder={t('addSale.statusPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {statuses.map(s => (
+                        {selectableStatuses.map(s => (
                           <SelectItem key={s} value={s}>{offerStatuses.find(os => os.id === s)?.name ?? (s === 'new_offer' ? t('new_offer') : s)}</SelectItem>
                         ))}
                       </SelectContent>

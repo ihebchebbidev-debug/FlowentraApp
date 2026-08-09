@@ -455,6 +455,7 @@
     "leaveAssignmentWarning": "This employee is on leave on the selected date. Assign anyway?"
   },
   "common": {
+    "actions": "Actions",
     "backendRequired": "Backend required",
     "searchPlaceholder": "Search...",
     "filters": "Filters",

@@ -110,8 +110,9 @@ export function StatusFlowStepper({
   const handleSegmentClick = (stepId: string, index: number) => {
     if (!canInteract) return;
     if (index === validCurrentIndex) return;
+    // Only allow going back exactly one step at a time.
     if (index < validCurrentIndex) {
-      onBack?.(stepId);
+      if (index === validCurrentIndex - 1) onBack?.(stepId);
       return;
     }
     // Only allow advancing exactly one step at a time via segment click.

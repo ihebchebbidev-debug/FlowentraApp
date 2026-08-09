@@ -75,6 +75,7 @@ export function SalesKanbanView({ sales, onSaleClick, onStatusChange, formatCurr
 
   return (
     <GenericKanbanBoard
+      entityType="sale"
       items={items}
       columns={columns}
       onItemClick={handleItemClick}
