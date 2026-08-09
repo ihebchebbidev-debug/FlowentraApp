@@ -1,3 +1,4 @@
+import { translateApiErrorMessage } from '../utils/apiErrorToast';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -266,8 +267,7 @@ function PurchaseOrderListContent() {
         setOrders((prev) => restoreRowsAtOriginalIndex(prev, [{ row: orderToDelete, idx: originalIndex }]));
         setTotal((prev) => prev + 1);
       }
-      const msg = err instanceof Error ? err.message : "";
-      toast.error(msg || t("orders.deleteBlocked", "Delete failed. Order restored."));
+      toast.error(translateApiErrorMessage(err, t, t("orders.deleteBlocked", "Delete failed. Order restored.") as string));
     }
   };
 

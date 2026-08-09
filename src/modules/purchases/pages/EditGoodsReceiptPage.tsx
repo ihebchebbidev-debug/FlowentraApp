@@ -1,3 +1,4 @@
+import { translateApiErrorMessage } from '../utils/apiErrorToast';
 import { toastApiError } from "../utils/apiErrorToast";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -192,7 +193,7 @@ export default function EditGoodsReceiptPage() {
       toast.success(t('receipts.updated', 'Goods receipt updated'));
       navigate(`/dashboard/purchases/receipts/${id}`);
     } catch (e: any) {
-      const msg = e?.message || t('common.error', 'Failed to update');
+      const msg = translateApiErrorMessage(e, t, t('common.error', 'Failed to update') as string);
       setServerError(msg);
       toast.error(msg);
     } finally {

@@ -149,13 +149,21 @@ export default function CreateGoodsReceiptPage() {
                 <Select value={poId} onValueChange={setPoId}>
                   <SelectTrigger className="h-8 mt-1"><SelectValue placeholder={t('receipts.choosePO')} /></SelectTrigger>
                   <SelectContent>
-                    {pendingPOs.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
+                    {/* Merge the pre-selected PO (from ?poId=) into the options —
+                        otherwise Radix renders the placeholder when that order
+                        isn't in the pending page (paging/tenant/status window)
+                        and the trigger looks empty even though poId is set. */}
+                    {[
+                      ...(selectedPO && !pendingPOs.some(p => String(p.id) === String(selectedPO.id)) ? [selectedPO] : []),
+                      ...pendingPOs,
+                    ].map(p => (
+                      <SelectItem key={p.id} value={String(p.id)}>
                         {p.orderNumber} — {p.supplierName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+
               </div>
               {selectedPO && (
                 <div className="p-2 rounded bg-muted/50 text-xs space-y-1">

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2, FileDown, LayoutDashboard, PackageCheck, Activity } from "lucide-react";
+import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2, FileDown, LayoutDashboard, PackageCheck, Activity, AlertTriangle } from "lucide-react";
 import { purchaseOrderService, goodsReceiptService, supplierInvoiceService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
@@ -265,7 +265,10 @@ function PurchaseOrderDetailPage() {
     newValue: a.newValue,
   }));
 
+  const hasItems = (po.items?.length ?? 0) > 0;
+
   const handleStatusChange = async (next: string) => {
+
     if (!id || next === po.status) return;
     try {
       const updated = await purchaseOrderService.update(id, { status: next as any });
@@ -298,22 +301,49 @@ function PurchaseOrderDetailPage() {
                 {t('actions.downloadTejXml', 'Download TEJ XML')}
               </Button>
             )}
-            {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate}><CheckCircle className="h-3.5 w-3.5 mr-1" /> {t('actions.validate')}</Button>}
-            {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier}><Send className="h-3.5 w-3.5 mr-1" /> {t('actions.sendToSupplier')}</Button>}
-            {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)}><Package className="h-3.5 w-3.5 mr-1" /> {t('actions.receiveGoods')}</Button>}
+            {/* An order with no line items can never be received, invoiced or
+                closed (backend derives those states from line quantities), so
+                the lifecycle actions stay disabled until items exist. */}
+            {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><CheckCircle className="h-3.5 w-3.5 mr-1" /> {t('actions.validate')}</Button>}
+            {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><Send className="h-3.5 w-3.5 mr-1" /> {t('actions.sendToSupplier')}</Button>}
+            {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><Package className="h-3.5 w-3.5 mr-1" /> {t('actions.receiveGoods')}</Button>}
             {['partially_received', 'received', 'closed'].includes(po.status) && <CreateActionButton size="sm" variant="outline" onClick={() => navigate(`/dashboard/purchases/invoices/add?poId=${id}`)}><FileText className="h-3.5 w-3.5 mr-1" /> {t('actions.createInvoice')}</CreateActionButton>}
+
           </div>
         }
       />
 
       <div className="p-4 md:p-6 space-y-4">
+        {!hasItems && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">{t('orders.noItemsTitle', 'This order has no line items')}</p>
+              <p className="text-destructive/80">
+                {t('orders.noItemsHint', 'Add at least one item in the Items tab — an empty order cannot be validated, received, invoiced or closed.')}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Status Flow */}
         <Card>
           <CardContent className="p-3">
             <PurchaseOrderStatusFlow
               currentStatus={po.status}
               onStatusChange={handleStatusChange}
+              // "Partially received" / "Received" are derived by the backend from
+              // goods receipts — sending them manually always 400s. Route the
+              // user to the receipt flow for this exact PO instead.
+              onReceiptDerivedAttempt={() => {
+                toast.info(
+                  t('status.receiptDerived', 'Receiving is recorded through a goods receipt'),
+                  { description: t('status.receiptDerivedHint', 'Create a goods receipt for this order — its status updates automatically.') },
+                );
+                navigate(`/dashboard/purchases/receipts/add?poId=${id}`);
+              }}
             />
+
           </CardContent>
         </Card>
 

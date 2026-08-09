@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import type { TFunction } from 'i18next';
 import { ApiError } from '../services/apiError';
+import { matchPurchaseErrorReason } from './purchaseErrorReasons';
 
 /**
  * Structured error → i18n toast bridge.
@@ -73,10 +74,20 @@ export function formatApiError(
     const code =
       err.code ?? (err.status === 409 ? 'CONFLICT' : err.status === 404 ? 'NOT_FOUND' : err.status === 403 ? 'FORBIDDEN' : null);
 
+    // 1) Try to turn the backend's English, developer-flavoured sentence into a
+    //    translated, ACTIONABLE reason ("Receive the goods first…"). This is the
+    //    best message we can show, so it wins over the generic code sentence.
+    // 2) Otherwise fall back to the translated code sentence.
+    // 3) Only if neither exists do we show the raw server text.
+    const reason = matchPurchaseErrorReason(err.message);
     let title: string;
-    if (code && KNOWN_CODES.has(code)) {
-      // The 2nd arg is the default value so a missing key gracefully falls back
-      // to the backend message rather than showing `errors.INVALID_TRANSITION`.
+    if (reason) {
+      title = t(`errors.reasons.${reason.key}`, {
+        ...reason.values,
+        ...opts.values,
+        defaultValue: err.message || fallback,
+      }) as string;
+    } else if (code && KNOWN_CODES.has(code)) {
       title = t(`errors.${code}`, err.message || fallback, opts.values) as string;
     } else {
       title = err.message || fallback;
@@ -116,4 +127,17 @@ export function toastApiError(
   const formatted = formatApiError(err, t, opts);
   toast.error(formatted.title, formatted.description ? { description: formatted.description } : undefined);
   return formatted;
+}
+
+/**
+ * Same resolution as `formatApiError` but returns just the translated sentence.
+ * For call-sites that need a plain string (inline banners, bulk-delete summary
+ * descriptions) so raw English backend text never reaches the user.
+ */
+export function translateApiErrorMessage(
+  err: unknown,
+  t: TFunction,
+  fallback?: string,
+): string {
+  return formatApiError(err, t, { fallback }).title;
 }

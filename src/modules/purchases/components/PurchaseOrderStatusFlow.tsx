@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { toast } from "sonner";
+
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,9 +41,31 @@ const BRANCHES: Record<string, string[]> = {
 const TERMINAL = new Set(["closed", "cancelled"]);
 const NEGATIVE = new Set(["cancelled"]);
 
+/**
+ * Statuses the backend DERIVES from goods receipts (PurchaseOrderService
+ * rejects a manual move with HTTP 400 unless line ReceivedQty values agree).
+ * Clicking them here must not fire a doomed PATCH — we hand the click back to
+ * the page so it can route the user to the "Receive goods" flow instead.
+ */
+const RECEIPT_DERIVED = new Set(["partially_received", "received"]);
+
+/** Mirror of PurchaseOrderService.AllowedStatusTransitions (backend). */
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  draft: ["validated", "ordered", "cancelled"],
+  validated: ["ordered", "draft", "cancelled"],
+  ordered: ["partially_received", "received", "cancelled"],
+  partially_received: ["received", "cancelled"],
+  received: ["closed"],
+  cancelled: [],
+  closed: [],
+};
+
+
 interface Props {
   currentStatus: string;
   onStatusChange: (next: string) => void;
+  /** Called instead of onStatusChange for receipt-derived statuses. */
+  onReceiptDerivedAttempt?: (next: string) => void;
   disabled?: boolean;
   isUpdating?: boolean;
 }
@@ -49,6 +73,7 @@ interface Props {
 export function PurchaseOrderStatusFlow({
   currentStatus,
   onStatusChange,
+  onReceiptDerivedAttempt,
   disabled,
   isUpdating,
 }: Props) {
@@ -72,9 +97,27 @@ export function PurchaseOrderStatusFlow({
   });
 
   const handleAdvance = (id: string) => {
+    if (RECEIPT_DERIVED.has(id) && onReceiptDerivedAttempt) {
+      onReceiptDerivedAttempt(id);
+      return;
+    }
+    // Mirror of the backend state machine — never fire a PATCH the server will
+    // reject (e.g. stepping BACK from received → partially_received).
+    if (!(ALLOWED_TRANSITIONS[current] ?? []).includes(id)) {
+      toast.error(
+        t("statusFlow.notAllowed", {
+          defaultValue: "You can't move this order from {{from}} back to {{to}}.",
+          from: t(`status.${current}`),
+          to: t(`status.${id}`),
+        }),
+      );
+      return;
+    }
     if (branches.includes(id)) setConfirm({ open: true, action: id });
     else onStatusChange(id);
   };
+
+
 
   const action = confirm.action;
   const isNeg = action ? NEGATIVE.has(action) : false;
@@ -86,7 +129,7 @@ export function PurchaseOrderStatusFlow({
         currentStatus={current}
         getStepDef={getStepDef}
         onAdvance={handleAdvance}
-        onBack={onStatusChange}
+        onBack={handleAdvance}
         branches={branches}
         prevStepId={prev}
         nextStepId={next}

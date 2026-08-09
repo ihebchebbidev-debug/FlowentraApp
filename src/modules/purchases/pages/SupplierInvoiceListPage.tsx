@@ -1,3 +1,4 @@
+import { translateApiErrorMessage } from '../utils/apiErrorToast';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -245,8 +246,7 @@ function SupplierInvoiceListContent() {
         setInvoices((prev) => restoreRowsAtOriginalIndex(prev, [{ row: snapshot, idx: originalIndex }]));
         setTotal((prev) => prev + 1);
       }
-      const msg = err instanceof Error ? err.message : "";
-      toast.error(msg || t("common.error", "Delete failed"));
+      toast.error(translateApiErrorMessage(err, t, t("common.error", "Delete failed") as string));
     }
   };
 

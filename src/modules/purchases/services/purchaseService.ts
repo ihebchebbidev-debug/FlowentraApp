@@ -1,4 +1,16 @@
-import { apiFetch } from '@/services/api/apiClient';
+import { apiFetch as rawApiFetch } from '@/services/api/apiClient';
+
+/**
+ * Every Purchases call goes through this wrapper so the global apiClient does
+ * NOT fire its own generic `toast.error("[HTTP 400] Request failed")` on top of
+ * the module's structured, translated toast (`toastApiError`). One failure =
+ * one toast, and it's the one that explains the actual reason.
+ */
+const apiFetch = (endpoint: string, options: any = {}) =>
+  rawApiFetch(endpoint, {
+    ...options,
+    headers: { ...(options.headers || {}), 'X-Suppress-Error-Toast': 'true' },
+  });
 import { ApiError, apiErrorFromResult } from './apiError';
 import type {
   PurchaseOrder, GoodsReceipt, SupplierInvoice,

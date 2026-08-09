@@ -445,6 +445,52 @@
       "totalTtc": "Total TTC",
       "totalHt": "Total HT",
       "totalTax": "Total taxe"
+    },
+    "reasons": {
+      "poPartiallyReceivedNeedsReceipt": "Réceptionnez d'abord la marchandise — créez un bon de réception et le statut de la commande se met à jour tout seul.",
+      "poReceivedNeedsFullReceipt": "Cette commande n'est pas encore entièrement reçue. Enregistrez un bon de réception pour les quantités restantes et le statut passera automatiquement à « Reçue ».",
+      "transitionNotAllowed": "Impossible de passer cette commande de « {{from}} » à « {{to}} ».",
+      "invoiceCancelledFrozen": "Cette facture est annulée — son statut ne peut plus être modifié.",
+      "invoicePaidFrozen": "Cette facture est déjà payée, elle ne peut pas passer à « {{to}} ».",
+      "receiveWrongStatus": "La réception n'est possible qu'une fois la commande envoyée au fournisseur (statut actuel : « {{status}} »).",
+      "poItemsFrozen": "Les lignes ne peuvent plus être modifiées sur une commande au statut « {{status}} ». Créez une nouvelle commande ou un avoir.",
+      "poTotalsFrozen": "La remise et le timbre fiscal ne peuvent plus être modifiés sur une commande au statut « {{status}} ».",
+      "invoiceItemsDraftOnly": "Les lignes de facture ne sont modifiables que tant que la facture est en brouillon.",
+      "receiptLockedByInvoice": "Ce bon de réception est déjà facturé, il ne peut pas être modifié. Annulez d'abord la facture.",
+      "receiptLineRelinkBlocked": "Une ligne de réception ne peut pas être rattachée à une autre ligne de commande. Supprimez-la puis rajoutez-la.",
+      "deletePoHasReceipts": "Supprimez d'abord les bons de réception liés à cette commande.",
+      "deletePoHasInvoices": "Cette commande est déjà facturée. Supprimez ou annulez d'abord les factures fournisseur.",
+      "cancelPoHasInvoices": "Cette commande ne peut pas être annulée tant que des factures fournisseur y sont rattachées. Supprimez-les ou créez un avoir.",
+      "deleteReceiptHasInvoices": "Ce bon de réception est rattaché à une facture fournisseur. Supprimez d'abord cette facture.",
+      "deleteInvoiceDeclared": "Cette facture a déjà été déclarée à la DGI (TEJ). Déposez une annulation plutôt que de la supprimer.",
+      "deleteInvoicePaid": "Cette facture comporte des règlements. Annulez le paiement ou la facture au préalable.",
+      "deleteItemReceived": "Cette ligne a déjà été réceptionnée, elle ne peut pas être supprimée. Annulez d'abord le bon de réception.",
+      "invoiceMoreThanReceived": "Vous ne pouvez pas facturer plus que ce qui a été reçu (seulement {{received}} reçu). Enregistrez d'abord le bon de réception.",
+      "invoiceMoreThanOrdered": "Vous ne pouvez pas facturer plus que ce qui a été commandé (seulement {{ordered}} commandé).",
+      "overReceiptRemaining": "Vous réceptionnez plus que le reste à livrer — il ne reste que {{remaining}}.",
+      "overReceipt": "Vous réceptionnez plus que la quantité encore attendue sur cette commande.",
+      "qtyBelowReceived": "La quantité ne peut pas être inférieure à la quantité déjà reçue ({{received}}).",
+      "negativeReceived": "La quantité reçue ne peut pas être négative.",
+      "negativeRejected": "La quantité refusée ne peut pas être négative.",
+      "lineQtyZero": "Chaque ligne doit avoir une quantité supérieure à zéro.",
+      "lineNegativePrice": "Un prix unitaire ne peut pas être négatif.",
+      "lineNegativeDiscount": "Une remise ne peut pas être négative.",
+      "lineTaxRange": "Le taux de TVA doit être compris entre 0 et 100 %.",
+      "lineDescriptionRequired": "Chaque ligne doit avoir une désignation.",
+      "negativeAmountPaid": "Le montant payé ne peut pas être négatif.",
+      "overpayment": "Le montant payé ({{paid}}) dépasse le total de la facture ({{total}}). Elle vient peut-être d'être réglée — rechargez la page.",
+      "stockReverseShortage": "Stock insuffisant pour annuler ce mouvement — une partie des articles a déjà été consommée ou vendue.",
+      "differentSupplier": "Les documents sélectionnés appartiennent à des fournisseurs différents.",
+      "itemNotOnOrder": "Une des lignes n'appartient pas au bon de commande sélectionné.",
+      "invoiceHasNoOrder": "Rattachez cette facture à un bon de commande avant d'ajouter des lignes de commande.",
+      "supplierAlreadyLinked": "Ce fournisseur est déjà lié à cet article.",
+      "duplicateInvoiceRef": "La référence de facture « {{ref}} » existe déjà pour ce fournisseur.",
+      "poNotFound": "Ce bon de commande n'existe plus.",
+      "receiptNotFound": "Ce bon de réception n'existe plus.",
+      "invoiceNotFound": "Cette facture fournisseur n'existe plus.",
+      "supplierNotFound": "Ce fournisseur n'existe plus.",
+      "articleSupplierNotFound": "Ce lien article–fournisseur n'existe plus.",
+      "itemNotFound": "Cette ligne n'existe plus — elle a peut-être été supprimée entre-temps."
     }
   },
   "confirm": {
@@ -526,5 +572,8 @@
     "cheque": "Chèque",
     "cash": "Espèces",
     "card": "Carte"
+  },
+  "statusFlow": {
+    "notAllowed": "Impossible de passer cette commande de « {{from}} » à « {{to}} »."
   }
 }

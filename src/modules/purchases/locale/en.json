@@ -445,6 +445,52 @@
       "totalTtc": "Total TTC",
       "totalHt": "Total HT",
       "totalTax": "Total tax"
+    },
+    "reasons": {
+      "poPartiallyReceivedNeedsReceipt": "Receive the goods first — create a goods receipt and the order status updates by itself.",
+      "poReceivedNeedsFullReceipt": "This order isn't fully received yet. Record a goods receipt for every remaining quantity and the status becomes “Received” automatically.",
+      "transitionNotAllowed": "You can't move this order from “{{from}}” to “{{to}}”.",
+      "invoiceCancelledFrozen": "This invoice is cancelled — its status can no longer be changed.",
+      "invoicePaidFrozen": "This invoice is already paid, so it can't be moved to “{{to}}”.",
+      "receiveWrongStatus": "Goods can only be received once the order is sent to the supplier (current status: “{{status}}”).",
+      "poItemsFrozen": "Items can't be changed on an order in status “{{status}}”. Create a new order or a credit note instead.",
+      "poTotalsFrozen": "Discount and fiscal stamp can't be changed on an order in status “{{status}}”.",
+      "invoiceItemsDraftOnly": "Invoice lines can only be edited while the invoice is a draft.",
+      "receiptLockedByInvoice": "This goods receipt is already invoiced, so it can't be edited. Cancel the invoice first.",
+      "receiptLineRelinkBlocked": "A receipt line can't be moved to a different order line. Delete the line and add it again.",
+      "deletePoHasReceipts": "Delete the goods receipts linked to this order first.",
+      "deletePoHasInvoices": "This order is already invoiced. Delete or cancel the supplier invoices first.",
+      "cancelPoHasInvoices": "This order can't be cancelled while supplier invoices reference it. Delete or credit those invoices first.",
+      "deleteReceiptHasInvoices": "This goods receipt is referenced by a supplier invoice. Delete that invoice first.",
+      "deleteInvoiceDeclared": "This invoice was already declared to the DGI (TEJ). File an annulment instead of deleting it.",
+      "deleteInvoicePaid": "This invoice has recorded payments. Reverse the payment or cancel the invoice first.",
+      "deleteItemReceived": "This line has already been received, so it can't be deleted. Cancel the goods receipt first.",
+      "invoiceMoreThanReceived": "You can't invoice more than what was received (only {{received}} received). Record the goods receipt first.",
+      "invoiceMoreThanOrdered": "You can't invoice more than what was ordered (only {{ordered}} ordered).",
+      "overReceiptRemaining": "You're receiving more than what's left on the order — only {{remaining}} remaining.",
+      "overReceipt": "You're receiving more than the quantity still expected on this order.",
+      "qtyBelowReceived": "The quantity can't be lower than what's already received ({{received}}).",
+      "negativeReceived": "The received quantity can't be negative.",
+      "negativeRejected": "The rejected quantity can't be negative.",
+      "lineQtyZero": "Each line needs a quantity greater than zero.",
+      "lineNegativePrice": "A unit price can't be negative.",
+      "lineNegativeDiscount": "A discount can't be negative.",
+      "lineTaxRange": "The tax rate must be between 0 and 100%.",
+      "lineDescriptionRequired": "Every line needs a description.",
+      "negativeAmountPaid": "The amount paid can't be negative.",
+      "overpayment": "The amount paid ({{paid}}) is higher than the invoice total ({{total}}). It may have just been settled — reload and check.",
+      "stockReverseShortage": "Not enough stock left to reverse this movement — some items were already used or sold.",
+      "differentSupplier": "The selected documents belong to different suppliers.",
+      "itemNotOnOrder": "One of the lines doesn't belong to the selected purchase order.",
+      "invoiceHasNoOrder": "Link this invoice to a purchase order before adding order lines.",
+      "supplierAlreadyLinked": "This supplier is already linked to that article.",
+      "duplicateInvoiceRef": "Invoice reference “{{ref}}” already exists for this supplier.",
+      "poNotFound": "This purchase order no longer exists.",
+      "receiptNotFound": "This goods receipt no longer exists.",
+      "invoiceNotFound": "This supplier invoice no longer exists.",
+      "supplierNotFound": "This supplier no longer exists.",
+      "articleSupplierNotFound": "This article–supplier link no longer exists.",
+      "itemNotFound": "This line no longer exists — it may have been deleted meanwhile."
     }
   },
   "confirm": {
@@ -526,5 +572,8 @@
     "cheque": "Cheque",
     "cash": "Cash",
     "card": "Card"
+  },
+  "statusFlow": {
+    "notAllowed": "You can't move this order from “{{from}}” to “{{to}}”."
   }
 }
