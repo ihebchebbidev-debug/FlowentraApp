@@ -1,3 +1,4 @@
+import { computeLineTotal as sharedLineTotal } from "../utils/totals";
 import { toastApiError } from "../utils/apiErrorToast";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -127,14 +128,8 @@ function PurchaseOrderDetailPage() {
   };
 
   // ── Items edit mode ──
-  const computeLineTotal = (it: Partial<PurchaseOrderItem>): number => {
-    const qty = Number(it.quantity) || 0;
-    const price = Number(it.unitPrice) || 0;
-    const disc = Number(it.discount) || 0;
-    const sub = qty * price;
-    const discAmt = (it.discountType || 'percentage') === 'percentage' ? sub * disc / 100 : disc;
-    return Math.max(0, sub - discAmt);
-  };
+  // Shared with the create pages and mirrored on the backend — see utils/totals.
+  const computeLineTotal = (it: Partial<PurchaseOrderItem>): number => sharedLineTotal(it);
 
   const startEditItems = () => {
     if (!po) return;

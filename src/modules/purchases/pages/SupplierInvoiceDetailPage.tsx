@@ -695,7 +695,7 @@ function SupplierInvoiceDetailContent() {
               type="number"
               min={0}
               max={inv.grandTotal - (inv.amountPaid || 0)}
-              step="0.001"
+              step="0.01"
               value={paymentAmount}
               onChange={(e) => setPaymentAmount(e.target.value)}
             />

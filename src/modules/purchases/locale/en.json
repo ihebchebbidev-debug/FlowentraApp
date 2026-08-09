@@ -79,7 +79,10 @@
     "deliverySheet": "Delivery sheet",
     "accepted": "Accepted",
     "rejected": "Rejected",
-    "linesPosted": "Lines posted to stock"
+    "linesPosted": "Lines posted to stock",
+    "remaining": "remaining",
+    "confirmTenantSwitchTitle": "Discard current lines?",
+    "confirmTenantSwitch": "Switching company clears the supplier and all entered lines. Continue?"
   },
   "invoices": {
     "title": "Supplier Invoices",
@@ -265,7 +268,18 @@
     "overReceived": "Received quantity exceeds ordered quantity",
     "itemArticleOrDescription": "Choose an article or enter a description",
     "quantityRequired": "Quantity is required",
-    "descriptionRequired": "Description is required"
+    "descriptionRequired": "Description is required",
+    "quantityNegative": "Quantities cannot be negative",
+    "rejectionReasonRequired": "A rejection reason is required",
+    "quantityPositive": "Quantity must be greater than zero",
+    "pricePositive": "Unit price cannot be negative",
+    "taxRateRange": "Tax rate must be between 0 and 100",
+    "discountRange": "Discount cannot exceed the line amount",
+    "fiscalStampNegative": "Fiscal stamp cannot be negative",
+    "deliveryBeforeOrder": "Expected delivery cannot be before the order date",
+    "dueBeforeInvoice": "Due date cannot be before the invoice date",
+    "dueDateRequired": "Due date is required",
+    "tenantRequired": "Please select a target company"
   },
   "compliance": {
     "title": "Fiscal Compliance",
@@ -358,7 +372,21 @@
       "cancelled": "Cancelled",
       "validated": "Validated",
       "tej_sync": "TEJ Sync",
-      "tej_sync_failed": "TEJ Sync failed"
+      "tej_sync_failed": "TEJ Sync failed",
+      "item_added": "Line added",
+      "item_updated": "Line updated",
+      "item_deleted": "Line removed",
+      "goods_receipt_created": "Goods receipt recorded",
+      "goods_receipt_updated": "Goods receipt updated",
+      "goods_receipt_deleted": "Goods receipt deleted",
+      "invoice_created": "Invoice created",
+      "invoice_status_changed": "Invoice status changed",
+      "invoice_deleted": "Invoice deleted",
+      "payment_recorded": "Payment recorded",
+      "payment_adjusted": "Payment adjusted",
+      "payment_status_changed": "Payment status changed",
+      "facture_en_ligne_recorded": "Facture en Ligne submitted",
+      "tej_resync_required": "TEJ resync required"
     },
     "pageInfo": "Page {{page}} of {{totalPages}} — {{total}} entries"
   },

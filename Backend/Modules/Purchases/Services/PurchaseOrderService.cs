@@ -40,6 +40,12 @@ namespace MyApi.Modules.Purchases.Services
             DateTime? dateFrom, DateTime? dateTo, string? search,
             int page, int limit, string sortBy, string sortOrder)
         {
+            // Clamp paging: a negative page yields a negative OFFSET (SQL error) and an
+            // unbounded limit lets a single request pull the whole table.
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+            if (limit > 200) limit = 200;
+
             var query = _context.PurchaseOrders.AsNoTracking().Where(o => !o.IsDeleted).AsQueryable();
 
             if (!string.IsNullOrEmpty(status)) query = query.Where(o => o.Status == status);
@@ -279,7 +285,11 @@ namespace MyApi.Modules.Purchases.Services
             var strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                using var tx = await _context.Database.BeginTransactionAsync();
+                // Serializable, like the item-level mutations (add/update/delete item):
+                // a header update recalculates totals from the item set, so a concurrent
+                // item change under a weaker isolation level could persist a GrandTotal
+                // that never matched any consistent snapshot of the lines.
+                using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
                     var order = await _context.PurchaseOrders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted)
@@ -682,6 +692,8 @@ namespace MyApi.Modules.Purchases.Services
 
         public async Task<List<PurchaseActivityDto>> GetActivitiesAsync(int orderId, int page, int limit)
         {
+            // Clamp paging: a negative page yields a negative OFFSET (SQL error) and an
+            // unbounded limit lets a single request pull the whole table.
             if (page < 1) page = 1;
             if (limit < 1) limit = 20;
             if (limit > 200) limit = 200;
@@ -828,18 +840,23 @@ namespace MyApi.Modules.Purchases.Services
             foreach (var i in items) ValidateOrderItem(i);
         }
 
+        // All monetary results are rounded to 2 decimals (same convention as
+        // SupplierInvoiceService) so in-memory totals match what is persisted and
+        // PO ↔ invoice reconciliation can never drift by a cent.
+        private static decimal Money(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+
         private static decimal CalculateLineTotal(decimal qty, decimal price, decimal discount, string discountType, decimal taxRate)
 
         {
             var subtotal = qty * price;
             var discountAmount = discountType == "percentage" ? subtotal * discount / 100 : discount;
-            return subtotal - discountAmount;
+            return Money(subtotal - discountAmount);
         }
 
         private static void RecalculateTotals(PurchaseOrder order, List<PurchaseOrderItem> items)
         {
-            order.SubTotal = items.Sum(i => i.Quantity * i.UnitPrice);
-            var discAmt = order.DiscountType == "percentage" ? order.SubTotal * order.Discount / 100 : order.Discount;
+            order.SubTotal = Money(items.Sum(i => i.Quantity * i.UnitPrice));
+            var discAmt = Money(order.DiscountType == "percentage" ? order.SubTotal * order.Discount / 100 : order.Discount);
             var afterDiscount = order.SubTotal - discAmt;
 
             // Tax must be computed on the DISCOUNTED base (per-line discount + pro-rated
@@ -858,18 +875,18 @@ namespace MyApi.Modules.Purchases.Services
                 .ToList();
             var totalAfterLineDiscount = lineBases.Sum(x => x.AfterLineDiscount);
             order.TaxAmount = totalAfterLineDiscount > 0
-                ? lineBases.Sum(x =>
+                ? Money(lineBases.Sum(x =>
                 {
                     var lineShare = x.AfterLineDiscount / totalAfterLineDiscount;
                     var lineAfterHeaderDisc = x.AfterLineDiscount - (discAmt * lineShare);
                     return lineAfterHeaderDisc * x.Item.TaxRate / 100;
-                })
+                }))
                 : 0m;
 
             // Floor non-negative: a header discount larger than SubTotal would otherwise
             // produce a negative GrandTotal, which is meaningless for a PO and breaks the
             // PaymentStatus sync (totalDue<=0 → "paid" forever even though no payment exists).
-            order.GrandTotal = Math.Max(0, afterDiscount + order.TaxAmount + order.FiscalStamp);
+            order.GrandTotal = Math.Max(0, Money(afterDiscount + order.TaxAmount + order.FiscalStamp));
         }
 
         internal static string? Shorten(string? s, int max = 480)

@@ -52,6 +52,12 @@ namespace MyApi.Modules.Purchases.Services
             DateTime? dateFrom, DateTime? dateTo, string? search,
             int page, int limit, string sortBy, string sortOrder, bool? overdueOnly)
         {
+            // Clamp paging: a negative page yields a negative OFFSET (SQL error) and an
+            // unbounded limit lets a single request pull the whole table.
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+            if (limit > 200) limit = 200;
+
             var query = _context.SupplierInvoices.AsNoTracking().Where(i => !i.IsDeleted).AsQueryable();
             if (!string.IsNullOrEmpty(status)) query = query.Where(i => i.Status == status);
             if (!string.IsNullOrEmpty(supplierId) && int.TryParse(supplierId, out int sid))
@@ -326,12 +332,17 @@ namespace MyApi.Modules.Purchases.Services
                         Description = $"Supplier invoice {invoiceNumber} created",
                         PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
                     });
+
+                    if (invoice.PurchaseOrderId.HasValue)
+                        LogPoActivity(invoice.PurchaseOrderId.Value, "invoice_created",
+                            $"Supplier invoice {invoiceNumber} created ({invoice.GrandTotal} {invoice.Currency})",
+                            userId, userName);
                     await _context.SaveChangesAsync();
 
                     // Keep PO.PaymentStatus derived from the sum of its non-deleted,
                     // non-cancelled invoices (totalPaid vs totalDue).
                     if (invoice.PurchaseOrderId.HasValue)
-                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value, userId, userName);
 
                     await tx.CommitAsync();
                 }
@@ -530,6 +541,10 @@ namespace MyApi.Modules.Purchases.Services
                         LogInvoiceActivity(id, "status_changed",
                             $"Status changed from {oldStatus} to {invoice.Status}",
                             userId, userName, oldStatus, invoice.Status);
+                        if (invoice.PurchaseOrderId.HasValue)
+                            LogPoActivity(invoice.PurchaseOrderId.Value, "invoice_status_changed",
+                                $"Invoice {invoice.InvoiceNumber} status changed from {oldStatus} to {invoice.Status}",
+                                userId, userName, oldStatus, invoice.Status);
                     }
 
                     // Payment recorded / adjusted — an explicit, first-class audit event.
@@ -539,6 +554,11 @@ namespace MyApi.Modules.Purchases.Services
                         LogInvoiceActivity(id, delta > 0 ? "payment_recorded" : "payment_adjusted",
                             $"Amount paid changed from {oldAmountPaid} to {invoice.AmountPaid} ({(delta > 0 ? "+" : "")}{delta} {invoice.Currency})",
                             userId, userName, oldAmountPaid.ToString(), invoice.AmountPaid.ToString());
+                        if (invoice.PurchaseOrderId.HasValue)
+                            LogPoActivity(invoice.PurchaseOrderId.Value,
+                                delta > 0 ? "payment_recorded" : "payment_adjusted",
+                                $"Payment on invoice {invoice.InvoiceNumber}: {(delta > 0 ? "+" : "")}{delta} {invoice.Currency} (total paid {invoice.AmountPaid} of {invoice.GrandTotal})",
+                                userId, userName, oldAmountPaid.ToString(), invoice.AmountPaid.ToString());
                     }
 
                     // Facture en Ligne (TTN) submission recorded.
@@ -569,7 +589,7 @@ namespace MyApi.Modules.Purchases.Services
                          || dto.FiscalStamp.HasValue
                          || dto.RsApplicable.HasValue || dto.RsTypeCode != null))
                     {
-                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value, userId, userName);
                     }
 
                     await tx.CommitAsync();
@@ -650,10 +670,15 @@ namespace MyApi.Modules.Purchases.Services
                         Description = $"Supplier invoice {tracked.InvoiceNumber} deleted",
                         PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
                     });
+
+                    if (tracked.PurchaseOrderId.HasValue)
+                        LogPoActivity(tracked.PurchaseOrderId.Value, "invoice_deleted",
+                            $"Supplier invoice {tracked.InvoiceNumber} deleted",
+                            userId, userName);
                     await _context.SaveChangesAsync();
 
                     if (tracked.PurchaseOrderId.HasValue)
-                        await SyncPurchaseOrderPaymentStatusAsync(tracked.PurchaseOrderId.Value);
+                        await SyncPurchaseOrderPaymentStatusAsync(tracked.PurchaseOrderId.Value, userId, userName);
 
                     await tx.CommitAsync();
                 }
@@ -673,7 +698,7 @@ namespace MyApi.Modules.Purchases.Services
         //   paid     → totalDue > 0 AND totalPaid >= totalDue
         //   partial  → totalPaid > 0 (but not enough to settle)
         //   pending  → no paid amount recorded (or no live invoices)
-        private async Task SyncPurchaseOrderPaymentStatusAsync(int purchaseOrderId)
+        private async Task SyncPurchaseOrderPaymentStatusAsync(int purchaseOrderId, string? userId = null, string? userName = null)
         {
             var po = await _context.PurchaseOrders.FirstOrDefaultAsync(p => p.Id == purchaseOrderId && !p.IsDeleted);
             if (po == null) return;
@@ -693,8 +718,12 @@ namespace MyApi.Modules.Purchases.Services
 
             if (po.PaymentStatus != newStatus)
             {
+                var oldPaymentStatus = po.PaymentStatus;
                 po.PaymentStatus = newStatus;
                 po.ModifiedDate = DateTime.UtcNow;
+                LogPoActivity(po.Id, "payment_status_changed",
+                    $"Payment status changed from {oldPaymentStatus} to {newStatus} (paid {totalPaid} of {totalDue})",
+                    userId ?? "system", userName, oldPaymentStatus, newStatus);
                 await _context.SaveChangesAsync();
             }
         }
@@ -764,7 +793,7 @@ namespace MyApi.Modules.Purchases.Services
                     // cancelled/deleted), so an item add can flip PO.PaymentStatus from
                     // "paid" to "partial". Mirror the header-mutation paths.
                     if (invoice.PurchaseOrderId.HasValue)
-                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value, userId, userName);
 
                     await tx.CommitAsync();
                     created = item;
@@ -826,7 +855,7 @@ namespace MyApi.Modules.Purchases.Services
                     await RecalculateInvoiceTotalsAsync(invoiceId);
 
                     if (invoice.PurchaseOrderId.HasValue)
-                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value, userId, userName);
 
                     await tx.CommitAsync();
                 }
@@ -863,7 +892,7 @@ namespace MyApi.Modules.Purchases.Services
                     await RecalculateInvoiceTotalsAsync(invoiceId);
 
                     if (invoice.PurchaseOrderId.HasValue)
-                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value, userId, userName);
 
                     await tx.CommitAsync();
                 }
@@ -1020,6 +1049,25 @@ namespace MyApi.Modules.Purchases.Services
         };
 
         // ── Activity audit helpers ─────────────────────────────────────────────
+        // Cross-post onto the parent purchase order timeline so PO Activity shows
+        // the full financial leg (invoice created / status / payment / deleted).
+        private void LogPoActivity(int purchaseOrderId, string activityType, string description,
+            string userId, string? userName, string? oldValue = null, string? newValue = null)
+        {
+            _context.PurchaseActivities.Add(new PurchaseActivity
+            {
+                EntityType = "purchase_order",
+                EntityId = purchaseOrderId,
+                ActivityType = activityType,
+                Description = PurchaseOrderService.Shorten(description, 900) ?? string.Empty,
+                OldValue = PurchaseOrderService.Shorten(oldValue),
+                NewValue = PurchaseOrderService.Shorten(newValue),
+                PerformedBy = userId,
+                PerformedByName = userName,
+                PerformedAt = DateTime.UtcNow
+            });
+        }
+
         private void LogInvoiceActivity(int invoiceId, string activityType, string description,
             string userId, string? userName, string? oldValue, string? newValue)
         {
@@ -1071,8 +1119,10 @@ namespace MyApi.Modules.Purchases.Services
 
         public async Task<List<PurchaseActivityDto>> GetActivitiesAsync(int invoiceId, int page = 1, int limit = 50)
         {
+            // Clamp paging: a negative page yields a negative OFFSET (SQL error) and an
+            // unbounded limit lets a single request pull the whole table.
             if (page < 1) page = 1;
-            if (limit < 1) limit = 50;
+            if (limit < 1) limit = 20;
             if (limit > 200) limit = 200;
 
             return await _context.PurchaseActivities.AsNoTracking()

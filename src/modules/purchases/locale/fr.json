@@ -79,7 +79,10 @@
     "deliverySheet": "Bon de livraison",
     "accepted": "Acceptées",
     "rejected": "Refusées",
-    "linesPosted": "Lignes comptabilisées en stock"
+    "linesPosted": "Lignes comptabilisées en stock",
+    "remaining": "restant",
+    "confirmTenantSwitchTitle": "Abandonner les lignes saisies ?",
+    "confirmTenantSwitch": "Changer de société efface le fournisseur et toutes les lignes saisies. Continuer ?"
   },
   "invoices": {
     "title": "Factures Fournisseurs",
@@ -265,7 +268,18 @@
     "overReceived": "Quantité reçue supérieure à la quantité commandée",
     "itemArticleOrDescription": "Choisissez un article ou saisissez une description",
     "quantityRequired": "La quantité est requise",
-    "descriptionRequired": "La description est requise"
+    "descriptionRequired": "La description est requise",
+    "quantityNegative": "Les quantités ne peuvent pas être négatives",
+    "rejectionReasonRequired": "Un motif de rejet est requis",
+    "quantityPositive": "La quantité doit être supérieure à zéro",
+    "pricePositive": "Le prix unitaire ne peut pas être négatif",
+    "taxRateRange": "Le taux de TVA doit être compris entre 0 et 100",
+    "discountRange": "La remise ne peut pas dépasser le montant de la ligne",
+    "fiscalStampNegative": "Le timbre fiscal ne peut pas être négatif",
+    "deliveryBeforeOrder": "La livraison prévue ne peut pas précéder la date de commande",
+    "dueBeforeInvoice": "L'échéance ne peut pas précéder la date de facture",
+    "dueDateRequired": "La date d'échéance est requise",
+    "tenantRequired": "Veuillez sélectionner une société cible"
   },
   "compliance": {
     "title": "Conformité Fiscale",
@@ -358,7 +372,21 @@
       "cancelled": "Annulé",
       "validated": "Validé",
       "tej_sync": "Synchro TEJ",
-      "tej_sync_failed": "Échec synchro TEJ"
+      "tej_sync_failed": "Échec synchro TEJ",
+      "item_added": "Ligne ajoutée",
+      "item_updated": "Ligne modifiée",
+      "item_deleted": "Ligne supprimée",
+      "goods_receipt_created": "Réception enregistrée",
+      "goods_receipt_updated": "Réception modifiée",
+      "goods_receipt_deleted": "Réception supprimée",
+      "invoice_created": "Facture créée",
+      "invoice_status_changed": "Statut de facture modifié",
+      "invoice_deleted": "Facture supprimée",
+      "payment_recorded": "Paiement enregistré",
+      "payment_adjusted": "Paiement ajusté",
+      "payment_status_changed": "Statut de paiement modifié",
+      "facture_en_ligne_recorded": "Facture en Ligne transmise",
+      "tej_resync_required": "Resynchronisation TEJ requise"
     },
     "pageInfo": "Page {{page}} sur {{totalPages}} — {{total}} entrées"
   },

@@ -141,6 +141,8 @@ namespace MyApi.Modules.Purchases.Services
                         .FirstOrDefaultAsync(p => p.Id == dto.PurchaseOrderId && !p.IsDeleted)
                         ?? throw new KeyNotFoundException($"PurchaseOrder {dto.PurchaseOrderId} not found");
 
+                    var poStatusBefore = po.Status;
+
                     // Status guard: only "ordered" or "partially_received" POs can receive goods.
                     if (po.Status != "ordered" && po.Status != "partially_received")
                         throw new InvalidOperationException($"Cannot receive goods on a PO in status '{po.Status}'");
@@ -253,6 +255,19 @@ namespace MyApi.Modules.Purchases.Services
                         Description = $"Goods receipt {receiptNumber} created for PO {po.OrderNumber}",
                         PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
                     });
+
+                    var receivedSummary = dto.Items?.Any() == true
+                        ? string.Join(", ", dto.Items.Select(i => $"{i.QuantityReceived}"))
+                        : "0";
+                    LogPoActivity(po.Id, "goods_receipt_created",
+                        $"Goods receipt {receiptNumber} recorded ({dto.Items?.Count ?? 0} line(s), qty: {receivedSummary})"
+                        + (string.IsNullOrWhiteSpace(dto.DeliveryNoteRef) ? "" : $" — BL {dto.DeliveryNoteRef}"),
+                        userId, userName);
+
+                    if (po.Status != poStatusBefore)
+                        LogPoActivity(po.Id, "status_changed",
+                            $"Status changed from {poStatusBefore} to {po.Status} (goods receipt {receiptNumber})",
+                            userId, userName, poStatusBefore, po.Status);
                     await _context.SaveChangesAsync();
 
                     // Increment stock for received articles. Done inside the same transaction
@@ -318,6 +333,14 @@ namespace MyApi.Modules.Purchases.Services
                     var po = await _context.PurchaseOrders.Include(p => p.Items)
                         .FirstOrDefaultAsync(p => p.Id == receipt.PurchaseOrderId && !p.IsDeleted)
                         ?? throw new KeyNotFoundException($"PurchaseOrder {receipt.PurchaseOrderId} not found");
+
+                    var poStatusBefore = po.Status;
+
+                    // Status guard (mirrors CreateReceiptAsync): a receipt attached to a
+                    // cancelled/closed/draft PO must stay immutable — editing it would
+                    // rewrite ReceivedQty and stock on an order that is no longer open.
+                    if (po.Status != "ordered" && po.Status != "partially_received" && po.Status != "received")
+                        throw new InvalidOperationException($"Cannot edit a goods receipt on a PO in status '{po.Status}'");
 
                     // Header fields (no PO/Supplier mutation — those are receipt identity).
                     if (dto.ReceiptDate.HasValue) receipt.ReceiptDate = AsUtc(dto.ReceiptDate.Value);
@@ -475,6 +498,15 @@ namespace MyApi.Modules.Purchases.Services
                         PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
                     });
 
+                    LogPoActivity(po.Id, "goods_receipt_updated",
+                        $"Goods receipt {receipt.ReceiptNumber} updated (received quantities reconciled)",
+                        userId, userName);
+
+                    if (po.Status != poStatusBefore)
+                        LogPoActivity(po.Id, "status_changed",
+                            $"Status changed from {poStatusBefore} to {po.Status} (goods receipt {receipt.ReceiptNumber} edited)",
+                            userId, userName, poStatusBefore, po.Status);
+
                     await _context.SaveChangesAsync();
 
                     // Apply net stock movements last so a failure rolls back receipt + PO.
@@ -539,6 +571,14 @@ namespace MyApi.Modules.Purchases.Services
                     var po = await _context.PurchaseOrders.Include(p => p.Items)
                         .FirstOrDefaultAsync(p => p.Id == receipt.PurchaseOrderId && !p.IsDeleted);
 
+                    var poStatusBefore = po?.Status;
+
+                    // Same immutability rule as edit: a receipt on a cancelled/closed PO
+                    // cannot be deleted, otherwise stock would be reversed against an
+                    // order that is no longer open.
+                    if (po != null && po.Status != "ordered" && po.Status != "partially_received" && po.Status != "received")
+                        throw new InvalidOperationException($"Cannot delete a goods receipt on a PO in status '{po.Status}'");
+
                     var stockReversals = new List<(int articleId, decimal qty)>();
 
                     if (po != null && receipt.Items != null)
@@ -598,6 +638,18 @@ namespace MyApi.Modules.Purchases.Services
                         PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
                     });
 
+                    if (po != null)
+                    {
+                        LogPoActivity(po.Id, "goods_receipt_deleted",
+                            $"Goods receipt {receipt.ReceiptNumber} deleted — received quantities reversed",
+                            userId, userName);
+
+                        if (po.Status != poStatusBefore)
+                            LogPoActivity(po.Id, "status_changed",
+                                $"Status changed from {poStatusBefore} to {po.Status} (goods receipt {receipt.ReceiptNumber} deleted)",
+                                userId, userName, poStatusBefore, po.Status);
+                    }
+
                     await _context.SaveChangesAsync();
 
                     // Reverse stock movements that the receipt had created.
@@ -645,6 +697,27 @@ namespace MyApi.Modules.Purchases.Services
             }).ToList(),
             CreatedDate = r.CreatedDate, CreatedBy = r.CreatedBy, ModifiedDate = r.ModifiedDate, ModifiedBy = r.ModifiedBy
         };
+
+
+        // Cross-post an activity onto the PARENT purchase order timeline so the PO
+        // Activity tab shows receipt-driven events (receipt recorded/edited/deleted
+        // and the status transitions those receipts caused).
+        private void LogPoActivity(int purchaseOrderId, string activityType, string description,
+            string userId, string? userName, string? oldValue = null, string? newValue = null)
+        {
+            _context.PurchaseActivities.Add(new PurchaseActivity
+            {
+                EntityType = "purchase_order",
+                EntityId = purchaseOrderId,
+                ActivityType = activityType,
+                Description = description.Length > 900 ? description.Substring(0, 900) : description,
+                OldValue = oldValue,
+                NewValue = newValue,
+                PerformedBy = userId,
+                PerformedByName = userName,
+                PerformedAt = DateTime.UtcNow
+            });
+        }
 
         public async Task<List<PurchaseActivityDto>> GetActivitiesAsync(int receiptId, int page = 1, int limit = 50)
         {

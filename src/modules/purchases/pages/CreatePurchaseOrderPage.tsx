@@ -37,6 +37,15 @@ export default function CreatePurchaseOrderPage() {
   const prefillArticleId = searchParams.get('articleId') || '';
   const prefillServiceOrderId = searchParams.get('serviceOrderId') || '';
   const { targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
+  // Switching company wipes the supplier + every entered line (IDs are
+  // tenant-scoped), so confirm before throwing away typed work.
+  const confirmTenantChange = (next: number) => {
+    if (next !== targetTenantId && items.length > 0 &&
+        !window.confirm(t('receipts.confirmTenantSwitch', 'Switching company clears the supplier and all entered lines. Continue?') as string)) {
+      return;
+    }
+    handleTenantChange(next);
+  };
   const [supplierId, setSupplierId] = useState('');
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [expectedDelivery, setExpectedDelivery] = useState('');
@@ -104,15 +113,16 @@ export default function CreatePurchaseOrderPage() {
       }
       unique.sort((a, b) => a.name.localeCompare(b.name));
       setSuppliers(unique);
-    }).catch(() => {
-      toast.error(t('common.error', 'Failed to load suppliers'));
-    });
+    }).catch((e: any) => toastApiError(e, t, { fallback: t('common.error', 'Failed to load suppliers') as string }));
   }, [targetTenantId]);
 
   // Fetch supplier articles when supplier changes
   useEffect(() => {
     if (!supplierId) { setSupplierArticles([]); return; }
-    articleSupplierService.getBySupplier(supplierId).then(setSupplierArticles).catch(() => setSupplierArticles([]));
+    articleSupplierService.getBySupplier(supplierId).then(setSupplierArticles).catch((e: any) => {
+      setSupplierArticles([]);
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to load supplier articles') as string });
+    });
   }, [supplierId]);
 
   // Prefill from ?articleId — picks the article's preferred (or first active)
@@ -149,7 +159,7 @@ export default function CreatePurchaseOrderPage() {
           setExpectedDelivery(eta.toISOString().split('T')[0]);
         }
       })
-      .catch(() => {});
+      .catch((e: any) => toastApiError(e, t, { fallback: t('common.error', 'Failed to load supplier data') as string }));
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillArticleId, suppliers.length]);
@@ -250,10 +260,39 @@ export default function CreatePurchaseOrderPage() {
       toast.error(t('validation.itemArticleOrDescription', 'Each line needs an article or a description'));
       return;
     }
-    if (items.some(i => !i.quantity || i.quantity <= 0)) {
+    if (items.some(i => !Number.isFinite(i.quantity) || (i.quantity ?? 0) <= 0)) {
       toast.error(t('validation.quantityRequired', 'Quantity must be greater than zero'));
       return;
     }
+    if (items.some(i => !Number.isFinite(i.unitPrice) || (i.unitPrice ?? 0) < 0)) {
+      toast.error(t('validation.pricePositive', 'Unit price cannot be negative'));
+      return;
+    }
+    if (items.some(i => {
+      const d = i.discount ?? 0;
+      if (!Number.isFinite(d) || d < 0) return true;
+      // A percentage discount above 100 (or a fixed discount above the line
+      // subtotal) would produce a negative line total.
+      return (i.discountType || 'percentage') === 'percentage'
+        ? d > 100
+        : d > (i.quantity || 0) * (i.unitPrice || 0);
+    })) {
+      toast.error(t('validation.discountRange', 'Discount cannot exceed the line amount'));
+      return;
+    }
+    if (items.some(i => !Number.isFinite(i.taxRate ?? 19) || (i.taxRate ?? 19) < 0 || (i.taxRate ?? 19) > 100)) {
+      toast.error(t('validation.taxRateRange', 'Tax rate must be between 0 and 100'));
+      return;
+    }
+    if (!Number.isFinite(fiscalStamp) || fiscalStamp < 0) {
+      toast.error(t('validation.fiscalStampNegative', 'Fiscal stamp cannot be negative'));
+      return;
+    }
+    if (expectedDelivery && orderDate && expectedDelivery < orderDate) {
+      toast.error(t('validation.deliveryBeforeOrder', 'Expected delivery cannot be before the order date'));
+      return;
+    }
+
     setSaving(true);
     try {
       await purchaseOrderService.create({
@@ -310,7 +349,7 @@ export default function CreatePurchaseOrderPage() {
       />
 
       <div className="p-4 md:p-6 space-y-4">
-        <TenantSelector value={targetTenantId} onChange={handleTenantChange} />
+        <TenantSelector value={targetTenantId} onChange={confirmTenantChange} />
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">{t('create.headerInfo')}</CardTitle></CardHeader>
@@ -487,7 +526,7 @@ export default function CreatePurchaseOrderPage() {
                   <Input
                     type="number"
                     min="0"
-                    step="0.001"
+                    step="0.01"
                     className="h-7 w-24 text-xs text-right"
                     value={fiscalStamp}
                     onChange={e => setFiscalStamp(Number(e.target.value) || 0)}

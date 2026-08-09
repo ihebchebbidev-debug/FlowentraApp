@@ -17,6 +17,7 @@ import { TejOperationCodePicker } from "@/modules/shared/components/TejOperation
 import { legacyToTejOperationCode } from "@/modules/shared/constants/tejOperationCodes";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { supplierInvoiceService, purchaseOrderService, newIdempotencyKey } from "../services/purchaseService";
+import { computeDocumentTotals, money } from "../utils/totals";
 import { toastApiError } from "../utils/apiErrorToast";
 
 import { apiFetch } from "@/services/api/apiClient";
@@ -35,6 +36,15 @@ export default function CreateSupplierInvoicePage() {
   // link so the invoice shows on the PO and feeds its aggregated TEJ XML.
   const poId = searchParams.get('poId') || '';
   const { targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
+  // Switching company wipes the supplier + every entered line (IDs are
+  // tenant-scoped), so confirm before throwing away typed work.
+  const confirmTenantChange = (next: number) => {
+    if (next !== targetTenantId && items.length > 0 &&
+        !window.confirm(t('receipts.confirmTenantSwitch', 'Switching company clears the supplier and all entered lines. Continue?') as string)) {
+      return;
+    }
+    handleTenantChange(next);
+  };
   const [supplierId, setSupplierId] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
@@ -64,7 +74,7 @@ export default function CreateSupplierInvoicePage() {
     apiFetch<any>('/api/contacts?type=supplier&limit=500').then(res => {
       const data = res?.data?.contacts || res?.data || [];
       setSuppliers(data.map((c: any) => ({ id: String(c.id), name: c.name, mf: c.matriculeFiscale })));
-    }).catch(() => {});
+    }).catch((e: any) => toastApiError(e, t, { fallback: t('common.error', 'Failed to load suppliers') as string }));
   }, [targetTenantId]);
 
   // Prefill from the originating purchase order: supplier + its lines, so the
@@ -84,7 +94,7 @@ export default function CreateSupplierInvoicePage() {
         taxRate: Number(it.taxRate ?? 19),
         lineTotal: (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
       })));
-    }).catch(() => {});
+    }).catch((e: any) => toastApiError(e, t, { fallback: t('common.error', 'Failed to load the purchase order') as string }));
   }, [poId, targetTenantId]);
 
 
@@ -104,29 +114,16 @@ export default function CreateSupplierInvoicePage() {
   };
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
 
-  // Mirror the backend RecalculateInvoiceTotalsAsync exactly so the on-screen
-  // preview matches what gets persisted:
-  //   subtotal       = Σ qty * unitPrice
-  //   afterDiscount  = subtotal − headerDiscount   (header discount is 0 today; UI doesn't expose it)
-  //   tax            = pro-rated header discount, summed: Σ (lineSub − lineSub/subtotal * disc) * rate
-  //   rs (HT base)   = afterDiscount * rsRate%
-  //   grandTotal     = afterDiscount + tax + fiscalStamp − rs
-  const subtotal = items.reduce((s, i) => s + i.lineTotal, 0);
-  const headerDiscount = 0; // not exposed in UI; kept here so the formula reads identically to backend
-  const afterDiscount = subtotal - headerDiscount;
-  const taxAmount = subtotal > 0
-    ? items.reduce((s, i) => {
-        const lineSub = i.lineTotal;
-        const lineShare = lineSub / subtotal;
-        const lineAfterDisc = lineSub - (headerDiscount * lineShare);
-        return s + lineAfterDisc * ((i.taxRate ?? 0) / 100);
-      }, 0)
-    : 0;
+  // Totals come from the shared, backend-mirroring calculator (utils/totals) so
+  // the preview can never drift from what RecalculateInvoiceTotalsAsync persists.
   const rsRate = RS_TRANSACTION_TYPES.find(r => r.code === rsTypeCode)?.rate || 0;
-  const rsAmount = rsApplicable ? afterDiscount * (rsRate / 100) : 0;
-  // The fiscal stamp only applies to an actual document — an empty form totals 0.
-  const effectiveFiscalStamp = items.length > 0 ? fiscalStamp : 0;
-  const grandTotal = afterDiscount + taxAmount + effectiveFiscalStamp - rsAmount;
+  const preRs = computeDocumentTotals(items, { fiscalStamp, defaultTaxRate: 0 });
+  const rsAmount = rsApplicable ? money(preRs.subtotal * (rsRate / 100)) : 0;
+  const { subtotal, taxAmount, grandTotal } = computeDocumentTotals(items, {
+    fiscalStamp,
+    rsAmount,
+    defaultTaxRate: 0,
+  });
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
   const handleSave = async () => {
@@ -138,6 +135,8 @@ export default function CreateSupplierInvoicePage() {
     if (items.some(i => !Number.isFinite(i.quantity) || i.quantity <= 0)) { toast.error(t('validation.quantityPositive', 'Each item needs a quantity greater than 0')); return; }
     if (items.some(i => !Number.isFinite(i.unitPrice) || i.unitPrice < 0)) { toast.error(t('validation.pricePositive', 'Unit price cannot be negative')); return; }
     if (items.some(i => !Number.isFinite(i.taxRate ?? 0) || (i.taxRate ?? 0) < 0 || (i.taxRate ?? 0) > 100)) { toast.error(t('validation.taxRateRange', 'Tax rate must be between 0 and 100')); return; }
+    if (!Number.isFinite(fiscalStamp) || fiscalStamp < 0) { toast.error(t('validation.fiscalStampNegative', 'Fiscal stamp cannot be negative')); return; }
+    if (invoiceDate && dueDate < invoiceDate) { toast.error(t('validation.dueBeforeInvoice', 'Due date cannot be before the invoice date')); return; }
     setSaving(true);
     try {
       await supplierInvoiceService.create({
@@ -190,7 +189,7 @@ export default function CreateSupplierInvoicePage() {
       />
 
       <div className="p-4 md:p-6 space-y-4">
-        <TenantSelector value={targetTenantId} onChange={handleTenantChange} />
+        <TenantSelector value={targetTenantId} onChange={confirmTenantChange} />
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">{t('create.invoiceInfo')}</CardTitle></CardHeader>
@@ -305,7 +304,7 @@ export default function CreateSupplierInvoicePage() {
                   <Input
                     type="number"
                     min="0"
-                    step="0.001"
+                    step="0.01"
                     className="h-7 w-24 text-xs text-right"
                     value={fiscalStamp}
                     onChange={e => setFiscalStamp(Number(e.target.value) || 0)}

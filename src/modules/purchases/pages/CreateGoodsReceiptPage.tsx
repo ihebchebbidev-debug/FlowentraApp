@@ -53,7 +53,9 @@ export default function CreateGoodsReceiptPage() {
           purchaseOrderService.getAll({ status: 'partially_received' as any, limit: 100 }),
         ]);
         setPendingPOs([...(ordered.orders || []), ...(partial.orders || [])]);
-      } catch {}
+      } catch (e: any) {
+        toastApiError(e, t, { fallback: t('common.error', 'Failed to load purchase orders') as string });
+      }
     };
     fetchPOs();
   }, [targetTenantId, preselectedPoId]);
@@ -73,7 +75,7 @@ export default function CreateGoodsReceiptPage() {
         quantityRejected: 0,
         rejectionReason: '',
       })).filter(item => item.orderedQty > item.alreadyReceived));
-    }).catch(() => {});
+    }).catch((e: any) => toastApiError(e, t, { fallback: t('common.error', 'Failed to load the purchase order') as string }));
   }, [poId]);
 
   const updateItem = (index: number, field: string, value: any) => {
@@ -86,16 +88,27 @@ export default function CreateGoodsReceiptPage() {
     if (isTenantRequired) { toast.error(t('validation.tenantRequired', 'Please select a target company')); return; }
     if (!poId) { toast.error(t('validation.poRequired')); return; }
     if (items.length === 0) { toast.error(t('validation.itemsRequired')); return; }
+    if (items.some(i => !Number.isFinite(i.quantityReceived) || i.quantityReceived < 0 || !Number.isFinite(i.quantityRejected) || i.quantityRejected < 0)) {
+      toast.error(t('validation.quantityNegative', 'Quantities cannot be negative'));
+      return;
+    }
     if (items.every(i => i.quantityReceived === 0 && i.quantityRejected === 0)) {
       toast.error(t('validation.receiveAtLeastOne'));
       return;
     }
-    // Block over-receipt: cannot receive more than what's still owed.
-    const overReceived = items.find(i => i.quantityReceived > (i.orderedQty - i.alreadyReceived));
+    // Block over-receipt: received AND rejected both consume the remaining ordered
+    // quantity, so the combined figure — not just quantityReceived — must fit.
+    const overReceived = items.find(i => i.quantityReceived + i.quantityRejected > (i.orderedQty - i.alreadyReceived));
     if (overReceived) {
-      toast.error(t('validation.overReceived', `Cannot receive more than ordered for ${overReceived.articleName}`));
+      toast.error(`${t('validation.overReceived')} — ${overReceived.articleName}`);
       return;
     }
+    const missingReason = items.find(i => i.quantityRejected > 0 && !i.rejectionReason.trim());
+    if (missingReason) {
+      toast.error(`${t('validation.rejectionReasonRequired', 'A rejection reason is required')} — ${missingReason.articleName}`);
+      return;
+    }
+
     setSaving(true);
     try {
       await goodsReceiptService.create({
@@ -200,21 +213,35 @@ export default function CreateGoodsReceiptPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item, idx) => (
+                {items.map((item, idx) => {
+                  const remaining = item.orderedQty - item.alreadyReceived;
+                  const over = item.quantityReceived + item.quantityRejected > remaining;
+                  const negative = item.quantityReceived < 0 || item.quantityRejected < 0;
+                  const invalid = over || negative;
+                  return (
                   <TableRow key={item.poItemId}>
                     <TableCell>
                       <div className="text-xs font-medium">{item.articleName}</div>
                       <div className="text-px-10 text-muted-foreground">{item.articleNumber}</div>
+                      {invalid && (
+                        <div className="text-[10px] text-destructive mt-0.5">
+                          {negative
+                            ? t('validation.quantityNegative', 'Quantities cannot be negative')
+                            : `${t('validation.overReceived')} (${t('receipts.remaining', 'remaining')}: ${remaining})`}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-center">{item.orderedQty}</TableCell>
                     <TableCell className="text-xs text-center text-muted-foreground">{item.alreadyReceived}</TableCell>
                     <TableCell>
-                      <Input type="number" className="h-7 text-xs w-20 mx-auto" min={0} max={item.orderedQty - item.alreadyReceived}
-                        value={item.quantityReceived} onChange={e => updateItem(idx, 'quantityReceived', Number(e.target.value))} />
+                      <Input type="number" className={`h-7 text-xs w-20 mx-auto ${invalid ? 'border-destructive' : ''}`} min={0} max={remaining}
+                        aria-invalid={invalid}
+                        value={item.quantityReceived} onChange={e => updateItem(idx, 'quantityReceived', Number(e.target.value) || 0)} />
                     </TableCell>
                     <TableCell>
-                      <Input type="number" className="h-7 text-xs w-20 mx-auto" min={0}
-                        value={item.quantityRejected} onChange={e => updateItem(idx, 'quantityRejected', Number(e.target.value))} />
+                      <Input type="number" className={`h-7 text-xs w-20 mx-auto ${invalid ? 'border-destructive' : ''}`} min={0}
+                        aria-invalid={invalid}
+                        value={item.quantityRejected} onChange={e => updateItem(idx, 'quantityRejected', Number(e.target.value) || 0)} />
                     </TableCell>
                     <TableCell>
                       {item.quantityRejected > 0 && (
@@ -223,7 +250,8 @@ export default function CreateGoodsReceiptPage() {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {items.length === 0 && (
                   <TableRow><TableCell colSpan={6} className="text-center py-8 text-xs text-muted-foreground">
                     {t('receipts.selectPOFirst')}

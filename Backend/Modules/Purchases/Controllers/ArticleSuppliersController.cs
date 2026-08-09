@@ -36,6 +36,8 @@ namespace MyApi.Modules.Purchases.Controllers
                 var result = await _service.GetByArticleAsync(articleId);
                 return Ok(new { success = true, data = result });
             }
+            catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching suppliers for article {ArticleId}", articleId);
@@ -52,6 +54,8 @@ namespace MyApi.Modules.Purchases.Controllers
                 var result = await _service.GetBySupplierAsync(supplierId);
                 return Ok(new { success = true, data = result });
             }
+            catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching articles for supplier {SupplierId}", supplierId);
@@ -69,6 +73,8 @@ namespace MyApi.Modules.Purchases.Controllers
                 if (result == null) return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Article-supplier relationship not found" } });
                 return Ok(new { success = true, data = result });
             }
+            catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching article-supplier {Id}", id);
@@ -87,6 +93,8 @@ namespace MyApi.Modules.Purchases.Controllers
                 await _systemLogService.LogSuccessAsync($"Article-supplier created: Article {dto.ArticleId} - Supplier {dto.SupplierId}", "Purchases", "create", userId, GetUserName(), "ArticleSupplier", result.Id.ToString());
                 return CreatedAtAction(nameof(GetById), new { id = result.Id }, new { success = true, data = result });
             }
+            catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating article-supplier");
@@ -106,6 +114,7 @@ namespace MyApi.Modules.Purchases.Controllers
                 return Ok(new { success = true, data = result });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating article-supplier {Id}", id);
@@ -124,6 +133,8 @@ namespace MyApi.Modules.Purchases.Controllers
                 await _systemLogService.LogSuccessAsync($"Article-supplier deleted: {id}", "Purchases", "delete", GetUserId(), GetUserName(), "ArticleSupplier", id.ToString());
                 return Ok(new { success = true, message = "Deleted successfully" });
             }
+            catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting article-supplier {Id}", id);
@@ -140,6 +151,8 @@ namespace MyApi.Modules.Purchases.Controllers
                 var result = await _service.GetPriceHistoryAsync(id);
                 return Ok(new { success = true, data = result });
             }
+            catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching price history for article-supplier {Id}", id);

@@ -75,7 +75,10 @@
     "deliverySheet": "وصل التسليم",
     "accepted": "مقبولة",
     "rejected": "مرفوضة",
-    "linesPosted": "سطور مضافة للمخزون"
+    "linesPosted": "سطور مضافة للمخزون",
+    "remaining": "المتبقي",
+    "confirmTenantSwitchTitle": "تجاهل الأسطر الحالية؟",
+    "confirmTenantSwitch": "تغيير الشركة يمسح المورّد وكل الأسطر المدخلة. هل تريد المتابعة؟"
   },
   "invoices": {
     "title": "فواتير الموردين",
@@ -246,7 +249,18 @@
     "quantityRequired": "الكمية مطلوبة",
     "descriptionRequired": "الوصف مطلوب",
     "poRequired": "Please select a purchase order",
-    "receiveAtLeastOne": "Please receive at least one item"
+    "receiveAtLeastOne": "Please receive at least one item",
+    "quantityNegative": "لا يمكن أن تكون الكميات سالبة",
+    "rejectionReasonRequired": "سبب الرفض مطلوب",
+    "quantityPositive": "يجب أن تكون الكمية أكبر من صفر",
+    "pricePositive": "لا يمكن أن يكون سعر الوحدة سالبًا",
+    "taxRateRange": "يجب أن تكون نسبة الضريبة بين 0 و 100",
+    "discountRange": "لا يمكن أن يتجاوز الخصم مبلغ السطر",
+    "fiscalStampNegative": "لا يمكن أن يكون الطابع الجبائي سالبًا",
+    "deliveryBeforeOrder": "لا يمكن أن يسبق تاريخ التسليم المتوقع تاريخ الطلب",
+    "dueBeforeInvoice": "لا يمكن أن يسبق تاريخ الاستحقاق تاريخ الفاتورة",
+    "dueDateRequired": "تاريخ الاستحقاق مطلوب",
+    "tenantRequired": "يرجى اختيار الشركة المستهدفة"
   },
   "compliance": {
     "title": "الامتثال الجبائي",
@@ -339,7 +353,21 @@
       "cancelled": "ملغى",
       "validated": "مُعتمد",
       "tej_sync": "مزامنة TEJ",
-      "tej_sync_failed": "فشل مزامنة TEJ"
+      "tej_sync_failed": "فشل مزامنة TEJ",
+      "item_added": "تمت إضافة سطر",
+      "item_updated": "تم تعديل سطر",
+      "item_deleted": "تم حذف سطر",
+      "goods_receipt_created": "تم تسجيل الاستلام",
+      "goods_receipt_updated": "تم تعديل الاستلام",
+      "goods_receipt_deleted": "تم حذف الاستلام",
+      "invoice_created": "تم إنشاء الفاتورة",
+      "invoice_status_changed": "تغيّرت حالة الفاتورة",
+      "invoice_deleted": "تم حذف الفاتورة",
+      "payment_recorded": "تم تسجيل الدفع",
+      "payment_adjusted": "تم تعديل الدفع",
+      "payment_status_changed": "تغيّرت حالة الدفع",
+      "facture_en_ligne_recorded": "تم إرسال الفاتورة الإلكترونية",
+      "tej_resync_required": "يلزم إعادة مزامنة TEJ"
     },
     "pageInfo": "الصفحة {{page}} من {{totalPages}} — {{total}} إدخالاً"
   },
