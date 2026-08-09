@@ -371,6 +371,12 @@ namespace MyApi.Modules.Purchases.Services
                         ?? throw new KeyNotFoundException($"SupplierInvoice {id} not found");
 
                     var oldStatus = invoice.Status;
+                    var oldAmountPaid = invoice.AmountPaid;
+                    var oldFelId = invoice.FactureEnLigneId;
+                    var oldFelStatus = invoice.FactureEnLigneStatus;
+                    // Field-level audit snapshot: every header edit is recorded, not just
+                    // the status transition.
+                    var beforeSnapshot = SnapshotInvoice(invoice);
 
                     // ── TEJ compliance guard ───────────────────────────────────────
                     // Once the invoice has been declared to the DGI (TejSynced), editing
@@ -519,15 +525,38 @@ namespace MyApi.Modules.Purchases.Services
                     invoice.ModifiedDate = DateTime.UtcNow;
                     invoice.ModifiedBy = userId;
 
-                    if (dto.Status != null && dto.Status != oldStatus)
+                    if (invoice.Status != oldStatus)
                     {
-                        _context.PurchaseActivities.Add(new PurchaseActivity
-                        {
-                            EntityType = "supplier_invoice", EntityId = id, ActivityType = "status_changed",
-                            Description = $"Status changed from {oldStatus} to {dto.Status}",
-                            OldValue = oldStatus, NewValue = dto.Status,
-                            PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
-                        });
+                        LogInvoiceActivity(id, "status_changed",
+                            $"Status changed from {oldStatus} to {invoice.Status}",
+                            userId, userName, oldStatus, invoice.Status);
+                    }
+
+                    // Payment recorded / adjusted — an explicit, first-class audit event.
+                    if (dto.AmountPaid.HasValue && invoice.AmountPaid != oldAmountPaid)
+                    {
+                        var delta = invoice.AmountPaid - oldAmountPaid;
+                        LogInvoiceActivity(id, delta > 0 ? "payment_recorded" : "payment_adjusted",
+                            $"Amount paid changed from {oldAmountPaid} to {invoice.AmountPaid} ({(delta > 0 ? "+" : "")}{delta} {invoice.Currency})",
+                            userId, userName, oldAmountPaid.ToString(), invoice.AmountPaid.ToString());
+                    }
+
+                    // Facture en Ligne (TTN) submission recorded.
+                    if ((dto.FactureEnLigneId != null && invoice.FactureEnLigneId != oldFelId)
+                        || (dto.FactureEnLigneStatus != null && invoice.FactureEnLigneStatus != oldFelStatus))
+                    {
+                        LogInvoiceActivity(id, "facture_en_ligne_recorded",
+                            $"Facture en Ligne submission recorded (ref {invoice.FactureEnLigneId}, status {invoice.FactureEnLigneStatus})",
+                            userId, userName, oldFelStatus, invoice.FactureEnLigneStatus);
+                    }
+
+                    // Everything else that changed on the header.
+                    foreach (var (field, oldVal, newVal) in PurchaseOrderService.DiffSnapshots(beforeSnapshot, SnapshotInvoice(invoice)))
+                    {
+                        if (field is "Status" or "AmountPaid" or "FactureEnLigneId" or "FactureEnLigneStatus") continue;
+                        LogInvoiceActivity(id, "updated",
+                            $"{field} changed from '{PurchaseOrderService.Shorten(oldVal)}' to '{PurchaseOrderService.Shorten(newVal)}'",
+                            userId, userName, PurchaseOrderService.Shorten(oldVal), PurchaseOrderService.Shorten(newVal));
                     }
                     await _context.SaveChangesAsync();
 
@@ -671,7 +700,7 @@ namespace MyApi.Modules.Purchases.Services
         }
 
         // ── Items ──
-        public async Task<SupplierInvoiceItemDto> AddItemAsync(int invoiceId, CreateSupplierInvoiceItemDto dto)
+        public async Task<SupplierInvoiceItemDto> AddItemAsync(int invoiceId, CreateSupplierInvoiceItemDto dto, string? userId = null, string? userName = null)
         {
             var invoice = await _context.SupplierInvoices.Include(i => i.Items).FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted)
                 ?? throw new KeyNotFoundException($"SupplierInvoice {invoiceId} not found");
@@ -724,6 +753,11 @@ namespace MyApi.Modules.Purchases.Services
                     _context.SupplierInvoiceItems.Add(item);
                     await _context.SaveChangesAsync();
 
+                    LogInvoiceActivity(invoiceId, "item_added",
+                        $"Line added: {DescribeInvoiceItem(item)}", userId ?? "system", userName,
+                        null, PurchaseOrderService.Shorten(DescribeInvoiceItem(item)));
+                    await _context.SaveChangesAsync();
+
                     await RecalculateInvoiceTotalsAsync(invoiceId);
 
                     // Draft invoices still count toward PO totalDue (Sync excludes only
@@ -740,7 +774,7 @@ namespace MyApi.Modules.Purchases.Services
             return MapItemToDto(created!);
         }
 
-        public async Task<SupplierInvoiceItemDto> UpdateItemAsync(int invoiceId, int itemId, CreateSupplierInvoiceItemDto dto)
+        public async Task<SupplierInvoiceItemDto> UpdateItemAsync(int invoiceId, int itemId, CreateSupplierInvoiceItemDto dto, string? userId = null, string? userName = null)
         {
             var invoice = await _context.SupplierInvoices.Include(i => i.Items).FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted)
                 ?? throw new KeyNotFoundException($"SupplierInvoice {invoiceId} not found");
@@ -774,6 +808,7 @@ namespace MyApi.Modules.Purchases.Services
                 using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
+                    var itemBefore = DescribeInvoiceItem(item);
                     item.ArticleId = dto.ArticleId;
                     item.ArticleName = dto.ArticleName;
                     item.Description = dto.Description;
@@ -781,6 +816,11 @@ namespace MyApi.Modules.Purchases.Services
                     item.UnitPrice = dto.UnitPrice;
                     item.TaxRate = dto.TaxRate;
                     item.LineTotal = lineTotal;
+                    var itemAfter = DescribeInvoiceItem(item);
+                    if (itemBefore != itemAfter)
+                        LogInvoiceActivity(invoiceId, "item_updated",
+                            $"Line updated: {itemBefore} → {itemAfter}", userId ?? "system", userName,
+                            PurchaseOrderService.Shorten(itemBefore), PurchaseOrderService.Shorten(itemAfter));
                     await _context.SaveChangesAsync();
 
                     await RecalculateInvoiceTotalsAsync(invoiceId);
@@ -795,7 +835,7 @@ namespace MyApi.Modules.Purchases.Services
             return MapItemToDto(item);
         }
 
-        public async Task<bool> DeleteItemAsync(int invoiceId, int itemId)
+        public async Task<bool> DeleteItemAsync(int invoiceId, int itemId, string? userId = null, string? userName = null)
         {
             var invoice = await _context.SupplierInvoices.Include(i => i.Items).FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted)
                 ?? throw new KeyNotFoundException($"SupplierInvoice {invoiceId} not found");
@@ -811,7 +851,13 @@ namespace MyApi.Modules.Purchases.Services
                 using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
+                    var removedDesc = DescribeInvoiceItem(item);
                     _context.SupplierInvoiceItems.Remove(item);
+                    await _context.SaveChangesAsync();
+
+                    LogInvoiceActivity(invoiceId, "item_deleted",
+                        $"Line removed: {removedDesc}", userId ?? "system", userName,
+                        PurchaseOrderService.Shorten(removedDesc), null);
                     await _context.SaveChangesAsync();
 
                     await RecalculateInvoiceTotalsAsync(invoiceId);
@@ -972,5 +1018,75 @@ namespace MyApi.Modules.Purchases.Services
             Items = inv.Items?.Select(i => MapItemToDto(i)).ToList(),
             CreatedDate = inv.CreatedDate, CreatedBy = inv.CreatedBy, ModifiedDate = inv.ModifiedDate, ModifiedBy = inv.ModifiedBy
         };
+
+        // ── Activity audit helpers ─────────────────────────────────────────────
+        private void LogInvoiceActivity(int invoiceId, string activityType, string description,
+            string userId, string? userName, string? oldValue, string? newValue)
+        {
+            _context.PurchaseActivities.Add(new PurchaseActivity
+            {
+                EntityType = "supplier_invoice",
+                EntityId = invoiceId,
+                ActivityType = activityType,
+                Description = PurchaseOrderService.Shorten(description, 900),
+                OldValue = PurchaseOrderService.Shorten(oldValue),
+                NewValue = PurchaseOrderService.Shorten(newValue),
+                PerformedBy = userId,
+                PerformedByName = userName,
+                PerformedAt = DateTime.UtcNow
+            });
+        }
+
+        private static string DescribeInvoiceItem(SupplierInvoiceItem i)
+            => $"{(string.IsNullOrWhiteSpace(i.ArticleName) ? (string.IsNullOrWhiteSpace(i.Description) ? "item" : i.Description) : i.ArticleName)} | qty {i.Quantity} | price {i.UnitPrice} | tax {i.TaxRate}% | total {i.LineTotal}";
+
+        private static Dictionary<string, string?> SnapshotInvoice(SupplierInvoice inv) => new()
+        {
+            ["SupplierInvoiceRef"] = inv.SupplierInvoiceRef,
+            ["Status"] = inv.Status,
+            ["DueDate"] = inv.DueDate.ToString("u"),
+            ["Discount"] = inv.Discount.ToString(),
+            ["DiscountType"] = inv.DiscountType,
+            ["FiscalStamp"] = inv.FiscalStamp.ToString(),
+            ["PaymentMethod"] = inv.PaymentMethod,
+            ["AmountPaid"] = inv.AmountPaid.ToString(),
+            ["PaymentDate"] = inv.PaymentDate?.ToString("u"),
+            ["Notes"] = inv.Notes,
+            ["GrandTotal"] = inv.GrandTotal.ToString(),
+            ["RsApplicable"] = inv.RsApplicable.ToString(),
+            ["RsTypeCode"] = inv.RsTypeCode,
+            ["RsOperationCode"] = inv.RsOperationCode,
+            ["RsTvaCode"] = inv.RsTvaCode,
+            ["RsTvaTaux"] = inv.RsTvaTaux?.ToString(),
+            ["Cnpc"] = inv.Cnpc,
+            ["PriseEnCharge"] = inv.PriseEnCharge.ToString(),
+            ["AnneeFacturation"] = inv.AnneeFacturation?.ToString(),
+            ["RefCertifChezDeclarant"] = inv.RefCertifChezDeclarant,
+            ["TejActe"] = inv.TejActe.ToString(),
+            ["TejSynced"] = inv.TejSynced.ToString(),
+            ["TejSyncStatus"] = inv.TejSyncStatus,
+            ["FactureEnLigneId"] = inv.FactureEnLigneId,
+            ["FactureEnLigneStatus"] = inv.FactureEnLigneStatus,
+        };
+
+        public async Task<List<PurchaseActivityDto>> GetActivitiesAsync(int invoiceId, int page = 1, int limit = 50)
+        {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 50;
+            if (limit > 200) limit = 200;
+
+            return await _context.PurchaseActivities.AsNoTracking()
+                .Where(a => a.EntityType == "supplier_invoice" && a.EntityId == invoiceId)
+                .OrderByDescending(a => a.PerformedAt)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(a => new PurchaseActivityDto
+                {
+                    Id = a.Id, EntityType = a.EntityType, EntityId = a.EntityId,
+                    ActivityType = a.ActivityType, Description = a.Description,
+                    OldValue = a.OldValue, NewValue = a.NewValue,
+                    PerformedBy = a.PerformedBy, PerformedByName = a.PerformedByName,
+                    PerformedAt = a.PerformedAt
+                }).ToListAsync();
+        }
     }
 }

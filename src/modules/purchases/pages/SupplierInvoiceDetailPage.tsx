@@ -25,7 +25,7 @@ import { ActivityTimeline, type TimelineEvent } from "../components/ActivityTime
 import { TejMissingInfoDialog } from "../components/TejMissingInfoDialog";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { toast } from "sonner";
-import type { SupplierInvoice, SupplierInvoiceItem } from "../types";
+import type { SupplierInvoice, SupplierInvoiceItem, PurchaseActivity } from "../types";
 import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -46,6 +46,7 @@ function SupplierInvoiceDetailContent() {
   const [isPdfOpen, setIsPdfOpen] = useState(false);
   const { format: formatCurrency } = useCurrency();
   const [inv, setInv] = useState<SupplierInvoice | null>(null);
+  const [activities, setActivities] = useState<PurchaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditingItems, setIsEditingItems] = useState(false);
@@ -73,6 +74,10 @@ function SupplierInvoiceDetailContent() {
       .then(setInv)
       .catch((e: any) => setError(e?.message || 'Failed to load'))
       .finally(() => setLoading(false));
+    // Real audit trail from the backend (item edits, payments, FEL, TEJ, status…).
+    supplierInvoiceService.getActivities(id, 1, 50)
+      .then(setActivities)
+      .catch(() => setActivities([]));
   }, [id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -351,60 +356,16 @@ function SupplierInvoiceDetailContent() {
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
   const rsType = RS_TRANSACTION_TYPES.find(r => r.code === inv.rsTypeCode);
 
-  // Supplier invoices have no dedicated activity endpoint, so synthesise a timeline
-  // from the timestamped milestones already on the record. Only events with a real
-  // date are emitted, so the order is always truthful.
-  const timelineEvents: TimelineEvent[] = (() => {
-    const events: TimelineEvent[] = [];
-    if (inv.createdDate) {
-      events.push({
-        id: 'created',
-        action: 'created',
-        description: t('timeline.invoiceCreated', 'Invoice created'),
-        at: inv.createdDate,
-        by: inv.createdBy,
-      });
-    }
-    if (inv.amountPaid > 0 && inv.paymentDate) {
-      events.push({
-        id: 'payment',
-        action: 'payment',
-        description: t('timeline.paymentRecorded', 'Payment recorded: {{amount}} {{currency}}', {
-          amount: fmt(inv.amountPaid),
-          currency: inv.currency,
-        }),
-        at: inv.paymentDate,
-        newValue: inv.paymentMethod,
-      });
-    }
-    if (inv.factureEnLigneSentAt) {
-      events.push({
-        id: 'fel',
-        action: 'fel_sent',
-        description: t('timeline.felSent', 'Facture-en-Ligne sent'),
-        at: inv.factureEnLigneSentAt,
-        newValue: inv.factureEnLigneStatus,
-      });
-    }
-    if (inv.tejSyncDate) {
-      events.push({
-        id: 'tej',
-        action: 'tej_sync',
-        description: t('timeline.tejRegistered', 'Registered for TEJ declaration'),
-        at: inv.tejSyncDate,
-        newValue: inv.tejSyncStatus,
-      });
-    }
-    if (inv.status === 'cancelled' && inv.modifiedDate) {
-      events.push({
-        id: 'cancelled',
-        action: 'cancelled',
-        description: t('timeline.invoiceCancelled', 'Invoice cancelled'),
-        at: inv.modifiedDate,
-      });
-    }
-    return events;
-  })();
+  // Backend audit trail → shared timeline shape.
+  const timelineEvents: TimelineEvent[] = activities.map((a) => ({
+    id: a.id,
+    action: a.activityType,
+    description: a.description,
+    at: a.performedAt,
+    by: a.performedByName,
+    oldValue: a.oldValue,
+    newValue: a.newValue,
+  }));
 
   return (
     <div className="flex flex-col">
@@ -477,6 +438,7 @@ function SupplierInvoiceDetailContent() {
             <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
             <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
             <TabsTrigger value="compliance">{t('tabs.compliance')}</TabsTrigger>
+            <TabsTrigger value="activity">{t('tabs.activity', 'Activity')}</TabsTrigger>
           </TabsList>
 
 
@@ -506,8 +468,6 @@ function SupplierInvoiceDetailContent() {
                   <div className="flex justify-between font-medium"><span>{t('fields.balance')}</span><span className={inv.grandTotal - inv.amountPaid > 0 ? 'text-destructive' : 'text-green-600'}>{fmt(inv.grandTotal - inv.amountPaid)}</span></div>
                 </CardContent>
               </Card>
-              {/* Inline activity timeline — derived from the invoice's milestone timestamps */}
-              <ActivityTimeline events={timelineEvents} variant="inline" className="md:col-span-2" />
             </div>
           </TabsContent>
 
@@ -635,6 +595,14 @@ function SupplierInvoiceDetailContent() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-4">
+            <Card>
+              <CardContent className="p-4">
+                <ActivityTimeline events={timelineEvents} variant="tab" initialLimit={50} />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

@@ -428,8 +428,6 @@ function PurchaseOrderDetailPage() {
                   <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(po.grandTotal)} {po.currency}</span></div>
                 </CardContent>
               </Card>
-              {/* Inline activity timeline — at-a-glance history without leaving Overview */}
-              <ActivityTimeline events={timelineEvents} variant="inline" className="md:col-span-2" />
             </div>
           </TabsContent>
 

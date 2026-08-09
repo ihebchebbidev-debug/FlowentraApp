@@ -14,9 +14,9 @@ namespace MyApi.Modules.Purchases.Services
         Task<bool> DeleteOrderAsync(int id, string userId, string? userName = null);
         Task<PurchaseOrderStatsDto> GetStatsAsync(DateTime? dateFrom = null, DateTime? dateTo = null);
         // Items
-        Task<PurchaseOrderItemDto> AddItemAsync(int orderId, CreatePurchaseOrderItemDto dto);
-        Task<PurchaseOrderItemDto> UpdateItemAsync(int orderId, int itemId, CreatePurchaseOrderItemDto dto);
-        Task<bool> DeleteItemAsync(int orderId, int itemId);
+        Task<PurchaseOrderItemDto> AddItemAsync(int orderId, CreatePurchaseOrderItemDto dto, string? userId = null, string? userName = null);
+        Task<PurchaseOrderItemDto> UpdateItemAsync(int orderId, int itemId, CreatePurchaseOrderItemDto dto, string? userId = null, string? userName = null);
+        Task<bool> DeleteItemAsync(int orderId, int itemId, string? userId = null, string? userName = null);
         // Activities
         Task<List<PurchaseActivityDto>> GetActivitiesAsync(int orderId, int page = 1, int limit = 20);
         Task<PaginatedPurchaseActivityResponse> GetAllActivitiesAsync(
@@ -35,6 +35,7 @@ namespace MyApi.Modules.Purchases.Services
         Task<GoodsReceiptDto> CreateReceiptAsync(CreateGoodsReceiptDto dto, string userId, string? userName = null, string? idempotencyKey = null);
         Task<GoodsReceiptDto> UpdateReceiptAsync(int id, UpdateGoodsReceiptDto dto, string userId, string? userName = null);
         Task<bool> DeleteReceiptAsync(int id, string userId, string? userName = null);
+        Task<List<PurchaseActivityDto>> GetActivitiesAsync(int receiptId, int page = 1, int limit = 50);
     }
 
     public interface ISupplierInvoiceService
@@ -49,9 +50,11 @@ namespace MyApi.Modules.Purchases.Services
         Task<SupplierInvoiceDto> UpdateInvoiceAsync(int id, UpdateSupplierInvoiceDto dto, string userId, string? userName = null);
         Task<bool> DeleteInvoiceAsync(int id, string userId, string? userName = null);
         // Items
-        Task<SupplierInvoiceItemDto> AddItemAsync(int invoiceId, CreateSupplierInvoiceItemDto dto);
-        Task<SupplierInvoiceItemDto> UpdateItemAsync(int invoiceId, int itemId, CreateSupplierInvoiceItemDto dto);
-        Task<bool> DeleteItemAsync(int invoiceId, int itemId);
+        Task<SupplierInvoiceItemDto> AddItemAsync(int invoiceId, CreateSupplierInvoiceItemDto dto, string? userId = null, string? userName = null);
+        Task<SupplierInvoiceItemDto> UpdateItemAsync(int invoiceId, int itemId, CreateSupplierInvoiceItemDto dto, string? userId = null, string? userName = null);
+        Task<bool> DeleteItemAsync(int invoiceId, int itemId, string? userId = null, string? userName = null);
+        // Activities
+        Task<List<PurchaseActivityDto>> GetActivitiesAsync(int invoiceId, int page = 1, int limit = 50);
     }
 
     public interface IArticleSupplierService

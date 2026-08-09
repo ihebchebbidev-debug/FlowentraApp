@@ -297,6 +297,9 @@ export const goodsReceiptService = {
   getById: (id: string) =>
     extract<GoodsReceipt>(apiFetch(`/api/goods-receipts/${id}`), 'Failed to fetch receipt'),
 
+  getActivities: (receiptId: string, page = 1, limit = 50) =>
+    extract<PurchaseActivity[]>(apiFetch(`/api/goods-receipts/${receiptId}/activities${qs({ page, limit })}`), 'Failed'),
+
   create: (data: Partial<GoodsReceipt> & { items?: any[] }, opts: CreateOpts = {}) => {
     const payload: any = {
       ...data,
@@ -431,6 +434,9 @@ export const supplierInvoiceService = {
 
   deleteItem: (invoiceId: string, itemId: string) =>
     deleteRequest(`/api/supplier-invoices/${invoiceId}/items/${itemId}`, 'Failed to delete item'),
+
+  getActivities: (invoiceId: string, page = 1, limit = 50) =>
+    extract<PurchaseActivity[]>(apiFetch(`/api/supplier-invoices/${invoiceId}/activities${qs({ page, limit })}`), 'Failed'),
 };
 
 // ─── Activities & Stats ──────────────────────────────────────────────────────

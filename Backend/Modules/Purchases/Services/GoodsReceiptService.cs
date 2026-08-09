@@ -645,5 +645,25 @@ namespace MyApi.Modules.Purchases.Services
             }).ToList(),
             CreatedDate = r.CreatedDate, CreatedBy = r.CreatedBy, ModifiedDate = r.ModifiedDate, ModifiedBy = r.ModifiedBy
         };
+
+        public async Task<List<PurchaseActivityDto>> GetActivitiesAsync(int receiptId, int page = 1, int limit = 50)
+        {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 50;
+            if (limit > 200) limit = 200;
+
+            return await _context.PurchaseActivities.AsNoTracking()
+                .Where(a => a.EntityType == "goods_receipt" && a.EntityId == receiptId)
+                .OrderByDescending(a => a.PerformedAt)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(a => new PurchaseActivityDto
+                {
+                    Id = a.Id, EntityType = a.EntityType, EntityId = a.EntityId,
+                    ActivityType = a.ActivityType, Description = a.Description,
+                    OldValue = a.OldValue, NewValue = a.NewValue,
+                    PerformedBy = a.PerformedBy, PerformedByName = a.PerformedByName,
+                    PerformedAt = a.PerformedAt
+                }).ToListAsync();
+        }
     }
 }

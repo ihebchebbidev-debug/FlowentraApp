@@ -256,6 +256,23 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        // ── Activity timeline ──
+        [RequirePermission("purchases", "read")]
+        [HttpGet("{id:int}/activities")]
+        public async Task<IActionResult> GetActivities(int id, [FromQuery] int page = 1, [FromQuery] int limit = 50)
+        {
+            try
+            {
+                var activities = await _service.GetActivitiesAsync(id, page, limit);
+                return Ok(new { success = true, data = activities });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching activities for invoice {Id}", id);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
+            }
+        }
+
         // ── Items (only allowed when invoice.status == 'draft') ──
         [RequirePermission("purchases", "create")]
         [HttpPost("{id:int}/items")]
@@ -263,7 +280,7 @@ namespace MyApi.Modules.Purchases.Controllers
         {
             try
             {
-                var item = await _service.AddItemAsync(id, dto);
+                var item = await _service.AddItemAsync(id, dto, GetUserId(), GetUserName());
                 return Ok(new { success = true, data = item });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
@@ -281,7 +298,7 @@ namespace MyApi.Modules.Purchases.Controllers
         {
             try
             {
-                var item = await _service.UpdateItemAsync(id, itemId, dto);
+                var item = await _service.UpdateItemAsync(id, itemId, dto, GetUserId(), GetUserName());
                 return Ok(new { success = true, data = item });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
@@ -299,7 +316,7 @@ namespace MyApi.Modules.Purchases.Controllers
         {
             try
             {
-                if (!await _service.DeleteItemAsync(id, itemId))
+                if (!await _service.DeleteItemAsync(id, itemId, GetUserId(), GetUserName()))
                     return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Item not found" } });
                 return Ok(new { success = true, message = "Deleted" });
             }

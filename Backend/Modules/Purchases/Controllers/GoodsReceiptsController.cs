@@ -49,6 +49,22 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
         [RequirePermission("purchases", "read")]
+        [HttpGet("{id:int}/activities")]
+        public async Task<IActionResult> GetActivities(int id, [FromQuery] int page = 1, [FromQuery] int limit = 50)
+        {
+            try
+            {
+                var activities = await _service.GetActivitiesAsync(id, page, limit);
+                return Ok(new { success = true, data = activities });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching activities for goods receipt {Id}", id);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
+            }
+        }
+
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetReceipt(int id)
         {

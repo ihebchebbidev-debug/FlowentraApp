@@ -236,7 +236,7 @@ namespace MyApi.Modules.Purchases.Controllers
         {
             try
             {
-                var item = await _service.AddItemAsync(id, dto);
+                var item = await _service.AddItemAsync(id, dto, GetUserId(), GetUserName());
                 return CreatedAtAction(nameof(GetOrder), new { id }, new { success = true, data = item });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
@@ -255,7 +255,7 @@ namespace MyApi.Modules.Purchases.Controllers
         {
             try
             {
-                var item = await _service.UpdateItemAsync(id, itemId, dto);
+                var item = await _service.UpdateItemAsync(id, itemId, dto, GetUserId(), GetUserName());
                 return Ok(new { success = true, data = item });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } }); }
@@ -274,7 +274,7 @@ namespace MyApi.Modules.Purchases.Controllers
         {
             try
             {
-                if (!await _service.DeleteItemAsync(id, itemId))
+                if (!await _service.DeleteItemAsync(id, itemId, GetUserId(), GetUserName()))
                     return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Item not found" } });
                 return Ok(new { success = true, message = "Item deleted" });
             }

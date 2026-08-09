@@ -326,6 +326,10 @@ namespace MyApi.Modules.Purchases.Services
                         }
                     }
 
+                    // Snapshot for field-level audit: every header edit (not just the
+                    // status transition) is recorded on the activity timeline.
+                    var before = SnapshotOrder(order);
+
                     if (dto.Title != null) order.Title = dto.Title;
                     if (dto.Description != null) order.Description = dto.Description;
                     if (dto.Status != null) order.Status = dto.Status;
@@ -362,6 +366,17 @@ namespace MyApi.Modules.Purchases.Services
 
                     if (dto.Status != null && dto.Status != oldStatus)
                         LogActivity("purchase_order", id, "status_changed", $"Status changed from {oldStatus} to {dto.Status}", userId, userName, oldStatus, dto.Status);
+
+                    // Field-level audit for every other header change.
+                    foreach (var (field, oldVal, newVal) in DiffSnapshots(before, SnapshotOrder(order)))
+                    {
+                        if (field == "Status") continue; // already logged above
+                        LogActivity("purchase_order", id, "updated",
+                            $"{field} changed from '{Shorten(oldVal)}' to '{Shorten(newVal)}'",
+                            userId, userName, Shorten(oldVal), Shorten(newVal));
+                    }
+
+
 
                     // ── Cancellation: reverse received quantities + stock movements ──
                     var cancelReversals = new List<(int articleId, decimal qty)>();
@@ -535,7 +550,7 @@ namespace MyApi.Modules.Purchases.Services
         }
 
 
-        public async Task<PurchaseOrderItemDto> AddItemAsync(int orderId, CreatePurchaseOrderItemDto dto)
+        public async Task<PurchaseOrderItemDto> AddItemAsync(int orderId, CreatePurchaseOrderItemDto dto, string? userId = null, string? userName = null)
         {
             // Wrap in a transaction with execution strategy. Without it, a concurrent
             // header update (which also recomputes totals) can clobber this item's
@@ -573,6 +588,9 @@ namespace MyApi.Modules.Purchases.Services
                     _context.PurchaseOrderItems.Add(item);
                     await _context.SaveChangesAsync();
                     RecalculateTotals(order, order.Items!.ToList());
+                    LogActivity("purchase_order", orderId, "item_added",
+                        $"Line added: {item.ArticleName ?? item.Description ?? "item"} × {item.Quantity} @ {item.UnitPrice}",
+                        userId ?? "system", userName, null, Shorten(DescribeItem(item)));
                     await _context.SaveChangesAsync();
                     await tx.CommitAsync();
                     created = item;
@@ -582,7 +600,7 @@ namespace MyApi.Modules.Purchases.Services
             return MapItemToDto(created!);
         }
 
-        public async Task<PurchaseOrderItemDto> UpdateItemAsync(int orderId, int itemId, CreatePurchaseOrderItemDto dto)
+        public async Task<PurchaseOrderItemDto> UpdateItemAsync(int orderId, int itemId, CreatePurchaseOrderItemDto dto, string? userId = null, string? userName = null)
         {
             PurchaseOrderItem? updated = null;
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -605,6 +623,7 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.Quantity < item.ReceivedQty)
                         throw new InvalidOperationException($"Quantity ({dto.Quantity}) cannot be less than already-received qty ({item.ReceivedQty})");
 
+                    var itemBefore = DescribeItem(item);
 
                     item.ArticleId = dto.ArticleId; item.ArticleName = dto.ArticleName; item.ArticleNumber = dto.ArticleNumber;
                     item.SupplierRef = dto.SupplierRef; item.Description = dto.Description; item.Quantity = dto.Quantity;
@@ -612,6 +631,11 @@ namespace MyApi.Modules.Purchases.Services
                     item.DiscountType = dto.DiscountType; item.Unit = dto.Unit;
                     item.LineTotal = CalculateLineTotal(dto.Quantity, dto.UnitPrice, dto.Discount, dto.DiscountType, dto.TaxRate);
                     RecalculateTotals(order, order.Items!.ToList());
+                    var itemAfter = DescribeItem(item);
+                    if (itemBefore != itemAfter)
+                        LogActivity("purchase_order", orderId, "item_updated",
+                            $"Line updated: {itemBefore} → {itemAfter}",
+                            userId ?? "system", userName, Shorten(itemBefore), Shorten(itemAfter));
                     await _context.SaveChangesAsync();
                     await tx.CommitAsync();
                     updated = item;
@@ -621,7 +645,7 @@ namespace MyApi.Modules.Purchases.Services
             return MapItemToDto(updated!);
         }
 
-        public async Task<bool> DeleteItemAsync(int orderId, int itemId)
+        public async Task<bool> DeleteItemAsync(int orderId, int itemId, string? userId = null, string? userName = null)
         {
             bool result = false;
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -641,9 +665,12 @@ namespace MyApi.Modules.Purchases.Services
                     if (item.ReceivedQty > 0)
                         throw new InvalidOperationException("Cannot delete an item that already has received quantity");
 
+                    var removed = DescribeItem(item);
                     _context.PurchaseOrderItems.Remove(item);
                     await _context.SaveChangesAsync();
                     RecalculateTotals(order, order.Items!.ToList());
+                    LogActivity("purchase_order", orderId, "item_deleted",
+                        $"Line removed: {removed}", userId ?? "system", userName, Shorten(removed), null);
                     await _context.SaveChangesAsync();
                     await tx.CommitAsync();
                     result = true;
@@ -843,6 +870,39 @@ namespace MyApi.Modules.Purchases.Services
             // produce a negative GrandTotal, which is meaningless for a PO and breaks the
             // PaymentStatus sync (totalDue<=0 → "paid" forever even though no payment exists).
             order.GrandTotal = Math.Max(0, afterDiscount + order.TaxAmount + order.FiscalStamp);
+        }
+
+        internal static string? Shorten(string? s, int max = 480)
+            => string.IsNullOrEmpty(s) ? s : (s!.Length <= max ? s : s.Substring(0, max));
+
+        private static string DescribeItem(PurchaseOrderItem i)
+            => $"{(string.IsNullOrWhiteSpace(i.ArticleName) ? (string.IsNullOrWhiteSpace(i.Description) ? "item" : i.Description) : i.ArticleName)} | qty {i.Quantity} | price {i.UnitPrice} | tax {i.TaxRate}% | total {i.LineTotal}";
+
+        private static Dictionary<string, string?> SnapshotOrder(PurchaseOrder o) => new()
+        {
+            ["Title"] = o.Title,
+            ["Description"] = o.Description,
+            ["Status"] = o.Status,
+            ["ExpectedDelivery"] = o.ExpectedDelivery?.ToString("u"),
+            ["Discount"] = o.Discount.ToString(),
+            ["DiscountType"] = o.DiscountType,
+            ["FiscalStamp"] = o.FiscalStamp.ToString(),
+            ["PaymentTerms"] = o.PaymentTerms,
+            ["Notes"] = o.Notes,
+            ["Tags"] = o.Tags == null ? null : string.Join(", ", o.Tags),
+            ["BillingAddress"] = o.BillingAddress,
+            ["DeliveryAddress"] = o.DeliveryAddress,
+        };
+
+        internal static IEnumerable<(string Field, string? Old, string? New)> DiffSnapshots(
+            Dictionary<string, string?> before, Dictionary<string, string?> after)
+        {
+            foreach (var kv in after)
+            {
+                before.TryGetValue(kv.Key, out var old);
+                if (!string.Equals(old ?? "", kv.Value ?? "", StringComparison.Ordinal))
+                    yield return (kv.Key, old, kv.Value);
+            }
         }
 
         private void LogActivity(string entityType, int entityId, string activityType, string desc, string userId, string? userName = null, string? oldVal = null, string? newVal = null)
