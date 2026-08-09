@@ -806,7 +806,13 @@ namespace MyApi.Modules.Planning.Services
         /// </summary>
         private async Task ValidateLeaveAsync(int userId, string leaveType, DateTime startDate, DateTime endDate, string status, int? excludeLeaveId)
         {
-            if (endDate.Date < startDate.Date)
+            // `user_leaves.start_date/end_date` are `timestamp with time zone`, and Npgsql
+            // refuses to bind a DateTime whose Kind is Unspecified/Local. Values coming from
+            // the DTO (JSON without offset) or from a tracked entity can carry Unspecified,
+            // so every value used as a query parameter is normalized to a UTC day first.
+            var rangeStart = AsUtcDay(startDate);
+            var rangeEnd = AsUtcDay(endDate);
+            if (rangeEnd < rangeStart)
                 throw new InvalidOperationException("planning.leave_end_before_start");
 
             var normalizedStatus = (status ?? "pending").ToLowerInvariant();
@@ -816,12 +822,13 @@ namespace MyApi.Modules.Planning.Services
             // Overlap must only be tested against leaves that are actually granted.
             // Two employees' pending requests can legitimately overlap in the inbox, and
             // blocking on them made every "Approve" click fail (surfaced as HTTP 500).
+            var overlapEnd = rangeEnd.AddDays(1);
             var overlaps = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(l => l.UserId == userId
                             && (excludeLeaveId == null || l.Id != excludeLeaveId.Value)
                             && l.Status == "approved"
-                            && l.StartDate.Date <= endDate.Date
-                            && l.EndDate.Date >= startDate.Date)
+                            && l.StartDate < overlapEnd
+                            && l.EndDate >= rangeStart)
                 .AnyAsync();
             if (overlaps)
                 throw new InvalidOperationException("planning.leave_overlap");
@@ -829,21 +836,25 @@ namespace MyApi.Modules.Planning.Services
             var activeStatuses = new[] { "pending", "approved" };
 
 
-            var year = startDate.Year;
+            var year = rangeStart.Year;
             var balance = await _db.Set<MyApi.Modules.HR.Models.HrLeaveBalance>().AsNoTracking()
                 .FirstOrDefaultAsync(b => b.UserId == userId && b.Year == year && b.LeaveType == leaveType);
             if (balance == null || balance.AnnualAllowance <= 0) return;
 
+            var yearStart = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var nextYearStart = yearStart.AddYears(1);
             var sameYear = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(l => l.UserId == userId
                             && l.LeaveType == leaveType
                             && (excludeLeaveId == null || l.Id != excludeLeaveId.Value)
                             && activeStatuses.Contains(l.Status)
-                            && (l.StartDate.Year == year || l.EndDate.Year == year))
+                            && l.StartDate < nextYearStart
+                            && l.EndDate >= yearStart)
                 .ToListAsync();
 
             var alreadyBooked = sameYear.Sum(l => LeaveDayCount(l.StartDate, l.EndDate));
-            var requested = LeaveDayCount(startDate, endDate);
+            var requested = LeaveDayCount(rangeStart, rangeEnd);
+
             if (alreadyBooked + requested > balance.AnnualAllowance)
                 throw new InvalidOperationException("planning.leave_allowance_exceeded");
         }
@@ -925,6 +936,11 @@ namespace MyApi.Modules.Planning.Services
                 leave.StartDate = AsUtcDay(dto.StartDate.Value);
             if (dto.EndDate.HasValue)
                 leave.EndDate = AsUtcDay(dto.EndDate.Value);
+            // Rows written before this normalization (or read back with Kind=Unspecified)
+            // must be coerced to UTC as well, otherwise SaveChanges/validation throws.
+            leave.StartDate = AsUtcDay(leave.StartDate);
+            leave.EndDate = AsUtcDay(leave.EndDate);
+
             if (!string.IsNullOrEmpty(dto.Reason))
                 leave.Reason = dto.Reason;
             if (!string.IsNullOrEmpty(dto.Status))
