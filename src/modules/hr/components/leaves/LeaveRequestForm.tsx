@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useForm, Controller } from 'react-hook-form';
@@ -23,6 +24,8 @@ export type FormValues = {
   endDate: string;
   reason?: string;
 };
+
+const LEAVE_TYPES = ['annual', 'sick', 'unpaid', 'maternity', 'paternity', 'other'] as const;
 
 export function LeaveRequestForm(props: {
   open: boolean;
@@ -167,7 +170,24 @@ export function LeaveRequestForm(props: {
                 <StickyNote className="h-4 w-4 text-muted-foreground" />
                 {t('leavesPage.type')}
               </Label>
-              <Input {...form.register('type')} />
+              <Controller
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LEAVE_TYPES.map((lt) => (
+                        <SelectItem key={lt} value={lt}>
+                          {t(`leaveTypes.${lt}`, lt.charAt(0).toUpperCase() + lt.slice(1))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="grid gap-2">
               <Label className="flex items-center gap-2">

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyApi.Data;
 using MyApi.Modules.HR.DTOs;
 using MyApi.Modules.HR.Models;
@@ -14,10 +15,12 @@ namespace MyApi.Modules.HR.Services
     public partial class HrService : IHrService
     {
         private readonly ApplicationDbContext _db;
+        private readonly ILogger<HrService>? _logger;
 
-        public HrService(ApplicationDbContext db)
+        public HrService(ApplicationDbContext db, ILogger<HrService>? logger = null)
         {
             _db = db;
+            _logger = logger;
         }
 
         // ===========================================================================
@@ -484,22 +487,67 @@ namespace MyApi.Modules.HR.Services
 
         public async Task DeleteAttendanceAsync(int id, int actorUserId)
         {
-            var row = await _db.Set<HrAttendance>().FirstOrDefaultAsync(x => x.Id == id);
-            if (row == null) throw new KeyNotFoundException("hr.attendance_not_found");
-            var userId = row.UserId;
-            var day = row.Date;
-            _db.Set<HrAttendance>().Remove(row);
+            // Read the row through raw SQL (same defensive reasoning as GetAttendanceAsync):
+            // legacy/imported rows can hold values that break EF materialization, which
+            // turned every delete into an opaque 500. Text casts can never throw.
+            var exists = await _db.Set<HrAttendance>().AnyAsync(x => x.Id == id);
+            if (!exists) throw new KeyNotFoundException("hr.attendance_not_found");
+
+            int userId = 0;
+            DateTime day = DateTime.UtcNow;
             try
             {
-                await _db.SaveChangesAsync();
+                var conn = _db.Database.GetDbConnection();
+                var opened = conn.State != System.Data.ConnectionState.Open;
+                if (opened) await conn.OpenAsync();
+                try
+                {
+                    using var read = conn.CreateCommand();
+                    read.CommandText = $"SELECT user_id::text, date::text FROM hr_attendance WHERE id = {id}";
+                    using (var reader = await read.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            if (!reader.IsDBNull(0) && int.TryParse(reader.GetValue(0)?.ToString(), out var uid)) userId = uid;
+                            if (!reader.IsDBNull(1) && DateTime.TryParse(reader.GetValue(1)?.ToString(),
+                                    System.Globalization.CultureInfo.InvariantCulture,
+                                    System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+                                    out var d))
+                                day = DateTime.SpecifyKind(d, DateTimeKind.Utc);
+                        }
+                    }
+
+                    using var del = conn.CreateCommand();
+                    del.CommandText = $"DELETE FROM hr_attendance WHERE id = {id}";
+                    var affected = await del.ExecuteNonQueryAsync();
+                    if (affected == 0) throw new KeyNotFoundException("hr.attendance_not_found");
+                }
+                finally
+                {
+                    if (opened) await conn.CloseAsync();
+                }
             }
-            catch (DbUpdateException)
+            catch (KeyNotFoundException)
             {
-                // Row is referenced elsewhere (or vanished mid-request) — report a
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Row is referenced elsewhere (or the DB rejected the delete) — report a
                 // translatable business error instead of an opaque 500.
+                _logger?.LogError(ex, "HR: attendance delete failed for id={Id}", id);
                 throw new InvalidOperationException("attendance.delete_failed");
             }
-            await LogAsync(userId, "attendance_deleted", $"Attendance deleted for {day:yyyy-MM-dd}", new { id }, actorUserId);
+
+            // A failed audit write must never fail an already-committed delete.
+            try
+            {
+                await LogAsync(userId, "attendance_deleted", $"Attendance deleted for {day:yyyy-MM-dd}", new { id }, actorUserId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "HR: attendance delete audit log failed for id={Id}", id);
+            }
         }
 
         public async Task<HrAttendanceSettingsDto> GetAttendanceSettingsAsync()

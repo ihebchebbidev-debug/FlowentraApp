@@ -203,7 +203,7 @@ export function DepartmentsPage() {
                   <TableHead>{t('departments.name')}</TableHead>
                   <TableHead>{t('departments.code')}</TableHead>
                   <TableHead className="text-right">{t('departments.employees')}</TableHead>
-                  <TableHead className="w-[100px]">{t('common.filters')}</TableHead>
+              <TableHead className="w-[100px]">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
