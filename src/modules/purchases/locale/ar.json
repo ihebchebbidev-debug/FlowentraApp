@@ -131,7 +131,8 @@
   "tejStatus": {
     "pending": "معلق",
     "synced": "متزامن",
-    "error": "خطأ"
+    "error": "خطأ",
+    "requires_resync": "يتطلب إعادة المزامنة"
   },
   "fields": {
     "orderNumber": "رقم الطلب",

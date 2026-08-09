@@ -135,7 +135,8 @@
   "tejStatus": {
     "pending": "En attente",
     "synced": "Synchronisé",
-    "error": "Erreur"
+    "error": "Erreur",
+    "requires_resync": "Resynchronisation requise"
   },
   "fields": {
     "orderNumber": "N° Commande",

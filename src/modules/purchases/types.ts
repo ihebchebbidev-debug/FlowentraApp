@@ -150,7 +150,7 @@ export interface GoodsReceiptItem {
 // after a partial payment — surface it so the badge renders correctly.
 export type SupplierInvoiceStatus = 'draft' | 'validated' | 'pending' | 'partially_paid' | 'paid' | 'cancelled';
 export type FactureEnLigneStatus = 'pending' | 'sent' | 'validated' | 'rejected';
-export type TEJSyncStatus = 'pending' | 'synced' | 'error';
+export type TEJSyncStatus = 'pending' | 'synced' | 'error' | 'requires_resync';
 
 export interface SupplierInvoice {
   id: string;
