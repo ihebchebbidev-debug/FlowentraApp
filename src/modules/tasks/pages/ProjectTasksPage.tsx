@@ -27,7 +27,7 @@ import { ProjectOverviewTab } from '../components/project-detail/ProjectOverview
 import { ProjectTasksTab } from '../components/project-detail/ProjectTasksTab';
 import { ProjectTeamTab } from '../components/project-detail/ProjectTeamTab';
 import { ProjectNotesActivityTab } from '../components/project-detail/ProjectNotesActivityTab';
-import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
+
 import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumentsTab';
 import { ChecklistsSection } from '@/modules/shared/components/documents';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
@@ -596,7 +596,7 @@ export default function ProjectTasksPage() {
                     {activeTab === 'documents' && t('projects.detail.tabs.documents')}
                     {activeTab === 'checklists' && t('projects.detail.tabs.checklists', 'Checklists')}
                     {activeTab === 'activity' && t('projects.detail.tabs.notesActivity', 'Notes & Activity')}
-                    {activeTab === 'settings' && t('projects.detail.tabs.settings', 'Settings')}
+                    
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-card">
@@ -608,7 +608,7 @@ export default function ProjectTasksPage() {
                   <SelectItem value="documents">{t('projects.detail.tabs.documents')}</SelectItem>
                   <SelectItem value="checklists">{t('projects.detail.tabs.checklists', 'Checklists')}</SelectItem>
                   <SelectItem value="activity">{t('projects.detail.tabs.notesActivity', 'Notes & Activity')}</SelectItem>
-                  <SelectItem value="settings">{t('projects.detail.tabs.settings', 'Settings')}</SelectItem>
+                  
                 </SelectContent>
               </Select>
             ) : (
@@ -621,7 +621,7 @@ export default function ProjectTasksPage() {
                 <TabsTrigger value="documents">{t('projects.detail.tabs.documents')}</TabsTrigger>
                 <TabsTrigger value="checklists">{t('projects.detail.tabs.checklists', 'Checklists')}</TabsTrigger>
                 <TabsTrigger value="activity">{t('projects.detail.tabs.notesActivity', 'Notes & Activity')}</TabsTrigger>
-                <TabsTrigger value="settings">{t('projects.detail.tabs.settings', 'Settings')}</TabsTrigger>
+                
               </TabsList>
 
 
@@ -710,10 +710,6 @@ export default function ProjectTasksPage() {
                 <ProjectNotesActivityTab project={project} />
               </TabsContent>
 
-              {/* Module-wide project settings (backed by GET/PUT /api/Projects/settings) */}
-              <TabsContent value="settings" className="mt-0">
-                <ProjectSettingsTab />
-              </TabsContent>
 
             </div>
           </div>

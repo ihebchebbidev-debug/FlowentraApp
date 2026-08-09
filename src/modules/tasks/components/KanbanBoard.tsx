@@ -5,7 +5,9 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
+
   useSensor,
   useSensors,
   closestCorners,
@@ -257,13 +259,17 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
     [tasks, usersMap]
   );
   
+  // Mouse/pen: small distance threshold so a click still opens the task.
+  // Touch: short press-and-hold so vertical scrolling stays natural, then drag.
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3, // Reduced distance for easier activation
-      },
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 8 },
     })
   );
+
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;

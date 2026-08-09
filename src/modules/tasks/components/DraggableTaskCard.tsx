@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
@@ -52,7 +52,9 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
     transition: transition || 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
     willChange: 'transform',
     transformOrigin: 'center top',
+    touchAction: 'manipulation',
   };
+
 
   // Normalize priority to a valid string value
   const normalizePriority = (priority: string | number | undefined | null): 'high' | 'medium' | 'low' => {
@@ -123,12 +125,34 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
       .slice(0, 2);
   };
 
+  // Distinguish a tap/click (open task) from a drag gesture (move task).
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const movedRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+    movedRef.current = false;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const start = pointerStart.current;
+    if (start) {
+      const dx = Math.abs(e.clientX - start.x);
+      const dy = Math.abs(e.clientY - start.y);
+      movedRef.current = dx > 6 || dy > 6;
+    }
+    pointerStart.current = null;
+  };
+
   const handleClick = (e: React.MouseEvent) => {
-    if (isSortableDragging || isDragging || isCompleting) return;
+    if (isSortableDragging || isDragging || isCompleting || movedRef.current) return;
+    // Ignore clicks coming from interactive controls inside the card.
+    if ((e.target as HTMLElement).closest('[data-no-drag]')) return;
     e.preventDefault();
     e.stopPropagation();
     onTaskClick?.(task);
   };
+
 
   const handleComplete = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -154,22 +178,28 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       onClick={handleClick}
       className={cn(
-        "group bg-card rounded-sm border border-border shadow-sm hover:bg-accent/30 transition-all duration-150 cursor-pointer active:cursor-grabbing relative",
+        "group bg-card rounded-sm border border-border shadow-sm hover:bg-accent/30 transition-all duration-150 cursor-pointer active:cursor-grabbing relative touch-manipulation select-none",
         "border-l-[3px]",
         getPriorityBorderColor(normalizedPriority),
         (isSortableDragging || isDragging) && 'opacity-70 rotate-1 shadow-xl scale-105 z-50',
         isExiting && 'translate-x-full opacity-0 scale-95 transition-all duration-300 ease-in-out'
       )}
     >
+
       {/* Main content area */}
       <div className="p-3">
         {/* Top row: Drag handle + Title */}
         <div className="flex items-start gap-2">
-          <div {...listeners} {...attributes} className="flex-shrink-0 cursor-grab opacity-40 group-hover:opacity-100 transition-opacity">
+          <div className="flex-shrink-0 opacity-30 group-hover:opacity-70 transition-opacity">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
+
           
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
@@ -247,8 +277,11 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
             {/* Complete checkbox - Jira style */}
             <button
               onClick={handleComplete}
+              data-no-drag
+              onPointerDown={(e) => e.stopPropagation()}
               className={cn(
                 "flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-all duration-200 pointer-events-auto",
+
                 showCheck
                   ? "bg-primary border-primary text-primary-foreground" 
                   : "border-muted-foreground/40 hover:border-primary hover:bg-primary/10"
