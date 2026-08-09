@@ -958,7 +958,10 @@ namespace MyApi.Modules.Dispatches.Services
             // 'unscheduled' so they reappear in the dispatcher's unassigned
             // queue. Mirrors DeleteAsync so cancel and delete behave the
             // same for downstream consumers (dispatcher board, reports).
-            if (dto.Status == "cancelled" && oldStatus != "cancelled")
+            // "rejected" is just as terminal as "cancelled" for job coverage: the work is
+            // not going to happen on this dispatch, so its jobs must go back to the
+            // unassigned queue too (sibling-aware, so duplicate dispatches are safe).
+            if ((dto.Status == "cancelled" || dto.Status == "rejected") && oldStatus != dto.Status)
             {
                 try
                 {
@@ -973,27 +976,7 @@ namespace MyApi.Modules.Dispatches.Services
 
                     if (allJobIds.Count > 0)
                     {
-                        var jobs = await _db.ServiceOrderJobs
-                            .Where(j => allJobIds.Contains(j.Id))
-                            .ToListAsync();
-                        foreach (var job in jobs)
-                        {
-                            // Only reset non-terminal jobs. Completed/cancelled
-                            // jobs must stay put — cancelling a stale dispatch
-                            // for finished work should not "un-finish" it.
-                            var js = (job.Status ?? "").ToLowerInvariant();
-                            if (js == "completed" || js == "cancelled") continue;
-                            job.Status = "unscheduled";
-                            job.CompletionPercentage = 0;
-                            job.ActualDuration = null;
-                            job.ActualCost = 0;
-                            job.CompletedDate = null;
-                            job.UpdatedAt = DateTime.UtcNow;
-                        }
-                        await _db.SaveChangesAsync();
-                        _logger.LogInformation(
-                            "[DISPATCH-CANCEL] Reset {JobCount} jobs to 'unscheduled' after dispatch {DispatchId} cancellation",
-                            jobs.Count, dispatchId);
+                        await ReleaseJobsAfterDispatchRemovalAsync(allJobIds, d.Id, "DISPATCH-CANCEL");
                     }
                 }
                 catch (Exception ex)
@@ -1530,27 +1513,10 @@ namespace MyApi.Modules.Dispatches.Services
                 "[DISPATCH-DELETE] Soft deleted dispatch {DispatchId} (JobId: {JobId}, SO: {ServiceOrderId}, LinkedJobs: {JobCount}) by user {UserId}",
                 dispatchId, jobIdStr, serviceOrderId, allJobIds.Count, userId);
 
-            // Reset ALL associated jobs back to 'unscheduled'
+            // Release the linked jobs — but only those with no other live dispatch left.
             if (allJobIds.Any())
             {
-                var jobs = await _db.ServiceOrderJobs
-                    .Where(j => allJobIds.Contains(j.Id))
-                    .ToListAsync();
-
-                foreach (var job in jobs)
-                {
-                    job.Status = "unscheduled";
-                    job.CompletionPercentage = 0;
-                    job.ActualDuration = null;
-                    job.ActualCost = 0;
-                    job.CompletedDate = null;
-                    job.UpdatedAt = DateTime.UtcNow;
-                }
-                await _db.SaveChangesAsync();
-
-                _logger.LogInformation(
-                    "[DISPATCH-DELETE] Reset {JobCount} jobs to 'unscheduled' after dispatch deletion: {JobIds}",
-                    jobs.Count, string.Join(", ", allJobIds));
+                await ReleaseJobsAfterDispatchRemovalAsync(allJobIds, dispatchId, "DISPATCH-DELETE");
             }
 
             // Recalculate the Service Order status based on remaining dispatches
@@ -1782,19 +1748,21 @@ namespace MyApi.Modules.Dispatches.Services
             var job = await _db.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == jobId);
             if (job == null) return;
 
+            // Cancelled dispatches must not contribute actuals — otherwise cancelling one
+            // of a job's several dispatches leaves its time/expenses/materials in the roll-up.
             var totalMinutes = await (from te in _db.TimeEntries
                                       join dp in _db.Dispatches on te.DispatchId equals dp.Id
-                                      where te.ServiceOrderJobId == jobId && !dp.IsDeleted
+                                      where te.ServiceOrderJobId == jobId && !dp.IsDeleted && dp.Status != "cancelled" && dp.Status != "rejected"
                                       select (te.Duration ?? 0m)).SumAsync();
 
             var totalExp = await (from e in _db.DispatchExpenses
                                   join dp in _db.Dispatches on e.DispatchId equals dp.Id
-                                  where e.ServiceOrderJobId == jobId && !dp.IsDeleted
+                                  where e.ServiceOrderJobId == jobId && !dp.IsDeleted && dp.Status != "cancelled" && dp.Status != "rejected"
                                   select e.Amount).SumAsync();
 
             var totalMat = await (from m in _db.DispatchMaterials
                                   join dp in _db.Dispatches on m.DispatchId equals dp.Id
-                                  where m.ServiceOrderJobId == jobId && !dp.IsDeleted
+                                  where m.ServiceOrderJobId == jobId && !dp.IsDeleted && dp.Status != "cancelled" && dp.Status != "rejected"
                                   select m.TotalPrice).SumAsync();
 
             job.ActualHours = Math.Round(totalMinutes / 60m, 2);
@@ -1810,6 +1778,68 @@ namespace MyApi.Modules.Dispatches.Services
             }
             job.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Multiple concurrent dispatches per job is a supported workflow, so removing ONE
+        /// dispatch must never blind-reset the job's actuals — the work logged through the
+        /// job's other live dispatches would vanish. For each job we check whether any other
+        /// non-deleted, non-cancelled dispatch still covers it:
+        ///   - siblings remain  -> keep the job scheduled, recompute actuals from what's left
+        ///   - no siblings left -> legacy reset back to the unassigned queue
+        /// Terminal jobs (completed / cancelled) are never touched.
+        /// </summary>
+        private async Task ReleaseJobsAfterDispatchRemovalAsync(IEnumerable<int> jobIds, int removedDispatchId, string tag)
+        {
+            var ids = jobIds.Distinct().ToList();
+            if (ids.Count == 0) return;
+
+            // Jobs still covered by another live dispatch — via the join table…
+            var jobsWithSiblings = await (from dj in _db.DispatchJobs
+                                          join dp in _db.Dispatches on dj.DispatchId equals dp.Id
+                                          where !dj.IsDeleted && !dp.IsDeleted
+                                                && dp.Id != removedDispatchId
+                                                && dp.Status != "cancelled" && dp.Status != "rejected"
+                                                && ids.Contains(dj.JobId)
+                                          select dj.JobId).Distinct().ToListAsync();
+
+            // …and via the legacy single-job Dispatch.JobId column.
+            var idStrings = ids.Select(i => i.ToString()).ToList();
+            var legacySiblings = await _db.Dispatches
+                .Where(dp => !dp.IsDeleted && dp.Id != removedDispatchId && dp.Status != "cancelled" && dp.Status != "rejected"
+                             && dp.JobId != null && idStrings.Contains(dp.JobId))
+                .Select(dp => dp.JobId!)
+                .ToListAsync();
+            foreach (var s in legacySiblings)
+                if (int.TryParse(s, out var parsed)) jobsWithSiblings.Add(parsed);
+
+            var siblingSet = jobsWithSiblings.ToHashSet();
+
+            var jobs = await _db.ServiceOrderJobs.Where(j => ids.Contains(j.Id)).ToListAsync();
+            var released = new List<int>();
+            foreach (var job in jobs)
+            {
+                var js = (job.Status ?? "").ToLowerInvariant();
+                if (js == "completed" || js == "cancelled") continue;
+                if (siblingSet.Contains(job.Id)) continue; // still dispatched elsewhere
+                job.Status = "unscheduled";
+                job.CompletionPercentage = 0;
+                job.ActualDuration = null;
+                job.ActualCost = 0;
+                job.CompletedDate = null;
+                job.UpdatedAt = DateTime.UtcNow;
+                released.Add(job.Id);
+            }
+            await _db.SaveChangesAsync();
+
+            // Jobs that still have live dispatches keep their status; their actuals are
+            // recomputed from the remaining dispatches instead of being zeroed.
+            foreach (var jobId in ids.Where(i => siblingSet.Contains(i)))
+                await RecalculateServiceOrderJobRollupAsync(jobId);
+
+            _logger.LogInformation(
+                "[{Tag}] Dispatch {DispatchId} removed: {ReleasedCount} job(s) released to 'unscheduled' ({Released}); {KeptCount} job(s) kept with other live dispatches and recalculated.",
+                tag, removedDispatchId, released.Count, string.Join(", ", released), siblingSet.Count);
         }
 
         /// <summary>

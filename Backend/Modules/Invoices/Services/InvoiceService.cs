@@ -538,6 +538,36 @@ namespace MyApi.Modules.Invoices.Services
             }
 
             RecalculateTotals(invoice);
+
+            // The over-invoicing ceiling was only enforced when the draft was created, so
+            // editing its lines afterwards could push the sale past its own total unchecked.
+            if (invoice.SaleId.HasValue)
+            {
+                var parentSale = await _context.Sales
+                    .Include(s => s.Items)
+                    .FirstOrDefaultAsync(s => s.Id == invoice.SaleId.Value && !s.IsDeleted);
+                if (parentSale != null)
+                {
+                    var items = parentSale.Items ?? new List<Sales.Models.SaleItem>();
+                    var ceiling = items.Count > 0
+                        ? Sales.Services.SaleTotalsCalculator.Compute(
+                            items.Sum(i => Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                                i.Quantity, i.UnitPrice, i.Discount, i.DiscountType)),
+                            parentSale.Discount, Sales.Services.SaleTotalsCalculator.HeaderDiscountType(parentSale),
+                            parentSale.Taxes, parentSale.TaxType, parentSale.FiscalStamp).GrandTotal
+                        : (parentSale.GrandTotal > 0m ? parentSale.GrandTotal : parentSale.TotalAmount);
+
+                    if (ceiling > 0m)
+                    {
+                        var otherInvoiced = await GetInvoicedTotalForSaleAsync(parentSale.Id, invoice.Id);
+                        if (otherInvoiced + invoice.GrandTotal > ceiling + 0.009m)
+                            throw new InvalidOperationException(
+                                $"These changes take invoice {invoice.InvoiceNumber ?? $"#{invoice.Id}"} to {invoice.GrandTotal:0.##} and sale " +
+                                $"{parentSale.Id} to {otherInvoiced + invoice.GrandTotal:0.##} {invoice.Currency}, over its total of {ceiling:0.##}. " +
+                                $"Remaining to invoice: {Math.Max(0m, ceiling - otherInvoiced):0.##}.");
+                    }
+                }
+            }
             invoice.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
@@ -796,6 +826,25 @@ namespace MyApi.Modules.Invoices.Services
             if (invoice.Status != "paid" && invoice.Status != "void")
                 throw new InvalidOperationException($"Invoice {id} is '{invoice.Status}'; only paid or voided invoices can be reopened.");
 
+            // While this invoice sat voided, the sale was free to be re-billed — including a
+            // fresh fiscal-stamp line, which the stamp guard only blocks against LIVE invoices.
+            // Reopening would then leave two live invoices both charging the stamp.
+            if (invoice.Status == "void" && invoice.SaleId.HasValue
+                && (invoice.Lines?.Any(l => string.Equals(l.SourceType, "fiscal_stamp", StringComparison.OrdinalIgnoreCase)) ?? false))
+            {
+                var stampBilledElsewhere = await _context.Set<InvoiceLine>()
+                    .AnyAsync(l => l.SourceType == "fiscal_stamp"
+                                   && l.Invoice != null
+                                   && l.Invoice.SaleId == invoice.SaleId
+                                   && l.Invoice.Id != invoice.Id
+                                   && l.Invoice.Status != "void"
+                                   && !l.Invoice.IsDeleted);
+                if (stampBilledElsewhere)
+                    throw new InvalidOperationException(
+                        $"Cannot reopen invoice {InvoiceLabel(invoice)}: another live invoice for sale {invoice.SaleId} already bills the fiscal stamp. " +
+                        "Void that invoice first, or remove the stamp line before reopening.");
+            }
+
             var prevStatus = invoice.Status;
             invoice.Status = "posted";
             invoice.VoidedAt = null;
@@ -1018,6 +1067,16 @@ namespace MyApi.Modules.Invoices.Services
         // ── helpers ───────────────────────────────────────────
         private static InvoiceLine BuildLine(CreateInvoiceLineDto dto, int idx)
         {
+            // Without these guards a negative quantity / price / tax rate produced a
+            // negative line that dragged GrandTotal down, letting a caller slip past the
+            // over-invoicing ceiling while still writing a nonsensical invoice.
+            if (dto.Quantity < 0m)
+                throw new ArgumentException($"Invoice line '{dto.ItemName}' has a negative quantity ({dto.Quantity}).");
+            if (dto.UnitPrice < 0m)
+                throw new ArgumentException($"Invoice line '{dto.ItemName}' has a negative unit price ({dto.UnitPrice}).");
+            if (dto.TaxRate < 0m || dto.TaxRate > 100m)
+                throw new ArgumentException($"Invoice line '{dto.ItemName}' has an invalid tax rate ({dto.TaxRate}). Expected 0-100.");
+
             var lineTotal = Round2(dto.Quantity * dto.UnitPrice);
             var tax = Round2(lineTotal * (dto.TaxRate / 100m));
             return new InvoiceLine

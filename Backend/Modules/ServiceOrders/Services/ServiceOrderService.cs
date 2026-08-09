@@ -408,12 +408,16 @@ namespace MyApi.Modules.ServiceOrders.Services
                             ? throw new ArgumentException("TargetCompletionDate must be on or after StartDate.")
                             : (int)(createDto.TargetCompletionDate.Value - createDto.StartDate.Value).TotalHours)
                         : null,
-                    EstimatedCost = sale.TotalAmount,
+                    // Sale.TotalAmount is the PRE-discount, PRE-tax subtotal; GrandTotal is
+                    // what the customer actually owes. Seeding the SO from TotalAmount made
+                    // the order value disagree with its own sale whenever a discount, tax or
+                    // fiscal stamp existed. Same fallback as line ~968.
+                    EstimatedCost = sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount,
                     ActualCost = 0,
                     Discount = 0,
                     DiscountPercentage = 0,
                     Tax = 0,
-                    TotalAmount = sale.TotalAmount,
+                    TotalAmount = sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount,
                     PaymentStatus = "pending",
                     PaymentTerms = "net30",
                     CompletionPercentage = 0,
@@ -1840,21 +1844,40 @@ namespace MyApi.Modules.ServiceOrders.Services
                 .Where(te => dispatchIds.Contains(te.DispatchId))
                 .ToListAsync();
 
-            allTimeEntries.AddRange(timeEntries.Select(te => new TimeEntryDto
+            // Dispatch TimeEntries carry no HourlyRate/TotalCost column, so this list used to
+            // report every field-logged hour as costing 0 — the exact same lie the invoice
+            // transfer avoids. Reuse the same fallback (most recent rate the technician used
+            // on a ServiceOrderTimeEntry) so plan-vs-actual and the invoice agree.
+            var technicianIdStrings = timeEntries.Select(t => t.TechnicianId.ToString()).Distinct().ToList();
+            var fallbackRates = technicianIdStrings.Count == 0
+                ? new Dictionary<string, decimal>()
+                : await _context.ServiceOrderTimeEntries
+                    .Where(t => t.TechnicianId != null && technicianIdStrings.Contains(t.TechnicianId) && t.HourlyRate != null)
+                    .GroupBy(t => t.TechnicianId!)
+                    .Select(g => new { TechnicianId = g.Key, Rate = g.OrderByDescending(x => x.CreatedAt).First().HourlyRate })
+                    .ToDictionaryAsync(x => x.TechnicianId, x => x.Rate ?? 0m);
+
+            allTimeEntries.AddRange(timeEntries.Select(te =>
             {
-                Id = te.Id,
-                DispatchId = te.DispatchId,
-                TechnicianId = te.TechnicianId.ToString(),
-                WorkType = te.WorkType ?? "general",
-                StartTime = te.StartTime,
-                EndTime = te.EndTime,
-                Duration = (int)(te.Duration ?? 0),
-                Description = te.Description,
-                TotalCost = 0,
-                Billable = true, // Dispatch time entries don't have billable field - default true
-                CreatedAt = te.CreatedDate,
-                InvoiceStatus = null, // Dispatch TimeEntries don't have InvoiceStatus
-                SourceTable = "dispatch"
+                var minutes = te.Duration ?? 0m;
+                var rate = fallbackRates.TryGetValue(te.TechnicianId.ToString(), out var r) ? r : 0m;
+                return new TimeEntryDto
+                {
+                    Id = te.Id,
+                    DispatchId = te.DispatchId,
+                    TechnicianId = te.TechnicianId.ToString(),
+                    WorkType = te.WorkType ?? "general",
+                    StartTime = te.StartTime,
+                    EndTime = te.EndTime,
+                    Duration = (int)minutes,
+                    Description = te.Description,
+                    HourlyRate = rate > 0m ? rate : (decimal?)null,
+                    TotalCost = Math.Round(minutes / 60m * rate, 2),
+                    Billable = true, // Dispatch time entries have no billable flag - all field time is billable
+                    CreatedAt = te.CreatedDate,
+                    InvoiceStatus = null, // Dispatch TimeEntries don't have InvoiceStatus
+                    SourceTable = "dispatch"
+                };
             }));
 
             return allTimeEntries;
@@ -2569,13 +2592,37 @@ namespace MyApi.Modules.ServiceOrders.Services
             return MapServiceOrderJobToDto(job, null);
         }
 
+        /// <summary>
+        /// Job status came straight off the DTO with no validation, so a typo (or an old
+        /// client) could write any string into ServiceOrderJob.Status and permanently
+        /// desync the job from the dispatcher board and the roll-up logic, which compare
+        /// against fixed literals. Unknown values are rejected rather than silently stored.
+        /// </summary>
+        private static readonly HashSet<string> AllowedJobStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "unscheduled", "pending", "ready", "scheduled", "dispatched",
+            "in_progress", "on_hold", "completed", "cancelled"
+        };
+
+        private static string NormalizeJobStatus(string? status)
+        {
+            var s = (status ?? "").Trim();
+            if (s.Length == 0)
+                throw new ArgumentException("Job status is required.");
+            if (!AllowedJobStatuses.Contains(s))
+                throw new ArgumentException(
+                    $"Invalid job status '{status}'. Allowed: {string.Join(", ", AllowedJobStatuses)}.");
+            return s.ToLowerInvariant();
+        }
+
+
         public async Task<ServiceOrderJobDto> PatchServiceOrderJobStatusAsync(int serviceOrderId, int jobId, UpdateServiceOrderJobStatusDto dto, string userId)
         {
             var job = await _context.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == jobId && j.ServiceOrderId == serviceOrderId);
             if (job == null)
                 throw new KeyNotFoundException($"Job {jobId} not found for service order {serviceOrderId}");
             var oldStatus = job.Status;
-            job.Status = dto.Status;
+            job.Status = NormalizeJobStatus(dto.Status);
             job.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             _logger.LogInformation("Job {JobId} status set to {Status} on service order {ServiceOrderId} by {UserId}", jobId, dto.Status, serviceOrderId, userId);
@@ -2607,7 +2654,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (job == null)
                 throw new KeyNotFoundException($"Job {jobId} not found for service order {serviceOrderId}");
             var oldStatus = job.Status;
-            if (dto.Status != null) job.Status = dto.Status;
+            if (dto.Status != null) job.Status = NormalizeJobStatus(dto.Status);
             if (dto.Title != null) job.Title = dto.Title;
             if (dto.Description != null) job.Description = dto.Description;
             if (dto.WorkType != null) job.WorkType = dto.WorkType;
@@ -2695,6 +2742,50 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (sale == null)
                 throw new KeyNotFoundException($"Linked sale with ID {saleId} not found");
 
+            // A cancelled sale can never be invoiced (InvoiceService enforces this), so
+            // transferring field work onto it silently buried the revenue.
+            if (string.Equals(sale.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    $"Sale {sale.Id} is cancelled — its service order items cannot be transferred for invoicing.");
+
+            // SaleService.GuardSaleNotInvoicedAsync blocks manual item edits once any live
+            // invoice exists, but this transfer path bypassed it entirely. Blocking outright
+            // would break legitimate partial invoicing (invoice a first batch, keep working,
+            // transfer the rest), so we only refuse when the sale is ALREADY FULLY invoiced —
+            // at that point new lines can never be billed and would just be swallowed.
+            var liveInvoices = await _context.Set<MyApi.Modules.Invoices.Models.Invoice>()
+                .Where(i => !i.IsDeleted && i.SaleId == saleId && i.Status != "void")
+                .Select(i => new { i.Id, i.InvoiceNumber, i.GrandTotal })
+                .ToListAsync();
+            if (liveInvoices.Count > 0)
+            {
+                // Recompute the ceiling from live items + header discount/tax/fiscal stamp,
+                // exactly like InvoiceService does. The stored Sale.GrandTotal/TotalAmount are
+                // transiently a raw sum of line totals during this very method, so reading them
+                // here would block legitimate partial transfers (ceiling too low once tax and
+                // the fiscal stamp apply) or miss fully-invoiced sales (ceiling too high with a
+                // header discount).
+                var ceilingItems = sale.Items ?? new List<Sales.Models.SaleItem>();
+                var saleCeiling = ceilingItems.Count > 0
+                    ? Sales.Services.SaleTotalsCalculator.Compute(
+                        ceilingItems.Sum(i => Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                            i.Quantity, i.UnitPrice, i.Discount, i.DiscountType)),
+                        sale.Discount, Sales.Services.SaleTotalsCalculator.HeaderDiscountType(sale),
+                        sale.Taxes, sale.TaxType, sale.FiscalStamp).GrandTotal
+                    : (sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount);
+                var invoicedTotal = liveInvoices.Sum(i => i.GrandTotal);
+                if (saleCeiling > 0m && invoicedTotal >= saleCeiling - 0.009m)
+                    throw new InvalidOperationException(
+                        $"Sale {sale.Id} is already fully invoiced ({invoicedTotal:0.##} of {saleCeiling:0.##} {sale.Currency}) on " +
+                        $"{string.Join(", ", liveInvoices.Select(i => i.InvoiceNumber ?? $"#{i.Id}"))}. " +
+                        "Void an invoice before transferring more service order items to it.");
+
+                _logger.LogInformation(
+                    "PrepareForInvoice: SO {Id} - sale {SaleId} already has {Count} live invoice(s) totalling {Total}; transferring additional items for partial invoicing.",
+                    id, saleId, liveInvoices.Count, invoicedTotal);
+            }
+
+
             _logger.LogInformation("PrepareForInvoice: SO={Id}, SaleId={SaleId}, current sale items={Count}", id, saleId, sale.Items?.Count ?? 0);
 
             // Resolve linked dispatches through installation / multi-job / legacy paths, soft-delete aware.
@@ -2776,6 +2867,45 @@ namespace MyApi.Modules.ServiceOrders.Services
             var useLegacySignatureDedup = existingSoSaleItems.Any() && existingSourceKeys.Count == 0;
 
             var previouslyTransferred = existingSoSaleItems.Any();
+
+            // Cross-service-order guard. Dispatches resolve to a service order partly through
+            // a shared InstallationId, so the SAME dispatch material / expense / time entry can
+            // legitimately resolve for two different service orders on two different sales.
+            // The signature + source-key sets above only look at THIS service order's own sale
+            // items, so the second transfer saw the row as brand new and billed it twice.
+            // Source keys are globally unique per source row, so pull in every sale item
+            // anywhere that has already consumed one of the rows requested right now.
+            var requestedSourceKeys = new HashSet<string>();
+            foreach (var mid in dto.DispatchMaterialIds ?? new List<int>())
+                requestedSourceKeys.Add(BuildSourceKey("dispatch_material", mid));
+            foreach (var eid in dto.DispatchExpenseIds ?? new List<int>())
+                requestedSourceKeys.Add(BuildSourceKey("dispatch_expense", eid));
+            foreach (var tid in dto.DispatchTimeEntryIds ?? new List<int>())
+                requestedSourceKeys.Add(BuildSourceKey("dispatch_time_entry", tid));
+
+            if (requestedSourceKeys.Count > 0)
+            {
+                var dispatchSourceTypes = new[] { "dispatch_material", "dispatch_expense", "dispatch_time_entry" };
+                var requestedSourceIds = requestedSourceKeys.Select(k => k.Split(':')[1]).Distinct().ToList();
+                var globallyTransferred = await _context.SaleItems
+                    .Where(si => si.SourceType != null && si.SourceId != null
+                                 && dispatchSourceTypes.Contains(si.SourceType)
+                                 && requestedSourceIds.Contains(si.SourceId))
+                    .Select(si => si.SourceType + ":" + si.SourceId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var alreadyBilledElsewhere = globallyTransferred
+                    .Where(k => requestedSourceKeys.Contains(k) && !existingSourceKeys.Contains(k))
+                    .ToList();
+
+                foreach (var key in alreadyBilledElsewhere) existingSourceKeys.Add(key);
+
+                if (alreadyBilledElsewhere.Count > 0)
+                    _logger.LogWarning(
+                        "PrepareForInvoice: SO {Id} - skipping {Count} dispatch row(s) already billed on another service order's sale: {Keys}",
+                        id, alreadyBilledElsewhere.Count, string.Join(", ", alreadyBilledElsewhere));
+            }
 
 
             // Currency guard: every SaleItem inherits `Sale.Currency` at write time (see below),

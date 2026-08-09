@@ -796,6 +796,13 @@ namespace MyApi.Modules.Offers.Services
                         Taxes = offer.Taxes ?? 0,
                         TaxType = offer.TaxType ?? "percentage",
                         Discount = offer.Discount ?? 0,
+                        // SaleTotalsCalculator.HeaderDiscountType derives "percentage" vs
+                        // "fixed" purely from DiscountPercent being non-null. Without this,
+                        // a 10% offer discount silently became a flat 10.00 on the sale.
+                        // Mirrors SaleService.CreateSaleFromOfferAsync.
+                        DiscountPercent = string.Equals(offer.DiscountType, "percentage", StringComparison.OrdinalIgnoreCase)
+                            ? offer.Discount ?? 0
+                            : (decimal?)null,
                         FiscalStamp = offer.FiscalStamp ?? 1.000m,
                         TotalAmount = offer.TotalAmount,
                         AssignedTo = offer.AssignedTo,

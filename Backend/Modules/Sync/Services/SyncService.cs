@@ -2445,7 +2445,16 @@ namespace MyApi.Modules.Sync.Services
             if (operation == "delete")
                 throw new InvalidOperationException("Deleting service order jobs via sync is not supported");
             var status = ReadString(op.Payload, "status") ?? ReadString(op.Payload, "Status");
-            if (!string.IsNullOrWhiteSpace(status)) job.Status = status;
+            // Offline clients can replay arbitrary payloads; only accept known job statuses
+            // so a stale/typo'd value can never be persisted and desync the dispatcher board.
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                var normalized = status.Trim().ToLowerInvariant();
+                var allowed = new[] { "unscheduled", "pending", "ready", "scheduled", "dispatched", "in_progress", "on_hold", "completed", "cancelled" };
+                if (!allowed.Contains(normalized))
+                    throw new InvalidOperationException($"Invalid job status '{status}' for job {jobId}.");
+                job.Status = normalized;
+            }
             var title = ReadString(op.Payload, "title") ?? ReadString(op.Payload, "Title");
             if (!string.IsNullOrWhiteSpace(title)) job.Title = title;
             var desc = ReadString(op.Payload, "description") ?? ReadString(op.Payload, "Description");
