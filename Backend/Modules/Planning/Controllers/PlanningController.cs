@@ -296,8 +296,13 @@ namespace MyApi.Modules.Planning.Controllers
 
                 return Ok(new { success = true, data = result });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = ex.Message, message = ex.Message } });
+            }
             catch (Exception ex)
             {
+
                 _logger.LogError(ex, "Error creating leave");
                 await _systemLogService.LogErrorAsync($"Failed to create leave for user {dto.UserId}", "Planning", "create", GetCurrentUserId(), GetCurrentUserName(), "Leave", details: ex.Message);
                 return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
@@ -322,7 +327,13 @@ namespace MyApi.Modules.Planning.Controllers
             {
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } });
             }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule (overlap / allowance / bad range) — must not be a 500.
+                return BadRequest(new { success = false, error = new { code = ex.Message, message = ex.Message } });
+            }
             catch (Exception ex)
+
             {
                 _logger.LogError(ex, "Error updating leave");
                 await _systemLogService.LogErrorAsync($"Failed to update leave {leaveId}", "Planning", "update", GetCurrentUserId(), GetCurrentUserName(), "Leave", leaveId.ToString(), ex.Message);

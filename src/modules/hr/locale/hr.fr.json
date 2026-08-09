@@ -798,7 +798,11 @@
     "applicantNotFound": "Candidat introuvable.",
     "interviewNotFound": "Entretien introuvable.",
     "attendanceSaveFailed": "Impossible d'enregistrer la présence. Une autre entrée existe déjà pour cet employé à cette date.",
-    "attendanceDeleteFailed": "Impossible de supprimer la présence. Elle est référencée par un autre enregistrement."
+    "attendanceDeleteFailed": "Impossible de supprimer la présence. Elle est référencée par un autre enregistrement.",
+    "leaveOverlap": "Ce congé chevauche un autre congé déjà approuvé pour cet employé.",
+    "leaveAllowanceExceeded": "Ce congé dépasse le solde annuel de l’employé pour ce type de congé.",
+    "leaveEndBeforeStart": "La date de fin ne peut pas précéder la date de début.",
+    "leaveDecisionFailed": "Impossible de mettre à jour cette demande de congé."
   },
   "bonusErrors": {
     "employeeRequired": "L'employé est obligatoire.",

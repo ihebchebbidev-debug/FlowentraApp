@@ -798,7 +798,11 @@
     "applicantNotFound": "Applicant not found.",
     "interviewNotFound": "Interview not found.",
     "attendanceSaveFailed": "Could not save the attendance record. Another entry already exists for this employee on that day.",
-    "attendanceDeleteFailed": "Could not delete the attendance record. It is referenced by another record."
+    "attendanceDeleteFailed": "Could not delete the attendance record. It is referenced by another record.",
+    "leaveOverlap": "This leave overlaps another approved leave for the same employee.",
+    "leaveAllowanceExceeded": "This leave exceeds the employee’s yearly allowance for this leave type.",
+    "leaveEndBeforeStart": "The end date cannot be before the start date.",
+    "leaveDecisionFailed": "Could not update this leave request."
   },
   "bonusErrors": {
     "employeeRequired": "Employee is required.",

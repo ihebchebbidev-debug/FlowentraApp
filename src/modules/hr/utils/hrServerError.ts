@@ -41,6 +41,9 @@ const CODE_TO_KEY: Record<string, string> = {
   'attendance.invalid_status': 'attendanceErrors.statusInvalid',
   'attendance.save_failed': 'serverErrors.attendanceSaveFailed',
   'attendance.delete_failed': 'serverErrors.attendanceDeleteFailed',
+  'planning.leave_overlap': 'serverErrors.leaveOverlap',
+  'planning.leave_allowance_exceeded': 'serverErrors.leaveAllowanceExceeded',
+  'planning.leave_end_before_start': 'serverErrors.leaveEndBeforeStart',
 };
 
 export function extractHrErrorCode(error: unknown): string | undefined {

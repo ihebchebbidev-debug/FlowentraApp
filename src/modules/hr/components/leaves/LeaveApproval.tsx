@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import dayjs from 'dayjs';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { translateHrServerError } from '../../utils/hrServerError';
+
 
 type LeaveRow = UserLeave & { userId: number; userName: string; profilePictureUrl?: string | null; email?: string | null };
 
@@ -82,15 +85,21 @@ export function LeaveApproval() {
     queryClient.invalidateQueries({ queryKey: ['hr', 'planningLeavesCalendar'] }),
   ]);
 
+  const showError = (error: unknown) =>
+    toast.error(translateHrServerError(t, error, t('serverErrors.leaveDecisionFailed')));
+
   const approveMutation = useMutation({
     mutationFn: async (leaveId: number) => schedulesApi.updateLeave(leaveId, { status: 'approved' }),
     onSuccess: refreshAfterDecision,
+    onError: showError,
   });
 
   const rejectMutation = useMutation({
     mutationFn: async (leaveId: number) => schedulesApi.updateLeave(leaveId, { status: 'rejected' }),
     onSuccess: refreshAfterDecision,
+    onError: showError,
   });
+
 
   const formatRange = (start: string, end: string) => {
     const s = dayjs(start);

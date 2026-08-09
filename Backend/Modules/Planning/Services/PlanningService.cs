@@ -813,17 +813,21 @@ namespace MyApi.Modules.Planning.Services
             if (normalizedStatus is "rejected" or "cancelled" or "canceled")
                 return;
 
-            var activeStatuses = new[] { "pending", "approved" };
-
+            // Overlap must only be tested against leaves that are actually granted.
+            // Two employees' pending requests can legitimately overlap in the inbox, and
+            // blocking on them made every "Approve" click fail (surfaced as HTTP 500).
             var overlaps = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(l => l.UserId == userId
                             && (excludeLeaveId == null || l.Id != excludeLeaveId.Value)
-                            && activeStatuses.Contains(l.Status)
+                            && l.Status == "approved"
                             && l.StartDate.Date <= endDate.Date
                             && l.EndDate.Date >= startDate.Date)
                 .AnyAsync();
             if (overlaps)
                 throw new InvalidOperationException("planning.leave_overlap");
+
+            var activeStatuses = new[] { "pending", "approved" };
+
 
             var year = startDate.Year;
             var balance = await _db.Set<MyApi.Modules.HR.Models.HrLeaveBalance>().AsNoTracking()
