@@ -150,6 +150,13 @@ namespace MyApi.Modules.Purchases.Services
                     // Over-receipt guard: every requested qty must fit within remaining ordered qty.
                     if (dto.Items?.Any() == true)
                     {
+                        // The same PO line may not appear twice in one receipt — otherwise each
+                        // row passes the per-line check while their sum over-receives.
+                        var dupLine = dto.Items.GroupBy(i => i.PurchaseOrderItemId)
+                            .FirstOrDefault(g => g.Count() > 1);
+                        if (dupLine != null)
+                            throw new InvalidOperationException($"PurchaseOrderItem {dupLine.Key} is listed more than once on this receipt");
+
                         foreach (var itemDto in dto.Items)
                         {
                             var poItem = po.Items?.FirstOrDefault(i => i.Id == itemDto.PurchaseOrderItemId);
@@ -162,6 +169,10 @@ namespace MyApi.Modules.Purchases.Services
                                 throw new InvalidOperationException("QuantityRejected cannot be negative");
                             if (itemDto.QuantityReceived > remaining)
                                 throw new InvalidOperationException($"Over-receipt for item {poItem.Id}: requested {itemDto.QuantityReceived}, remaining {remaining}");
+                            // Rejected units were still delivered against the ordered qty, so
+                            // received + rejected can never exceed what is outstanding.
+                            if (itemDto.QuantityReceived + itemDto.QuantityRejected > remaining)
+                                throw new InvalidOperationException($"Over-receipt for item {poItem.Id}: received {itemDto.QuantityReceived} + rejected {itemDto.QuantityRejected} exceeds remaining {remaining}");
                         }
                     }
 
@@ -389,6 +400,11 @@ namespace MyApi.Modules.Purchases.Services
                                 if (poItem.Quantity - poItem.ReceivedQty - delta < 0)
                                     throw new InvalidOperationException(
                                         $"Over-receipt for PO item {poItem.Id}: new qty {newQty} would exceed remaining capacity");
+                                // Rejected units were delivered too — they consume the same
+                                // outstanding capacity as received units.
+                                if (poItem.Quantity - poItem.ReceivedQty - delta - line.QuantityRejected < 0)
+                                    throw new InvalidOperationException(
+                                        $"Over-receipt for PO item {poItem.Id}: received {newQty} + rejected {line.QuantityRejected} exceeds remaining capacity");
 
                                 poItem.ReceivedQty += delta;
                                 existing.QuantityReceived = newQty;
@@ -408,6 +424,10 @@ namespace MyApi.Modules.Purchases.Services
                                 if (line.QuantityReceived > remaining)
                                     throw new InvalidOperationException(
                                         $"Over-receipt for PO item {poItem.Id}: requested {line.QuantityReceived}, remaining {remaining}");
+                                if (line.QuantityReceived + line.QuantityRejected > remaining)
+                                    throw new InvalidOperationException(
+                                        $"Over-receipt for PO item {poItem.Id}: received {line.QuantityReceived} + rejected {line.QuantityRejected} exceeds remaining {remaining}");
+
 
                                 var grItem = new GoodsReceiptItem
                                 {

@@ -94,10 +94,10 @@ function PurchaseDashboardContent() {
               <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/purchases/orders')} className="hidden sm:inline-flex">
-              <ShoppingCart className="h-4 w-4 mr-1" /> {t('dashboard.viewOrders')}
+              <ShoppingCart className="h-4 w-4 me-1" /> {t('dashboard.viewOrders')}
             </Button>
             <CreateActionButton size="sm" onClick={() => navigate('/dashboard/purchases/orders/add')}>
-              <Plus className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">{t('dashboard.newOrder')}</span><span className="sm:hidden">{t('common.new', 'New')}</span>
+              <Plus className="h-4 w-4 me-1" /> <span className="hidden sm:inline">{t('dashboard.newOrder')}</span><span className="sm:hidden">{t('common.new', 'New')}</span>
             </CreateActionButton>
           </div>
         }
@@ -175,7 +175,7 @@ function PurchaseDashboardContent() {
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">{t('dashboard.recentOrders')}</CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/purchases/orders')}>
-                  {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3 ml-1" />
+                  {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3 ms-1" />
                 </Button>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
@@ -185,7 +185,7 @@ function PurchaseDashboardContent() {
                       <TableHead className="text-xs">{t('fields.orderNumber')}</TableHead>
                       <TableHead className="text-xs">{t('fields.supplier')}</TableHead>
                       <TableHead className="text-xs">{t('fields.status')}</TableHead>
-                      <TableHead className="text-xs text-right">{t('fields.total')}</TableHead>
+                      <TableHead className="text-xs text-end">{t('fields.total')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -194,7 +194,7 @@ function PurchaseDashboardContent() {
                         <TableCell className="text-xs font-medium">{po.orderNumber}</TableCell>
                         <TableCell className="text-xs">{po.supplierName}</TableCell>
                         <TableCell><Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ''}`}>{t(`status.${po.status}`)}</Badge></TableCell>
-                        <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)}</TableCell>
+                        <TableCell className="text-xs text-end font-medium">{fmt(po.grandTotal)}</TableCell>
                       </TableRow>
                     ))}
                     {recentOrders.length === 0 && (
@@ -209,7 +209,7 @@ function PurchaseDashboardContent() {
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">{t('dashboard.pendingReceiptsTitle')}</CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/purchases/receipts')}>
-                  {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3 ml-1" />
+                  {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3 ms-1" />
                 </Button>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">

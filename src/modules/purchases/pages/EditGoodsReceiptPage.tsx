@@ -151,6 +151,12 @@ export default function EditGoodsReceiptPage() {
         return t('validation.overReceived',
           `Cannot receive ${r.quantityReceived} for ${r.articleName} — only ${remaining} remaining on PO`);
       }
+      // Rejected units were delivered too, so they consume the same outstanding
+      // ordered quantity as received units (matches the backend guard).
+      if (r.quantityReceived + r.quantityRejected > remaining) {
+        return t('validation.overReceivedCombined',
+          `Received ${r.quantityReceived} + rejected ${r.quantityRejected} for ${r.articleName} exceeds the ${remaining} remaining on PO`);
+      }
       if (r.quantityRejected > 0 && !r.rejectionReason.trim()) {
         return t('validation.rejectionReasonRequired',
           `Rejection reason required for ${r.articleName}`);
@@ -224,8 +230,8 @@ export default function EditGoodsReceiptPage() {
         actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>
             {saving
-              ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              : <Save className="h-4 w-4 mr-1" />}
+              ? <Loader2 className="h-4 w-4 me-1 animate-spin" />
+              : <Save className="h-4 w-4 me-1" />}
             {t('actions.save')}
           </Button>
         }
@@ -343,7 +349,7 @@ export default function EditGoodsReceiptPage() {
               <TableBody>
                 {rows.map((row, idx) => {
                   const max = row.orderedQty - row.poAlreadyReceivedExcludingThis;
-                  const overReceived = row.quantityReceived > max;
+                  const overReceived = row.quantityReceived + row.quantityRejected > max;
                   return (
                     <TableRow key={`${row.id ?? 'new'}-${row.purchaseOrderItemId}-${idx}`}>
                       <TableCell>
@@ -351,7 +357,7 @@ export default function EditGoodsReceiptPage() {
                         <div className="text-px-10 text-muted-foreground">
                           {row.articleNumber}
                           {!row.id && (
-                            <span className="ml-2 text-primary">
+                            <span className="ms-2 text-primary">
                               · {t('receipts.newLine', 'new')}
                             </span>
                           )}
@@ -421,7 +427,7 @@ export default function EditGoodsReceiptPage() {
                   onClick={() => addRow(addableLines[0])}
                   className="text-xs"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <Plus className="h-3.5 w-3.5 me-1" />
                   {t('receipts.addFirstLine', 'Add a line')}
                 </Button>
               </div>

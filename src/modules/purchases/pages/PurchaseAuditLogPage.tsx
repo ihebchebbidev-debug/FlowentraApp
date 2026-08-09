@@ -82,7 +82,7 @@ function PurchaseAuditLogContent() {
       <div className="p-4 md:p-6 space-y-4">
         <div className="relative max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={t('auditLog.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-8" />
+          <Input placeholder={t('auditLog.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="ps-8 h-8" />
         </div>
 
         {loading && <ListTableSkeleton columns={5} rows={8} />}

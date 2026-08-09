@@ -325,7 +325,7 @@ function SupplierPerformanceContent() {
         backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }}
         actions={
           <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
-            <Download className="h-4 w-4 mr-1.5" /> CSV
+            <Download className="h-4 w-4 me-1.5" /> CSV
           </Button>
         }
       />
@@ -413,7 +413,7 @@ function SupplierPerformanceContent() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('reports.supplierPerformance.searchPlaceholder', 'Search supplier…')}
-              className="pl-8 h-9"
+              className="ps-8 h-9"
             />
           </div>
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
@@ -516,7 +516,7 @@ function SupplierPerformanceContent() {
                   <TableHead className="text-xs text-center">{t('reports.supplierPerformance.grade', 'Grade')}</TableHead>
                   <TableHead className="text-xs min-w-[140px]">{t('reports.supplierPerformance.score', 'Score')}</TableHead>
                   <TableHead className="text-xs text-center">{t('reports.supplierPerformance.poCount', 'POs')}</TableHead>
-                  <TableHead className="text-xs text-right">{t('reports.supplierPerformance.spend', 'Total spend')}</TableHead>
+                  <TableHead className="text-xs text-end">{t('reports.supplierPerformance.spend', 'Total spend')}</TableHead>
                   <TableHead className="text-xs text-center">{t('reports.supplierPerformance.onTime', 'On-time %')}</TableHead>
                   <TableHead className="text-xs text-center">{t('reports.supplierPerformance.avgLead', 'Avg lead (d)')}</TableHead>
                   <TableHead className="text-xs text-center">{t('reports.supplierPerformance.invoices', 'Invoices')}</TableHead>
@@ -539,11 +539,11 @@ function SupplierPerformanceContent() {
                         <TableCell className="text-xs">
                           <div className="flex items-center gap-2">
                             <Progress value={r.score} className="h-1.5 flex-1 min-w-[60px]" />
-                            <span className="font-semibold tabular-nums w-8 text-right">{r.score}</span>
+                            <span className="font-semibold tabular-nums w-8 text-end">{r.score}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-center">{r.poCount}</TableCell>
-                        <TableCell className="text-xs text-right font-medium tabular-nums">{fmt(r.totalSpend)}</TableCell>
+                        <TableCell className="text-xs text-end font-medium tabular-nums">{fmt(r.totalSpend)}</TableCell>
                         <TableCell className="text-xs text-center">
                           {r.onTimePct === null ? <span className="text-muted-foreground">—</span> : (
                             <Badge variant={r.onTimePct >= 80 ? 'default' : r.onTimePct >= 50 ? 'secondary' : 'destructive'} className="text-px-10">{Math.round(r.onTimePct)}%</Badge>
@@ -670,11 +670,11 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                 <Tabs defaultValue="orders">
                   <TabsList variant="underline">
                     <TabsTrigger value="orders">
-                      <Package className="h-3.5 w-3.5 mr-1.5" />
+                      <Package className="h-3.5 w-3.5 me-1.5" />
                       {t('reports.supplierPerformance.poCount', 'POs')} ({supplierOrders.length})
                     </TabsTrigger>
                     <TabsTrigger value="invoices">
-                      <Receipt className="h-3.5 w-3.5 mr-1.5" />
+                      <Receipt className="h-3.5 w-3.5 me-1.5" />
                       {t('reports.supplierPerformance.invoices', 'Invoices')} ({supplierInvoices.length})
                     </TabsTrigger>
                   </TabsList>
@@ -691,7 +691,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                               <TableHead className="text-px-10 h-8">#</TableHead>
                               <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.date', 'Date')}</TableHead>
                               <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.status', 'Status')}</TableHead>
-                              <TableHead className="text-px-10 h-8 text-right">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
+                              <TableHead className="text-px-10 h-8 text-end">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
                               <TableHead className="text-px-10 h-8 w-8"></TableHead>
                             </TableRow>
                           </TableHeader>
@@ -703,7 +703,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                                 <TableCell className="py-2">
                                   <Badge variant={statusVariant(po.status)} className="text-px-10">{po.status}</Badge>
                                 </TableCell>
-                                <TableCell className="text-xs text-right tabular-nums py-2">{fmt(po.grandTotal)}</TableCell>
+                                <TableCell className="text-xs text-end tabular-nums py-2">{fmt(po.grandTotal)}</TableCell>
                                 <TableCell className="py-2">
                                   <Link to={`/dashboard/purchases/orders/${po.id}`} onClick={onClose}>
                                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
@@ -728,7 +728,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                               <TableHead className="text-px-10 h-8">#</TableHead>
                               <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.date', 'Date')}</TableHead>
                               <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.status', 'Status')}</TableHead>
-                              <TableHead className="text-px-10 h-8 text-right">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
+                              <TableHead className="text-px-10 h-8 text-end">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
                               <TableHead className="text-px-10 h-8 w-8"></TableHead>
                             </TableRow>
                           </TableHeader>
@@ -740,7 +740,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                                 <TableCell className="py-2">
                                   <Badge variant={statusVariant(inv.status)} className="text-px-10">{inv.status}</Badge>
                                 </TableCell>
-                                <TableCell className="text-xs text-right tabular-nums py-2">{fmt(inv.grandTotal)}</TableCell>
+                                <TableCell className="text-xs text-end tabular-nums py-2">{fmt(inv.grandTotal)}</TableCell>
                                 <TableCell className="py-2">
                                   <Link to={`/dashboard/purchases/invoices/${inv.id}`} onClick={onClose}>
                                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />

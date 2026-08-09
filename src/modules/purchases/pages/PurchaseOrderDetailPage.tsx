@@ -286,23 +286,23 @@ function PurchaseOrderDetailPage() {
           <div className="flex items-center gap-2">
             <Badge className={STATUS_COLORS[po.status]}>{t(`status.${po.status}`)}</Badge>
             <Button size="sm" variant="outline" onClick={() => setIsPdfOpen(true)}>
-              <Download className="h-3.5 w-3.5 mr-1" /> {t('actions.exportPdf')}
+              <Download className="h-3.5 w-3.5 me-1" /> {t('actions.exportPdf')}
             </Button>
             {/* TEJ XML aggregated from this order's RS-applicable invoices. Tells the
                 user what to fill (e.g. create the invoice) if nothing is ready. */}
             {invoices.length > 0 && (
               <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={downloadingTej}>
-                {downloadingTej ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
+                {downloadingTej ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 me-1" />}
                 {t('actions.downloadTejXml', 'Download TEJ XML')}
               </Button>
             )}
             {/* An order with no line items can never be received, invoiced or
                 closed (backend derives those states from line quantities), so
                 the lifecycle actions stay disabled until items exist. */}
-            {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><CheckCircle className="h-3.5 w-3.5 mr-1" /> {t('actions.validate')}</Button>}
-            {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><Send className="h-3.5 w-3.5 mr-1" /> {t('actions.sendToSupplier')}</Button>}
-            {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><Package className="h-3.5 w-3.5 mr-1" /> {t('actions.receiveGoods')}</Button>}
-            {['partially_received', 'received', 'closed'].includes(po.status) && <CreateActionButton size="sm" variant="outline" onClick={() => navigate(`/dashboard/purchases/invoices/add?poId=${id}`)}><FileText className="h-3.5 w-3.5 mr-1" /> {t('actions.createInvoice')}</CreateActionButton>}
+            {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><CheckCircle className="h-3.5 w-3.5 me-1" /> {t('actions.validate')}</Button>}
+            {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><Send className="h-3.5 w-3.5 me-1" /> {t('actions.sendToSupplier')}</Button>}
+            {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)} disabled={!hasItems} title={!hasItems ? (t('validation.itemsRequired') as string) : undefined}><Package className="h-3.5 w-3.5 me-1" /> {t('actions.receiveGoods')}</Button>}
+            {['partially_received', 'received', 'closed'].includes(po.status) && <CreateActionButton size="sm" variant="outline" onClick={() => navigate(`/dashboard/purchases/invoices/add?poId=${id}`)}><FileText className="h-3.5 w-3.5 me-1" /> {t('actions.createInvoice')}</CreateActionButton>}
 
           </div>
         }
@@ -434,19 +434,19 @@ function PurchaseOrderDetailPage() {
                   isEditingItems ? (
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="outline" onClick={addDraftItem} disabled={savingItems}>
-                        <Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}
+                        <Plus className="h-3.5 w-3.5 me-1" /> {t('create.addItem')}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={cancelEditItems} disabled={savingItems}>
-                        <X className="h-3.5 w-3.5 mr-1" /> {t('actions.cancel', 'Cancel')}
+                        <X className="h-3.5 w-3.5 me-1" /> {t('actions.cancel', 'Cancel')}
                       </Button>
                       <Button size="sm" onClick={saveItems} disabled={savingItems}>
-                        {savingItems ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {savingItems ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <Save className="h-3.5 w-3.5 me-1" />}
                         {t('actions.save')}
                       </Button>
                     </div>
                   ) : (
                     <Button size="sm" variant="outline" onClick={startEditItems}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> {t('actions.edit', 'Edit items')}
+                      <Pencil className="h-3.5 w-3.5 me-1" /> {t('actions.edit', 'Edit items')}
                     </Button>
                   )
                 )}
@@ -460,10 +460,10 @@ function PurchaseOrderDetailPage() {
                         <TableHead className="text-xs">{t('fields.supplierRef')}</TableHead>
                         <TableHead className="text-xs text-center">{t('fields.quantity')}</TableHead>
                         <TableHead className="text-xs text-center">{t('fields.received')}</TableHead>
-                        <TableHead className="text-xs text-right">{t('fields.unitPrice')}</TableHead>
-                        <TableHead className="text-xs text-right">{t('fields.discount', 'Discount')}</TableHead>
-                        <TableHead className="text-xs text-right">{t('fields.tax', 'Tax')} %</TableHead>
-                        <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                        <TableHead className="text-xs text-end">{t('fields.unitPrice')}</TableHead>
+                        <TableHead className="text-xs text-end">{t('fields.discount', 'Discount')}</TableHead>
+                        <TableHead className="text-xs text-end">{t('fields.tax', 'Tax')} %</TableHead>
+                        <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -480,14 +480,14 @@ function PurchaseOrderDetailPage() {
                               {Number(item.receivedQty || 0).toFixed(2)}
                             </span>
                           </TableCell>
-                          <TableCell className="text-xs text-right">{fmt(item.unitPrice)}</TableCell>
-                          <TableCell className="text-xs text-right">
+                          <TableCell className="text-xs text-end">{fmt(item.unitPrice)}</TableCell>
+                          <TableCell className="text-xs text-end">
                             {(item.discount ?? 0) > 0
                               ? (item.discountType === 'percentage' ? `${item.discount}%` : fmt(item.discount || 0))
                               : '-'}
                           </TableCell>
-                          <TableCell className="text-xs text-right">{item.taxRate ?? 0}%</TableCell>
-                          <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal)}</TableCell>
+                          <TableCell className="text-xs text-end">{item.taxRate ?? 0}%</TableCell>
+                          <TableCell className="text-xs text-end font-medium">{fmt(item.lineTotal)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -502,7 +502,7 @@ function PurchaseOrderDetailPage() {
                         <TableHead className="text-xs w-24">{t('fields.unitPrice')}</TableHead>
                         <TableHead className="text-xs w-32">{t('fields.discount', 'Discount')}</TableHead>
                         <TableHead className="text-xs w-20">{t('fields.tax', 'Tax')} %</TableHead>
-                        <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                        <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -536,7 +536,7 @@ function PurchaseOrderDetailPage() {
                             </div>
                           </TableCell>
                           <TableCell><Input type="number" min="0" max="100" step="0.01" className="h-7 text-xs w-16" value={item.taxRate ?? 19} onChange={e => updateDraftItem(idx, 'taxRate', Number(e.target.value))} /></TableCell>
-                          <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal || 0)}</TableCell>
+                          <TableCell className="text-xs text-end font-medium">{fmt(item.lineTotal || 0)}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeDraftItem(idx)} disabled={savingItems}>
                               <Trash2 className="h-3 w-3 text-destructive" />

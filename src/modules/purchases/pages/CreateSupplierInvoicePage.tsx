@@ -160,7 +160,7 @@ export default function CreateSupplierInvoicePage() {
           lineTotal: item.lineTotal,
           displayOrder: idx,
         })),
-      } as any, { idempotencyKey: idempotencyKeyRef.current });
+      }, { idempotencyKey: idempotencyKeyRef.current });
       toast.success(t('invoices.created'));
       navigate('/dashboard/purchases/invoices');
     } catch (e: any) {
@@ -182,7 +182,7 @@ export default function CreateSupplierInvoicePage() {
         backTo={{ to: '/dashboard/purchases/invoices', label: t('invoices.title') }}
         actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            {saving ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : <Save className="h-4 w-4 me-1" />}
             {t('actions.save')}
           </Button>
         }
@@ -264,7 +264,7 @@ export default function CreateSupplierInvoicePage() {
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm">{t('create.items')}</CardTitle>
-            <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
+            <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 me-1" /> {t('create.addItem')}</Button>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
             <Table className="min-w-[560px]">
@@ -273,7 +273,7 @@ export default function CreateSupplierInvoicePage() {
                 <TableHead className="text-xs w-20">{t('fields.quantity')}</TableHead>
                 <TableHead className="text-xs w-24">{t('fields.unitPrice')}</TableHead>
                 <TableHead className="text-xs w-20">{t('fields.tax', 'Tax')} %</TableHead>
-                <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow></TableHeader>
               <TableBody>
@@ -283,7 +283,7 @@ export default function CreateSupplierInvoicePage() {
                     <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-16" value={item.quantity} onChange={e => updateItem(idx, 'quantity', Number(e.target.value))} /></TableCell>
                     <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-20" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))} /></TableCell>
                     <TableCell><Input type="number" min="0" max="100" step="0.01" className="h-7 text-xs w-16" value={item.taxRate} onChange={e => updateItem(idx, 'taxRate', Number(e.target.value))} /></TableCell>
-                    <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal)}</TableCell>
+                    <TableCell className="text-xs text-end font-medium">{fmt(item.lineTotal)}</TableCell>
                     <TableCell><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3 text-destructive" /></Button></TableCell>
                   </TableRow>
                 ))}
@@ -305,7 +305,7 @@ export default function CreateSupplierInvoicePage() {
                     type="number"
                     min="0"
                     step="0.01"
-                    className="h-7 w-24 text-xs text-right"
+                    className="h-7 w-24 text-xs text-end"
                     value={fiscalStamp}
                     onChange={e => setFiscalStamp(Number(e.target.value) || 0)}
                   />

@@ -336,7 +336,7 @@ function GoodsReceiptListContent() {
             <Download className="h-4 w-4" />
           </Button>
           <CreateActionButton size="sm" onClick={() => navigate("/dashboard/purchases/receipts/add")}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             <span className="hidden sm:inline">{t("receipts.newReceipt", "New Receipt")}</span>
           </CreateActionButton>
         </div>
@@ -384,7 +384,7 @@ function GoodsReceiptListContent() {
               placeholder={t("receipts.searchPlaceholder", "Search receipts...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-9"
+              className="ps-8 h-9"
             />
           </div>
           <div className="flex items-center gap-1.5">
@@ -394,10 +394,10 @@ function GoodsReceiptListContent() {
               className="h-9"
               onClick={() => setShowFilters((v) => !v)}
             >
-              <Filter className="h-3.5 w-3.5 sm:mr-1.5" />
+              <Filter className="h-3.5 w-3.5 sm:me-1.5" />
               <span className="hidden sm:inline">{t("filters.title", "Filters")}</span>
               {hasActiveFilter && (
-                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-px-10">•</Badge>
+                <Badge variant="secondary" className="ms-1.5 h-4 px-1 text-px-10">•</Badge>
               )}
             </Button>
             {viewAll && <CompanyFilter value={companyId} onChange={setCompanyId} />}
@@ -445,7 +445,7 @@ function GoodsReceiptListContent() {
                   setSelectedStat("all");
                 }}
               >
-                <X className="h-3.5 w-3.5 mr-1" />
+                <X className="h-3.5 w-3.5 me-1" />
                 {t("filters.clear", "Clear")}
               </Button>
             )}
@@ -488,7 +488,7 @@ function GoodsReceiptListContent() {
                         <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
                         <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
                         <TableHead className="text-xs">{t("fields.receivedBy", "Received By")}</TableHead>
-                        <TableHead className="text-xs w-32 text-right">{t("fields.actions", "Actions")}</TableHead>
+                        <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -530,7 +530,7 @@ function GoodsReceiptListContent() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs">{gr.receivedByName || gr.receivedBy}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-end">
                               <TableRowActions
                                 actions={[
                                   {
@@ -685,7 +685,7 @@ function GoodsReceiptListContent() {
             >
               {isBulkDeleting ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {t("bulk.deleting", "Deleting...")}
+                  <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> {t("bulk.deleting", "Deleting...")}
                 </>
               ) : (
                 t("actions.delete", "Delete")

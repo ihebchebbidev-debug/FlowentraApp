@@ -47,7 +47,7 @@ export function BulkActionBar({
 
   return (
     <div className="sticky top-0 z-30 bg-primary/5 border border-primary/20 rounded-md p-2.5 flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-      <div className="flex items-center gap-3 mr-auto">
+      <div className="flex items-center gap-3 me-auto">
         <Checkbox
           checked={allSelected ? true : someSelected ? "indeterminate" : false}
           onCheckedChange={(c) => onToggleAll(!!c)}
@@ -57,32 +57,32 @@ export function BulkActionBar({
           {t('bulk.selectedCount', '{{count}} selected', { count: selectedCount })}
         </span>
         <Button variant="ghost" size="sm" onClick={onClear} className="h-7 text-muted-foreground">
-          <X className="h-3.5 w-3.5 mr-1" /> {t('bulk.deselectAll', 'Clear')}
+          <X className="h-3.5 w-3.5 me-1" /> {t('bulk.deselectAll', 'Clear')}
         </Button>
       </div>
 
       {/* Lifecycle actions — only render the ones the parent wires up */}
       {onApprove && (
         <Button variant="outline" size="sm" onClick={onApprove} disabled={anyBusy || isBlocked} className="h-7">
-          <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+          <CheckCircle2 className="h-3.5 w-3.5 me-1 text-emerald-600" />
           {busyAction === 'approve' ? t('bulk.approving', 'Approving…') : t('bulk.approveSelected', 'Approve')}
         </Button>
       )}
       {onSend && (
         <Button variant="outline" size="sm" onClick={onSend} disabled={anyBusy || isBlocked} className="h-7">
-          <Send className="h-3.5 w-3.5 mr-1 text-purple-600" />
+          <Send className="h-3.5 w-3.5 me-1 text-purple-600" />
           {busyAction === 'send' ? t('bulk.sending', 'Sending…') : t('bulk.sendSelected', 'Send to supplier')}
         </Button>
       )}
       {onClose && (
         <Button variant="outline" size="sm" onClick={onClose} disabled={anyBusy || isBlocked} className="h-7">
-          <Lock className="h-3.5 w-3.5 mr-1 text-slate-600" />
+          <Lock className="h-3.5 w-3.5 me-1 text-slate-600" />
           {busyAction === 'close' ? t('bulk.closing', 'Closing…') : t('bulk.closeSelected', 'Close')}
         </Button>
       )}
       {onExport && (
         <Button variant="outline" size="sm" onClick={onExport} disabled={anyBusy} className="h-7">
-          <Download className="h-3.5 w-3.5 mr-1" />
+          <Download className="h-3.5 w-3.5 me-1" />
           {t('bulk.exportSelected', 'Export')}
         </Button>
       )}
@@ -94,7 +94,7 @@ export function BulkActionBar({
               <span tabIndex={0} className="inline-flex">
                 <Button variant="destructive" size="sm" disabled aria-disabled className="h-7"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  <Trash2 className="h-3.5 w-3.5 mr-1" /> {t('bulk.deleteSelected', 'Delete')}
+                  <Trash2 className="h-3.5 w-3.5 me-1" /> {t('bulk.deleteSelected', 'Delete')}
                 </Button>
               </span>
             </TooltipTrigger>
@@ -103,7 +103,7 @@ export function BulkActionBar({
         </TooltipProvider>
       ) : (
         <Button variant="destructive" size="sm" onClick={onDelete} disabled={anyBusy} className="h-7">
-          <Trash2 className="h-3.5 w-3.5 mr-1" />
+          <Trash2 className="h-3.5 w-3.5 me-1" />
           {busyAction === 'delete' ? t('bulk.deleting', 'Deleting…') : t('bulk.deleteSelected', 'Delete')}
         </Button>
       )}

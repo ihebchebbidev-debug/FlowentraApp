@@ -195,10 +195,10 @@ function PageDashboard({ state }: { state: PurchaseDemoState }) {
           </div>
           <table className="w-full text-xs">
             <thead><tr className="border-b border-border/60">
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Order #</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Supplier</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Status</th>
-              <th className="text-right px-4 py-2 text-muted-foreground font-medium">Total</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Order #</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Supplier</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Status</th>
+              <th className="text-end px-4 py-2 text-muted-foreground font-medium">Total</th>
             </tr></thead>
             <tbody>
               {DEMO_ORDERS.map(po => (
@@ -206,7 +206,7 @@ function PageDashboard({ state }: { state: PurchaseDemoState }) {
                   <td className="px-4 py-2 font-medium text-primary">{po.num}</td>
                   <td className="px-4 py-2 text-foreground truncate max-w-[110px]">{po.supplier.split(' ')[0]}</td>
                   <td className="px-4 py-2"><StatusBadge status={po.status} small /></td>
-                  <td className="px-4 py-2 text-right font-medium">{fmt(po.total)}</td>
+                  <td className="px-4 py-2 text-end font-medium">{fmt(po.total)}</td>
                 </tr>
               ))}
             </tbody>
@@ -221,10 +221,10 @@ function PageDashboard({ state }: { state: PurchaseDemoState }) {
           </div>
           <table className="w-full text-xs">
             <thead><tr className="border-b border-border/60">
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Order #</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Supplier</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Delivery</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Status</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Order #</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Supplier</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Delivery</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Status</th>
             </tr></thead>
             <tbody>
               {DEMO_ORDERS.filter(o => o.status === 'ordered' || o.status === 'partially_received').map(po => (
@@ -305,12 +305,12 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border/60">
         <div id="po-demo-search" className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <div className="h-8 pl-8 pr-3 rounded-md border border-border bg-background text-xs text-muted-foreground flex items-center">Search orders…</div>
+          <div className="h-8 ps-8 pe-3 rounded-md border border-border bg-background text-xs text-muted-foreground flex items-center">Search orders…</div>
         </div>
         <div id="po-demo-filter-btn" className={`h-8 px-3 rounded-md border text-xs flex items-center gap-1.5 cursor-default ${state.showFilters ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground'}`}>
           <Filter className="h-3.5 w-3.5" /> Filters {state.showFilters && <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground text-px-10 flex items-center justify-center">2</span>}
         </div>
-        <div className="ml-auto flex items-center gap-1 border border-border rounded-md overflow-hidden" id="po-demo-view-toggle">
+        <div className="ms-auto flex items-center gap-1 border border-border rounded-md overflow-hidden" id="po-demo-view-toggle">
           {(['table','list'] as const).map(m => (
             <div key={m} className={`h-8 px-2.5 flex items-center text-xs cursor-default transition-colors ${state.viewMode === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted/50'}`}>
               {m === 'table' ? '⊞' : '☰'}
@@ -321,7 +321,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
 
       {/* Smart filters + saved views bar */}
       <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-border/60 bg-muted/20">
-        <span id="po-demo-smart-filters" className="inline-flex items-center gap-1 text-px-10 text-muted-foreground font-medium pr-1">
+        <span id="po-demo-smart-filters" className="inline-flex items-center gap-1 text-px-10 text-muted-foreground font-medium pe-1">
           <TrendingUp className="h-3 w-3" /> Smart filters
         </span>
         {[
@@ -335,13 +335,13 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
           </span>
         ))}
         <span className="h-4 w-px bg-border mx-1" aria-hidden />
-        <span id="po-demo-saved-views" className="inline-flex items-center gap-1 text-px-10 text-muted-foreground font-medium pr-1">
+        <span id="po-demo-saved-views" className="inline-flex items-center gap-1 text-px-10 text-muted-foreground font-medium pe-1">
           <Star className="h-3 w-3" /> Saved views
         </span>
-        <span className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full text-px-10 font-medium border bg-card border-border text-foreground cursor-default">
+        <span className="inline-flex items-center gap-1 h-6 ps-2 pe-1 rounded-full text-px-10 font-medium border bg-card border-border text-foreground cursor-default">
           Awaiting GR — Acme <X className="h-2.5 w-2.5 opacity-50" />
         </span>
-        <span className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border text-px-10 text-muted-foreground cursor-default">
+        <span className="ms-auto inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border text-px-10 text-muted-foreground cursor-default">
           <Plus className="h-3 w-3" /> Save view
         </span>
       </div>
@@ -351,11 +351,11 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
         <div className="flex gap-3 px-4 py-2 bg-muted/30 border-b border-border/60">
           <div className="flex flex-col gap-1">
             <span className="text-px-10 text-muted-foreground font-medium">Status</span>
-            <div className="h-7 px-2.5 rounded-md border border-border bg-background text-xs text-foreground flex items-center gap-2 min-w-[120px]">Ordered <ChevronRight className="h-3 w-3 ml-auto rotate-90 text-muted-foreground" /></div>
+            <div className="h-7 px-2.5 rounded-md border border-border bg-background text-xs text-foreground flex items-center gap-2 min-w-[120px]">Ordered <ChevronRight className="h-3 w-3 ms-auto rotate-90 text-muted-foreground" /></div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-px-10 text-muted-foreground font-medium">Payment</span>
-            <div className="h-7 px-2.5 rounded-md border border-border bg-background text-xs text-foreground flex items-center gap-2 min-w-[120px]">Unpaid <ChevronRight className="h-3 w-3 ml-auto rotate-90 text-muted-foreground" /></div>
+            <div className="h-7 px-2.5 rounded-md border border-border bg-background text-xs text-foreground flex items-center gap-2 min-w-[120px]">Unpaid <ChevronRight className="h-3 w-3 ms-auto rotate-90 text-muted-foreground" /></div>
           </div>
         </div>
       )}
@@ -379,7 +379,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
           <div className="h-7 px-2.5 rounded-md border border-destructive/30 text-destructive text-xs flex items-center gap-1.5 cursor-default">
             <Trash2 className="h-3.5 w-3.5" /> Delete
           </div>
-          <span className="text-xs text-muted-foreground ml-auto">Clear</span>
+          <span className="text-xs text-muted-foreground ms-auto">Clear</span>
         </div>
       )}
 
@@ -391,13 +391,13 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
               <th className="w-8 px-3 py-2">
                 <div id="po-demo-row-check" className="h-3.5 w-3.5 rounded border border-border bg-background" />
               </th>
-              <th className="text-left px-3 py-2 text-muted-foreground font-medium">Order #</th>
-              <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
-              <th className="text-left px-3 py-2 text-muted-foreground font-medium">Date</th>
-              <th className="text-left px-3 py-2 text-muted-foreground font-medium">Status</th>
-              <th className="text-left px-3 py-2 text-muted-foreground font-medium">Payment</th>
-              <th className="text-right px-3 py-2 text-muted-foreground font-medium">Total</th>
-              <th className="w-16 px-3 py-2 text-muted-foreground font-medium text-right">Actions</th>
+              <th className="text-start px-3 py-2 text-muted-foreground font-medium">Order #</th>
+              <th className="text-start px-3 py-2 text-muted-foreground font-medium">Supplier</th>
+              <th className="text-start px-3 py-2 text-muted-foreground font-medium">Date</th>
+              <th className="text-start px-3 py-2 text-muted-foreground font-medium">Status</th>
+              <th className="text-start px-3 py-2 text-muted-foreground font-medium">Payment</th>
+              <th className="text-end px-3 py-2 text-muted-foreground font-medium">Total</th>
+              <th className="w-16 px-3 py-2 text-muted-foreground font-medium text-end">Actions</th>
             </tr></thead>
             <tbody>
               {displayed.map(po => {
@@ -421,8 +421,8 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
                     <td className="px-3 py-2.5 text-muted-foreground">{po.date}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={po.status} small /></td>
                     <td className="px-3 py-2.5"><StatusBadge status={po.payment} small /></td>
-                    <td className="px-3 py-2.5 text-right font-medium">{fmt(po.total)} {resolveCurrencyCode()}</td>
-                    <td className="px-3 py-2.5 text-right">
+                    <td className="px-3 py-2.5 text-end font-medium">{fmt(po.total)} {resolveCurrencyCode()}</td>
+                    <td className="px-3 py-2.5 text-end">
                       <div className="flex items-center justify-end gap-1">
                         <div className="h-6 w-6 rounded border border-border flex items-center justify-center text-muted-foreground cursor-default hover:bg-muted/50">
                           <Eye className="h-3 w-3" />
@@ -493,31 +493,31 @@ function PageOrderCreate({ state }: { state: PurchaseDemoState }) {
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-xs">
               <thead><tr className="bg-muted/40 border-b border-border">
-                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Description</th>
-                <th className="text-right px-3 py-2 text-muted-foreground font-medium">Qty</th>
-                <th className="text-right px-3 py-2 text-muted-foreground font-medium">Unit Price</th>
-                <th className="text-right px-3 py-2 text-muted-foreground font-medium">Tax %</th>
-                <th className="text-right px-3 py-2 text-muted-foreground font-medium">Total</th>
+                <th className="text-start px-3 py-2 text-muted-foreground font-medium">Description</th>
+                <th className="text-end px-3 py-2 text-muted-foreground font-medium">Qty</th>
+                <th className="text-end px-3 py-2 text-muted-foreground font-medium">Unit Price</th>
+                <th className="text-end px-3 py-2 text-muted-foreground font-medium">Tax %</th>
+                <th className="text-end px-3 py-2 text-muted-foreground font-medium">Total</th>
               </tr></thead>
               <tbody>
                 {step >= 2 ? (
                   <>
                     <tr className="border-b border-border/50">
                       <td className="px-3 py-2 font-medium">Hydraulic Cylinder HY-200</td>
-                      <td className="px-3 py-2 text-right">10</td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-3 py-2 text-end">10</td>
+                      <td className="px-3 py-2 text-end">
                         1,200 {resolveCurrencyCode()}
                         <div id="po-demo-last-price" className="text-px-10 text-amber-600">Last: 1,150 {resolveCurrencyCode()}</div>
                       </td>
-                      <td className="px-3 py-2 text-right">19%</td>
-                      <td className="px-3 py-2 text-right font-medium">14,280 {resolveCurrencyCode()}</td>
+                      <td className="px-3 py-2 text-end">19%</td>
+                      <td className="px-3 py-2 text-end font-medium">14,280 {resolveCurrencyCode()}</td>
                     </tr>
                     <tr>
                       <td className="px-3 py-2 font-medium">Mounting Bracket MB-45</td>
-                      <td className="px-3 py-2 text-right">20</td>
-                      <td className="px-3 py-2 text-right">450 {resolveCurrencyCode()}</td>
-                      <td className="px-3 py-2 text-right">19%</td>
-                      <td className="px-3 py-2 text-right font-medium">10,710 {resolveCurrencyCode()}</td>
+                      <td className="px-3 py-2 text-end">20</td>
+                      <td className="px-3 py-2 text-end">450 {resolveCurrencyCode()}</td>
+                      <td className="px-3 py-2 text-end">19%</td>
+                      <td className="px-3 py-2 text-end font-medium">10,710 {resolveCurrencyCode()}</td>
                     </tr>
                   </>
                 ) : (
@@ -634,26 +634,26 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
               </div>
               <table className="w-full text-xs">
                 <thead><tr className="bg-muted/30 border-b border-border/60">
-                  <th className="text-left px-4 py-2 text-muted-foreground font-medium">Description</th>
-                  <th className="text-right px-4 py-2 text-muted-foreground font-medium">Ordered</th>
-                  <th className="text-right px-4 py-2 text-muted-foreground font-medium">Received</th>
-                  <th className="text-right px-4 py-2 text-muted-foreground font-medium">Unit Price</th>
-                  <th className="text-right px-4 py-2 text-muted-foreground font-medium">Total</th>
+                  <th className="text-start px-4 py-2 text-muted-foreground font-medium">Description</th>
+                  <th className="text-end px-4 py-2 text-muted-foreground font-medium">Ordered</th>
+                  <th className="text-end px-4 py-2 text-muted-foreground font-medium">Received</th>
+                  <th className="text-end px-4 py-2 text-muted-foreground font-medium">Unit Price</th>
+                  <th className="text-end px-4 py-2 text-muted-foreground font-medium">Total</th>
                 </tr></thead>
                 <tbody>
                   <tr className="border-b border-border/40">
                     <td className="px-4 py-2.5 font-medium">Hydraulic Cylinder HY-200</td>
-                    <td className="px-4 py-2.5 text-right">20</td>
-                    <td className="px-4 py-2.5 text-right text-amber-600 font-medium">12</td>
-                    <td className="px-4 py-2.5 text-right">1,200 {resolveCurrencyCode()}</td>
-                    <td className="px-4 py-2.5 text-right font-medium">24,000 {resolveCurrencyCode()}</td>
+                    <td className="px-4 py-2.5 text-end">20</td>
+                    <td className="px-4 py-2.5 text-end text-amber-600 font-medium">12</td>
+                    <td className="px-4 py-2.5 text-end">1,200 {resolveCurrencyCode()}</td>
+                    <td className="px-4 py-2.5 text-end font-medium">24,000 {resolveCurrencyCode()}</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2.5 font-medium">Mounting Bracket MB-45</td>
-                    <td className="px-4 py-2.5 text-right">50</td>
-                    <td className="px-4 py-2.5 text-right text-green-600 font-medium">50</td>
-                    <td className="px-4 py-2.5 text-right">170 {resolveCurrencyCode()}</td>
-                    <td className="px-4 py-2.5 text-right font-medium">8,500 {resolveCurrencyCode()}</td>
+                    <td className="px-4 py-2.5 text-end">50</td>
+                    <td className="px-4 py-2.5 text-end text-green-600 font-medium">50</td>
+                    <td className="px-4 py-2.5 text-end">170 {resolveCurrencyCode()}</td>
+                    <td className="px-4 py-2.5 text-end font-medium">8,500 {resolveCurrencyCode()}</td>
                   </tr>
                 </tbody>
               </table>
@@ -707,10 +707,10 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
             </div>
             <table className="w-full text-xs">
               <thead><tr className="bg-muted/30 border-b border-border">
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Receipt #</th>
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Date</th>
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Status</th>
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Items Received</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Receipt #</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Date</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Status</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Items Received</th>
               </tr></thead>
               <tbody>
                 <tr>
@@ -731,19 +731,19 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
             </div>
             <table className="w-full text-xs">
               <thead><tr className="bg-muted/30 border-b border-border">
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Invoice #</th>
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Date</th>
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Status</th>
-                <th className="text-right px-4 py-2 text-muted-foreground font-medium">Total</th>
-                <th className="text-right px-4 py-2 text-muted-foreground font-medium">RS</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Invoice #</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Date</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Status</th>
+                <th className="text-end px-4 py-2 text-muted-foreground font-medium">Total</th>
+                <th className="text-end px-4 py-2 text-muted-foreground font-medium">RS</th>
               </tr></thead>
               <tbody>
                 <tr>
                   <td className="px-4 py-2.5 font-medium text-primary">INV-F-2025-002</td>
                   <td className="px-4 py-2.5 text-muted-foreground">2025-05-10</td>
                   <td className="px-4 py-2.5"><StatusBadge status="partially_paid" small /></td>
-                  <td className="px-4 py-2.5 text-right font-medium">32,500 {resolveCurrencyCode()}</td>
-                  <td className="px-4 py-2.5 text-right text-amber-600 font-medium">1,625 {resolveCurrencyCode()}</td>
+                  <td className="px-4 py-2.5 text-end font-medium">32,500 {resolveCurrencyCode()}</td>
+                  <td className="px-4 py-2.5 text-end text-amber-600 font-medium">1,625 {resolveCurrencyCode()}</td>
                 </tr>
               </tbody>
             </table>
@@ -788,12 +788,12 @@ function PageReceiptsList({ state: _ }: { state: PurchaseDemoState }) {
         <div id="po-demo-gr-status-badges" className="bg-card border border-border rounded-lg overflow-hidden">
           <table className="w-full text-xs">
             <thead><tr className="bg-muted/30 border-b border-border/60">
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Receipt #</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Linked PO</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Supplier</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Date</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Status</th>
-              <th className="text-right px-4 py-2 text-muted-foreground font-medium">Actions</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Receipt #</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Linked PO</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Supplier</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Date</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Status</th>
+              <th className="text-end px-4 py-2 text-muted-foreground font-medium">Actions</th>
             </tr></thead>
             <tbody>
               {DEMO_RECEIPTS.map(gr => (
@@ -803,7 +803,7 @@ function PageReceiptsList({ state: _ }: { state: PurchaseDemoState }) {
                   <td className="px-4 py-2.5">{gr.supplier}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{gr.date}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={gr.status} small /></td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-end">
                     <div className="flex items-center justify-end gap-1">
                       <div className="h-6 w-6 rounded border border-border flex items-center justify-center text-muted-foreground cursor-default"><Eye className="h-3 w-3" /></div>
                       <div className="h-6 w-6 rounded border border-border flex items-center justify-center text-muted-foreground cursor-default"><Edit className="h-3 w-3" /></div>
@@ -854,34 +854,34 @@ function PageReceiptCreate() {
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-xs">
               <thead><tr className="bg-muted/30 border-b border-border">
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Article</th>
-                <th className="text-right px-4 py-2 text-muted-foreground font-medium">Ordered</th>
-                <th className="text-right px-4 py-2 text-muted-foreground font-medium">Previously Received</th>
-                <th className="text-right px-4 py-2 text-muted-foreground font-medium">Receiving Now</th>
-                <th className="text-right px-4 py-2 text-muted-foreground font-medium">Rejected</th>
-                <th className="text-left px-4 py-2 text-muted-foreground font-medium">Rejection reason</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Article</th>
+                <th className="text-end px-4 py-2 text-muted-foreground font-medium">Ordered</th>
+                <th className="text-end px-4 py-2 text-muted-foreground font-medium">Previously Received</th>
+                <th className="text-end px-4 py-2 text-muted-foreground font-medium">Receiving Now</th>
+                <th className="text-end px-4 py-2 text-muted-foreground font-medium">Rejected</th>
+                <th className="text-start px-4 py-2 text-muted-foreground font-medium">Rejection reason</th>
               </tr></thead>
               <tbody>
                 <tr className="border-b border-border/40">
                   <td className="px-4 py-2.5">Hydraulic Cylinder HY-200</td>
-                  <td className="px-4 py-2.5 text-right">20</td>
-                  <td className="px-4 py-2.5 text-right text-amber-600">12</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-end">20</td>
+                  <td className="px-4 py-2.5 text-end text-amber-600">12</td>
+                  <td className="px-4 py-2.5 text-end">
                     <div className="inline-flex h-7 w-16 rounded border border-primary bg-primary/5 items-center justify-center font-medium text-primary">6</div>
                   </td>
-                  <td id="po-demo-gr-rejected" className="px-4 py-2.5 text-right">
+                  <td id="po-demo-gr-rejected" className="px-4 py-2.5 text-end">
                     <div className="inline-flex h-7 w-16 rounded border border-destructive/40 bg-destructive/5 items-center justify-center font-medium text-destructive">2</div>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">Seal damaged in transit</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5">Mounting Bracket MB-45</td>
-                  <td className="px-4 py-2.5 text-right">50</td>
-                  <td className="px-4 py-2.5 text-right text-green-600">50</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-end">50</td>
+                  <td className="px-4 py-2.5 text-end text-green-600">50</td>
+                  <td className="px-4 py-2.5 text-end">
                     <div className="inline-flex h-7 w-16 rounded border border-border bg-muted items-center justify-center text-muted-foreground">0</div>
                   </td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-end">
                     <div className="inline-flex h-7 w-16 rounded border border-border bg-muted items-center justify-center text-muted-foreground">0</div>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">—</td>
@@ -920,7 +920,7 @@ function PageReceiptDetail() {
           </div>
           <p className="text-xs text-muted-foreground">{GR.supplier} · {GR.date}</p>
         </div>
-        <div id="po-demo-gr-edit" className="ml-auto h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
+        <div id="po-demo-gr-edit" className="ms-auto h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
           <Edit className="h-3.5 w-3.5" /> Edit
         </div>
         <div id="po-demo-gr-print" className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
@@ -948,23 +948,23 @@ function PageReceiptDetail() {
         <div className="px-4 py-3 border-b border-border/60"><span className="text-sm font-medium">Received Items</span></div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border">
-            <th className="text-left px-4 py-2 text-muted-foreground font-medium">Article</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Ordered</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Received</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Remaining</th>
+            <th className="text-start px-4 py-2 text-muted-foreground font-medium">Article</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Ordered</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Received</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Remaining</th>
           </tr></thead>
           <tbody>
             <tr className="border-b border-border/40">
               <td className="px-4 py-2.5">Hydraulic Cylinder HY-200</td>
-              <td className="px-4 py-2.5 text-right">20</td>
-              <td className="px-4 py-2.5 text-right text-amber-600 font-medium">12</td>
-              <td className="px-4 py-2.5 text-right text-amber-600">8</td>
+              <td className="px-4 py-2.5 text-end">20</td>
+              <td className="px-4 py-2.5 text-end text-amber-600 font-medium">12</td>
+              <td className="px-4 py-2.5 text-end text-amber-600">8</td>
             </tr>
             <tr>
               <td className="px-4 py-2.5">Mounting Bracket MB-45</td>
-              <td className="px-4 py-2.5 text-right">50</td>
-              <td className="px-4 py-2.5 text-right text-green-600 font-medium">50</td>
-              <td className="px-4 py-2.5 text-right text-green-600">0</td>
+              <td className="px-4 py-2.5 text-end">50</td>
+              <td className="px-4 py-2.5 text-end text-green-600 font-medium">50</td>
+              <td className="px-4 py-2.5 text-end text-green-600">0</td>
             </tr>
           </tbody>
         </table>
@@ -999,14 +999,14 @@ function PageInvoicesList({ state: _ }: { state: PurchaseDemoState }) {
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <table className="w-full text-xs">
             <thead><tr className="bg-muted/30 border-b border-border/60">
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Invoice #</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Linked PO</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Supplier</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium" id="po-demo-si-status-badges">Status</th>
-              <th className="text-right px-4 py-2 text-muted-foreground font-medium">Total</th>
-              <th className="text-right px-4 py-2 text-muted-foreground font-medium" id="po-demo-si-rs-col">RS</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">FEL</th>
-              <th className="text-left px-4 py-2 text-muted-foreground font-medium">TEJ</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Invoice #</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Linked PO</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">Supplier</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium" id="po-demo-si-status-badges">Status</th>
+              <th className="text-end px-4 py-2 text-muted-foreground font-medium">Total</th>
+              <th className="text-end px-4 py-2 text-muted-foreground font-medium" id="po-demo-si-rs-col">RS</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">FEL</th>
+              <th className="text-start px-4 py-2 text-muted-foreground font-medium">TEJ</th>
             </tr></thead>
             <tbody>
               {DEMO_INVOICES.map(si => (
@@ -1015,8 +1015,8 @@ function PageInvoicesList({ state: _ }: { state: PurchaseDemoState }) {
                   <td className="px-4 py-2.5 text-blue-600">{si.poNum}</td>
                   <td className="px-4 py-2.5 truncate max-w-[120px]">{si.supplier}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={si.status} small /></td>
-                  <td className="px-4 py-2.5 text-right font-medium">{fmt(si.total)} {resolveCurrencyCode()}</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-end font-medium">{fmt(si.total)} {resolveCurrencyCode()}</td>
+                  <td className="px-4 py-2.5 text-end">
                     {si.rs ? <span className="text-amber-600 font-medium">{fmt(si.rs)} {resolveCurrencyCode()}</span> : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-4 py-2.5">
@@ -1150,26 +1150,26 @@ function PageInvoiceDetail() {
         </div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border">
-            <th className="text-left px-4 py-2 text-muted-foreground font-medium">Article</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Ordered (PO)</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Received (GR)</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Invoiced</th>
-            <th className="text-right px-4 py-2 text-muted-foreground font-medium">Variance</th>
+            <th className="text-start px-4 py-2 text-muted-foreground font-medium">Article</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Ordered (PO)</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Received (GR)</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Invoiced</th>
+            <th className="text-end px-4 py-2 text-muted-foreground font-medium">Variance</th>
           </tr></thead>
           <tbody>
             <tr className="border-b border-border/40">
               <td className="px-4 py-2.5">Hydraulic Cylinder HY-200</td>
-              <td className="px-4 py-2.5 text-right">20</td>
-              <td className="px-4 py-2.5 text-right text-amber-600 font-medium">12</td>
-              <td className="px-4 py-2.5 text-right">14</td>
-              <td className="px-4 py-2.5 text-right text-destructive font-medium">+2 invoiced</td>
+              <td className="px-4 py-2.5 text-end">20</td>
+              <td className="px-4 py-2.5 text-end text-amber-600 font-medium">12</td>
+              <td className="px-4 py-2.5 text-end">14</td>
+              <td className="px-4 py-2.5 text-end text-destructive font-medium">+2 invoiced</td>
             </tr>
             <tr>
               <td className="px-4 py-2.5">Mounting Bracket MB-45</td>
-              <td className="px-4 py-2.5 text-right">50</td>
-              <td className="px-4 py-2.5 text-right text-green-600 font-medium">50</td>
-              <td className="px-4 py-2.5 text-right">50</td>
-              <td className="px-4 py-2.5 text-right text-green-600">Matched</td>
+              <td className="px-4 py-2.5 text-end">50</td>
+              <td className="px-4 py-2.5 text-end text-green-600 font-medium">50</td>
+              <td className="px-4 py-2.5 text-end">50</td>
+              <td className="px-4 py-2.5 text-end text-green-600">Matched</td>
             </tr>
           </tbody>
         </table>
@@ -1313,7 +1313,7 @@ function PageReports() {
               <p className="text-xs font-semibold">{c.title}</p>
               <p className="text-px-10 text-muted-foreground mt-0.5">{c.sub}</p>
             </div>
-            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto mt-0.5 shrink-0" />
+            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ms-auto mt-0.5 shrink-0" />
           </div>
         ))}
       </div>
@@ -1326,11 +1326,11 @@ function PageReports() {
           <div className="space-y-2">
             {supplierBars.map(b => (
               <div key={b.name} className="flex items-center gap-2 text-xs">
-                <span className="w-20 truncate text-right text-muted-foreground shrink-0">{b.name}</span>
+                <span className="w-20 truncate text-end text-muted-foreground shrink-0">{b.name}</span>
                 <div className="flex-1 h-5 bg-muted rounded overflow-hidden">
                   <div className="h-full bg-primary/70 rounded transition-all" style={{ width: `${b.pct}%` }} />
                 </div>
-                <span className="w-20 text-right font-medium text-foreground shrink-0">{fmt(b.value)}</span>
+                <span className="w-20 text-end font-medium text-foreground shrink-0">{fmt(b.value)}</span>
               </div>
             ))}
           </div>
@@ -1368,20 +1368,20 @@ function PageSupplierPerformance() {
       <div id="po-demo-perf-scorecard" className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Supplier</th>
-            <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">POs</th>
-            <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Spend ({resolveCurrencyCode()})</th>
-            <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">On-Time</th>
-            <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Avg Lead</th>
+            <th className="text-start px-4 py-2.5 text-muted-foreground font-medium">Supplier</th>
+            <th className="text-end px-4 py-2.5 text-muted-foreground font-medium">POs</th>
+            <th className="text-end px-4 py-2.5 text-muted-foreground font-medium">Spend ({resolveCurrencyCode()})</th>
+            <th className="text-end px-4 py-2.5 text-muted-foreground font-medium">On-Time</th>
+            <th className="text-end px-4 py-2.5 text-muted-foreground font-medium">Avg Lead</th>
             <th className="text-center px-4 py-2.5 text-muted-foreground font-medium">Grade</th>
           </tr></thead>
           <tbody>
             {DEMO_PERF.map(s => (
               <tr key={s.name} className="border-b border-border/40 last:border-0 hover:bg-muted/20 cursor-default">
                 <td className="px-4 py-3 font-medium">{s.name}</td>
-                <td className="px-4 py-3 text-right">{s.pos}</td>
-                <td className="px-4 py-3 text-right">{fmt(s.spend)}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-end">{s.pos}</td>
+                <td className="px-4 py-3 text-end">{fmt(s.spend)}</td>
+                <td className="px-4 py-3 text-end">
                   <div className="flex items-center justify-end gap-1.5">
                     <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full" style={{ width: `${s.onTime}%` }} />
@@ -1389,7 +1389,7 @@ function PageSupplierPerformance() {
                     <span className={s.onTime >= 90 ? 'text-green-600 font-medium' : s.onTime >= 75 ? 'text-amber-600 font-medium' : 'text-red-600 font-medium'}>{s.onTime}%</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right text-muted-foreground">{s.lead}d</td>
+                <td className="px-4 py-3 text-end text-muted-foreground">{s.lead}d</td>
                 <td className="px-4 py-3 text-center">
                   <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${s.gradeColor}`}>{s.grade}</span>
                 </td>
@@ -1405,16 +1405,16 @@ function PageSupplierPerformance() {
         <div className="space-y-2">
           {DEMO_PERF.map(s => (
             <div key={s.name} className="flex items-center gap-2 text-xs">
-              <span className="w-32 truncate text-right text-muted-foreground shrink-0">{s.name.split(' ')[0]}</span>
+              <span className="w-32 truncate text-end text-muted-foreground shrink-0">{s.name.split(' ')[0]}</span>
               <div className="flex-1 h-6 bg-muted rounded overflow-hidden flex items-center">
                 <div
-                  className={`h-full rounded flex items-center justify-end pr-2 text-px-10 font-medium text-white transition-all ${s.onTime >= 90 ? 'bg-green-500' : s.onTime >= 75 ? 'bg-amber-500' : 'bg-red-500'}`}
+                  className={`h-full rounded flex items-center justify-end pe-2 text-px-10 font-medium text-white transition-all ${s.onTime >= 90 ? 'bg-green-500' : s.onTime >= 75 ? 'bg-amber-500' : 'bg-red-500'}`}
                   style={{ width: `${s.onTime}%` }}
                 >
                   {s.onTime}%
                 </div>
               </div>
-              <span className={`w-8 text-right font-bold shrink-0 ${s.gradeColor.replace('bg-', 'text-').split(' ')[0]}`}>{s.grade}</span>
+              <span className={`w-8 text-end font-bold shrink-0 ${s.gradeColor.replace('bg-', 'text-').split(' ')[0]}`}>{s.grade}</span>
             </div>
           ))}
         </div>
@@ -1438,7 +1438,7 @@ function PageAuditLog() {
       <div id="po-demo-audit-filter" className="flex items-center gap-2">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <div className="h-8 pl-8 pr-3 rounded-md border border-border bg-background text-xs text-muted-foreground flex items-center">Search events…</div>
+          <div className="h-8 ps-8 pe-3 rounded-md border border-border bg-background text-xs text-muted-foreground flex items-center">Search events…</div>
         </div>
         <div className="h-8 px-3 rounded-md border border-border text-xs flex items-center gap-1.5 text-muted-foreground cursor-default">
           All document types <ChevronRight className="h-3 w-3 rotate-90" />
@@ -1496,7 +1496,7 @@ function PageOrderPdfPreview() {
               <p className="text-px-10 text-slate-500">contact@flowentra.tn · +216 71 000 000</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <p className="text-xl font-bold text-primary">BON DE COMMANDE</p>
             <p className="text-xs text-slate-600 mt-1">N° <span className="font-semibold">PO-2025-044</span></p>
             <p className="text-xs text-slate-600">Date: <span className="font-semibold">2025-04-20</span></p>
@@ -1526,30 +1526,30 @@ function PageOrderPdfPreview() {
           <table className="w-full text-xs border border-slate-200">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200">
-                <th className="text-left px-2 py-1.5 font-semibold text-slate-700">Réf.</th>
-                <th className="text-left px-2 py-1.5 font-semibold text-slate-700">Désignation</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-slate-700">Qté</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-slate-700">PU HT</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-slate-700">TVA</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-slate-700">Total HT</th>
+                <th className="text-start px-2 py-1.5 font-semibold text-slate-700">Réf.</th>
+                <th className="text-start px-2 py-1.5 font-semibold text-slate-700">Désignation</th>
+                <th className="text-end px-2 py-1.5 font-semibold text-slate-700">Qté</th>
+                <th className="text-end px-2 py-1.5 font-semibold text-slate-700">PU HT</th>
+                <th className="text-end px-2 py-1.5 font-semibold text-slate-700">TVA</th>
+                <th className="text-end px-2 py-1.5 font-semibold text-slate-700">Total HT</th>
               </tr>
             </thead>
             <tbody>
               <tr className="border-b border-slate-200">
                 <td className="px-2 py-1.5 text-slate-600">HY-200</td>
                 <td className="px-2 py-1.5">Hydraulic Cylinder HY-200</td>
-                <td className="px-2 py-1.5 text-right">20</td>
-                <td className="px-2 py-1.5 text-right">1,200</td>
-                <td className="px-2 py-1.5 text-right">19%</td>
-                <td className="px-2 py-1.5 text-right font-medium">24,000</td>
+                <td className="px-2 py-1.5 text-end">20</td>
+                <td className="px-2 py-1.5 text-end">1,200</td>
+                <td className="px-2 py-1.5 text-end">19%</td>
+                <td className="px-2 py-1.5 text-end font-medium">24,000</td>
               </tr>
               <tr>
                 <td className="px-2 py-1.5 text-slate-600">MB-45</td>
                 <td className="px-2 py-1.5">Mounting Bracket MB-45</td>
-                <td className="px-2 py-1.5 text-right">50</td>
-                <td className="px-2 py-1.5 text-right">170</td>
-                <td className="px-2 py-1.5 text-right">19%</td>
-                <td className="px-2 py-1.5 text-right font-medium">8,500</td>
+                <td className="px-2 py-1.5 text-end">50</td>
+                <td className="px-2 py-1.5 text-end">170</td>
+                <td className="px-2 py-1.5 text-end">19%</td>
+                <td className="px-2 py-1.5 text-end font-medium">8,500</td>
               </tr>
             </tbody>
           </table>
@@ -1743,7 +1743,7 @@ function TejXmlActions({ id, filename, xml }: { id?: string; filename: string; x
 function XmlLine({ n, indent, content, highlight }: { n: number; indent: number; content: React.ReactNode; highlight?: boolean }) {
   return (
     <div className={`grid grid-cols-[2.5rem_1fr] gap-2 transition-colors ${highlight ? 'bg-amber-100/60 dark:bg-amber-500/15' : ''}`}>
-      <span className="text-right text-px-10 text-muted-foreground/60 select-none pr-2 border-r border-border/40 py-[1px]">{n}</span>
+      <span className="text-end text-px-10 text-muted-foreground/60 select-none pe-2 border-r border-border/40 py-[1px]">{n}</span>
       <span className="whitespace-pre py-[1px]" style={{ paddingLeft: `${indent * 0.75}rem` }}>{content}</span>
     </div>
   );
@@ -1979,13 +1979,13 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier Ref</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Price ({resolveCurrencyCode()})</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">MOQ</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Lead time</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Supplier</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Supplier Ref</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Price ({resolveCurrencyCode()})</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">MOQ</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Lead time</th>
             <th className="text-center px-3 py-2 text-muted-foreground font-medium" id="po-demo-as-preferred">Preferred</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium" id="po-demo-as-quick-po">Actions</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium" id="po-demo-as-quick-po">Actions</th>
           </tr></thead>
           <tbody>
             {DEMO_ARTICLE_SUPPLIERS.map(s => {
@@ -1995,15 +1995,15 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
                 <tr key={s.id} className={`border-b border-border/40 last:border-0 transition-colors ${active ? 'bg-primary/5' : 'hover:bg-muted/20'}`}>
                   <td className="px-3 py-2.5 font-medium">{s.name}</td>
                   <td className="px-3 py-2.5 text-muted-foreground font-mono">{s.ref}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold">{fmt(s.price)}</td>
-                  <td className="px-3 py-2.5 text-right">{s.moq}</td>
-                  <td className="px-3 py-2.5 text-right text-muted-foreground">{s.lead} d</td>
+                  <td className="px-3 py-2.5 text-end font-semibold">{fmt(s.price)}</td>
+                  <td className="px-3 py-2.5 text-end">{s.moq}</td>
+                  <td className="px-3 py-2.5 text-end text-muted-foreground">{s.lead} d</td>
                   <td className="px-3 py-2.5 text-center">
                     {isPreferred
                       ? <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 inline" />
                       : <Star className="h-3.5 w-3.5 text-muted-foreground/30 inline" />}
                   </td>
-                  <td className="px-3 py-2.5 text-right">
+                  <td className="px-3 py-2.5 text-end">
                     <div className="inline-flex items-center gap-1">
                       <div className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground flex items-center gap-1 cursor-default">
                         <Plus className="h-2.5 w-2.5" /> PO
@@ -2042,12 +2042,12 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
 
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Date</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Old</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">New</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Δ</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Reason</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Date</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Supplier</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Old</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">New</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Δ</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Reason</th>
           </tr></thead>
           <tbody>
             {DEMO_PRICE_HISTORY.map((h, i) => {
@@ -2056,9 +2056,9 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
                 <tr key={i} className="border-b border-border/40 last:border-0">
                   <td className="px-3 py-2 text-muted-foreground">{h.date}</td>
                   <td className="px-3 py-2">{h.supplier}</td>
-                  <td className="px-3 py-2 text-right text-muted-foreground">{fmt(h.old)}</td>
-                  <td className="px-3 py-2 text-right font-medium">{fmt(h.next)}</td>
-                  <td className={`px-3 py-2 text-right font-medium ${delta > 0 ? 'text-red-600' : 'text-green-600'}`}>{delta > 0 ? '+' : ''}{delta.toFixed(1)}%</td>
+                  <td className="px-3 py-2 text-end text-muted-foreground">{fmt(h.old)}</td>
+                  <td className="px-3 py-2 text-end font-medium">{fmt(h.next)}</td>
+                  <td className={`px-3 py-2 text-end font-medium ${delta > 0 ? 'text-red-600' : 'text-green-600'}`}>{delta > 0 ? '+' : ''}{delta.toFixed(1)}%</td>
                   <td className="px-3 py-2 text-muted-foreground">{h.reason}</td>
                 </tr>
               );
@@ -2223,18 +2223,18 @@ function PageRsCatalogue() {
       <div id="po-demo-rs-catalogue-table" className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th id="po-demo-rs-code" className="text-left px-3 py-2 text-muted-foreground font-medium">Code</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Libellé</th>
-            <th id="po-demo-rs-rate" className="text-right px-3 py-2 text-muted-foreground font-medium">Rate</th>
-            <th id="po-demo-rs-tej-op" className="text-left px-3 py-2 text-muted-foreground font-medium">TEJ Operation</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Typical Usage</th>
+            <th id="po-demo-rs-code" className="text-start px-3 py-2 text-muted-foreground font-medium">Code</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Libellé</th>
+            <th id="po-demo-rs-rate" className="text-end px-3 py-2 text-muted-foreground font-medium">Rate</th>
+            <th id="po-demo-rs-tej-op" className="text-start px-3 py-2 text-muted-foreground font-medium">TEJ Operation</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Typical Usage</th>
           </tr></thead>
           <tbody>
             {RS_CATALOGUE.map(r => (
               <tr key={r.code} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
                 <td className="px-3 py-2.5"><span className="inline-flex h-6 px-2 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold text-px-11 items-center">{r.code}</span></td>
                 <td className="px-3 py-2.5 font-medium">{r.label}</td>
-                <td className="px-3 py-2.5 text-right">
+                <td className="px-3 py-2.5 text-end">
                   <span className="font-mono font-semibold text-foreground">{r.rate.toFixed(1)}%</span>
                 </td>
                 <td className="px-3 py-2.5 font-mono text-purple-600 dark:text-purple-400 text-px-11">{r.operation}</td>
@@ -2295,14 +2295,14 @@ function PagePriceEvolution() {
           {/* Y-axis grid */}
           <div className="absolute inset-0 flex flex-col justify-between py-0 pointer-events-none">
             {[1400, 1200, 1000, 800].map(v => (
-              <div key={v} className="flex items-center gap-2 -ml-12 w-12 text-right text-px-9 text-muted-foreground">
+              <div key={v} className="flex items-center gap-2 -ms-12 w-12 text-end text-px-9 text-muted-foreground">
                 <span className="flex-1">{v}</span>
                 <span className="h-px w-1 bg-border" />
               </div>
             ))}
           </div>
           {/* Bars per month, grouped */}
-          <div className="flex-1 flex items-end gap-2 h-full pl-1">
+          <div className="flex-1 flex items-end gap-2 h-full ps-1">
             {months.map((m, mi) => (
               <div key={m} className="flex-1 flex flex-col h-full">
                 <div className="flex-1 flex items-end justify-center gap-0.5">
@@ -2327,13 +2327,13 @@ function PagePriceEvolution() {
         </div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Date</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Old</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">New</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Δ</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Reason</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">By</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Date</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Supplier</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Old</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">New</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Δ</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Reason</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">By</th>
           </tr></thead>
           <tbody>
             {DEMO_PRICE_HISTORY.map((h, i) => {
@@ -2342,9 +2342,9 @@ function PagePriceEvolution() {
                 <tr key={i} className="border-b border-border/40 last:border-0">
                   <td className="px-3 py-2 text-muted-foreground">{h.date}</td>
                   <td className="px-3 py-2">{h.supplier}</td>
-                  <td className="px-3 py-2 text-right text-muted-foreground">{fmt(h.old)}</td>
-                  <td className="px-3 py-2 text-right font-medium">{fmt(h.next)}</td>
-                  <td className={`px-3 py-2 text-right font-medium ${delta > 0 ? 'text-red-600' : 'text-green-600'}`}>{delta > 0 ? '+' : ''}{delta.toFixed(1)}%</td>
+                  <td className="px-3 py-2 text-end text-muted-foreground">{fmt(h.old)}</td>
+                  <td className="px-3 py-2 text-end font-medium">{fmt(h.next)}</td>
+                  <td className={`px-3 py-2 text-end font-medium ${delta > 0 ? 'text-red-600' : 'text-green-600'}`}>{delta > 0 ? '+' : ''}{delta.toFixed(1)}%</td>
                   <td className="px-3 py-2 text-muted-foreground">{h.reason}</td>
                   <td className="px-3 py-2 text-muted-foreground">Sara M.</td>
                 </tr>
@@ -2423,11 +2423,11 @@ function PageInvoiceAging() {
         </div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Invoice #</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Due Date</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Days Overdue</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Outstanding ({resolveCurrencyCode()})</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Invoice #</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Supplier</th>
+            <th className="text-start px-3 py-2 text-muted-foreground font-medium">Due Date</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Days Overdue</th>
+            <th className="text-end px-3 py-2 text-muted-foreground font-medium">Outstanding ({resolveCurrencyCode()})</th>
             <th className="text-center px-3 py-2 text-muted-foreground font-medium">Bucket</th>
           </tr></thead>
           <tbody>
@@ -2442,11 +2442,11 @@ function PageInvoiceAging() {
                   <td className="px-3 py-2.5 font-medium text-primary">{i.num}</td>
                   <td className="px-3 py-2.5">{i.supplier}</td>
                   <td className="px-3 py-2.5 text-muted-foreground">{i.due}</td>
-                  <td className={`px-3 py-2.5 text-right font-semibold ${i.days > 60 ? 'text-red-600' : i.days > 30 ? 'text-amber-600' : 'text-muted-foreground'}`}>{i.days}</td>
-                  <td className="px-3 py-2.5 text-right font-medium">{fmt(i.amount)}</td>
+                  <td className={`px-3 py-2.5 text-end font-semibold ${i.days > 60 ? 'text-red-600' : i.days > 30 ? 'text-amber-600' : 'text-muted-foreground'}`}>{i.days}</td>
+                  <td className="px-3 py-2.5 text-end font-medium">{fmt(i.amount)}</td>
                   <td className="px-3 py-2.5 text-center">
                     <span className={`inline-block h-2 w-2 rounded-full ${bucket.color}`} />
-                    <span className="ml-1.5 text-px-10 text-muted-foreground">{bucket.name}</span>
+                    <span className="ms-1.5 text-px-10 text-muted-foreground">{bucket.name}</span>
                   </td>
                 </tr>
               );
@@ -2639,7 +2639,7 @@ export function PurchaseAutopilotDemo({ open, onClose }: Props) {
               {getChapterTitle(demoLang, ch.id, ch.title)}
             </button>
           ))}
-          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, PO_STEPS.length)} / {PO_STEPS.length}</span>
+          <span className="ms-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, PO_STEPS.length)} / {PO_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div

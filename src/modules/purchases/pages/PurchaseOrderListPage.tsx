@@ -593,7 +593,7 @@ function PurchaseOrderListContent() {
                                 className="h-8 px-3 text-xs"
                                 onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
                               >
-                                <Eye className="h-3.5 w-3.5 mr-1" />
+                                <Eye className="h-3.5 w-3.5 me-1" />
                                 {t("actions.view", "View")}
                               </Button>
                               {po.status === "draft" && (
@@ -603,7 +603,7 @@ function PurchaseOrderListContent() {
                                   className="h-8 px-3 text-xs"
                                   onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
                                 >
-                                  <Edit className="h-3.5 w-3.5 mr-1" />
+                                  <Edit className="h-3.5 w-3.5 me-1" />
                                   {t("actions.edit", "Edit")}
                                 </Button>
                               )}
@@ -613,7 +613,7 @@ function PurchaseOrderListContent() {
                                 className="h-8 px-3 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
                                 onClick={() => setDeleteId(po.id)}
                               >
-                                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                <Trash2 className="h-3.5 w-3.5 me-1" />
                                 {t("actions.delete", "Delete")}
                               </Button>
                             </div>
@@ -643,8 +643,8 @@ function PurchaseOrderListContent() {
                             <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
                             <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
                             <TableHead className="text-xs">{t("fields.paymentStatus", "Payment")}</TableHead>
-                            <TableHead className="text-xs text-right">{t("fields.total", "Total")}</TableHead>
-                            <TableHead className="text-xs w-32 text-right">{t("fields.actions", "Actions")}</TableHead>
+                            <TableHead className="text-xs text-end">{t("fields.total", "Total")}</TableHead>
+                            <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -689,8 +689,8 @@ function PurchaseOrderListContent() {
                                     {t(`paymentStatus.${po.paymentStatus}`)}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)} {currency.code}</TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-xs text-end font-medium">{fmt(po.grandTotal)} {currency.code}</TableCell>
+                                <TableCell className="text-end">
                                   <TableRowActions
                                     actions={[
                                       {
@@ -771,7 +771,7 @@ function PurchaseOrderListContent() {
                               {po.supplierName} · {formatPurchaseDate(po.orderDate)}
                             </div>
                           </div>
-                          <div className="text-right shrink-0">
+                          <div className="text-end shrink-0">
                             <div className="text-sm font-semibold">{fmt(po.grandTotal)} {currency.code}</div>
                             <Badge variant="outline" className="text-px-10 mt-0.5">
                               {t(`paymentStatus.${po.paymentStatus}`)}
@@ -859,7 +859,7 @@ function PurchaseOrderListContent() {
             >
               {isBulkDeleting ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {t("bulk.deleting", "Deleting...")}
+                  <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> {t("bulk.deleting", "Deleting...")}
                 </>
               ) : (
                 t("actions.delete", "Delete")

@@ -850,30 +850,33 @@ namespace MyApi.Modules.Purchases.Services
         {
             var subtotal = qty * price;
             var discountAmount = discountType == "percentage" ? subtotal * discount / 100 : discount;
-            return Money(subtotal - discountAmount);
+            return Money(Math.Max(0m, subtotal - discountAmount));
         }
 
         private static void RecalculateTotals(PurchaseOrder order, List<PurchaseOrderItem> items)
         {
-            order.SubTotal = Money(items.Sum(i => i.Quantity * i.UnitPrice));
-            var discAmt = Money(order.DiscountType == "percentage" ? order.SubTotal * order.Discount / 100 : order.Discount);
-            var afterDiscount = order.SubTotal - discAmt;
-
-            // Tax must be computed on the DISCOUNTED base (per-line discount + pro-rated
-            // header discount) so PO totals reconcile with the originating SupplierInvoice.
-            // Previously the header discount was ignored when computing tax, causing VAT
-            // to be over-reported whenever a header-level discount was applied.
-            // We pro-rate the header discount by each line's post-line-discount base so
-            // per-line tax rates are preserved.
+            // SubTotal is the sum of the line totals AFTER the per-line discount, which is
+            // what SupplierInvoiceService persists too. Summing Quantity * UnitPrice here
+            // silently dropped every per-line discount from the GrandTotal.
             var lineBases = items
                 .Select(i =>
                 {
                     var sub = i.Quantity * i.UnitPrice;
                     var d = i.DiscountType == "percentage" ? sub * i.Discount / 100 : i.Discount;
-                    return new { Item = i, AfterLineDiscount = sub - d };
+                    return new { Item = i, AfterLineDiscount = Math.Max(0m, sub - d) };
                 })
                 .ToList();
+
+            order.SubTotal = Money(lineBases.Sum(x => x.AfterLineDiscount));
+            var discAmt = Money(order.DiscountType == "percentage" ? order.SubTotal * order.Discount / 100 : order.Discount);
+            var afterDiscount = order.SubTotal - discAmt;
+
+            // Tax must be computed on the DISCOUNTED base (per-line discount + pro-rated
+            // header discount) so PO totals reconcile with the originating SupplierInvoice.
+            // We pro-rate the header discount by each line's post-line-discount base so
+            // per-line tax rates are preserved.
             var totalAfterLineDiscount = lineBases.Sum(x => x.AfterLineDiscount);
+
             order.TaxAmount = totalAfterLineDiscount > 0
                 ? Money(lineBases.Sum(x =>
                 {

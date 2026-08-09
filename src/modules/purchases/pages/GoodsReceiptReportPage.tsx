@@ -65,11 +65,11 @@ export default function GoodsReceiptReportPage() {
       {/* Toolbar — hidden when printing */}
       <div className="print:hidden sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-background">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
+          <ArrowLeft className="h-4 w-4 me-1" />
           {t("actions.back", "Back")}
         </Button>
         <Button size="sm" onClick={() => window.print()}>
-          <Printer className="h-4 w-4 mr-1" />
+          <Printer className="h-4 w-4 me-1" />
           {t("actions.print", "Print / Save PDF")}
         </Button>
       </div>
@@ -85,7 +85,7 @@ export default function GoodsReceiptReportPage() {
               {t("fields.receiptNumber", "Receipt N°")}: {receipt.receiptNumber}
             </p>
           </div>
-          <div className="text-right text-sm">
+          <div className="text-end text-sm">
             <div>
               <span className="text-muted-foreground">
                 {t("fields.date", "Date")}:{" "}
@@ -128,15 +128,15 @@ export default function GoodsReceiptReportPage() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-border text-muted-foreground text-xs uppercase">
-                <th className="py-2 text-left">{t("pdf.article", "Article")}</th>
-                <th className="py-2 text-right">{t("pdf.ordered", "Ordered")}</th>
-                <th className="py-2 text-right">
+                <th className="py-2 text-start">{t("pdf.article", "Article")}</th>
+                <th className="py-2 text-end">{t("pdf.ordered", "Ordered")}</th>
+                <th className="py-2 text-end">
                   {t("pdf.received", "Received")}
                 </th>
-                <th className="py-2 text-right">
+                <th className="py-2 text-end">
                   {t("pdf.rejected", "Rejected")}
                 </th>
-                <th className="py-2 text-left">{t("pdf.notes", "Notes")}</th>
+                <th className="py-2 text-start">{t("pdf.notes", "Notes")}</th>
               </tr>
             </thead>
             <tbody>
@@ -152,9 +152,9 @@ export default function GoodsReceiptReportPage() {
                       </div>
                     )}
                   </td>
-                  <td className="py-2 text-right">{it.orderedQty}</td>
-                  <td className="py-2 text-right">{it.quantityReceived}</td>
-                  <td className="py-2 text-right">{it.quantityRejected}</td>
+                  <td className="py-2 text-end">{it.orderedQty}</td>
+                  <td className="py-2 text-end">{it.quantityReceived}</td>
+                  <td className="py-2 text-end">{it.quantityRejected}</td>
                   <td className="py-2 text-xs text-muted-foreground">
                     {it.notes || it.rejectionReason || ""}
                   </td>

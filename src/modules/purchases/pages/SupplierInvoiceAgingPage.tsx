@@ -139,9 +139,9 @@ function InvoiceAgingContent() {
                 <TableRow>
                   <TableHead className="text-xs">{t('reports.aging.supplier', 'Supplier')}</TableHead>
                   {(Object.keys(BUCKET_LABELS) as Bucket[]).map(b => (
-                    <TableHead key={b} className="text-xs text-right">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</TableHead>
+                    <TableHead key={b} className="text-xs text-end">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</TableHead>
                   ))}
-                  <TableHead className="text-xs text-right">{t('reports.aging.total', 'Total')}</TableHead>
+                  <TableHead className="text-xs text-end">{t('reports.aging.total', 'Total')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -152,9 +152,9 @@ function InvoiceAgingContent() {
                     <TableRow key={r.name}>
                       <TableCell className="text-xs font-medium">{r.name}</TableCell>
                       {(Object.keys(BUCKET_LABELS) as Bucket[]).map(b => (
-                        <TableCell key={b} className="text-xs text-right">{r.buckets[b] > 0 ? fmt(r.buckets[b]) : '—'}</TableCell>
+                        <TableCell key={b} className="text-xs text-end">{r.buckets[b] > 0 ? fmt(r.buckets[b]) : '—'}</TableCell>
                       ))}
-                      <TableCell className="text-xs text-right font-semibold">{fmt(r.total)}</TableCell>
+                      <TableCell className="text-xs text-end font-semibold">{fmt(r.total)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -175,7 +175,7 @@ function InvoiceAgingContent() {
                   <TableHead className="text-xs">{t('reports.aging.dueDate', 'Due date')}</TableHead>
                   <TableHead className="text-xs text-center">{t('reports.aging.daysOverdue', 'Days overdue')}</TableHead>
                   <TableHead className="text-xs text-center">{t('reports.aging.bucketLabel', 'Bucket')}</TableHead>
-                  <TableHead className="text-xs text-right">{t('reports.aging.outstanding', 'Outstanding')}</TableHead>
+                  <TableHead className="text-xs text-end">{t('reports.aging.outstanding', 'Outstanding')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -193,7 +193,7 @@ function InvoiceAgingContent() {
                           {t(`reports.aging.bucket.${bucket}`, BUCKET_LABELS[bucket])}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-right font-medium">{fmt(outstanding)} {currency.code}</TableCell>
+                      <TableCell className="text-xs text-end font-medium">{fmt(outstanding)} {currency.code}</TableCell>
                     </TableRow>
                   ))
                 )}

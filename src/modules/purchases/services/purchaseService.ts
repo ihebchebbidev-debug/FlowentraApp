@@ -6,7 +6,9 @@ import { apiFetch as rawApiFetch } from '@/services/api/apiClient';
  * the module's structured, translated toast (`toastApiError`). One failure =
  * one toast, and it's the one that explains the actual reason.
  */
-const apiFetch = (endpoint: string, options: any = {}) =>
+type FetchOptions = Omit<RequestInit, 'headers'> & { headers?: Record<string, string> };
+
+const apiFetch = (endpoint: string, options: FetchOptions = {}) =>
   rawApiFetch(endpoint, {
     ...options,
     headers: { ...(options.headers || {}), 'X-Suppress-Error-Toast': 'true' },
@@ -95,7 +97,7 @@ const downloadTejXmlFile = async (endpoint: string, fallbackName: string): Promi
 
 // Coerce string/number to integer (or undefined). Used for IDs and FK fields
 // because backend DTOs declare these as `int` and ASP.NET will reject strings with 400.
-const toInt = (v: any): number | undefined => {
+const toInt = (v: unknown): number | undefined => {
   if (v === undefined || v === null || v === '') return undefined;
   const n = typeof v === 'number' ? v : parseInt(String(v), 10);
   return Number.isFinite(n) ? n : undefined;
@@ -136,18 +138,18 @@ const qs = (params?: Record<string, any>): string => {
  */
 export const newIdempotencyKey = (): string => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return (crypto as any).randomUUID();
+    return (crypto as Crypto & { randomUUID: () => string }).randomUUID();
   }
   // RFC4122-ish fallback for older browsers.
   return 'idem-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 };
 
 /** Merge an optional Idempotency-Key header onto a POST init. */
-const withIdempotency = (init: RequestInit, key?: string): RequestInit => {
+const withIdempotency = (init: FetchOptions, key?: string): FetchOptions => {
   if (!key) return init;
   return {
     ...init,
-    headers: { ...(init.headers as Record<string, string> | undefined), 'Idempotency-Key': key },
+    headers: { ...(init.headers ?? {}), 'Idempotency-Key': key },
   };
 };
 
@@ -164,7 +166,7 @@ export const articleSupplierService = {
     extract<ArticleSupplier[]>(apiFetch(`/api/article-suppliers/by-supplier/${supplierId}`), 'Failed to fetch'),
 
   create: (data: Partial<ArticleSupplier>) => {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       ...data,
       articleId: toInt(data.articleId),
       supplierId: toInt(data.supplierId),
@@ -199,12 +201,12 @@ export const purchaseOrderService = {
   getStats: (dateFrom?: string, dateTo?: string) =>
     extract<PurchaseStats>(apiFetch(`/api/purchase-orders/stats${qs({ dateFrom, dateTo })}`), 'Failed to fetch stats'),
 
-  create: (data: Partial<PurchaseOrder> & { items?: any[] }, opts: CreateOpts = {}) => {
+  create: (data: Omit<Partial<PurchaseOrder>, 'items'> & { items?: Record<string, unknown>[] }, opts: CreateOpts = {}) => {
     // Coerce supplierId to int; sanitize items (drop client-only ids, coerce articleId)
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       ...data,
       supplierId: toInt(data.supplierId),
-      items: (data.items || []).map((it: any, idx: number) => ({
+      items: (data.items || []).map((it: Record<string, unknown>, idx: number) => ({
         ...it,
         id: undefined,
         purchaseOrderId: undefined,
@@ -273,7 +275,7 @@ export const purchaseOrderService = {
   },
 
   addItem: (orderId: string, data: Record<string, unknown>) => {
-    const payload: any = { ...data, articleId: toInt((data as any).articleId) };
+    const payload: Record<string, unknown> = { ...data, articleId: toInt((data as any).articleId) };
     return extract<any>(apiFetch(`/api/purchase-orders/${orderId}/items`, { method: 'POST', body: JSON.stringify(payload) }), 'Failed');
   },
 
@@ -300,11 +302,11 @@ export const goodsReceiptService = {
   getActivities: (receiptId: string, page = 1, limit = 50) =>
     extract<PurchaseActivity[]>(apiFetch(`/api/goods-receipts/${receiptId}/activities${qs({ page, limit })}`), 'Failed'),
 
-  create: (data: Partial<GoodsReceipt> & { items?: any[] }, opts: CreateOpts = {}) => {
-    const payload: any = {
+  create: (data: Omit<Partial<GoodsReceipt>, 'items'> & { items?: Record<string, unknown>[] }, opts: CreateOpts = {}) => {
+    const payload: Record<string, unknown> = {
       ...data,
       purchaseOrderId: toInt(data.purchaseOrderId),
-      items: (data.items || []).map((it: any) => ({
+      items: (data.items || []).map((it: Record<string, unknown>) => ({
         ...it,
         purchaseOrderItemId: toInt(it.purchaseOrderItemId),
       })),
@@ -338,7 +340,7 @@ export const goodsReceiptService = {
       notes?: string;
     }>;
   }) => {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       ...data,
       items: (data.items || []).map((it) => ({
         ...it,
@@ -371,13 +373,13 @@ export const supplierInvoiceService = {
   getById: (id: string) =>
     extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}`), 'Failed to fetch invoice'),
 
-  create: (data: Partial<SupplierInvoice> & { items?: any[] }, opts: CreateOpts = {}) => {
-    const payload: any = {
+  create: (data: Omit<Partial<SupplierInvoice>, 'items'> & { items?: Record<string, unknown>[] }, opts: CreateOpts = {}) => {
+    const payload: Record<string, unknown> = {
       ...data,
       supplierId: toInt(data.supplierId),
       purchaseOrderId: toInt(data.purchaseOrderId),
       goodsReceiptId: toInt(data.goodsReceiptId),
-      items: (data.items || []).map((it: any) => ({
+      items: (data.items || []).map((it: Record<string, unknown>) => ({
         ...it,
         articleId: toInt(it.articleId),
         purchaseOrderItemId: toInt(it.purchaseOrderItemId),
@@ -425,7 +427,7 @@ export const supplierInvoiceService = {
 
   // Items (only when invoice.status === 'draft')
   addItem: (invoiceId: string, data: Record<string, unknown>) => {
-    const payload: any = { ...data, articleId: toInt((data as any).articleId), purchaseOrderItemId: toInt((data as any).purchaseOrderItemId) };
+    const payload: Record<string, unknown> = { ...data, articleId: toInt((data as any).articleId), purchaseOrderItemId: toInt((data as any).purchaseOrderItemId) };
     return extract<any>(apiFetch(`/api/supplier-invoices/${invoiceId}/items`, { method: 'POST', body: JSON.stringify(payload) }), 'Failed to add item');
   },
 

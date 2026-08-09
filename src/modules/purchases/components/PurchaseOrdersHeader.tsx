@@ -44,7 +44,7 @@ export function PurchaseOrdersHeader({ total, onExport }: Props) {
           size="sm"
           onClick={() => navigate("/dashboard/purchases/orders/add")}
         >
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 me-1" />
           <span className="hidden sm:inline">
             {t("orders.newOrder", "New Order")}
           </span>

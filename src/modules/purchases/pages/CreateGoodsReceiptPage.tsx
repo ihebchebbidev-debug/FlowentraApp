@@ -123,7 +123,7 @@ export default function CreateGoodsReceiptPage() {
           quantityRejected: i.quantityRejected,
           rejectionReason: i.rejectionReason || undefined,
         })),
-      } as any, { idempotencyKey: idempotencyKeyRef.current });
+      }, { idempotencyKey: idempotencyKeyRef.current });
       toast.success(t('receipts.created'));
       navigate('/dashboard/purchases/receipts');
     } catch (e: any) {
@@ -145,7 +145,7 @@ export default function CreateGoodsReceiptPage() {
         backTo={{ to: '/dashboard/purchases/receipts', label: t('receipts.title') }}
         actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            {saving ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : <Save className="h-4 w-4 me-1" />}
             {t('actions.save')}
           </Button>
         }

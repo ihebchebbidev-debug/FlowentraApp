@@ -415,7 +415,7 @@ function SupplierInvoiceListContent() {
             <Download className="h-4 w-4" />
           </Button>
           <CreateActionButton size="sm" onClick={() => navigate("/dashboard/purchases/invoices/add")}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             <span className="hidden sm:inline">{t("invoices.newInvoice", "New Invoice")}</span>
           </CreateActionButton>
         </div>
@@ -465,7 +465,7 @@ function SupplierInvoiceListContent() {
               placeholder={t("invoices.searchPlaceholder", "Search invoices...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-9"
+              className="ps-8 h-9"
             />
           </div>
           <div className="flex items-center gap-1.5">
@@ -475,10 +475,10 @@ function SupplierInvoiceListContent() {
               className="h-9"
               onClick={() => setShowFilters((v) => !v)}
             >
-              <Filter className="h-3.5 w-3.5 sm:mr-1.5" />
+              <Filter className="h-3.5 w-3.5 sm:me-1.5" />
               <span className="hidden sm:inline">{t("filters.title", "Filters")}</span>
               {hasActiveFilter && (
-                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-px-10">•</Badge>
+                <Badge variant="secondary" className="ms-1.5 h-4 px-1 text-px-10">•</Badge>
               )}
             </Button>
             {viewAll && <CompanyFilter value={companyId} onChange={setCompanyId} />}
@@ -539,7 +539,7 @@ function SupplierInvoiceListContent() {
                   setSelectedStat("all");
                 }}
               >
-                <X className="h-3.5 w-3.5 mr-1" />
+                <X className="h-3.5 w-3.5 me-1" />
                 {t("filters.clear", "Clear")}
               </Button>
             )}
@@ -583,8 +583,8 @@ function SupplierInvoiceListContent() {
                         <TableHead className="text-xs">{t("fields.dueDate", "Due Date")}</TableHead>
                         <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
                         <TableHead className="text-xs">{t("fields.rs", "RS")}</TableHead>
-                        <TableHead className="text-xs text-right">{t("fields.total", "Total")}</TableHead>
-                        <TableHead className="text-xs w-32 text-right">{t("fields.actions", "Actions")}</TableHead>
+                        <TableHead className="text-xs text-end">{t("fields.total", "Total")}</TableHead>
+                        <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -635,8 +635,8 @@ function SupplierInvoiceListContent() {
                                 <span className="text-xs text-muted-foreground">-</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-xs text-right font-medium">{fmt(inv.grandTotal)}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-xs text-end font-medium">{fmt(inv.grandTotal)}</TableCell>
+                            <TableCell className="text-end">
                               <TableRowActions
                                 actions={[
                                   {
@@ -709,7 +709,7 @@ function SupplierInvoiceListContent() {
                               {inv.supplierName} · {t("fields.dueDate", "Due")}: {formatPurchaseDate(inv.dueDate)}
                             </div>
                           </div>
-                          <div className="text-right shrink-0">
+                          <div className="text-end shrink-0">
                             <div className="text-sm font-semibold">{fmt(inv.grandTotal)} {currency.code}</div>
                             {inv.rsApplicable && (
                               <Badge variant="outline" className="text-px-10 mt-0.5">
@@ -799,7 +799,7 @@ function SupplierInvoiceListContent() {
             >
               {isBulkDeleting ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {t("bulk.deleting", "Deleting...")}
+                  <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> {t("bulk.deleting", "Deleting...")}
                 </>
               ) : (
                 t("actions.delete", "Delete")

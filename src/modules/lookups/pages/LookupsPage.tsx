@@ -354,7 +354,9 @@ export default function LookupsPage() {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y">
-                  {lookupTypes.map((type) => {
+                  {[...lookupTypes]
+                    .sort((a, b) => String(a.label).localeCompare(String(b.label), undefined, { sensitivity: 'base', numeric: true }))
+                    .map((type) => {
                     const Icon = type.icon;
                       const itemCount = (type.hook as any).items?.length || 0;
                     const isSelected = selectedLookup === type.id;

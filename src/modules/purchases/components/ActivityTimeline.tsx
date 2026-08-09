@@ -154,7 +154,7 @@ export function ActivityTimeline({
           onClick={() => setExpanded((v) => !v)}
         >
           <ChevronDown
-            className={`h-3.5 w-3.5 mr-1 transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`h-3.5 w-3.5 me-1 transition-transform ${expanded ? "rotate-180" : ""}`}
           />
           {expanded
             ? t("timeline.showLess", "Show less")

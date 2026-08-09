@@ -66,6 +66,16 @@ function SupplierInvoiceDetailContent() {
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
 
 
+  // Audit trail refresh. Split out from `fetchData` so mutations that already
+  // receive the updated invoice in their response can still pull the new
+  // activity rows without re-fetching (and re-flashing) the whole page.
+  const refreshActivities = useCallback(() => {
+    if (!id) return;
+    supplierInvoiceService.getActivities(id, 1, 50)
+      .then(setActivities)
+      .catch(() => setActivities([]));
+  }, [id]);
+
   const fetchData = useCallback(() => {
     if (!id) return;
     setError(null);
@@ -75,10 +85,8 @@ function SupplierInvoiceDetailContent() {
       .catch((e: any) => setError(e?.message || 'Failed to load'))
       .finally(() => setLoading(false));
     // Real audit trail from the backend (item edits, payments, FEL, TEJ, status…).
-    supplierInvoiceService.getActivities(id, 1, 50)
-      .then(setActivities)
-      .catch(() => setActivities([]));
-  }, [id]);
+    refreshActivities();
+  }, [id, refreshActivities]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -227,6 +235,7 @@ function SupplierInvoiceDetailContent() {
     try {
       const updated = await supplierInvoiceService.validate(id);
       setInv(updated);
+      refreshActivities();
       toast.success(t('actions.validated', 'Invoice validated'));
     } catch (e: any) {
       toastApiError(e, t, { fallback: t('common.error', 'Validation failed') as string });
@@ -295,6 +304,7 @@ function SupplierInvoiceDetailContent() {
         status: 'sent',
       });
       setInv(updated);
+      refreshActivities();
       setFelOpen(false);
       setFelReference('');
       toast.success(t('actions.factureEnLigneRecorded', 'Facture-en-Ligne submission recorded'));
@@ -337,6 +347,7 @@ function SupplierInvoiceDetailContent() {
         paymentDate,
       });
       setInv(updated);
+      refreshActivities();
       setPaymentOpen(false);
       toast.success(t('actions.paymentRecorded', 'Payment recorded'));
       fetchData();
@@ -378,11 +389,11 @@ function SupplierInvoiceDetailContent() {
           <div className="flex items-center gap-2">
             <Badge className={STATUS_COLORS[inv.status]}>{t(`invoiceStatus.${inv.status}`)}</Badge>
             <Button size="sm" variant="outline" onClick={() => setIsPdfOpen(true)}>
-              <Download className="h-3.5 w-3.5 mr-1" /> {t('actions.exportPdf')}
+              <Download className="h-3.5 w-3.5 me-1" /> {t('actions.exportPdf')}
             </Button>
             {inv.status === 'draft' && (
               <Button size="sm" variant="outline" onClick={handleValidate} disabled={actionLoading !== null}>
-                {actionLoading === 'validate' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 mr-1" />}
+                {actionLoading === 'validate' ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 me-1" />}
                 {t('actions.validate', 'Validate')}
               </Button>
             )}
@@ -392,19 +403,19 @@ function SupplierInvoiceDetailContent() {
                 info is missing the user is told exactly what to fill. */}
             {inv.status !== 'draft' && inv.status !== 'cancelled' && (
               <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={actionLoading !== null}>
-                {actionLoading === 'tejxml' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
+                {actionLoading === 'tejxml' ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 me-1" />}
                 {t('actions.downloadTejXml', 'Download TEJ XML')}
               </Button>
             )}
             {inv.status !== 'draft' && inv.status !== 'cancelled' && inv.factureEnLigneStatus !== 'sent' && inv.factureEnLigneStatus !== 'validated' && (
               <Button size="sm" variant="outline" onClick={() => setFelOpen(true)} disabled={actionLoading !== null}>
-                {actionLoading === 'fel' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />}
+                {actionLoading === 'fel' ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <Send className="h-3.5 w-3.5 me-1" />}
                 {t('actions.recordFactureEnLigne', 'Record F.E.L')}
               </Button>
             )}
             {inv.status !== 'draft' && inv.status !== 'cancelled' && inv.grandTotal - (inv.amountPaid || 0) > 0 && (
               <Button size="sm" onClick={openPaymentDialog} disabled={actionLoading !== null}>
-                {actionLoading === 'payment' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Banknote className="h-3.5 w-3.5 mr-1" />}
+                {actionLoading === 'payment' ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <Banknote className="h-3.5 w-3.5 me-1" />}
                 {t('actions.recordPayment', 'Record Payment')}
               </Button>
             )}
@@ -424,6 +435,7 @@ function SupplierInvoiceDetailContent() {
                 try {
                   const updated = await supplierInvoiceService.update(id, { status: next as any });
                   setInv(updated);
+                  refreshActivities();
                   toast.success(t('status.updated', 'Status updated'));
                 } catch (e: any) {
                   toastApiError(e, t, { fallback: t('common.error', 'Failed') as string });
@@ -479,19 +491,19 @@ function SupplierInvoiceDetailContent() {
                   isEditingItems ? (
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="outline" onClick={addDraftItem} disabled={savingItems}>
-                        <Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}
+                        <Plus className="h-3.5 w-3.5 me-1" /> {t('create.addItem')}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={cancelEditItems} disabled={savingItems}>
-                        <X className="h-3.5 w-3.5 mr-1" /> {t('actions.cancel', 'Cancel')}
+                        <X className="h-3.5 w-3.5 me-1" /> {t('actions.cancel', 'Cancel')}
                       </Button>
                       <Button size="sm" onClick={saveItems} disabled={savingItems}>
-                        {savingItems ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {savingItems ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <Save className="h-3.5 w-3.5 me-1" />}
                         {t('actions.save')}
                       </Button>
                     </div>
                   ) : (
                     <Button size="sm" variant="outline" onClick={startEditItems}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> {t('actions.edit', 'Edit items')}
+                      <Pencil className="h-3.5 w-3.5 me-1" /> {t('actions.edit', 'Edit items')}
                     </Button>
                   )
                 )}
@@ -502,18 +514,18 @@ function SupplierInvoiceDetailContent() {
                     <TableHeader><TableRow>
                       <TableHead className="text-xs">{t('fields.article')}</TableHead>
                       <TableHead className="text-xs text-center">{t('fields.quantity')}</TableHead>
-                      <TableHead className="text-xs text-right">{t('fields.unitPrice')}</TableHead>
-                      <TableHead className="text-xs text-right">{t('fields.tax', 'Tax')} %</TableHead>
-                      <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                      <TableHead className="text-xs text-end">{t('fields.unitPrice')}</TableHead>
+                      <TableHead className="text-xs text-end">{t('fields.tax', 'Tax')} %</TableHead>
+                      <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                       {inv.items.map(item => (
                         <TableRow key={item.id}>
                           <TableCell><div className="text-xs font-medium">{item.articleName || item.description}</div></TableCell>
                           <TableCell className="text-xs text-center">{Number(item.quantity || 0).toFixed(2)}</TableCell>
-                          <TableCell className="text-xs text-right">{fmt(item.unitPrice)}</TableCell>
-                          <TableCell className="text-xs text-right">{item.taxRate ?? 0}%</TableCell>
-                          <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal)}</TableCell>
+                          <TableCell className="text-xs text-end">{fmt(item.unitPrice)}</TableCell>
+                          <TableCell className="text-xs text-end">{item.taxRate ?? 0}%</TableCell>
+                          <TableCell className="text-xs text-end font-medium">{fmt(item.lineTotal)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -525,7 +537,7 @@ function SupplierInvoiceDetailContent() {
                       <TableHead className="text-xs w-20">{t('fields.quantity')}</TableHead>
                       <TableHead className="text-xs w-24">{t('fields.unitPrice')}</TableHead>
                       <TableHead className="text-xs w-20">{t('fields.tax', 'Tax')} %</TableHead>
-                      <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                      <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
@@ -535,7 +547,7 @@ function SupplierInvoiceDetailContent() {
                           <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-16" value={item.quantity ?? ''} onChange={e => updateDraftItem(idx, 'quantity', Number(e.target.value))} /></TableCell>
                           <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-20" value={item.unitPrice ?? ''} onChange={e => updateDraftItem(idx, 'unitPrice', Number(e.target.value))} /></TableCell>
                           <TableCell><Input type="number" min="0" max="100" step="0.01" className="h-7 text-xs w-16" value={item.taxRate ?? 19} onChange={e => updateDraftItem(idx, 'taxRate', Number(e.target.value))} /></TableCell>
-                          <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal || 0)}</TableCell>
+                          <TableCell className="text-xs text-end font-medium">{fmt(item.lineTotal || 0)}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeDraftItem(idx)} disabled={savingItems}>
                               <Trash2 className="h-3 w-3 text-destructive" />
@@ -571,9 +583,9 @@ function SupplierInvoiceDetailContent() {
                 <CardContent className="space-y-2 text-xs">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.status')}</span>
                     <Badge variant="outline" className="text-px-10">
-                      {inv.factureEnLigneStatus === 'validated' && <CheckCircle className="h-3 w-3 mr-1 text-green-500" />}
-                      {inv.factureEnLigneStatus === 'rejected' && <XCircle className="h-3 w-3 mr-1 text-destructive" />}
-                      {inv.factureEnLigneStatus === 'pending' && <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />}
+                      {inv.factureEnLigneStatus === 'validated' && <CheckCircle className="h-3 w-3 me-1 text-green-500" />}
+                      {inv.factureEnLigneStatus === 'rejected' && <XCircle className="h-3 w-3 me-1 text-destructive" />}
+                      {inv.factureEnLigneStatus === 'pending' && <AlertTriangle className="h-3 w-3 me-1 text-amber-500" />}
                       {t(`factureStatus.${inv.factureEnLigneStatus || 'pending'}`)}
                     </Badge>
                   </div>
@@ -586,7 +598,7 @@ function SupplierInvoiceDetailContent() {
                 <CardContent className="space-y-2 text-xs">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.synced')}</span>
                     <Badge variant={inv.tejSynced ? 'default' : 'outline'} className="text-px-10">
-                      {inv.tejSynced ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
+                      {inv.tejSynced ? <CheckCircle className="h-3 w-3 me-1" /> : <AlertTriangle className="h-3 w-3 me-1" />}
                       {t(`tejStatus.${inv.tejSyncStatus || 'pending'}`)}
                     </Badge>
                   </div>
@@ -654,7 +666,7 @@ function SupplierInvoiceDetailContent() {
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleRecordFactureEnLigne} disabled={!felReference.trim() || actionLoading === 'fel'}>
-              {actionLoading === 'fel' && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+              {actionLoading === 'fel' && <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" />}
               {t('common.save', 'Save')}
             </Button>
           </DialogFooter>
@@ -722,7 +734,7 @@ function SupplierInvoiceDetailContent() {
               {t('actions.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleRecordPayment} disabled={actionLoading === 'payment'}>
-              {actionLoading === 'payment' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 mr-1" />}
+              {actionLoading === 'payment' ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5 me-1" />}
               {t('actions.confirm', 'Confirm')}
             </Button>
           </DialogFooter>

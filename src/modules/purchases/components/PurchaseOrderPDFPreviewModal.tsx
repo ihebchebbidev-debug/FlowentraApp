@@ -143,8 +143,8 @@ export function PurchaseOrderPDFPreviewModal({ isOpen, onClose, order, formatCur
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" />{!isMobile && t('actions.print')}</Button>
-            <Button size="sm" onClick={handleDownload}><Download className="h-4 w-4 mr-1" />{!isMobile && t('pdf.download', 'Download')}</Button>
+            <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="h-4 w-4 me-1" />{!isMobile && t('actions.print')}</Button>
+            <Button size="sm" onClick={handleDownload}><Download className="h-4 w-4 me-1" />{!isMobile && t('pdf.download', 'Download')}</Button>
           </div>
         </DialogHeader>
         <Separator />

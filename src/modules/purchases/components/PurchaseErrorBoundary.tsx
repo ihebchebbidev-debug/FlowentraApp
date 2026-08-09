@@ -29,12 +29,12 @@ export function PurchaseErrorFallback({ error, onRetry, backTo }: ErrorFallbackP
           <div className="flex items-center justify-center gap-2 pt-2">
             {backTo && (
               <Button variant="outline" size="sm" onClick={() => navigate(backTo)}>
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Go back
+                <ArrowLeft className="h-3.5 w-3.5 me-1" /> Go back
               </Button>
             )}
             {onRetry && (
               <Button size="sm" onClick={onRetry}>
-                <RefreshCcw className="h-3.5 w-3.5 mr-1" /> Retry
+                <RefreshCcw className="h-3.5 w-3.5 me-1" /> Retry
               </Button>
             )}
           </div>

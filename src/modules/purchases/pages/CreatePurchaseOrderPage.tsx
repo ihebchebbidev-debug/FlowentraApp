@@ -18,7 +18,7 @@ import { toastApiError } from "../utils/apiErrorToast";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { apiFetch } from "@/services/api/apiClient";
 import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
-import { calculateDocumentTotal } from "@/lib/calculateTotal";
+import { computeLineTotal, computeDocumentTotals, money } from "../utils/totals";
 import { TenantSelector } from "@/components/TenantSelector";
 import { useTargetTenant } from "@/hooks/useTargetTenant";
 import type { PurchaseOrderItem, ArticleSupplier } from "../types";
@@ -189,13 +189,8 @@ export default function CreatePurchaseOrderPage() {
         updated[index].articleNumber = as.articleNumber;
       }
     }
-    const qty = updated[index].quantity || 0;
-    const price = updated[index].unitPrice || 0;
-    const disc = updated[index].discount || 0;
-    const discType = updated[index].discountType || 'percentage';
-    const subtotalItem = qty * price;
-    const discountAmount = discType === 'percentage' ? subtotalItem * disc / 100 : disc;
-    updated[index].lineTotal = subtotalItem - discountAmount;
+    // Single source of truth for money math (mirrors the backend rounding).
+    updated[index].lineTotal = computeLineTotal(updated[index]);
     setItems(updated);
   };
 
@@ -229,28 +224,14 @@ export default function CreatePurchaseOrderPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Use the shared total calculator (same one used by offers/sales) so the rule
-  // "Subtotal → Discount → TVA → Fiscal Stamp" stays consistent across modules.
-  // Per-line tax rates are aggregated into a fixed taxAmount because the calculator
-  // operates on a single tax rate.
-  const subtotal = items.reduce((sum, item) => sum + (item.lineTotal || 0), 0);
-  const lineTaxAmount = items.reduce((sum, item) => {
-    const rate = (item.taxRate ?? 19) / 100;
-    return sum + (item.lineTotal || 0) * rate;
-  }, 0);
-  // The fiscal stamp only applies to an actual document — an empty form totals 0.
-  const effectiveFiscalStamp = items.length > 0 ? fiscalStamp : 0;
-  const totals = calculateDocumentTotal({
-    subtotal,
-    discount: 0,
-    discountType: 'fixed',
-    tax: lineTaxAmount,
-    taxType: 'fixed',
-    fiscalStamp: effectiveFiscalStamp,
+  // Shared purchase money math — identical rounding to the backend
+  // (PurchaseOrderService.Money / RecalculateTotals) so the preview can never
+  // drift by a cent from the persisted document.
+  const { subtotal, taxAmount, grandTotal } = computeDocumentTotals(items, {
+    fiscalStamp,
+    defaultTaxRate: 19,
   });
-  const grandTotal = totals.total;
-  const taxAmount = totals.taxAmount;
-  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  const fmt = (n: number) => money(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const handleSave = async () => {
     if (isTenantRequired) { toast.error(t('validation.tenantRequired', 'Please select a target company')); return; }
@@ -311,12 +292,10 @@ export default function CreatePurchaseOrderPage() {
         serviceOrderId: prefillServiceOrderId || undefined,
         items: items.map((item, idx) => ({
           ...item,
-          id: undefined as any,
-          purchaseOrderId: undefined as any,
           displayOrder: idx,
           receivedQty: 0,
-        })) as any,
-      } as any, { idempotencyKey: idempotencyKeyRef.current });
+        })),
+      }, { idempotencyKey: idempotencyKeyRef.current });
       toast.success(t('orders.created'));
       navigate('/dashboard/purchases/orders');
     } catch (e: any) {
@@ -342,7 +321,7 @@ export default function CreatePurchaseOrderPage() {
         backTo={{ to: '/dashboard/purchases/orders', label: t('orders.title') }}
         actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            {saving ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : <Save className="h-4 w-4 me-1" />}
             {t('actions.save')}
           </Button>
         }
@@ -413,7 +392,7 @@ export default function CreatePurchaseOrderPage() {
               <span className="hidden sm:inline text-px-10 text-muted-foreground">
                 {t('create.shortcutsHint', 'Alt+N add line · Enter next · Ctrl+S save')}
               </span>
-              <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
+              <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 me-1" /> {t('create.addItem')}</Button>
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
@@ -427,7 +406,7 @@ export default function CreatePurchaseOrderPage() {
                   <TableHead className="text-xs w-24">{t('fields.unitPrice')}</TableHead>
                   <TableHead className="text-xs w-32">{t('fields.discount', 'Discount')}</TableHead>
                   <TableHead className="text-xs w-20">{t('fields.tax', 'Tax')} %</TableHead>
-                  <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                  <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -480,7 +459,17 @@ export default function CreatePurchaseOrderPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Input type="number" min="0" step="0.01" className="h-7 text-xs w-14" value={item.discount ?? 0} onChange={e => updateItem(idx, 'discount', Number(e.target.value))} />
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          max={(item.discountType || 'percentage') === 'percentage'
+                            ? 100
+                            : (item.quantity || 0) * (item.unitPrice || 0)}
+                          className="h-7 text-xs w-14"
+                          value={item.discount ?? 0}
+                          onChange={e => updateItem(idx, 'discount', Number(e.target.value))}
+                        />
                         <Select value={item.discountType || 'percentage'} onValueChange={v => updateItem(idx, 'discountType', v)}>
                           <SelectTrigger className="h-7 text-xs w-14 px-1"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -505,7 +494,7 @@ export default function CreatePurchaseOrderPage() {
                         }}
                       />
                     </TableCell>
-                    <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal || 0)}</TableCell>
+                    <TableCell className="text-xs text-end font-medium">{fmt(item.lineTotal || 0)}</TableCell>
                     <TableCell><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3 text-destructive" /></Button></TableCell>
                   </TableRow>
                 ))}
@@ -527,7 +516,7 @@ export default function CreatePurchaseOrderPage() {
                     type="number"
                     min="0"
                     step="0.01"
-                    className="h-7 w-24 text-xs text-right"
+                    className="h-7 w-24 text-xs text-end"
                     value={fiscalStamp}
                     onChange={e => setFiscalStamp(Number(e.target.value) || 0)}
                   />

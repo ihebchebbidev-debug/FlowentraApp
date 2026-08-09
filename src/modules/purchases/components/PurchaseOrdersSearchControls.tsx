@@ -54,7 +54,7 @@ export function PurchaseOrdersSearchControls(props: Props) {
             placeholder={t("orders.searchPlaceholder", "Search orders...")}
             value={props.search}
             onChange={(e) => props.onSearchChange(e.target.value)}
-            className="pl-8 h-9"
+            className="ps-8 h-9"
           />
         </div>
         <div className="flex items-center gap-1.5">
@@ -66,12 +66,12 @@ export function PurchaseOrdersSearchControls(props: Props) {
             className="h-9"
             onClick={props.onToggleFilters}
           >
-            <Filter className="h-3.5 w-3.5 sm:mr-1.5" />
+            <Filter className="h-3.5 w-3.5 sm:me-1.5" />
             <span className="hidden sm:inline">
               {t("filters.title", "Filters")}
             </span>
             {props.hasActiveFilter && (
-              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-px-10">
+              <Badge variant="secondary" className="ms-1.5 h-4 px-1 text-px-10">
                 •
               </Badge>
             )}

@@ -103,8 +103,8 @@ function ComplianceDashboardContent() {
                   <div key={inv.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                     <span className="text-xs">{inv.invoiceNumber}</span>
                     <Badge variant="outline" className="text-px-10">
-                      {inv.factureEnLigneStatus === 'validated' && <CheckCircle className="h-3 w-3 mr-1 text-green-500" />}
-                      {inv.factureEnLigneStatus === 'pending' && <Clock className="h-3 w-3 mr-1 text-amber-500" />}
+                      {inv.factureEnLigneStatus === 'validated' && <CheckCircle className="h-3 w-3 me-1 text-green-500" />}
+                      {inv.factureEnLigneStatus === 'pending' && <Clock className="h-3 w-3 me-1 text-amber-500" />}
                       {t(`factureStatus.${inv.factureEnLigneStatus || 'pending'}`)}
                     </Badge>
                   </div>
@@ -131,7 +131,7 @@ function ComplianceDashboardContent() {
                   <div key={inv.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                     <span className="text-xs">{inv.invoiceNumber}</span>
                     <Badge variant={inv.tejSynced ? 'default' : 'outline'} className="text-px-10">
-                      {inv.tejSynced ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
+                      {inv.tejSynced ? <CheckCircle className="h-3 w-3 me-1" /> : <AlertTriangle className="h-3 w-3 me-1" />}
                       {t(`tejStatus.${inv.tejSyncStatus || 'pending'}`)}
                     </Badge>
                   </div>

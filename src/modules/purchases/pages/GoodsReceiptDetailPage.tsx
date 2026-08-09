@@ -68,7 +68,7 @@ function GoodsReceiptDetailContent() {
               variant="outline"
               onClick={() => navigate(`/dashboard/purchases/receipts/${gr.id}/report`)}
             >
-              <Printer className="h-3.5 w-3.5 mr-1" />
+              <Printer className="h-3.5 w-3.5 me-1" />
               {t('receipts.deliverySheet', 'Delivery sheet')}
             </Button>
             {!isDeleted && (
@@ -77,7 +77,7 @@ function GoodsReceiptDetailContent() {
                 variant="outline"
                 onClick={() => navigate(`/dashboard/purchases/receipts/${gr.id}/edit`)}
               >
-                <Pencil className="h-3.5 w-3.5 mr-1" />
+                <Pencil className="h-3.5 w-3.5 me-1" />
                 {t('actions.edit', 'Edit')}
               </Button>
             )}
@@ -89,7 +89,7 @@ function GoodsReceiptDetailContent() {
         {isDeleted && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {t('receipts.deletedNotice', 'This goods receipt has been deleted and is kept for audit purposes only. Stock movements have been reversed.')}
-            {gr.deletedAt && <span className="ml-1 text-muted-foreground">({new Date(gr.deletedAt).toLocaleString()})</span>}
+            {gr.deletedAt && <span className="ms-1 text-muted-foreground">({new Date(gr.deletedAt).toLocaleString()})</span>}
           </div>
         )}
         <div className="grid md:grid-cols-2 gap-4">

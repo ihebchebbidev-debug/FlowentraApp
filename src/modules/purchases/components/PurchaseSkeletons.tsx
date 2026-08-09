@@ -62,7 +62,7 @@ function TableSkeletonRows({ columns, rows }: { columns: number; rows: number })
           <TableRow key={r}>
             {[...Array(columns)].map((_, c) => (
               <TableCell key={c}>
-                <Skeleton className={`h-3 ${c === 0 ? 'w-24' : c === columns - 1 ? 'w-16 ml-auto' : 'w-20'}`} />
+                <Skeleton className={`h-3 ${c === 0 ? 'w-24' : c === columns - 1 ? 'w-16 ms-auto' : 'w-20'}`} />
               </TableCell>
             ))}
           </TableRow>
@@ -96,7 +96,7 @@ export function DetailSkeleton() {
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center flex-1">
                 <Skeleton className="h-6 w-6 rounded-full" />
-                <Skeleton className="h-3 w-16 ml-1 hidden sm:block" />
+                <Skeleton className="h-3 w-16 ms-1 hidden sm:block" />
                 {i < 4 && <Skeleton className="flex-1 h-0.5 mx-1" />}
               </div>
             ))}

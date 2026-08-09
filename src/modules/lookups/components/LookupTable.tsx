@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TableSkeleton } from '@/components/ui/page-skeleton';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,7 @@ interface LookupTableProps {
 
 export function LookupTable({ 
   title = "Items", 
-  items, 
+  items: rawItems,
   isLoading, 
   onCreate, 
   onUpdate, 
@@ -54,6 +54,14 @@ export function LookupTable({
   showTypeFields = {}
 }: LookupTableProps) {
   const { t } = useTranslation('lookups');
+  // Lookups are always presented A → Z. Locale-aware compare so accented and
+  // Arabic names collate correctly; ties fall back to a stable id compare.
+  const items = useMemo(
+    () => [...(rawItems || [])].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base', numeric: true })
+      || String(a.id).localeCompare(String(b.id))),
+    [rawItems],
+  );
   const [isSettingDefault, setIsSettingDefault] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<LookupItem | null>(null);
