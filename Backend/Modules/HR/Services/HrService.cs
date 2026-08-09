@@ -1129,7 +1129,10 @@ namespace MyApi.Modules.HR.Services
                 SalaryCeiling = dto.SalaryCeiling,
                 AbattementHeadOfFamily = dto.AbattementHeadOfFamily,
                 AbattementPerChild = dto.AbattementPerChild,
-                IrppBracketsJson = JsonSerializer.Serialize(dto.IrppBrackets),
+                // camelCase so the persisted keys match ParseBrackets' expectations
+                IrppBracketsJson = JsonSerializer.Serialize(
+                    (dto.IrppBrackets ?? new List<IrppBracketDto>())
+                        .Select(b => new { from = b.From, to = b.To, rate = b.Rate })),
                 IsActive = dto.IsActive,
                 Notes = dto.Notes
             };
@@ -1413,15 +1416,32 @@ namespace MyApi.Modules.HR.Services
                 var list = new List<(decimal, decimal?, decimal)>();
                 foreach (var el in doc.RootElement.EnumerateArray())
                 {
-                    decimal from = 0, rate = 0; decimal? to = null;
-                    if (el.TryGetProperty("from", out var f)) from = f.GetDecimal();
-                    if (el.TryGetProperty("rate", out var r)) rate = r.GetDecimal();
-                    if (el.TryGetProperty("to", out var t) && t.ValueKind != JsonValueKind.Null) to = t.GetDecimal();
+                    decimal from = TryDecimal(el, "from") ?? 0m;
+                    decimal rate = TryDecimal(el, "rate") ?? 0m;
+                    decimal? to = TryDecimal(el, "to");
                     list.Add((from, to, rate));
                 }
-                return list.Count > 0 ? list : defaults;
+                // A bracket set where every rate is 0 means the JSON keys didn't match
+                // (legacy PascalCase rows) or the set is meaningless — fall back.
+                if (list.Count == 0 || list.All(b => b.Item3 == 0m)) return defaults;
+                return list;
             }
             catch { return defaults; }
+        }
+
+        /// <summary>Case-insensitive numeric property read (handles legacy PascalCase JSON).</summary>
+        private static decimal? TryDecimal(JsonElement el, string name)
+        {
+            foreach (var prop in el.EnumerateObject())
+            {
+                if (!string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
+                if (prop.Value.ValueKind == JsonValueKind.Null) return null;
+                if (prop.Value.ValueKind == JsonValueKind.Number) return prop.Value.GetDecimal();
+                if (prop.Value.ValueKind == JsonValueKind.String
+                    && decimal.TryParse(prop.Value.GetString(), out var parsed)) return parsed;
+                return null;
+            }
+            return null;
         }
 
         private static decimal ComputeIrpp(decimal taxableBase, List<(decimal from, decimal? to, decimal rate)> brackets)
