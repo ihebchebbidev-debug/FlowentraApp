@@ -18,11 +18,28 @@ export function useDeals(params?: DealSearchParams) {
   const fetchDeals = useCallback(async () => {
     try {
       setLoading(true);
-      const [list, statsData] = await Promise.all([
-        dealsApi.getAll({ limit: 200, ...params }),
+      // The list filters/searches client-side, so it needs the whole (tenant-scoped)
+      // set — not just the first server page, otherwise the cards' stats and the
+      // rows below them disagree as soon as there are more than `PAGE_SIZE` deals.
+      const PAGE_SIZE = 200;
+      const MAX_PAGES = 25; // hard stop: 5000 deals
+      const [first, statsData] = await Promise.all([
+        dealsApi.getAll({ limit: PAGE_SIZE, page: 1, ...params }),
         dealsApi.getStats(),
       ]);
-      setDeals(list.deals);
+      const all = [...first.deals];
+      const totalPages = Math.min(first.pagination?.totalPages ?? 1, MAX_PAGES);
+      if (!params?.page && totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            dealsApi.getAll({ limit: PAGE_SIZE, ...params, page: i + 2 }),
+          ),
+        );
+        rest.forEach(r => all.push(...r.deals));
+      }
+      // De-duplicate defensively: rows can shift between page requests.
+      const seen = new Set<number>();
+      setDeals(all.filter(d => (seen.has(d.id) ? false : (seen.add(d.id), true))));
       setStats(statsData);
     } catch (e) {
       toast.error(t('toast.loadError'));
@@ -31,6 +48,7 @@ export function useDeals(params?: DealSearchParams) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(params)]);
+
 
   useEffect(() => { fetchDeals(); }, [fetchDeals]);
 

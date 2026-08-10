@@ -176,7 +176,14 @@
       "meeting": "Réunion",
       "status_change": "Changement d'étape",
       "created": "Créée",
-      "converted": "Convertie"
+      "converted": "Convertie",
+      "item_added": "Ligne ajoutée",
+      "item_updated": "Ligne modifiée",
+      "item_deleted": "Ligne supprimée",
+      "stage_change": "Changement d'étape",
+      "reopened": "Rouverte",
+      "updated": "Modifiée",
+      "deleted": "Supprimée"
     }
   },
   "convert": {
@@ -220,5 +227,8 @@
     "name": "Affaires",
     "description": "Gérez les opportunités du prospect à la signature — convertissez les affaires gagnées en ventes ou projets.",
     "category": "CRM"
+  },
+  "kanban": {
+    "mixedCurrencies": "Devises mixtes"
   }
 }

@@ -27,11 +27,17 @@ interface Props {
   currency?: string;
 }
 
+/** Mirrors the server's ComputeLineTotal exactly (2-dp rounding) so the preview
+ *  total never drifts a cent away from the value the API stores. */
 function lineTotal(it: DealItemDraft): number {
-  const gross = it.quantity * it.unitPrice;
-  if (!it.discount) return gross;
-  return it.discountType === "fixed" ? Math.max(gross - it.discount, 0) : gross * (1 - it.discount / 100);
+  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const gross = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
+  const discount = Number(it.discount) || 0;
+  if (discount <= 0) return round2(gross);
+  const net = it.discountType === "fixed" ? gross - discount : gross * (1 - discount / 100);
+  return round2(Math.max(net, 0));
 }
+
 
 export function DealItemsManager({ items, onChange, currency = "TND" }: Props) {
   const { t } = useTranslation("deals");

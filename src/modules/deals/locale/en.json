@@ -176,7 +176,14 @@
       "meeting": "Meeting",
       "status_change": "Stage change",
       "created": "Created",
-      "converted": "Converted"
+      "converted": "Converted",
+      "item_added": "Item added",
+      "item_updated": "Item updated",
+      "item_deleted": "Item removed",
+      "stage_change": "Stage change",
+      "reopened": "Reopened",
+      "updated": "Updated",
+      "deleted": "Deleted"
     }
   },
   "convert": {
@@ -220,5 +227,8 @@
     "name": "Deals",
     "description": "Manage opportunities from lead to close — convert won deals into sales or projects.",
     "category": "CRM"
+  },
+  "kanban": {
+    "mixedCurrencies": "Mixed currencies"
   }
 }

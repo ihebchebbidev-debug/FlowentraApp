@@ -93,6 +93,11 @@ namespace MyApi.Modules.Deals.Controllers
                 var deal = await _dealService.CreateDealAsync(createDto, GetCurrentUserId(), GetCurrentUserName());
                 return CreatedAtAction(nameof(GetDealById), new { id = deal.Id }, new { success = true, data = deal });
             }
+            catch (InvalidOperationException ex)
+            {
+                // e.g. INVALID_STAGE — a client mistake, not a server fault.
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating deal");
@@ -108,6 +113,10 @@ namespace MyApi.Modules.Deals.Controllers
                 var deal = await _dealService.UpdateDealAsync(id, updateDto, GetCurrentUserId(), GetCurrentUserName());
                 if (deal == null) return NotFound(new { success = false, error = new { code = "DEAL_NOT_FOUND", message = "Deal not found" } });
                 return Ok(new { success = true, data = deal });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
             }
             catch (Exception ex)
             {

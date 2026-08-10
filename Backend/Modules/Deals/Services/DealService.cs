@@ -29,6 +29,21 @@ namespace MyApi.Modules.Deals.Services
         // Stages considered "open" (still in the pipeline)
         private static readonly string[] OpenStages = { "lead", "qualified", "proposal", "negotiation" };
 
+        // Every stage the pipeline accepts. Anything else is rejected server-side so a
+        // direct API call can't park a deal in a stage no view (list/kanban/stats) knows.
+        private static readonly string[] ValidStages = { "lead", "qualified", "proposal", "negotiation", "won", "lost" };
+
+        /// <summary>Validates and canonicalises a stage value; throws for unknown stages.</summary>
+        private static string NormalizeStage(string stage)
+        {
+            var s = (stage ?? "").Trim().ToLowerInvariant();
+            if (!ValidStages.Contains(s))
+                throw new InvalidOperationException(
+                    $"INVALID_STAGE:{stage}: Unknown deal stage '{stage}'. Allowed: {string.Join(", ", ValidStages)}");
+            return s;
+        }
+
+
         public DealService(
             ApplicationDbContext context,
             ILogger<DealService> logger,
@@ -155,11 +170,15 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<DealDto> CreateDealAsync(CreateDealDto dto, string userId, string? userName = null)
         {
+            // Reject unknown stages before touching the DB or burning a document number.
+            var stage = string.IsNullOrWhiteSpace(dto.Stage) ? "lead" : NormalizeStage(dto.Stage);
+
             // Resolve the document number from the configurable numbering service
             // (admin can customise the Deal template in Settings → Numbering). Falls
             // back to a GUID, and ultimately to the legacy Id-derived number below if
             // generation yields nothing — so a deal can never persist without a number.
             string dealNumber;
+
             try
             {
                 dealNumber = _numberingService != null
@@ -190,8 +209,12 @@ namespace MyApi.Modules.Deals.Services
                     Description = dto.Description,
                     ContactId = dto.ContactId,
                     ProjectId = dto.ProjectId,
-                    Stage = string.IsNullOrWhiteSpace(dto.Stage) ? "lead" : dto.Stage,
-                    Probability = dto.Probability,
+                    Stage = stage,
+                    // Probability is a percentage — clamp so charts/forecasts can trust it.
+                    Probability = Math.Clamp(dto.Probability, 0, 100),
+                    // A deal created straight into a terminal stage still needs a close date.
+                    ActualCloseDate = (stage == "won" || stage == "lost") ? DateTime.UtcNow : null,
+
                     EstimatedValue = dto.EstimatedValue,
                     Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "TND" : dto.Currency,
                     ExpectedCloseDate = dto.ExpectedCloseDate,
@@ -236,13 +259,15 @@ namespace MyApi.Modules.Deals.Services
             if (deal == null) return null;
 
             var oldStage = deal.Stage;
+            // Validate before mutating anything so a bad stage can't partially apply.
+            var newStage = dto.Stage != null ? NormalizeStage(dto.Stage) : null;
 
             if (dto.Title != null) deal.Title = dto.Title;
             if (dto.Description != null) deal.Description = dto.Description;
             if (dto.ContactId.HasValue) deal.ContactId = dto.ContactId.Value;
             if (dto.ProjectId.HasValue) deal.ProjectId = dto.ProjectId.Value;
-            if (dto.Stage != null) deal.Stage = dto.Stage;
-            if (dto.Probability.HasValue) deal.Probability = dto.Probability.Value;
+            if (newStage != null) deal.Stage = newStage;
+            if (dto.Probability.HasValue) deal.Probability = Math.Clamp(dto.Probability.Value, 0, 100);
             if (dto.EstimatedValue.HasValue) deal.EstimatedValue = dto.EstimatedValue.Value;
             if (dto.Currency != null) deal.Currency = dto.Currency;
             if (dto.ExpectedCloseDate.HasValue) deal.ExpectedCloseDate = dto.ExpectedCloseDate;
@@ -257,9 +282,27 @@ namespace MyApi.Modules.Deals.Services
             if (dto.AssignedTo != null) deal.AssignedTo = dto.AssignedTo;
             if (dto.AssignedToName != null) deal.AssignedToName = dto.AssignedToName;
 
-            // Auto-stamp close date when entering a terminal stage
-            if (dto.Stage != null && (dto.Stage == "won" || dto.Stage == "lost") && deal.ActualCloseDate == null)
-                deal.ActualCloseDate = DateTime.UtcNow;
+            if (newStage != null && newStage != oldStage)
+            {
+                var enteringTerminal = newStage == "won" || newStage == "lost";
+                var leavingTerminal = oldStage == "won" || oldStage == "lost";
+
+                // Auto-stamp close date when entering a terminal stage
+                if (enteringTerminal && deal.ActualCloseDate == null)
+                    deal.ActualCloseDate = DateTime.UtcNow;
+
+                // Reopening a closed deal must clear the closure metadata, otherwise the
+                // deal shows up in the pipeline still carrying a close date / lost reason.
+                if (leavingTerminal && !enteringTerminal)
+                {
+                    if (!dto.ActualCloseDate.HasValue) deal.ActualCloseDate = null;
+                    if (dto.LostReason == null) deal.LostReason = null;
+                }
+
+                // A won deal never keeps a lost reason (and vice-versa).
+                if (newStage == "won" && dto.LostReason == null) deal.LostReason = null;
+            }
+
 
             // Replace line items atomically when the caller manages them. Doing it here
             // (rather than via a chatty delete-then-add loop from the client) keeps the
@@ -281,11 +324,11 @@ namespace MyApi.Modules.Deals.Services
 
             await _context.SaveChangesAsync();
 
-            if (dto.Stage != null && dto.Stage != oldStage)
-                await AddActivityInternalAsync(deal.Id, "status_change", $"Stage changed to {dto.Stage}", oldStage, userId, userName, dto.Stage);
+            if (newStage != null && newStage != oldStage)
+                await AddActivityInternalAsync(deal.Id, "status_change", $"Stage changed to {newStage}", oldStage, userId, userName, newStage);
 
             // Fire workflow automation on stage change (deals trigger on "Stage").
-            if (dto.Stage != null && dto.Stage != oldStage && _workflowTriggerService != null)
+            if (newStage != null && newStage != oldStage && _workflowTriggerService != null)
             {
                 try
                 {
@@ -293,7 +336,8 @@ namespace MyApi.Modules.Deals.Services
                         "deal",
                         deal.Id,
                         oldStage ?? "",
-                        dto.Stage,
+                        newStage,
+
                         userId,
                         new { dealId = deal.Id, dealNumber = deal.DealNumber, title = deal.Title, contactId = deal.ContactId }
                     );
@@ -380,9 +424,18 @@ namespace MyApi.Modules.Deals.Services
                 result.SaleId = null; result.ProjectId = null; result.OfferId = null;
                 saleBackId = offerBackId = projectBackId = null;
 
+                // Serialise concurrent conversions of the same deal: take a row-level
+                // lock BEFORE reading the ConvertedTo* guards, so a double-submit can't
+                // have both requests see "not converted yet" and each spawn a Sale/
+                // Offer/Project. The second request blocks here, then reads the flags
+                // the first one committed and fails with ALREADY_CONVERTED_*.
+                await _context.Database.ExecuteSqlRawAsync(
+                    @"SELECT 1 FROM ""Deals"" WHERE ""Id"" = {0} FOR UPDATE", id);
+
                 var deal = await _context.Deals.Include(d => d.Items)
                     .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
                 if (deal == null) throw new KeyNotFoundException($"Deal {id} not found");
+
 
                 // ── Deal → Project (FIRST, so a Sale/Offer in the same call links to it) ──
                 if (dto.ConvertToProject)
@@ -664,8 +717,12 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<DealItemDto?> UpdateDealItemAsync(int dealId, int itemId, CreateDealItemDto dto, string userId = "system", string? userName = null)
         {
+            // Guard the parent: items of a soft-deleted deal must not be mutable.
+            var parentAlive = await _context.Deals.AsNoTracking().AnyAsync(d => d.Id == dealId && !d.IsDeleted);
+            if (!parentAlive) return null;
             var item = await _context.DealItems.FirstOrDefaultAsync(i => i.Id == itemId && i.DealId == dealId);
             if (item == null) return null;
+
             var oldName = item.ItemName;
             var oldQty = item.Quantity;
             var oldPrice = item.UnitPrice;
@@ -695,8 +752,12 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<bool> DeleteDealItemAsync(int dealId, int itemId, string userId = "system", string? userName = null)
         {
+            // Guard the parent: items of a soft-deleted deal must not be mutable.
+            var parentAlive = await _context.Deals.AsNoTracking().AnyAsync(d => d.Id == dealId && !d.IsDeleted);
+            if (!parentAlive) return false;
             var item = await _context.DealItems.FirstOrDefaultAsync(i => i.Id == itemId && i.DealId == dealId);
             if (item == null) return false;
+
             var snapshotName = item.ItemName;
             var snapshotQty = item.Quantity;
 
@@ -726,7 +787,14 @@ namespace MyApi.Modules.Deals.Services
             if (limit < 1) limit = 20;
             if (limit > 200) limit = 200;
 
+            // A soft-deleted deal is invisible everywhere else — its timeline must be too,
+            // otherwise the activity endpoint keeps serving the history of deleted deals.
+            var dealExists = await _context.Deals.AsNoTracking()
+                .AnyAsync(d => d.Id == dealId && !d.IsDeleted);
+            if (!dealExists) return (new List<DealActivityDto>(), 0);
+
             var query = _context.DealActivities.AsNoTracking().Where(a => a.DealId == dealId);
+
             if (!string.IsNullOrEmpty(type)) query = query.Where(a => a.Type == type);
 
             var total = await query.CountAsync();
@@ -749,8 +817,12 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<bool> DeleteDealActivityAsync(int dealId, int activityId, string userId = "system", string? userName = null)
         {
+            // Guard the parent: the timeline of a soft-deleted deal is not mutable.
+            var parentAlive = await _context.Deals.AsNoTracking().AnyAsync(d => d.Id == dealId && !d.IsDeleted);
+            if (!parentAlive) return false;
             var activity = await _context.DealActivities.FirstOrDefaultAsync(a => a.Id == activityId && a.DealId == dealId);
             if (activity == null) return false;
+
             var snapshotType = activity.Type;
             var snapshotDesc = activity.Description;
             _context.DealActivities.Remove(activity);

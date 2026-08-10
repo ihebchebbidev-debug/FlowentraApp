@@ -205,6 +205,24 @@ function unwrap<T>(result: { data: T | null; status: number; error?: string }, f
   return result.data;
 }
 
+/**
+ * `<input type="date">` yields a bare `YYYY-MM-DD`, which the API binds as a
+ * DateTime with an unspecified kind and then rejects (500) when writing to a
+ * `timestamptz` column. Send an explicit UTC instant instead.
+ */
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const toUtcInstant = (v?: string | null): string | undefined | null =>
+  typeof v === 'string' && DATE_ONLY.test(v) ? `${v}T00:00:00.000Z` : v ?? undefined;
+
+function normalizeDealDates<T extends { expectedCloseDate?: string; nextActionDate?: string; actualCloseDate?: string }>(req: T): T {
+  const out: any = { ...req };
+  for (const k of ['expectedCloseDate', 'nextActionDate', 'actualCloseDate'] as const) {
+    if (out[k] !== undefined) out[k] = toUtcInstant(out[k]);
+  }
+  return out as T;
+}
+
+
 export const dealsApi = {
   async getAll(params?: DealSearchParams): Promise<DealListResponse> {
     const q = new URLSearchParams();
@@ -245,13 +263,13 @@ export const dealsApi = {
   },
 
   async create(request: CreateDealRequest): Promise<Deal> {
-    const result = await apiFetch<any>(`/api/deals`, { method: 'POST', body: JSON.stringify(request) });
+    const result = await apiFetch<any>(`/api/deals`, { method: 'POST', body: JSON.stringify(normalizeDealDates(request)) });
     const data = unwrap(result, 'Failed to create deal');
     return data.data ?? data;
   },
 
   async update(id: number, request: UpdateDealRequest): Promise<Deal> {
-    const result = await apiFetch<any>(`/api/deals/${id}`, { method: 'PATCH', body: JSON.stringify(request) });
+    const result = await apiFetch<any>(`/api/deals/${id}`, { method: 'PATCH', body: JSON.stringify(normalizeDealDates(request)) });
     const data = unwrap(result, 'Failed to update deal');
     return data.data ?? data;
   },
