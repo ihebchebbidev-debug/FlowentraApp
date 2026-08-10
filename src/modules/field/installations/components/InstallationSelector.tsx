@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { ContentSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
 import { Search, Plus, Package, Building, MapPin, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { installationsApi } from "@/services/api/installationsApi";
 import { toast } from "sonner";
 import { CreateInstallationModal } from "./CreateInstallationModal";
@@ -31,13 +32,23 @@ interface InstallationSelectorProps {
   selectedInstallation?: any | null;
   selectedInstallations?: any[];
   onCreateNew?: () => void;
+  /** When provided, the picker only lists this contact's installations by default. */
+  contactId?: string | number | null;
+  /** Optional label shown next to the "show all" toggle. */
+  contactName?: string | null;
 }
 
-export function InstallationSelector({ onSelect, selectedInstallation, selectedInstallations = [], onCreateNew }: InstallationSelectorProps) {
+export function InstallationSelector({ onSelect, selectedInstallation, selectedInstallations = [], onCreateNew, contactId, contactName }: InstallationSelectorProps) {
   const { t } = useTranslation('installations');
   const [searchTerm, setSearchTerm] = useState("");
   const [showSelector, setShowSelector] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const showAllCheckboxId = useId();
+
+  const normalizedContactId =
+    contactId === null || contactId === undefined || contactId === '' ? null : String(contactId);
+  const scopedToContact = !!normalizedContactId && !showAll;
   
   // Real data state
   const [installations, setInstallations] = useState<InstallationItem[]>([]);
@@ -55,7 +66,13 @@ export function InstallationSelector({ onSelect, selectedInstallation, selectedI
     if (showSelector) {
       fetchInstallations();
     }
-  }, [showSelector, currentPage, searchTerm]);
+  }, [showSelector, currentPage, searchTerm, showAll, normalizedContactId]);
+
+  // Re-scope whenever the parent switches contact.
+  useEffect(() => {
+    setShowAll(false);
+    setCurrentPage(1);
+  }, [normalizedContactId]);
 
   const fetchInstallations = async () => {
     setIsLoading(true);
@@ -65,6 +82,7 @@ export function InstallationSelector({ onSelect, selectedInstallation, selectedI
         search: searchTerm || undefined,
         page: currentPage,
         pageSize: pageSize,
+        ...(scopedToContact ? { contactId: normalizedContactId! } : {}),
       });
       
       // Map backend response
@@ -203,6 +221,30 @@ export function InstallationSelector({ onSelect, selectedInstallation, selectedI
               </div>
             </div>
 
+            {/* Contact scope toggle */}
+            {normalizedContactId && (
+              <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                <Checkbox
+                  id={showAllCheckboxId}
+                  checked={showAll}
+                  onCheckedChange={(checked) => {
+                    setShowAll(checked === true);
+                    setCurrentPage(1);
+                  }}
+                />
+                <Label htmlFor={showAllCheckboxId} className="text-sm font-normal cursor-pointer">
+                  {t('selector.showAllInstallations')}
+                </Label>
+                {!showAll && (
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    {contactName
+                      ? t('selector.scopedToContactNamed', { name: contactName })
+                      : t('selector.scopedToContact')}
+                  </Badge>
+                )}
+              </div>
+            )}
+
             {/* Installations Grid */}
             {isLoading ? (
               <ContentSkeleton rows={6} />
@@ -218,6 +260,8 @@ export function InstallationSelector({ onSelect, selectedInstallation, selectedI
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 {searchTerm ? (
                   <p>{t('selector.noInstallationsMatching', { search: searchTerm })}</p>
+                ) : scopedToContact ? (
+                  <p>{t('selector.noInstallationsForContact')}</p>
                 ) : (
                   <p>{t('selector.noInstallationsAvailable')}</p>
                 )}
@@ -286,7 +330,7 @@ export function InstallationSelector({ onSelect, selectedInstallation, selectedI
                               </Badge>
                               {isInstallationSelected(installation.id) && (
                                 <Badge className="text-xs bg-primary text-primary-foreground">
-                                  {t('selector.selected', 'Sélectionné')}
+                                  {t('selector.selected')}
                                 </Badge>
                               )}
                             </div>

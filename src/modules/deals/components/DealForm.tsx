@@ -314,6 +314,8 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <InstallationSelector
+                    contactId={v.contactId || null}
+                    contactName={(v as any).contactName || null}
                     onSelect={(installation: any) => {
                       setSelectedInstallations(prev => (prev.some(i => i.id === installation.id) ? prev : [...prev, installation]));
                     }}

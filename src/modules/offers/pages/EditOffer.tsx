@@ -592,6 +592,8 @@ export function EditOffer() {
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <InstallationSelector
+                    contactId={form.watch('contactId') || null}
+                    contactName={form.watch('contactName') || null}
                     onSelect={(installation) => {
                       setSelectedInstallations(prev => {
                         if (prev.some(i => String(i.id) === String(installation.id))) return prev;

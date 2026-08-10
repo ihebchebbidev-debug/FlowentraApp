@@ -19,9 +19,11 @@ interface SaleItemsSelectorAdvancedProps {
   onUpdateItems: (items: SaleItem[]) => void;
   currency?: string;
   readonly?: boolean;
+  contactId?: string | number | null;
+  contactName?: string | null;
 }
 
-export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TND', readonly = false }: SaleItemsSelectorAdvancedProps) {
+export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TND', readonly = false, contactId, contactName }: SaleItemsSelectorAdvancedProps) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<'article' | 'service'>('article');
@@ -240,6 +242,8 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
             {/* Installation Selection for Services and Materials */}
             <div className="border-t pt-4">
               <InstallationSelector
+                contactId={contactId ?? null}
+                contactName={contactName ?? null}
                 onSelect={setSelectedInstallation}
                 selectedInstallation={selectedInstallation}
                 onCreateNew={() => setShowCreateInstallation(true)}

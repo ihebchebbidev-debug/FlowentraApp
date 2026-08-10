@@ -451,6 +451,8 @@ export function AddSale() {
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <InstallationSelector
+                    contactId={formData.customerId || null}
+                    contactName={formData.customerName || null}
                     onSelect={(installation) => {
                       setSelectedInstallations((prev) => {
                         if (prev.some((i) => i.id === installation.id)) return prev;
@@ -510,6 +512,8 @@ export function AddSale() {
                     items={formData.items}
                     onUpdateItems={handleItemsChange}
                     currency={formData.currency}
+                    contactId={formData.customerId || null}
+                    contactName={formData.customerName || null}
                   />
                 </CardContent>
               </Card>

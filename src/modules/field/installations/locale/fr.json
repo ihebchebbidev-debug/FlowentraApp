@@ -151,7 +151,12 @@
     "showing": "Affichage {{start}} - {{end}} sur {{total}}",
     "page": "Page {{current}} sur {{total}}",
     "previous": "Précédent",
-    "next": "Suivant"
+    "next": "Suivant",
+    "showAllInstallations": "Afficher les installations de tous les contacts",
+    "scopedToContact": "Ce contact uniquement",
+    "scopedToContactNamed": "{{name}} uniquement",
+    "noInstallationsForContact": "Aucune installation pour ce contact. Cochez « Afficher les installations de tous les contacts » pour voir les autres.",
+    "selected": "Sélectionné"
   },
   "detail": {
     "not_found": "Installation non trouvée",

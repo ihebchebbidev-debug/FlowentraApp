@@ -76,7 +76,6 @@
   "installation_not_found": "Installation not found",
   "internal_sold": "Internal (Sold by us)",
   "external_owned": "External (Customer owned)",
-  
   "list": {
     "title": "Installations",
     "subtitle": "Manage customer installations and warranty tracking",
@@ -105,15 +104,25 @@
     "accessDenied": "Access Denied",
     "accessDeniedDescription": "You don't have permission to view installations. Please contact your administrator."
   },
-
   "create": {
     "title": "Create New Installation",
     "creating": "Creating..."
   },
   "validation": {
-    "name_required": "Installation name is required",
-    "model_required": "Model is required",
-    "manufacturer_required": "Manufacturer is required"
+    "invalidContactId": "Contact ID must be a valid positive integer",
+    "invalidStatus": "Invalid status. Allowed: active, inactive, maintenance, decommissioned",
+    "nameRequired": "Installation name is required",
+    "nameTooLong": "Name must be less than 255 characters",
+    "modelTooLong": "Model must be less than 100 characters",
+    "manufacturerTooLong": "Manufacturer must be less than 100 characters",
+    "serialNumberTooLong": "Serial number must be less than 100 characters",
+    "invalidSerialNumber": "Serial number can only contain letters, numbers, dashes and underscores",
+    "categoryTooLong": "Category must be less than 100 characters",
+    "typeTooLong": "Type must be less than 50 characters",
+    "siteAddressTooLong": "Site address must be less than 500 characters",
+    "installationTypeTooLong": "Installation type must be less than 50 characters",
+    "missingSerialNumber": "Serial number is recommended for tracking",
+    "decommissionedNeedsManufacturer": "Decommissioned installations should have manufacturer info"
   },
   "placeholders": {
     "name": "e.g., Production Server Alpha",
@@ -142,7 +151,12 @@
     "showing": "Showing {{start}} - {{end}} of {{total}}",
     "page": "Page {{current}} of {{total}}",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "showAllInstallations": "Show installations of all contacts",
+    "scopedToContact": "This contact only",
+    "scopedToContactNamed": "{{name}} only",
+    "noInstallationsForContact": "No installation for this contact yet. Tick \"Show installations of all contacts\" to browse the others.",
+    "selected": "Selected"
   },
   "detail": {
     "not_found": "Installation not found",
@@ -208,7 +222,6 @@
     "maintenance": "Under Maintenance",
     "decommissioned": "Decommissioned"
   },
-
   "bulkImport": {
     "title": "Import Installations",
     "description": "Choose your import method and upload your installation data",
@@ -270,45 +283,28 @@
       "notes": "Notes",
       "contactId": "Contact ID",
       "matricule": "Matricule / Licence Plate"
-     },
-     "summary": {
-       "allSuccess": "Import completed successfully!",
-       "partialSuccess": "Import completed with warnings",
-       "subtitle": "{{success}} item(s) imported out of {{total}} in file",
-       "imported": "Imported",
-       "skipped": "Skipped (backend duplicates)",
-       "invalid": "Invalid",
-       "duplicates": "Duplicates",
-       "emptyRows": "Empty rows",
-       "failed": "Server failures",
-       "totalInFile": "Total rows in file",
-       "validRows": "Valid rows",
-       "selectedForImport": "Selected for import",
-       "successfullyImported": "Successfully imported",
-       "invalidRowsDetails": "{{count}} invalid row(s)",
-       "duplicateRowsDetails": "{{count}} duplicate(s) detected",
-       "duplicateOn": "duplicate on",
-       "serverErrors": "{{count}} server error(s)",
-       "close": "Close"
-     }
+    },
+    "summary": {
+      "allSuccess": "Import completed successfully!",
+      "partialSuccess": "Import completed with warnings",
+      "subtitle": "{{success}} item(s) imported out of {{total}} in file",
+      "imported": "Imported",
+      "skipped": "Skipped (backend duplicates)",
+      "invalid": "Invalid",
+      "duplicates": "Duplicates",
+      "emptyRows": "Empty rows",
+      "failed": "Server failures",
+      "totalInFile": "Total rows in file",
+      "validRows": "Valid rows",
+      "selectedForImport": "Selected for import",
+      "successfullyImported": "Successfully imported",
+      "invalidRowsDetails": "{{count}} invalid row(s)",
+      "duplicateRowsDetails": "{{count}} duplicate(s) detected",
+      "duplicateOn": "duplicate on",
+      "serverErrors": "{{count}} server error(s)",
+      "close": "Close"
+    }
   },
-  "validation": {
-     "invalidContactId": "Contact ID must be a valid positive integer",
-    "invalidStatus": "Invalid status. Allowed: active, inactive, maintenance, decommissioned",
-    "nameRequired": "Installation name is required",
-    "nameTooLong": "Name must be less than 255 characters",
-    "modelTooLong": "Model must be less than 100 characters",
-    "manufacturerTooLong": "Manufacturer must be less than 100 characters",
-    "serialNumberTooLong": "Serial number must be less than 100 characters",
-    "invalidSerialNumber": "Serial number can only contain letters, numbers, dashes and underscores",
-    "categoryTooLong": "Category must be less than 100 characters",
-    "typeTooLong": "Type must be less than 50 characters",
-    "siteAddressTooLong": "Site address must be less than 500 characters",
-    "installationTypeTooLong": "Installation type must be less than 50 characters",
-    "missingSerialNumber": "Serial number is recommended for tracking",
-    "decommissionedNeedsManufacturer": "Decommissioned installations should have manufacturer info"
-  },
-
   "bulk": {
     "selectAll": "Select all installations",
     "selectItem": "Select {{name}}",

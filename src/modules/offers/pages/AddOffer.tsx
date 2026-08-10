@@ -432,6 +432,8 @@ export function AddOffer() {
                 <CardContent className="pt-6">
                   <div className="space-y-3">
                     <InstallationSelector
+                      contactId={formData.contactId || null}
+                      contactName={formData.contactName || null}
                       onSelect={(installation) => {
                         // Add to list if not already present
                         setSelectedInstallations(prev => {

@@ -588,6 +588,8 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
             {/* Installation Selection */}
             <div className="border-t pt-4">
               <InstallationSelector
+                contactId={(sale as any).contactId || (sale as any).customerId || null}
+                contactName={(sale as any).contactName || (sale as any).customerName || null}
                 onSelect={setSelectedInstallation}
                 selectedInstallation={selectedInstallation}
                 onCreateNew={() => setShowCreateInstallation(true)}
