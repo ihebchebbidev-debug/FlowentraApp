@@ -1209,6 +1209,11 @@ i18n.addResourceBundle('fr', 'job-detail', jobDetailFr, true, true);
 // Register dispatches module namespaces so per-component translations resolve
 i18n.addResourceBundle('en', 'dispatches', dispatchesEn, true, true);
 i18n.addResourceBundle('fr', 'dispatches', dispatchesFr, true, true);
+// Also merge the `dispatches` subtree into the default 'translation' namespace: several
+// screens (dispatch list, service-order dispatch tables) call the default t() with
+// `dispatches.*` keys. Only the subtree is merged so root keys can't clobber others.
+i18n.addResourceBundle('en', 'translation', { dispatches: (dispatchesEn as any).dispatches }, true, true);
+i18n.addResourceBundle('fr', 'translation', { dispatches: (dispatchesFr as any).dispatches }, true, true);
 i18n.addResourceBundle('en', 'attachments', attachmentsEn, true, true);
 i18n.addResourceBundle('fr', 'attachments', attachmentsFr, true, true);
 // Register time-expenses module namespaces

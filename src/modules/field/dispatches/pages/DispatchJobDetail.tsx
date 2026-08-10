@@ -644,7 +644,7 @@ export default function DispatchJobDetail() {
                     {(dispatch.status === 'pending' || dispatch.status === 'planned' || dispatch.status === 'assigned') && (
                       <DropdownMenuItem onClick={() => handleStatusChange('confirmed')}>
                         <CheckCircle className="h-4 w-4 mr-2 text-success" />
-                        {t('dispatches.statuses.confirmed', { ns: 'dispatches', defaultValue: 'Release' })}
+                        {t('dispatches.statuses.confirmed', { ns: 'dispatches', defaultValue: 'Confirmed' })}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
@@ -737,7 +737,7 @@ export default function DispatchJobDetail() {
                               className="bg-success text-success-foreground hover:bg-success/90 gap-1.5"
                             >
                               <CheckCircle className="h-4 w-4" />
-                              {t('dispatches.statuses.confirmed', { ns: 'dispatches', defaultValue: 'Release' })}
+                              {t('dispatches.statuses.confirmed', { ns: 'dispatches', defaultValue: 'Confirmed' })}
                             </Button>
                           )}
                           {canCancel && (

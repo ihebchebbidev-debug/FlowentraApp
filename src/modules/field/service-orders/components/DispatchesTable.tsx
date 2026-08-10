@@ -267,7 +267,7 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
                      <Badge variant="secondary" className={getStatusColor(dispatch.status)}>
                        <div className="flex items-center gap-1.5">
                          {getStatusIcon(dispatch.status)}
-                         <span className="capitalize font-medium">{dispatch.status.replace('_', ' ')}</span>
+                         <span className="font-medium">{t(`dispatches.statuses.${dispatch.status}`, { defaultValue: dispatch.status.replace('_', ' ') })}</span>
                        </div>
                      </Badge>
                    </td>

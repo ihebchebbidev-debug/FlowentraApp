@@ -889,7 +889,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                           <SelectContent>
                             {dispatches.map((dispatch) => (
                               <SelectItem key={dispatch.id} value={dispatch.id.toString()}>
-                                {dispatch.dispatchNumber || `Dispatch #${dispatch.id}`} - {dispatch.status}
+                                {dispatch.dispatchNumber || `Dispatch #${dispatch.id}`} - {t(`dispatches.statuses.${dispatch.status}`, { ns: 'translation', defaultValue: String(dispatch.status).replace('_', ' ') })}
                               </SelectItem>
                             ))}
                           </SelectContent>

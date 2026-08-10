@@ -113,7 +113,7 @@
       "pending": "Pending",
       "planned": "Planned",
       "assigned": "Assigned",
-      "confirmed": "Released",
+      "confirmed": "Confirmed",
       "rejected": "Rejected",
       "in_progress": "In Progress",
       "completed": "Completed",
