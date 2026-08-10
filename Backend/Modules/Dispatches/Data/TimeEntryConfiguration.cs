@@ -18,6 +18,7 @@ namespace MyApi.Modules.Dispatches.Data
             builder.Property(t => t.Duration).HasColumnType("decimal(18,2)");
             builder.Property(t => t.WorkType).HasColumnName("ActivityType").HasMaxLength(50).IsRequired();
             builder.Property(t => t.Description);
+            builder.Property(t => t.Billable).HasDefaultValue(true);
             builder.Property(t => t.CreatedDate).IsRequired();
             builder.Property(t => t.OverrunFlag).HasDefaultValue(false);
             builder.Property(t => t.OverrunReason).HasMaxLength(500);

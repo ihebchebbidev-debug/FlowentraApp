@@ -449,7 +449,8 @@
     "itemsSelected": "{{count}} item(s) selected",
     "success": "Items transferred to sale successfully. Status updated to Ready for Invoice.",
     "retry": "Edit invoice items",
-    "error": "Failed to prepare invoice"
+    "error": "Failed to prepare invoice",
+    "noItemsDescription": "No materials, expenses or time to transfer. You can still mark this order as ready for invoice."
   },
   "sendReport": {
     "title": "Send Report via Email",

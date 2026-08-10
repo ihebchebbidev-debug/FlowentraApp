@@ -423,8 +423,9 @@ export default function ServiceOrderDetail() {
   const handleStatusChange = async (newStatus: ServiceOrderStatus) => {
     if (!serviceOrder) return;
 
-    // Intercept: if transitioning to ready_for_invoice from technically_completed, open invoice modal
-    if (invoicesEnabled && newStatus === 'ready_for_invoice' && currentStatusFlow === 'technically_completed') {
+    // Intercept: moving to "Ready for invoice" always opens the invoice preparation
+    // modal (it is the only entry point — there is no separate button).
+    if (invoicesEnabled && newStatus === 'ready_for_invoice' && currentStatusFlow !== 'ready_for_invoice') {
       setIsInvoiceModalOpen(true);
       return;
     }
@@ -1168,17 +1169,8 @@ export default function ServiceOrderDetail() {
                 isUpdating={isStatusUpdating}
               />
             </div>
-            {invoicesEnabled && currentStatusFlow === 'technically_completed' && (
-              <Button
-                size="sm"
-                className="gap-2 shrink-0"
-                onClick={() => setIsInvoiceModalOpen(true)}
-                disabled={!serviceOrder?.saleId}
-              >
-                <FileText className="h-4 w-4" />
-                {t('invoicePreparation.title')}
-              </Button>
-            )}
+            {/* The invoice preparation modal is opened by moving the status to
+                "Ready for invoice" — no separate button needed. */}
           </div>
         </div>
 

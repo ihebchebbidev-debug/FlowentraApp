@@ -1519,5 +1519,17 @@
     "name": "Workflow",
     "description": "Automated business workflows and triggers.",
     "category": "System"
+  },
+  "preview": "Preview",
+  "previewCondition": "If {{field}} {{operator}} {{value}}",
+  "sale": {
+    "backToSales": "Back to sales",
+    "confirmed": "Confirmed",
+    "detailsPlaceholder": "Implementation coming soon - Sale {{id}} details",
+    "detailsTitle": "Sale details",
+    "invoice": "Invoice",
+    "sendInvoice": "Send invoice",
+    "subtitle": "Sale details",
+    "title": "Sale {{id}}"
   }
 }

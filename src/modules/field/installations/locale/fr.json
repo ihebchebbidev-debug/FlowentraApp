@@ -32,7 +32,7 @@
   "all_warranty_status": "Tous les Statuts de Garantie",
   "with_warranty": "Avec Garantie",
   "without_warranty": "Sans Garantie",
-  "total_installations": "Total Installations",
+  "total_installations": "Total des installations",
   "under_warranty": "Sous Garantie",
   "create_installation": "Créer Installation",
   "installation_created": "Installation créée",
@@ -76,12 +76,11 @@
   "installation_not_found": "Installation non trouvée",
   "internal_sold": "Interne (Vendu par nous)",
   "external_owned": "Externe (Propriété du client)",
-  
   "list": {
     "title": "Installations",
     "subtitle": "Gérer les installations clients et le suivi des garanties",
     "add_installation": "Ajouter Installation",
-    "total_installations": "Total Installations",
+    "total_installations": "Total des installations",
     "internal": "Interne",
     "external": "Externe",
     "under_warranty": "Sous Garantie",
@@ -105,15 +104,25 @@
     "accessDenied": "Accès Refusé",
     "accessDeniedDescription": "Vous n'avez pas la permission de voir les installations. Veuillez contacter votre administrateur."
   },
-
   "create": {
     "title": "Créer une Nouvelle Installation",
     "creating": "Création en cours..."
   },
   "validation": {
-    "name_required": "Le nom de l'installation est requis",
-    "model_required": "Le modèle est requis",
-    "manufacturer_required": "Le fabricant est requis"
+    "invalidContactId": "L'ID du contact doit être un entier positif valide",
+    "invalidStatus": "Statut invalide. Autorisés : active, inactive, maintenance, decommissioned",
+    "nameRequired": "Le nom de l'installation est requis",
+    "nameTooLong": "Le nom doit contenir moins de 255 caractères",
+    "modelTooLong": "Le modèle doit contenir moins de 100 caractères",
+    "manufacturerTooLong": "Le fabricant doit contenir moins de 100 caractères",
+    "serialNumberTooLong": "Le numéro de série doit contenir moins de 100 caractères",
+    "invalidSerialNumber": "Le numéro de série ne peut contenir que des lettres, chiffres, tirets et underscores",
+    "categoryTooLong": "La catégorie doit contenir moins de 100 caractères",
+    "typeTooLong": "Le type doit contenir moins de 50 caractères",
+    "siteAddressTooLong": "L'adresse du site doit contenir moins de 500 caractères",
+    "installationTypeTooLong": "Le type d'installation doit contenir moins de 50 caractères",
+    "missingSerialNumber": "Le numéro de série est recommandé pour le suivi",
+    "decommissionedNeedsManufacturer": "Les installations hors service doivent avoir les infos du fabricant"
   },
   "placeholders": {
     "name": "ex: Serveur de Production Alpha",
@@ -208,7 +217,6 @@
     "maintenance": "En Maintenance",
     "decommissioned": "Hors Service"
   },
-
   "bulkImport": {
     "title": "Importer des Installations",
     "description": "Choisissez votre méthode d'import et téléchargez vos données",
@@ -270,45 +278,28 @@
       "notes": "Notes",
       "contactId": "ID du Contact",
       "matricule": "Matricule / Immatriculation"
-     },
-     "summary": {
-       "allSuccess": "Import terminé avec succès !",
-       "partialSuccess": "Import terminé avec des avertissements",
-       "subtitle": "{{success}} élément(s) importé(s) sur {{total}} dans le fichier",
-       "imported": "Importés",
-       "skipped": "Ignorés (doublons backend)",
-       "invalid": "Invalides",
-       "duplicates": "Doublons",
-       "emptyRows": "Lignes vides",
-       "failed": "Échecs serveur",
-       "totalInFile": "Total lignes dans le fichier",
-       "validRows": "Lignes valides",
-       "selectedForImport": "Sélectionnées pour import",
-       "successfullyImported": "Importées avec succès",
-       "invalidRowsDetails": "{{count}} ligne(s) invalide(s)",
-       "duplicateRowsDetails": "{{count}} doublon(s) détecté(s)",
-       "duplicateOn": "doublon sur",
-       "serverErrors": "{{count}} erreur(s) serveur",
-       "close": "Fermer"
-     }
+    },
+    "summary": {
+      "allSuccess": "Import terminé avec succès !",
+      "partialSuccess": "Import terminé avec des avertissements",
+      "subtitle": "{{success}} élément(s) importé(s) sur {{total}} dans le fichier",
+      "imported": "Importés",
+      "skipped": "Ignorés (doublons backend)",
+      "invalid": "Invalides",
+      "duplicates": "Doublons",
+      "emptyRows": "Lignes vides",
+      "failed": "Échecs serveur",
+      "totalInFile": "Total lignes dans le fichier",
+      "validRows": "Lignes valides",
+      "selectedForImport": "Sélectionnées pour import",
+      "successfullyImported": "Importées avec succès",
+      "invalidRowsDetails": "{{count}} ligne(s) invalide(s)",
+      "duplicateRowsDetails": "{{count}} doublon(s) détecté(s)",
+      "duplicateOn": "doublon sur",
+      "serverErrors": "{{count}} erreur(s) serveur",
+      "close": "Fermer"
+    }
   },
-  "validation": {
-     "invalidContactId": "L'ID du contact doit être un entier positif valide",
-    "invalidStatus": "Statut invalide. Autorisés : active, inactive, maintenance, decommissioned",
-    "nameRequired": "Le nom de l'installation est requis",
-    "nameTooLong": "Le nom doit contenir moins de 255 caractères",
-    "modelTooLong": "Le modèle doit contenir moins de 100 caractères",
-    "manufacturerTooLong": "Le fabricant doit contenir moins de 100 caractères",
-    "serialNumberTooLong": "Le numéro de série doit contenir moins de 100 caractères",
-    "invalidSerialNumber": "Le numéro de série ne peut contenir que des lettres, chiffres, tirets et underscores",
-    "categoryTooLong": "La catégorie doit contenir moins de 100 caractères",
-    "typeTooLong": "Le type doit contenir moins de 50 caractères",
-    "siteAddressTooLong": "L'adresse du site doit contenir moins de 500 caractères",
-    "installationTypeTooLong": "Le type d'installation doit contenir moins de 50 caractères",
-    "missingSerialNumber": "Le numéro de série est recommandé pour le suivi",
-    "decommissionedNeedsManufacturer": "Les installations hors service doivent avoir les infos du fabricant"
-  },
-
   "bulk": {
     "selectAll": "Sélectionner toutes les installations",
     "selectItem": "Sélectionner {{name}}",

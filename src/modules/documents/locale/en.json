@@ -166,5 +166,6 @@
     "name": "Documents",
     "description": "Document storage, versioning and sharing.",
     "category": "System"
-  }
+  },
+  "operation": "Operation"
 }

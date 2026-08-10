@@ -17,7 +17,9 @@ namespace MyApi.Modules.Dispatches.DTOs
         [Required]
         public DateTime EndTime { get; set; }
         public string? Description { get; set; }
-        public bool Billable { get; set; }
+        // Default true: clients that omit the flag (mobile / legacy callers) must keep the
+        // pre-existing "everything is billable" behaviour instead of silently losing revenue.
+        public bool Billable { get; set; } = true;
         public decimal? HourlyRate { get; set; }
 
         /// <summary>Required when this entry will push cumulative actuals beyond the planned budget.</summary>

@@ -1737,6 +1737,63 @@ namespace MyApi.Modules.ServiceOrders.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Count billable actuals of a service order that have NOT yet been transferred to a sale.
+        /// SO-level rows are tracked by their own InvoiceStatus column; dispatch-level rows carry no
+        /// such column, so they are matched against SaleItem.SourceType/SourceId — the same identity
+        /// key PrepareForInvoice writes. Used to stop the sale→SO cascade from auto-closing an order
+        /// whose billable work would then be silently lost.
+        /// </summary>
+        private async Task<int> CountUntransferredBillablesAsync(ServiceOrder serviceOrder)
+        {
+            var soId = serviceOrder.Id;
+
+            var pending = 0;
+
+            pending += await _context.ServiceOrderMaterials
+                .CountAsync(m => m.ServiceOrderId == soId && m.InvoiceStatus == null);
+
+            pending += await _context.ServiceOrderTimeEntries
+                .CountAsync(t => t.ServiceOrderId == soId && t.Billable && t.InvoiceStatus == null);
+
+            pending += await _context.ServiceOrderExpenses
+                .CountAsync(e => e.ServiceOrderId == soId && e.InvoiceStatus == null);
+
+            var linkedDispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
+            if (linkedDispatchIds.Count == 0) return pending;
+
+            // Only dispatches that actually happened can produce billable actuals.
+            var billableDispatchIds = await _context.Dispatches
+                .Where(d => linkedDispatchIds.Contains(d.Id) && d.Status != "cancelled")
+                .Select(d => d.Id)
+                .ToListAsync();
+            if (billableDispatchIds.Count == 0) return pending;
+
+            var transferred = await _context.SaleItems
+                .Where(si => si.ServiceOrderId == soId.ToString()
+                    && si.SourceType != null && si.SourceId != null)
+                .Select(si => si.SourceType + ":" + si.SourceId)
+                .ToListAsync();
+            var transferredKeys = new HashSet<string>(transferred, StringComparer.OrdinalIgnoreCase);
+
+            var dispatchMaterialIds = await _context.DispatchMaterials
+                .Where(m => billableDispatchIds.Contains(m.DispatchId))
+                .Select(m => m.Id).ToListAsync();
+            pending += dispatchMaterialIds.Count(mid => !transferredKeys.Contains($"dispatch_material:{mid}"));
+
+            var dispatchExpenseIds = await _context.DispatchExpenses
+                .Where(e => billableDispatchIds.Contains(e.DispatchId))
+                .Select(e => e.Id).ToListAsync();
+            pending += dispatchExpenseIds.Count(eid => !transferredKeys.Contains($"dispatch_expense:{eid}"));
+
+            var dispatchTimeIds = await _context.TimeEntries
+                .Where(t => billableDispatchIds.Contains(t.DispatchId) && t.Billable)
+                .Select(t => t.Id).ToListAsync();
+            pending += dispatchTimeIds.Count(tid => !transferredKeys.Contains($"dispatch_time_entry:{tid}"));
+
+            return pending;
+        }
+
         // ============== AGGREGATION METHODS ==============
 
         public async Task<List<DispatchDto>> GetDispatchesForServiceOrderAsync(int serviceOrderId)
@@ -1871,7 +1928,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     Description = te.Description,
                     HourlyRate = rate > 0m ? rate : (decimal?)null,
                     TotalCost = Math.Round(minutes / 60m * rate, 2),
-                    Billable = true, // Dispatch time entries have no billable flag - all field time is billable
+                    Billable = te.Billable,
                     CreatedAt = te.CreatedDate,
                     InvoiceStatus = null, // Dispatch TimeEntries don't have InvoiceStatus
                     SourceTable = "dispatch"
@@ -3284,7 +3341,8 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (dto.DispatchTimeEntryIds != null && dto.DispatchTimeEntryIds.Any())
             {
                 var dispatchTimeEntries = await _context.TimeEntries
-                    .Where(t => dto.DispatchTimeEntryIds.Contains(t.Id) && linkedDispatchIds.Contains(t.DispatchId))
+                    .Where(t => dto.DispatchTimeEntryIds.Contains(t.Id) && linkedDispatchIds.Contains(t.DispatchId)
+                        && t.Billable)
                     .ToListAsync();
 
                 _logger.LogInformation("PrepareForInvoice: Found {Count} dispatch time entries (requested: {Requested})", dispatchTimeEntries.Count, dto.DispatchTimeEntryIds.Count);
@@ -3615,13 +3673,36 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                         switch (newStatus)
                         {
-                            // Fully invoiced sale ⇒ the service order's work is billed
-                            // and done: close it automatically. This is the last link
-                            // of the sale → SO → dispatch → invoice chain and removes
-                            // the manual "close the SO afterwards" step.
+                            // Fully invoiced sale ⇒ the service order's work is billed.
+                            // Close it automatically ONLY when nothing billable is left
+                            // un-transferred; otherwise park it in "invoiced" so the
+                            // remaining materials / time / expenses stay visible and can
+                            // still be pushed to a sale instead of being lost on close.
                             case "invoiced":
                                 if (current == "cancelled" || current == "closed") break;
-                                if (invoiceableFromStatuses.Contains(current)) target = "closed";
+                                if (invoiceableFromStatuses.Contains(current))
+                                {
+                                    var pending = await CountUntransferredBillablesAsync(so);
+                                    if (pending > 0)
+                                    {
+                                        _logger.LogWarning(
+                                            "Cascade: ServiceOrder {SoId} kept open ('invoiced') — {Count} billable actual(s) not yet transferred to a sale",
+                                            so.Id, pending);
+                                        target = current == "invoiced" ? null : "invoiced";
+                                    }
+                                    else
+                                    {
+                                        target = "closed";
+                                    }
+                                }
+                                break;
+
+                            // The sale is billed but not settled yet: make that visible on
+                            // the service order instead of leaving it in ready_for_invoice
+                            // forever. Never closes — more items may still be transferred.
+                            case "partially_invoiced":
+                                if (current == "cancelled" || current == "closed" || current == "invoiced") break;
+                                if (invoiceableFromStatuses.Contains(current)) target = "invoiced";
                                 break;
 
                             case "closed":
@@ -3629,7 +3710,20 @@ namespace MyApi.Modules.ServiceOrders.Services
                             case "completed":
                                 if (current == "cancelled" || current == "closed") break;
                                 if (invoiceableFromStatuses.Contains(current))
-                                    target = "closed";
+                                {
+                                    var pendingClose = await CountUntransferredBillablesAsync(so);
+                                    if (pendingClose > 0)
+                                    {
+                                        _logger.LogWarning(
+                                            "Cascade: ServiceOrder {SoId} kept open ('invoiced') — {Count} billable actual(s) not yet transferred to a sale",
+                                            so.Id, pendingClose);
+                                        target = current == "invoiced" ? null : "invoiced";
+                                    }
+                                    else
+                                    {
+                                        target = "closed";
+                                    }
+                                }
                                 break;
 
                             case "cancelled":
@@ -3646,8 +3740,6 @@ namespace MyApi.Modules.ServiceOrders.Services
                                     target = "ready_for_invoice";
                                 break;
 
-                            // partially_invoiced deliberately does not cascade — more SO
-                            // items may still be pending transfer to the sale.
                             default:
                                 break;
                         }

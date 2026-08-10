@@ -52,6 +52,11 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("Description")]
         public string? Description { get; set; }
 
+        /// <summary>Whether this logged time can be transferred to a sale/invoice.
+        /// Defaults to true so legacy rows stay billable.</summary>
+        [Column("Billable")]
+        public bool Billable { get; set; } = true;
+
         [Required]
         [Column("CreatedDate")]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;

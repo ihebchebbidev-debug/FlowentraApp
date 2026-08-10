@@ -128,26 +128,6 @@
           "q": "Qu'est-ce qu'un Ordre de Service?",
           "a": "Un Ordre de Service est créé quand une Commande contient des services. Il contient des Travaux qui doivent être planifiés et exécutés par les techniciens sur le terrain."
         },
-        "comments": {
-          "title": "Conversation",
-          "add": "Ajouter un commentaire",
-          "placeholder": "Écrire un message...",
-          "markInternal": "Marquer comme note interne",
-          "clear": "Effacer",
-          "send": "Envoyer",
-          "sending": "Envoi...",
-          "internal": "Interne",
-          "addError": "Échec de l'ajout du commentaire"
-        },
-        "links": {
-          "searchPlaceholder": "Rechercher des tickets...",
-          "types": {
-            "related": "Lié",
-            "duplicate": "Dupliqué",
-            "blocks": "Bloque",
-            "blocked_by": "Bloqué par"
-          }
-        },
         "howToViewJobs": {
           "q": "Comment voir les travaux d'un Ordre de Service?",
           "a": "Ouvrez l'Ordre de Service → Naviguez vers l'onglet 'Travaux' → Vous verrez tous les travaux avec leur statut, technicien assigné et dates planifiées."
@@ -367,5 +347,25 @@
     "name": "Service Desk",
     "description": "Tickets de support client et gestion des cas.",
     "category": "Comms"
+  },
+  "comments": {
+    "title": "Conversation",
+    "add": "Ajouter un commentaire",
+    "placeholder": "Écrire un message...",
+    "markInternal": "Marquer comme note interne",
+    "clear": "Effacer",
+    "send": "Envoyer",
+    "sending": "Envoi...",
+    "internal": "Interne",
+    "addError": "Échec de l'ajout du commentaire"
+  },
+  "links": {
+    "searchPlaceholder": "Rechercher des tickets...",
+    "types": {
+      "related": "Lié",
+      "duplicate": "Dupliqué",
+      "blocks": "Bloque",
+      "blocked_by": "Bloqué par"
+    }
   }
 }

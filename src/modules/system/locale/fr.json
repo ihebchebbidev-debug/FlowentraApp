@@ -1,11 +1,11 @@
 {
   "common": {
-    "systemSettings": "System settings",
+    "systemSettings": "Paramètres système",
     "logs": "Logs",
     "maintenance": "Maintenance",
     "save": "Save",
     "cancel": "Cancel",
-    "restartService": "Restart service",
+    "restartService": "Redémarrer le service",
     "status": "Status"
   },
   "plugin": {

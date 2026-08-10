@@ -483,7 +483,6 @@
     "readyToInvoice": "Ready to Invoice",
     "invoiced": "Invoiced",
     "partiallyInvoiced": "Partially Invoiced",
-
     "closed": "Closed",
     "cancelled": "Cancelled",
     "updating": "Updating...",
@@ -677,7 +676,9 @@
     "model": "Model",
     "serialNumber": "Serial Number",
     "fiscalStamp": "Fiscal Stamp",
-    "amountInWords": "Amount in Words"
+    "amountInWords": "Amount in Words",
+    "manufacturer": "Manufacturer",
+    "matricule": "Serial number"
   },
   "pdfPreview": {
     "title": "PDF Preview",
@@ -706,7 +707,17 @@
     "sign": "Sign",
     "signed": "Signed ✓",
     "removeSignature": "Remove Signature",
-    "sendViaEmail": "Send via Email"
+    "sendViaEmail": "Send via Email",
+    "copyFailed": "Failed to copy link",
+    "downloadFailed": "Failed to download PDF",
+    "downloadPdfToShare": "Download PDF to share",
+    "downloadSuccess": "PDF downloaded successfully",
+    "linkCopied": "Link copied to clipboard",
+    "noLoginRequired": "No login required — accessible to anyone with this link",
+    "openInPlatform": "Open in {{platform}}",
+    "publicLink": "Public link",
+    "shareDescription": "Share this link publicly. Anyone with the link can view the document.",
+    "shareVia": "Share via {{platform}}"
   },
   "sendReport": {
     "title": "Send Report via Email",

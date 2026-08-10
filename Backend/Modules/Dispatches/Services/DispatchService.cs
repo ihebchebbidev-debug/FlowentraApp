@@ -1849,6 +1849,7 @@ namespace MyApi.Modules.Dispatches.Services
                         Duration = newMinutes,
                         Description = dto.Description,
                         CreatedDate = DateTime.UtcNow,
+                        Billable = dto.Billable,
                         OverrunFlag = willOverrun,
                         OverrunReason = willOverrun ? dto.OverrunReason : null,
                     };
@@ -1876,6 +1877,7 @@ namespace MyApi.Modules.Dispatches.Services
                 Duration = (int)(te.Duration ?? 0), 
                 Description = te.Description,
                 CreatedAt = te.CreatedDate,
+                Billable = te.Billable,
                 OverrunFlag = te.OverrunFlag,
                 OverrunReason = te.OverrunReason,
             };
@@ -2157,6 +2159,7 @@ namespace MyApi.Modules.Dispatches.Services
                 Duration = (int)(t.Duration ?? 0), 
                 Description = t.Description,
                 CreatedAt = t.CreatedDate,
+                Billable = t.Billable,
                 OverrunFlag = t.OverrunFlag,
                 OverrunReason = t.OverrunReason,
             }).ToList();
@@ -2179,6 +2182,7 @@ namespace MyApi.Modules.Dispatches.Services
             if (dto.StartTime.HasValue) te.StartTime = dto.StartTime.Value;
             if (dto.EndTime.HasValue) te.EndTime = dto.EndTime.Value;
             if (dto.Description != null) te.Description = dto.Description;
+            if (dto.Billable.HasValue) te.Billable = dto.Billable.Value;
             
             // Recalculate duration if times changed
             if (te.EndTime.HasValue)
@@ -2199,7 +2203,10 @@ namespace MyApi.Modules.Dispatches.Services
                 EndTime = te.EndTime,
                 Duration = (int)(te.Duration ?? 0), 
                 Description = te.Description,
-                CreatedAt = te.CreatedDate 
+                CreatedAt = te.CreatedDate,
+                Billable = te.Billable,
+                OverrunFlag = te.OverrunFlag,
+                OverrunReason = te.OverrunReason,
             };
         }
 

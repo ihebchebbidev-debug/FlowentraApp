@@ -2,15 +2,15 @@
   "common": {
     "calendar": "Calendar",
     "event": "Event",
-    "createEvent": "Create event",
-    "editEvent": "Edit event",
-    "deleteEvent": "Delete event",
+    "createEvent": "Créer un événement",
+    "editEvent": "Modifier l'événement",
+    "deleteEvent": "Supprimer l'événement",
     "start": "Start",
     "end": "End",
-    "allDay": "All day",
+    "allDay": "Toute la journée",
     "save": "Save",
     "cancel": "Cancel",
-    "searchPlaceholder": "Search events..."
+    "searchPlaceholder": "Rechercher des événements..."
   },
   "plugin": {
     "name": "Planification",

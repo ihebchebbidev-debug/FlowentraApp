@@ -317,7 +317,7 @@
     "generateRunTitle": "Générer un run de paie",
     "month": "Mois",
     "status": "Statut",
-    "totalNet": "Total net",
+    "totalNet": "Net total",
     "overviewTitle": "Aperçu paie",
     "overviewHint": "Construisez un run brouillon depuis Employés, Pointage et Congés. Vérifiez les fiches, puis confirmez quand le backend sera prêt.",
     "runsHint": "Les brouillons sont stockés localement sur cet appareil.",
@@ -341,7 +341,7 @@
     "noSlip": "Sélectionnez un employé pour afficher la fiche.",
     "daysWorkedAndLeave": "Travaillé {{worked}} · Congé {{leave}}",
     "kpis": {
-      "totalNet": "Total net",
+      "totalNet": "Net total",
       "totalCnss": "CNSS",
       "totalIrpp": "IRPP",
       "period": "Période",
@@ -691,7 +691,7 @@
       "absences": "Absences"
     },
     "absenceTitle": "Statistiques d'absences",
-    "absenceTotal": "Total absences",
+    "absenceTotal": "Total des absences",
     "absenceApproved": "Approuvées",
     "absencePending": "En attente",
     "absenceType": "Type de congé",
