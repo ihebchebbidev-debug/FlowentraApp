@@ -3398,19 +3398,19 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     serviceOrder.TechnicallyCompletedAt = DateTime.UtcNow;
                 }
                 
-                // Count dispatches that are in any "completed" status (dynamic matching)
+                // Count dispatches that are done, using the canonical definition shared with
+                // ServiceOrderStatusCalculator. The previous fuzzy match (status contains
+                // "completed"/"finished"/"done"/"closed") also matched non-terminal and
+                // cancelled-ish statuses, so this counter disagreed with every other writer.
                 var allDispatches = await _db.Dispatches
                     .Where(d => d.ServiceOrderId == id && !d.IsDeleted)
                     .ToListAsync();
-                    
-                var completedCount = allDispatches.Count(d => 
-                {
-                    var dStatus = d.Status?.ToLower() ?? "";
-                    return dStatus.Contains("completed") || dStatus.Contains("finished") || 
-                           dStatus.Contains("done") || dStatus.Contains("closed");
-                });
-                
+
+                var completedCount = allDispatches.Count(d =>
+                    MyApi.Modules.ServiceOrders.Services.ServiceOrderStatusCalculator.IsCompletedDispatchStatus(d.Status));
+
                 serviceOrder.CompletedDispatchCount = completedCount;
+
                 _logger.LogInformation(
                     "[WORKFLOW-UPDATE-SO] Updated CompletedDispatchCount to {Count} (out of {Total} dispatches)",
                     completedCount, allDispatches.Count);

@@ -1084,10 +1084,13 @@ namespace MyApi.Modules.ServiceOrders.Services
         }
 
         /// <summary>
-        /// Server-side reconciliation of a service order's status from its dispatches'
-        /// statuses (replaces the old client-side cascade). System-driven: it sets the
-        /// status directly (no user-transition validation) and never overrides a
-        /// terminal/billing status (closed/invoiced/cancelled).
+        /// Server-side reconciliation of a service order's status from its dispatches' statuses
+        /// (replaces the old client-side cascade). System-driven: it sets the status directly (no
+        /// user-transition validation) and delegates the decision to
+        /// <see cref="ServiceOrderStatusCalculator"/>, which is also used by DispatchService and
+        /// BusinessWorkflowService. Because all three share one implementation, the frontend
+        /// calling updateStatus and recalculateStatus back to back on the same click can no longer
+        /// produce two different statuses for one dispatch set.
         /// </summary>
         public async Task<ServiceOrderDto> RecalculateStatusFromDispatchesAsync(int id, string userId)
         {
@@ -1095,54 +1098,38 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (serviceOrder == null)
                 throw new KeyNotFoundException($"Service order with ID {id} not found");
 
-            var finalStatuses = new[] { "closed", "invoiced", "cancelled" };
-            if (!finalStatuses.Contains(serviceOrder.Status))
+            var dispatchStatuses = await _context.Dispatches
+                .Where(d => d.ServiceOrderId == id && !d.IsDeleted)
+                .Select(d => d.Status)
+                .ToListAsync();
+
+            var evaluation = ServiceOrderStatusCalculator.Compute(serviceOrder.Status, dispatchStatuses);
+            var dirty = false;
+
+            if (serviceOrder.CompletedDispatchCount != evaluation.CompletedDispatchCount)
             {
-                var allDispatchStatuses = await _context.Dispatches
-                    .Where(d => d.ServiceOrderId == id && !d.IsDeleted)
-                    .Select(d => d.Status)
-                    .ToListAsync();
-                var activeDispatchStatuses = allDispatchStatuses
-                    .Where(s => s != "cancelled")
-                    .ToList();
-
-                string newStatus;
-                // If the SO has dispatches and every single one is cancelled, cascade
-                // the cancellation up to the service order itself.
-                if (allDispatchStatuses.Count > 0 && activeDispatchStatuses.Count == 0)
-                    newStatus = "cancelled";
-                else if (activeDispatchStatuses.Count == 0)
-                    newStatus = "ready_for_planning";
-                else if (activeDispatchStatuses.All(s => s == "completed" || s == "technically_completed"))
-                    newStatus = "technically_completed";
-                else if (activeDispatchStatuses.Any(s => s == "in_progress"))
-                    newStatus = "in_progress";
-                else
-                    newStatus = "scheduled";
-
-                // Never walk the order backwards off a billing status. BusinessWorkflowService
-                // advances an all-dispatches-done order straight to "ready_for_invoice"; this
-                // recalculation would otherwise answer the same question with
-                // "technically_completed" and silently downgrade it (the FE calls updateStatus
-                // and recalculateStatus back to back on the same click). A genuinely new,
-                // not-yet-finished dispatch still reopens the order to scheduled/in_progress,
-                // so re-planning a service order three or four times keeps working.
-                if (string.Equals(serviceOrder.Status, "ready_for_invoice", StringComparison.OrdinalIgnoreCase)
-                    && newStatus == "technically_completed")
-                {
-                    newStatus = serviceOrder.Status;
-                }
-
-                if (newStatus != serviceOrder.Status)
-                {
-                    serviceOrder.Status = newStatus;
-                    serviceOrder.ModifiedBy = userId;
-                    serviceOrder.ModifiedDate = DateTime.UtcNow;
-                    if (newStatus == "in_progress" && !serviceOrder.ActualStartDate.HasValue)
-                        serviceOrder.ActualStartDate = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
-                }
+                serviceOrder.CompletedDispatchCount = evaluation.CompletedDispatchCount;
+                dirty = true;
             }
+
+            if (!evaluation.IsTerminal && evaluation.StatusChanged)
+            {
+                var newStatus = evaluation.Status;
+                serviceOrder.Status = newStatus;
+                serviceOrder.ModifiedBy = userId;
+                serviceOrder.ModifiedDate = DateTime.UtcNow;
+                if (newStatus == "in_progress" && !serviceOrder.ActualStartDate.HasValue)
+                    serviceOrder.ActualStartDate = DateTime.UtcNow;
+                if (newStatus == ServiceOrderStatusCalculator.FieldWorkCompleteStatus)
+                {
+                    serviceOrder.TechnicallyCompletedAt ??= DateTime.UtcNow;
+                    serviceOrder.ActualCompletionDate ??= DateTime.UtcNow;
+                }
+                dirty = true;
+            }
+
+            if (dirty) await _context.SaveChangesAsync();
+
 
             var result = await GetServiceOrderByIdAsync(id);
             return result!;
@@ -1300,12 +1287,14 @@ namespace MyApi.Modules.ServiceOrders.Services
             serviceOrder.PaymentStatus = "pending";
 
             // Update CompletedDispatchCount from actual dispatch data
-            var jobIds = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            if (jobIds.Any())
-            {
-                serviceOrder.CompletedDispatchCount = await _context.Dispatches
-                    .CountAsync(d => d.JobId != null && jobIds.Contains(d.JobId) && d.Status == "completed");
-            }
+            // Canonical counter definition (shared with ServiceOrderStatusCalculator): every live
+            // dispatch on this service order whose status counts as done. It used to be scoped by
+            // JobId and to the literal status "completed" only, so orders whose dispatches were
+            // linked by ServiceOrderId, or which reached "technically_completed", counted as 0.
+            serviceOrder.CompletedDispatchCount = await _context.Dispatches
+                .CountAsync(d => d.ServiceOrderId == serviceOrder.Id && !d.IsDeleted
+                    && (d.Status == "completed" || d.Status == "technically_completed"));
+
 
             if (completeDto.GenerateInvoice)
             {
@@ -2855,6 +2844,46 @@ namespace MyApi.Modules.ServiceOrders.Services
             // re-running "Prepare for invoice" any number of times safe.
             static string BuildSourceKey(string sourceType, int sourceId) => $"{sourceType}:{sourceId}";
 
+            // Price resolution for transferred materials. Technicians frequently log a material by
+            // article/SKU without a price, which used to land on the sale as a 0.00 line and got
+            // invoiced for free. Fall back to the article's current SalesPrice, and always recompute
+            // the line total from the resolved unit price so a stale/zero TotalPrice can't win.
+            async Task<(decimal UnitPrice, decimal LineTotal)> ResolveMaterialPriceAsync(
+                int? articleId, decimal unitPrice, decimal quantity, decimal storedTotal, string label)
+            {
+                var resolved = unitPrice;
+
+                if (resolved <= 0m && quantity > 0m && storedTotal > 0m)
+                    resolved = storedTotal / quantity;
+
+                if (resolved <= 0m && articleId.HasValue)
+                {
+                    var articlePrice = await _context.Articles
+                        .Where(a => a.Id == articleId.Value && !a.IsDeleted)
+                        .Select(a => (decimal?)a.SalesPrice)
+                        .FirstOrDefaultAsync();
+
+                    if (articlePrice.HasValue && articlePrice.Value > 0m)
+                    {
+                        resolved = articlePrice.Value;
+                        _logger.LogInformation(
+                            "PrepareForInvoice: {Label} had no unit price — using article #{ArticleId} sales price {Price}",
+                            label, articleId.Value, resolved);
+                    }
+                }
+
+                if (resolved <= 0m)
+                {
+                    _logger.LogWarning(
+                        "PrepareForInvoice: {Label} is being transferred with a zero unit price — no price on the line and none on its article",
+                        label);
+                }
+
+                return (resolved, Math.Round(resolved * quantity, 2));
+            }
+
+
+
             var existingSourceKeys = new HashSet<string>(
                 existingSoSaleItems
                     .Where(si => !string.IsNullOrWhiteSpace(si.SourceType) && !string.IsNullOrWhiteSpace(si.SourceId))
@@ -2971,6 +3000,9 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 foreach (var mat in materials)
                 {
+                    var (matUnitPrice, matLineTotal) = await ResolveMaterialPriceAsync(
+                        mat.ArticleId, mat.UnitPrice, mat.Quantity, mat.TotalPrice, $"SO material #{mat.Id} ({mat.Name})");
+
                     currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
                     {
@@ -2980,8 +3012,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                         ItemCode = mat.Sku,
                         Description = mat.Description ?? mat.Name,
                         Quantity = mat.Quantity,
-                        UnitPrice = mat.UnitPrice,
-                        LineTotal = mat.TotalPrice,
+                        UnitPrice = matUnitPrice,
+                        LineTotal = matLineTotal,
+
                         ArticleId = mat.ArticleId,
                         InstallationId = mat.InstallationId?.ToString(),
                         InstallationName = mat.InstallationName,
@@ -3021,7 +3054,14 @@ namespace MyApi.Modules.ServiceOrders.Services
                         _logger.LogInformation("PrepareForInvoice: Skipping already-transferred dispatch material #{Id} (source key match)", mat.Id);
                         continue;
                     }
-                    var signature = BuildSaleItemSignature("article", name, desc, mat.UnitPrice, mat.Quantity, mat.ArticleId, dispatchInstallationId?.ToString());
+                    // Resolve the price BEFORE building the dedup signature: the signatures of
+                    // already-transferred sale items were built from their *resolved* unit price,
+                    // so signing this row with its raw (possibly 0.00) price would never match and
+                    // a legacy sale could receive the same material twice.
+                    var (dmUnitPrice, dmLineTotal) = await ResolveMaterialPriceAsync(
+                        mat.ArticleId, mat.UnitPrice, mat.Quantity, mat.TotalPrice, $"Dispatch material #{mat.Id} ({name})");
+
+                    var signature = BuildSaleItemSignature("article", name, desc, dmUnitPrice, mat.Quantity, mat.ArticleId, dispatchInstallationId?.ToString());
                     if (useLegacySignatureDedup && !existingSignatures.Add(signature))
                     {
                         _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch material #{Id} (legacy signature match)", mat.Id);
@@ -3037,8 +3077,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                         ItemName = name,
                         Description = desc,
                         Quantity = mat.Quantity,
-                        UnitPrice = mat.UnitPrice,
-                        LineTotal = mat.TotalPrice,
+                        UnitPrice = dmUnitPrice,
+                        LineTotal = dmLineTotal,
+
                         ArticleId = mat.ArticleId,
                         ServiceOrderId = id.ToString(),
                         SourceType = "dispatch_material",

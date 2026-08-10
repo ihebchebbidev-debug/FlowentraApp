@@ -841,11 +841,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     serviceOrder.ModifiedDate = DateTime.UtcNow;
                     serviceOrder.ModifiedBy = "system-reconcile";
 
-                    // Update CompletedDispatchCount based on the condition values
-                    var conditionStatuses = (rule.ConditionValue ?? "")
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(s => s.Trim()).ToHashSet();
-                    serviceOrder.CompletedDispatchCount = so.Dispatches.Count(d => conditionStatuses.Contains(d.Status ?? ""));
+                    // Keep CompletedDispatchCount on the one canonical definition shared by
+                    // ServiceOrderStatusCalculator (live, non-deleted dispatches whose status is
+                    // completed/technically_completed). It used to be derived from whatever status
+                    // list the matched workflow rule happened to carry, which made the counter
+                    // drift away from every other writer.
+                    serviceOrder.CompletedDispatchCount = so.Dispatches
+                        .Count(d => MyApi.Modules.ServiceOrders.Services.ServiceOrderStatusCalculator.IsCompletedDispatchStatus(d.Status));
+
 
                     // Set timestamps based on new status
                     if (expectedStatus == "in_progress" && !serviceOrder.ActualStartDate.HasValue)
@@ -862,7 +865,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     _logger.LogInformation(
                         "[WORKFLOW-RECONCILE] 🔧 Collection rule: SO #{Id} '{Old}' → '{New}' (condition={Met}, dispatches: {Matched}/{Total})",
                         so.Id, oldStatus, expectedStatus, conditionMet ? "YES" : "NO",
-                        so.Dispatches.Count(d => conditionStatuses.Contains(d.Status ?? "")), so.Dispatches.Count);
+                        so.Dispatches.Count(d => MyApi.Modules.ServiceOrders.Services.ServiceOrderStatusCalculator.IsCompletedDispatchStatus(d.Status)), so.Dispatches.Count);
                 }
             }
             // ── sale.serviceOrders or sale.service_orders ──

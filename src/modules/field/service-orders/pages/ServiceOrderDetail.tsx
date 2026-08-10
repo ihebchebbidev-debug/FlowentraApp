@@ -25,6 +25,7 @@ import { JobsTable } from "../components/JobsTable";
 import { DispatchesTable } from "../components/DispatchesTable";
 import { PlanDispatchModal } from "../components/PlanDispatchModal";
 import { ServiceOrderStatusFlow, type ServiceOrderStatus } from "../components/ServiceOrderStatusFlow";
+import { serviceOrderStatusConfig } from "@/config/entity-statuses";
 import { TimeExpensesTab } from "../components/TimeExpensesTab";
 import { MaterialsTab } from "../components/MaterialsTab";
 import { ServiceOrderActivityTab } from "../components/ServiceOrderActivityTab";
@@ -277,16 +278,12 @@ export default function ServiceOrderDetail() {
       const data = await serviceOrdersApi.getById(Number(id), true);
       setServiceOrder(data);
 
-      // Normalize legacy/edge-case statuses to valid workflow statuses
-      const statusNormalization: Record<string, ServiceOrderStatus> = {
-        'draft': 'pending',
-        'partially_completed': 'technically_completed',
-        'completed': 'ready_for_invoice',
-        'on_hold': 'pending',
-        'cancelled': 'closed',
-      };
-      const normalized = statusNormalization[data.status] || data.status;
-      setCurrentStatusFlow(normalized as ServiceOrderStatus);
+      // Display the real backend status. Only unknown/legacy values fall back to
+      // the start of the pipeline — mapping partially_completed → technically_completed
+      // or cancelled → closed used to hide the true state of the order (and let
+      // users invoice work whose dispatches were still open).
+      const known = serviceOrderStatusConfig.statuses.some(s => s.id === data.status);
+      setCurrentStatusFlow((known ? data.status : 'pending') as ServiceOrderStatus);
     } catch (error) {
       console.error('Failed to fetch service order:', error);
       toast.error('Failed to load service order');

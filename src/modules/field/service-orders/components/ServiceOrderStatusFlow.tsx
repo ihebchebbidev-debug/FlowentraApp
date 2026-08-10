@@ -2,19 +2,28 @@ import { useTranslation } from "react-i18next";
 import {
   serviceOrderStatusConfig,
   getStatusById,
+  getAllowedTransitions,
 } from "@/config/entity-statuses";
 import { StatusFlowStepper, type StatusStepDef } from "@/components/shared/StatusFlowStepper";
 
-export type ServiceOrderStatus = 
-  | "pending" 
+// Every status the backend can put a service order into. Keep this in sync with
+// serviceOrderStatusConfig — the UI must display the real status, never a
+// lossy approximation of it.
+export type ServiceOrderStatus =
+  | "draft"
+  | "pending"
   | "planned"
-  | "ready_for_planning" 
-  | "scheduled" 
+  | "ready_for_planning"
+  | "scheduled"
   | "in_progress"
-  | "technically_completed" 
+  | "on_hold"
+  | "partially_completed"
+  | "technically_completed"
   | "ready_for_invoice"
-  | "invoiced" 
-  | "closed";
+  | "completed"
+  | "invoiced"
+  | "closed"
+  | "cancelled";
 
 const WORKFLOW_STEPS = serviceOrderStatusConfig.workflow.steps as ServiceOrderStatus[];
 const BRANCH_STATUSES = serviceOrderStatusConfig.workflow.branchStatuses ?? {};
@@ -34,7 +43,15 @@ export function ServiceOrderStatusFlow({
 }: ServiceOrderStatusFlowProps) {
   const { t } = useTranslation('serviceOrders');
 
-  const branches = BRANCH_STATUSES[currentStatus] ?? [];
+  // On the happy path the stepper handles forward/backward moves itself, so we
+  // only feed it the declared branch options. Off the happy path (on_hold,
+  // partially_completed, cancelled...) the stepper has no neighbours to offer,
+  // so surface every legal transition in the dropdown instead.
+  const isOnHappyPath = WORKFLOW_STEPS.includes(currentStatus);
+  const branches = isOnHappyPath
+    ? BRANCH_STATUSES[currentStatus] ?? []
+    : getAllowedTransitions('service_order', currentStatus);
+
 
   const getStepDef = (id: string): StatusStepDef => {
     const def = getStatusById(serviceOrderStatusConfig, id);

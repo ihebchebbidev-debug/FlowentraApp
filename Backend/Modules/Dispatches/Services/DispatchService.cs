@@ -12,6 +12,7 @@ using MyApi.Modules.Dispatches.Mapping;
 using MyApi.Modules.WorkflowEngine.Services;
 using MyApi.Modules.Articles.Services;
 using MyApi.Modules.Articles.DTOs;
+using MyApi.Modules.ServiceOrders.Services;
 
 namespace MyApi.Modules.Dispatches.Services
 {
@@ -225,7 +226,15 @@ namespace MyApi.Modules.Dispatches.Services
                 .Distinct()
                 .ToListAsync();
 
-            if (techIds.Count == 0) return new System.Collections.Generic.Dictionary<int, string>();
+            return await GetTechnicianNameMapAsync(techIds);
+        }
+
+        // Resolve display names for a set of technician (user) ids. Shared by DTO mapping and by
+        // the scheduling-conflict messages, so both spell technician names the same way.
+        private async Task<System.Collections.Generic.Dictionary<int, string>> GetTechnicianNameMapAsync(
+            System.Collections.Generic.List<int> techIds)
+        {
+            if (techIds == null || techIds.Count == 0) return new System.Collections.Generic.Dictionary<int, string>();
 
             var users = await _db.Users
                 .Where(u => techIds.Contains(u.Id))
@@ -242,6 +251,7 @@ namespace MyApi.Modules.Dispatches.Services
             }
             return map;
         }
+
 
         // Union two skill arrays case-insensitively; returns null when the result is empty
         // so the DB column stays NULL instead of an empty array.
@@ -283,6 +293,12 @@ namespace MyApi.Modules.Dispatches.Services
             // Determine status based on whether technicians are assigned
             var hasTechnicians = dto.AssignedTechnicianIds != null && dto.AssignedTechnicianIds.Count > 0;
             var status = hasTechnicians ? "assigned" : "planned";
+
+            // Multiple dispatches per job/service order stay allowed, but the assigned technicians
+            // must actually be free in this window. Checked before the dispatch number is drawn.
+            await EnsureTechnicianAvailabilityAsync(
+                dto.AssignedTechnicianIds, dto.ScheduledDate, dto.ScheduledStartTime, dto.ScheduledEndTime);
+
 
             // Multiple dispatches per job are allowed: each call creates a new,
             // independent dispatch even if the job already has one or more.
@@ -454,6 +470,11 @@ namespace MyApi.Modules.Dispatches.Services
             var hasTechnicians = dto.AssignedTechnicianIds != null && dto.AssignedTechnicianIds.Count > 0;
             var status = hasTechnicians ? "assigned" : "planned";
 
+            // Reject double-booking before we burn a dispatch number.
+            await EnsureTechnicianAvailabilityAsync(
+                dto.AssignedTechnicianIds, dto.ScheduledDate, dto.ScheduledStartTime, dto.ScheduledEndTime);
+
+
             string dispatchNumber;
             try
             {
@@ -585,6 +606,91 @@ namespace MyApi.Modules.Dispatches.Services
             var nameMap = await GetTechnicianNameMapForDispatchAsync(createdDispatch.Id);
             return DispatchMapping.ToDto(createdDispatch, nameMap);
         }
+
+        /// <summary>
+        /// Guard against double-booking a technician. Planning multiple dispatches per service
+        /// order is fully supported, but the same technician may not be on two live dispatches whose
+        /// scheduled windows overlap on the same day. Dispatches that no longer occupy the
+        /// technician's calendar (cancelled / rejected / done) are ignored.
+        /// </summary>
+        private async Task EnsureTechnicianAvailabilityAsync(
+            IEnumerable<string>? technicianIds,
+            DateTime scheduledDate,
+            TimeSpan? scheduledStartTime,
+            TimeSpan? scheduledEndTime,
+            int? excludeDispatchId = null)
+        {
+            var techIds = (technicianIds ?? Enumerable.Empty<string>())
+                .Select(s => int.TryParse(s, out var v) ? v : 0)
+                .Where(v => v > 0)
+                .Distinct()
+                .ToList();
+
+            if (techIds.Count == 0) return;
+
+            var dayStart = scheduledDate.Date;
+            var dayEnd = dayStart.AddDays(1);
+
+            var sameDay = await (
+                from dt in _db.Set<DispatchTechnician>()
+                join d in _db.Dispatches on dt.DispatchId equals d.Id
+                where !dt.IsDeleted && !d.IsDeleted
+                    && techIds.Contains(dt.TechnicianId)
+                    && d.ScheduledDate >= dayStart && d.ScheduledDate < dayEnd
+                    && d.Status != "cancelled" && d.Status != "rejected"
+                    && d.Status != "completed" && d.Status != "technically_completed"
+                    && (excludeDispatchId == null || d.Id != excludeDispatchId.Value)
+                select new
+                {
+                    dt.TechnicianId,
+                    d.DispatchNumber,
+                    d.ScheduledStartTime,
+                    d.ScheduledEndTime
+                }).ToListAsync();
+
+            if (sameDay.Count == 0) return;
+
+            // A dispatch without explicit times occupies the whole day. A degenerate window
+            // (end <= start) is widened to one minute so two identical point-in-time slots still
+            // register as a clash.
+            static (TimeSpan Start, TimeSpan End) Window(TimeSpan? s, TimeSpan? e)
+            {
+                var start = s ?? TimeSpan.Zero;
+                var end = e ?? TimeSpan.FromDays(1);
+                if (end <= start) end = start.Add(TimeSpan.FromMinutes(1));
+                return (start, end);
+            }
+
+            var (newStart, newEnd) = Window(scheduledStartTime, scheduledEndTime);
+
+            var clashes = sameDay
+                .Where(x =>
+                {
+                    var (s, e) = Window(x.ScheduledStartTime, x.ScheduledEndTime);
+                    return newStart < e && s < newEnd; // half-open interval overlap
+                })
+                .ToList();
+
+            if (clashes.Count == 0) return;
+
+            var nameMap = await GetTechnicianNameMapAsync(clashes.Select(c => c.TechnicianId).Distinct().ToList());
+
+            var details = clashes
+                .GroupBy(c => c.TechnicianId)
+                .Select(g =>
+                {
+                    var who = nameMap.TryGetValue(g.Key, out var n) && !string.IsNullOrWhiteSpace(n)
+                        ? n
+                        : $"Technician #{g.Key}";
+                    return $"{who} is already on {string.Join(", ", g.Select(x => x.DispatchNumber).Distinct())}";
+                });
+
+            throw new InvalidOperationException(
+                $"Scheduling conflict on {dayStart:yyyy-MM-dd}: {string.Join("; ", details)}. " +
+                "Pick another time slot or another technician.");
+        }
+
+
 
         public async Task<DispatchDto> CreateFromServiceOrderAsync(CreateDispatchFromServiceOrderDto dto, string userId)
         {
@@ -924,12 +1030,67 @@ namespace MyApi.Modules.Dispatches.Services
             if (!string.IsNullOrEmpty(dto.Priority)) d.Priority = dto.Priority;
             if (dto.RequiredSkills != null) d.RequiredSkills = dto.RequiredSkills.ToArray();
 
+            // Reschedule/reassign validation: the technician roster is whatever the caller sent,
+            // falling back to the roster already on the dispatch. Checked against the *new* window
+            // so moving a dispatch onto a slot a technician already works cannot silently
+            // double-book them.
+            var rosterIds = dto.AssignedTechnicianIds ?? d.AssignedTechnicians
+                .Where(t => !t.IsDeleted)
+                .Select(t => t.TechnicianId.ToString())
+                .ToList();
+
+            await EnsureTechnicianAvailabilityAsync(
+                rosterIds, d.ScheduledDate, d.ScheduledStartTime, d.ScheduledEndTime, excludeDispatchId: d.Id);
+
+            // AssignedTechnicianIds used to be silently ignored here, so reassigning a dispatch
+            // through this endpoint had no effect. Apply it as a full replacement of the roster.
+            if (dto.AssignedTechnicianIds != null)
+            {
+                var desired = dto.AssignedTechnicianIds
+                    .Select(s => int.TryParse(s, out var v) ? v : 0)
+                    .Where(v => v > 0)
+                    .Distinct()
+                    .ToHashSet();
+
+                foreach (var existing in d.AssignedTechnicians.Where(t => !t.IsDeleted).ToList())
+                {
+                    if (!desired.Contains(existing.TechnicianId))
+                    {
+                        existing.IsDeleted = true;
+                        existing.DeletedAt = DateTime.UtcNow;
+                        existing.DeletedBy = userId;
+                    }
+                }
+
+                var current = d.AssignedTechnicians.Where(t => !t.IsDeleted).Select(t => t.TechnicianId).ToHashSet();
+                foreach (var techId in desired.Where(id => !current.Contains(id)))
+                {
+                    _db.Set<DispatchTechnician>().Add(new DispatchTechnician
+                    {
+                        DispatchId = d.Id,
+                        TechnicianId = techId,
+                        AssignedDate = DateTime.UtcNow,
+                        Role = "technician"
+                    });
+                }
+
+                // Keep the dispatch status consistent with whether anyone is actually assigned.
+                if (desired.Count > 0 && d.Status == "planned") d.Status = "assigned";
+                else if (desired.Count == 0 && d.Status == "assigned") d.Status = "planned";
+            }
+
             d.ModifiedDate = DateTime.UtcNow;
             d.ModifiedBy = userId;
             await _db.SaveChangesAsync();
-            var nameMap = await GetTechnicianNameMapForDispatchAsync(d.Id);
-            return DispatchMapping.ToDto(d, nameMap);
+
+            var reloaded = await _db.Dispatches
+                .Include(x => x.AssignedTechnicians)
+                .Include(x => x.DispatchJobs)
+                .FirstAsync(x => x.Id == d.Id);
+            var nameMap = await GetTechnicianNameMapForDispatchAsync(reloaded.Id);
+            return DispatchMapping.ToDto(reloaded, nameMap);
         }
+
 
         public async Task<DispatchDto> UpdateStatusAsync(int dispatchId, UpdateDispatchStatusDto dto, string userId)
         {
@@ -1527,68 +1688,44 @@ namespace MyApi.Modules.Dispatches.Services
         }
 
         /// <summary>
-        /// Recalculate the parent Service Order status based on remaining active dispatches.
-        /// - No dispatches left → 'ready_for_planning'
-        /// - All completed → 'ready_for_invoice' (SO is billable as soon as every dispatch is done)
-        /// - Any in_progress → 'in_progress'
-        /// - Otherwise → 'scheduled'
+        /// Recalculate the parent Service Order status after a dispatch was removed, delegating the
+        /// decision to <see cref="ServiceOrderStatusCalculator"/> so that deleting a dispatch and
+        /// completing a dispatch can never produce two different answers for the same dispatch set.
         /// </summary>
         private async Task RecalculateServiceOrderStatusAsync(int serviceOrderId, string userId)
         {
             var serviceOrder = await _db.ServiceOrders.FindAsync(serviceOrderId);
             if (serviceOrder == null) return;
 
-            // Don't recalculate if SO is in a final state (or already past-completion states
-            // that a human explicitly set — we must not walk the SO back from invoiced/closed
-            // just because someone re-opened a dispatch).
-            var finalStatuses = new[] { "closed", "invoiced", "cancelled", "completed", "ready_for_invoice" };
-            if (finalStatuses.Contains(serviceOrder.Status))
-            {
-                _logger.LogInformation(
-                    "[DISPATCH-DELETE] SO {ServiceOrderId} is in final status '{Status}', skipping recalculation",
-                    serviceOrderId, serviceOrder.Status);
-                return;
-            }
-
-            // Get remaining active (non-deleted) dispatches for this SO
+            // Remaining non-deleted dispatches for this SO (cancelled/rejected ones are excluded
+            // from the completion denominator inside the calculator, not here).
             var remainingDispatches = await _db.Dispatches
                 .Where(d => d.ServiceOrderId == serviceOrderId && !d.IsDeleted)
+                .Select(d => d.Status)
                 .ToListAsync();
 
             var oldStatus = serviceOrder.Status;
-            string newStatus;
+            var evaluation = ServiceOrderStatusCalculator.Compute(oldStatus, remainingDispatches);
+            var newStatus = evaluation.Status;
 
-            if (remainingDispatches.Count == 0)
+            // Invoiced/closed/cancelled orders keep their status; refresh the counter only.
+            if (evaluation.IsTerminal)
             {
-                // No dispatches left → back to ready for planning
-                newStatus = "ready_for_planning";
+                if (serviceOrder.CompletedDispatchCount != evaluation.CompletedDispatchCount)
+                {
+                    serviceOrder.CompletedDispatchCount = evaluation.CompletedDispatchCount;
+                    await _db.SaveChangesAsync();
+                }
+                _logger.LogInformation(
+                    "[DISPATCH-DELETE] SO {ServiceOrderId} is in final status '{Status}', counter refreshed only",
+                    serviceOrderId, oldStatus);
+                return;
             }
-            else
-            {
-                var allCompleted = remainingDispatches.All(d => d.Status == "completed" || d.Status == "technically_completed");
-                var anyInProgress = remainingDispatches.Any(d => d.Status == "in_progress");
-                var someCompleted = remainingDispatches.Any(d => d.Status == "completed" || d.Status == "technically_completed");
 
-                if (allCompleted)
-                {
-                    // Auto-advance straight to ready_for_invoice — every dispatch (or the only
-                    // dispatch) is done, so the SO is ready to bill without a manual step.
-                    newStatus = "ready_for_invoice";
-                }
-                else if (anyInProgress)
-                {
-                    newStatus = "in_progress";
-                }
-                else if (someCompleted)
-                {
-                    // Some completed, some not → partially in progress
-                    newStatus = "in_progress";
-                }
-                else
-                {
-                    // All dispatches are pending/assigned/scheduled
-                    newStatus = "scheduled";
-                }
+            if (serviceOrder.CompletedDispatchCount != evaluation.CompletedDispatchCount)
+            {
+                serviceOrder.CompletedDispatchCount = evaluation.CompletedDispatchCount;
+                await _db.SaveChangesAsync();
             }
 
             if (oldStatus != newStatus)
@@ -1596,16 +1733,20 @@ namespace MyApi.Modules.Dispatches.Services
                 serviceOrder.Status = newStatus;
                 serviceOrder.ModifiedDate = DateTime.UtcNow;
                 serviceOrder.ModifiedBy = userId;
+                serviceOrder.CompletedDispatchCount = evaluation.CompletedDispatchCount;
 
-                // Update CompletedDispatchCount
-                serviceOrder.CompletedDispatchCount = remainingDispatches
-                    .Count(d => d.Status == "completed" || d.Status == "technically_completed");
+                if (newStatus == ServiceOrderStatusCalculator.FieldWorkCompleteStatus)
+                {
+                    serviceOrder.TechnicallyCompletedAt ??= DateTime.UtcNow;
+                    serviceOrder.ActualCompletionDate ??= DateTime.UtcNow;
+                }
 
                 await _db.SaveChangesAsync();
 
                 _logger.LogInformation(
                     "[DISPATCH-DELETE] SO {ServiceOrderId} status recalculated: '{OldStatus}' → '{NewStatus}' (remaining dispatches: {Count})",
                     serviceOrderId, oldStatus, newStatus, remainingDispatches.Count);
+
 
                 // Trigger workflow for SO status change
                 if (_workflowTriggerService != null)

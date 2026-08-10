@@ -44,6 +44,10 @@ export const serviceOrderStatusConfig: EntityStatusConfig = {
     branchStatuses: {
       // From in_progress, can branch to on_hold or partially_completed (based on dispatch status)
       in_progress: ['on_hold', 'partially_completed'],
+      // The backend's CompleteServiceOrder action parks orders on 'completed'; declaring it as a
+      // branch of technically_completed keeps ready_for_invoice reachable from there instead of
+      // treating it as an unknown status that can only fall back to 'pending'.
+      technically_completed: ['completed'],
       // From scheduled, step back to planned (system cascades may go further back)
       scheduled: ['planned'],
     },

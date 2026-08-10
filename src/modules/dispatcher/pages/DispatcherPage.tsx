@@ -510,7 +510,10 @@ useEffect(() => {
       render: (dispatch: DisplayDispatch) => {
         const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; className?: string }> = {
           'pending': { variant: 'outline', label: t('dispatcher.statuses.pending', 'Pending') },
+          'planned': { variant: 'secondary', label: t('dispatcher.statuses.planned', 'Planned') },
           'assigned': { variant: 'secondary', label: t('dispatcher.statuses.assigned', 'Assigned') },
+          'confirmed': { variant: 'default', label: t('dispatcher.statuses.confirmed', 'Confirmed') },
+          'rejected': { variant: 'destructive', label: t('dispatcher.statuses.rejected', 'Rejected') },
           'acknowledged': { variant: 'secondary', label: t('dispatcher.statuses.acknowledged', 'Acknowledged') },
           'en_route': { variant: 'default', label: t('dispatcher.statuses.en_route', 'En Route') },
           'on_site': { variant: 'default', label: t('dispatcher.statuses.on_site', 'On Site') },
@@ -521,7 +524,15 @@ useEffect(() => {
           'not_scheduled': { variant: 'outline', label: t('dispatcher.statuses.not_scheduled', 'Not Scheduled') },
           'scheduled': { variant: 'secondary', label: t('dispatcher.statuses.scheduled', 'Scheduled') }
         };
-        const config = statusConfig[dispatch.status?.toLowerCase()] || { variant: 'outline' as const, label: dispatch.status || 'Unknown' };
+        const rawStatus = dispatch.status?.toLowerCase();
+        const humanize = (s?: string) =>
+          s ? s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Unknown';
+        const config = statusConfig[rawStatus] || {
+          variant: 'outline' as const,
+          label: rawStatus
+            ? t(`dispatcher.statuses.${rawStatus}`, humanize(rawStatus))
+            : humanize(undefined),
+        };
         return (
           <Badge variant={config.variant} className={config.className}>
             {config.label}

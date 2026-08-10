@@ -6,6 +6,7 @@
 
 export * from './types';
 export * from './utils';
+export { getAllowedTransitions, isTransitionAllowed, canonicalStatus } from './transitions';
 export { offerStatusConfig } from './offer.config';
 export { saleStatusConfig } from './sale.config';
 export { serviceOrderStatusConfig } from './service-order.config';

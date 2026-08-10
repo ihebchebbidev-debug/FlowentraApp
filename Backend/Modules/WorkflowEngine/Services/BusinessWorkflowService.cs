@@ -7,6 +7,7 @@ using MyApi.Modules.Dispatches.Models;
 using MyApi.Modules.Offers.Models;
 using MyApi.Modules.Contacts.Models;
 using System.Text.Json;
+using MyApi.Modules.ServiceOrders.Services;
 using MyApi.Modules.Settings.Services;
 
 
@@ -819,22 +820,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
                 var serviceOrderId = dispatch.ServiceOrderId.Value;
 
-                // Get all non-deleted dispatches for this service order. Cancelled/rejected ones are
-                // excluded from the denominator: a job can be re-dispatched several times, and an
-                // abandoned attempt must not keep the order from ever reaching "ready_for_invoice".
-                var allDispatches = await _db.Dispatches
+                // Get all non-deleted dispatches for this service order and hand the decision to
+                // ServiceOrderStatusCalculator — the single source of truth shared with
+                // DispatchService and ServiceOrderService, so the three code paths can no longer
+                // reach different conclusions about the same dispatch set.
+                var dispatchStatuses = await _db.Dispatches
                     .Where(d => d.ServiceOrderId == serviceOrderId && !d.IsDeleted)
+                    .Select(d => d.Status)
                     .ToListAsync();
-
-                var deadStatuses = new[] { "cancelled", "rejected" };
-                var relevantDispatches = allDispatches
-                    .Where(d => !deadStatuses.Contains((d.Status ?? string.Empty).ToLowerInvariant()))
-                    .ToList();
-
-                var completedStatuses = new[] { "technically_completed", "completed" };
-                var completedCount = relevantDispatches.Count(d => completedStatuses.Contains((d.Status ?? string.Empty).ToLowerInvariant()));
-                var totalCount = relevantDispatches.Count;
-
 
                 var serviceOrder = await _db.ServiceOrders
                     .FirstOrDefaultAsync(so => so.Id == serviceOrderId);
@@ -846,12 +839,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 }
 
                 var oldStatus = serviceOrder.Status ?? string.Empty;
-                string newStatus;
+                var evaluation = ServiceOrderStatusCalculator.Compute(oldStatus, dispatchStatuses);
+                var completedCount = evaluation.CompletedDispatchCount;
+                var totalCount = evaluation.ActiveDispatchCount;
+                var newStatus = evaluation.Status;
 
-                // Never walk an order backwards: once it is invoiced/closed/cancelled, a late
-                // dispatch completion may only refresh the counter, not reopen the order.
-                var terminalStatuses = new[] { "invoiced", "closed", "completed", "cancelled" };
-                if (terminalStatuses.Contains((oldStatus ?? string.Empty).ToLowerInvariant()))
+                // Once the order is invoiced/closed/cancelled a late dispatch completion may only
+                // refresh the counter, never reopen the order.
+                if (evaluation.IsTerminal)
                 {
                     if (serviceOrder.CompletedDispatchCount != completedCount)
                     {
@@ -863,23 +858,10 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     return;
                 }
 
-                if (totalCount > 0 && completedCount == totalCount)
-                {
-                    // All dispatches completed → SO is ready to be invoiced.
-                    // We previously stopped at 'technically_completed' which required a manual
-                    // click to advance; that step is redundant because every downstream check
-                    // (billing eligibility, sale rollup) treats "all dispatches done" as billable.
-                    newStatus = "ready_for_invoice";
-                    _logger.LogInformation("HandleDispatchTechnicallyCompleted: All {Total} dispatches completed, service order ready for invoice",
-                        totalCount);
-                }
-                else
-                {
-                    // Some dispatches completed
-                    newStatus = "partially_completed";
-                    _logger.LogInformation("HandleDispatchTechnicallyCompleted: {Completed}/{Total} dispatches completed, service order partially completed", 
-                        completedCount, totalCount);
-                }
+                _logger.LogInformation(
+                    "HandleDispatchTechnicallyCompleted: {Completed}/{Total} live dispatches completed → service order status '{Old}' → '{New}'",
+                    completedCount, totalCount, oldStatus, newStatus);
+
 
                 // Keep the counter accurate even when the status itself does not move
                 // (e.g. the 3rd of 5 dispatches completes while already "partially_completed").
@@ -897,10 +879,10 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     serviceOrder.CompletedDispatchCount = completedCount;
 
 
-                    if (newStatus == "ready_for_invoice")
+                    if (newStatus == ServiceOrderStatusCalculator.FieldWorkCompleteStatus)
                     {
-                        serviceOrder.ActualCompletionDate = DateTime.UtcNow;
-                        serviceOrder.TechnicallyCompletedAt = DateTime.UtcNow;
+                        serviceOrder.ActualCompletionDate ??= DateTime.UtcNow;
+                        serviceOrder.TechnicallyCompletedAt ??= DateTime.UtcNow;
                     }
 
                     await _db.SaveChangesAsync();
@@ -909,10 +891,11 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     if (!string.IsNullOrEmpty(serviceOrder.SaleId) && int.TryParse(serviceOrder.SaleId, out int saleId))
                     {
                         var sale = await _db.Sales.FindAsync(saleId);
-                        var isFullyCompleted = newStatus == "ready_for_invoice" || newStatus == "technically_completed";
+                        var isFullyCompleted = newStatus == ServiceOrderStatusCalculator.FieldWorkCompleteStatus;
                         var statusText = isFullyCompleted
-                            ? "All dispatches completed - service order ready for invoice"
+                            ? "All dispatches completed - service order technically completed, awaiting invoice review"
                             : $"Dispatch #{dispatch.DispatchNumber} completed ({completedCount}/{totalCount})";
+
                         
                         var saleActivity = new SaleActivity
                         {

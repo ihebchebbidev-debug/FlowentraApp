@@ -862,8 +862,11 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                     serviceOrder.Status = expectedStatus;
                     serviceOrder.ModifiedDate = DateTime.UtcNow;
                     serviceOrder.ModifiedBy = "system-reconcile";
-                    var condStatuses = (rule.ConditionValue ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToHashSet();
-                    serviceOrder.CompletedDispatchCount = so.Dispatches.Count(d => condStatuses.Contains(d.Status ?? ""));
+                    // Canonical counter definition (shared with ServiceOrderStatusCalculator) rather
+                    // than the matched rule's own status list, which used to make it drift.
+                    serviceOrder.CompletedDispatchCount = so.Dispatches
+                        .Count(d => MyApi.Modules.ServiceOrders.Services.ServiceOrderStatusCalculator.IsCompletedDispatchStatus(d.Status));
+
                     if (expectedStatus == "in_progress" && !serviceOrder.ActualStartDate.HasValue) serviceOrder.ActualStartDate = DateTime.UtcNow;
                     if (expectedStatus == "technically_completed" || expectedStatus == "completed") { serviceOrder.TechnicallyCompletedAt ??= DateTime.UtcNow; serviceOrder.ActualCompletionDate ??= DateTime.UtcNow; }
                     await db.SaveChangesAsync(ct);
