@@ -175,6 +175,10 @@ namespace MyApi.Modules.Deals.Controllers
                 if (item == null) return NotFound(new { success = false, error = new { code = "DEAL_NOT_FOUND", message = "Deal not found" } });
                 return Ok(new { success = true, data = item });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding item to deal {DealId}", id);
@@ -190,6 +194,10 @@ namespace MyApi.Modules.Deals.Controllers
                 var item = await _dealService.UpdateDealItemAsync(id, itemId, itemDto, GetCurrentUserId(), GetCurrentUserName());
                 if (item == null) return NotFound(new { success = false, error = new { code = "ITEM_NOT_FOUND", message = "Item not found" } });
                 return Ok(new { success = true, data = item });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
             }
             catch (Exception ex)
             {
@@ -239,6 +247,10 @@ namespace MyApi.Modules.Deals.Controllers
                 var activity = await _dealService.AddDealActivityAsync(id, activityDto, GetCurrentUserId(), GetCurrentUserName());
                 if (activity == null) return NotFound(new { success = false, error = new { code = "DEAL_NOT_FOUND", message = "Deal not found" } });
                 return Ok(new { success = true, data = activity });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
             }
             catch (Exception ex)
             {

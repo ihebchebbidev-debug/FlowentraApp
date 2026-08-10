@@ -43,6 +43,98 @@ namespace MyApi.Modules.Deals.Services
             return s;
         }
 
+        // Discount modes the line-total formula understands. Anything else used to be
+        // silently treated as a percentage and stored verbatim.
+        private static readonly string[] ValidDiscountTypes = { "percentage", "fixed" };
+
+        /// <summary>Activity types a user may create by hand (system events are written internally).</summary>
+        private static readonly string[] UserActivityTypes =
+            { "note", "call", "email", "meeting", "task", "updated", "other" };
+
+        /// <summary>Title is the only human-identifying field on a deal — it must not be blank.</summary>
+        private static string ValidateTitle(string? title)
+        {
+            var t = (title ?? "").Trim();
+            if (t.Length == 0)
+                throw new InvalidOperationException("INVALID_TITLE: Deal title is required.");
+            if (t.Length > 255)
+                throw new InvalidOperationException("INVALID_TITLE: Deal title must be 255 characters or fewer.");
+            return t;
+        }
+
+        /// <summary>Currency maps to a varchar(3) column — validate instead of letting the DB throw a 500.</summary>
+        private static string ValidateCurrency(string? currency)
+        {
+            var c = (currency ?? "").Trim().ToUpperInvariant();
+            if (c.Length == 0) return "TND";
+            if (c.Length != 3 || !c.All(char.IsLetter))
+                throw new InvalidOperationException(
+                    $"INVALID_CURRENCY:{currency}: Currency must be a 3-letter code (e.g. TND, EUR, USD).");
+            return c;
+        }
+
+        /// <summary>
+        /// Postgres `timestamptz` columns reject DateTimes whose Kind is Unspecified, which is
+        /// exactly what the JSON binder produces for date-only ("2026-09-30") or offset-less
+        /// payloads — that used to surface as a 500 on create/update. Treat such values as UTC
+        /// and convert Local values properly.
+        /// </summary>
+        private static DateTime? ToUtc(DateTime? value)
+        {
+            if (!value.HasValue) return null;
+            var v = value.Value;
+            return v.Kind switch
+            {
+                DateTimeKind.Utc => v,
+                DateTimeKind.Local => v.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            };
+        }
+
+        /// <summary>Rejects impossible line items (negative amounts, unknown discount mode, over-100% discounts).</summary>
+        private static void ValidateItem(CreateDealItemDto dto, int? index = null)
+        {
+            var where = index.HasValue ? $" (item #{index + 1})" : "";
+
+            if (string.IsNullOrWhiteSpace(dto.ItemName))
+                throw new InvalidOperationException($"INVALID_ITEM: Item name is required{where}.");
+
+            if (dto.Quantity < 0)
+                throw new InvalidOperationException($"INVALID_ITEM: Quantity cannot be negative{where}.");
+
+            if (dto.UnitPrice < 0)
+                throw new InvalidOperationException($"INVALID_ITEM: Unit price cannot be negative{where}.");
+
+            var discountType = string.IsNullOrWhiteSpace(dto.DiscountType) ? "percentage" : dto.DiscountType.Trim().ToLowerInvariant();
+            if (!ValidDiscountTypes.Contains(discountType))
+                throw new InvalidOperationException(
+                    $"INVALID_ITEM: Unknown discount type '{dto.DiscountType}'{where}. Allowed: percentage, fixed.");
+
+            if (dto.Discount < 0)
+                throw new InvalidOperationException($"INVALID_ITEM: Discount cannot be negative{where}.");
+
+            if (discountType == "percentage" && dto.Discount > 100)
+                throw new InvalidOperationException($"INVALID_ITEM: Percentage discount cannot exceed 100{where}.");
+
+            if (discountType == "fixed" && dto.Discount > dto.Quantity * dto.UnitPrice)
+                throw new InvalidOperationException(
+                    $"INVALID_ITEM: Fixed discount cannot exceed the line gross total{where}.");
+
+            // Canonicalise so the stored value always matches what the formula used.
+            dto.DiscountType = discountType;
+        }
+
+        /// <summary>The contact is a hard dependency of a deal — reject dangling references.</summary>
+        private async Task EnsureContactExistsAsync(int contactId)
+        {
+            if (contactId <= 0)
+                throw new InvalidOperationException("INVALID_CONTACT: A valid contact is required.");
+
+            var exists = await _context.Contacts.AsNoTracking().AnyAsync(c => c.Id == contactId);
+            if (!exists)
+                throw new InvalidOperationException($"INVALID_CONTACT:{contactId}: Contact {contactId} does not exist.");
+        }
+
 
         public DealService(
             ApplicationDbContext context,
@@ -173,6 +265,14 @@ namespace MyApi.Modules.Deals.Services
             // Reject unknown stages before touching the DB or burning a document number.
             var stage = string.IsNullOrWhiteSpace(dto.Stage) ? "lead" : NormalizeStage(dto.Stage);
 
+            // Validate the rest of the payload up-front, for the same reason: a rejected
+            // deal must not consume a document number or leave a partial row behind.
+            var title = ValidateTitle(dto.Title);
+            var currency = ValidateCurrency(dto.Currency);
+            await EnsureContactExistsAsync(dto.ContactId);
+            if (dto.Items != null)
+                for (var i = 0; i < dto.Items.Count; i++) ValidateItem(dto.Items[i], i);
+
             // Resolve the document number from the configurable numbering service
             // (admin can customise the Deal template in Settings → Numbering). Falls
             // back to a GUID, and ultimately to the legacy Id-derived number below if
@@ -205,7 +305,7 @@ namespace MyApi.Modules.Deals.Services
                 deal = new Deal
                 {
                     DealNumber = string.IsNullOrWhiteSpace(dealNumber) ? null : dealNumber,
-                    Title = dto.Title,
+                    Title = title,
                     Description = dto.Description,
                     ContactId = dto.ContactId,
                     ProjectId = dto.ProjectId,
@@ -216,9 +316,9 @@ namespace MyApi.Modules.Deals.Services
                     ActualCloseDate = (stage == "won" || stage == "lost") ? DateTime.UtcNow : null,
 
                     EstimatedValue = dto.EstimatedValue,
-                    Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "TND" : dto.Currency,
-                    ExpectedCloseDate = dto.ExpectedCloseDate,
-                    NextActionDate = dto.NextActionDate,
+                    Currency = currency,
+                    ExpectedCloseDate = ToUtc(dto.ExpectedCloseDate),
+                    NextActionDate = ToUtc(dto.NextActionDate),
                     NextAction = dto.NextAction,
                     Category = dto.Category,
                     Source = dto.Source,
@@ -261,18 +361,23 @@ namespace MyApi.Modules.Deals.Services
             var oldStage = deal.Stage;
             // Validate before mutating anything so a bad stage can't partially apply.
             var newStage = dto.Stage != null ? NormalizeStage(dto.Stage) : null;
+            var newTitle = dto.Title != null ? ValidateTitle(dto.Title) : null;
+            var newCurrency = dto.Currency != null ? ValidateCurrency(dto.Currency) : null;
+            if (dto.ContactId.HasValue) await EnsureContactExistsAsync(dto.ContactId.Value);
+            if (dto.Items != null)
+                for (var i = 0; i < dto.Items.Count; i++) ValidateItem(dto.Items[i], i);
 
-            if (dto.Title != null) deal.Title = dto.Title;
+            if (newTitle != null) deal.Title = newTitle;
             if (dto.Description != null) deal.Description = dto.Description;
             if (dto.ContactId.HasValue) deal.ContactId = dto.ContactId.Value;
             if (dto.ProjectId.HasValue) deal.ProjectId = dto.ProjectId.Value;
             if (newStage != null) deal.Stage = newStage;
             if (dto.Probability.HasValue) deal.Probability = Math.Clamp(dto.Probability.Value, 0, 100);
             if (dto.EstimatedValue.HasValue) deal.EstimatedValue = dto.EstimatedValue.Value;
-            if (dto.Currency != null) deal.Currency = dto.Currency;
-            if (dto.ExpectedCloseDate.HasValue) deal.ExpectedCloseDate = dto.ExpectedCloseDate;
-            if (dto.ActualCloseDate.HasValue) deal.ActualCloseDate = dto.ActualCloseDate;
-            if (dto.NextActionDate.HasValue) deal.NextActionDate = dto.NextActionDate;
+            if (newCurrency != null) deal.Currency = newCurrency;
+            if (dto.ExpectedCloseDate.HasValue) deal.ExpectedCloseDate = ToUtc(dto.ExpectedCloseDate);
+            if (dto.ActualCloseDate.HasValue) deal.ActualCloseDate = ToUtc(dto.ActualCloseDate);
+            if (dto.NextActionDate.HasValue) deal.NextActionDate = ToUtc(dto.NextActionDate);
             if (dto.NextAction != null) deal.NextAction = dto.NextAction;
             if (dto.LostReason != null) deal.LostReason = dto.LostReason;
             if (dto.Category != null) deal.Category = dto.Category;
@@ -391,7 +496,8 @@ namespace MyApi.Modules.Deals.Services
                 TotalValue = deals.Sum(d => d.EstimatedValue),
                 OpenValue = open.Sum(d => d.EstimatedValue),
                 WonValue = won.Sum(d => d.EstimatedValue),
-                AverageValue = total > 0 ? deals.Sum(d => d.EstimatedValue) / total : 0,
+                // Rounded like every other monetary figure the UI renders.
+                AverageValue = total > 0 ? Math.Round(deals.Sum(d => d.EstimatedValue) / total, 2) : 0,
                 WinRate = decided > 0 ? Math.Round(won.Count * 100m / decided, 1) : 0
             };
         }
@@ -701,6 +807,7 @@ namespace MyApi.Modules.Deals.Services
         {
             var deal = await _context.Deals.Include(d => d.Items).FirstOrDefaultAsync(d => d.Id == dealId && !d.IsDeleted);
             if (deal == null) return null;
+            ValidateItem(dto);
             var order = (deal.Items?.Count ?? 0);
             var item = BuildItem(dto, order);
             item.DealId = dealId;
@@ -722,6 +829,7 @@ namespace MyApi.Modules.Deals.Services
             if (!parentAlive) return null;
             var item = await _context.DealItems.FirstOrDefaultAsync(i => i.Id == itemId && i.DealId == dealId);
             if (item == null) return null;
+            ValidateItem(dto);
 
             var oldName = item.ItemName;
             var oldQty = item.Quantity;
@@ -809,7 +917,20 @@ namespace MyApi.Modules.Deals.Services
         {
             var deal = await _context.Deals.FirstOrDefaultAsync(d => d.Id == dealId && !d.IsDeleted);
             if (deal == null) return null;
-            var activity = await AddActivityInternalAsync(dealId, dto.Type, dto.Description, null, userId, userName, null, dto.Details);
+            // A timeline entry with no text renders as an empty row in the UI, and an
+            // unknown type has no icon/label mapping — reject both instead of storing junk.
+            var description = (dto.Description ?? "").Trim();
+            if (description.Length == 0)
+                throw new InvalidOperationException("INVALID_ACTIVITY: Activity description is required.");
+            if (description.Length > 1000)
+                throw new InvalidOperationException("INVALID_ACTIVITY: Activity description must be 1000 characters or fewer.");
+
+            var type = string.IsNullOrWhiteSpace(dto.Type) ? "note" : dto.Type.Trim().ToLowerInvariant();
+            if (!UserActivityTypes.Contains(type))
+                throw new InvalidOperationException(
+                    $"INVALID_ACTIVITY_TYPE:{dto.Type}: Unknown activity type '{dto.Type}'. Allowed: {string.Join(", ", UserActivityTypes)}");
+
+            var activity = await AddActivityInternalAsync(dealId, type, description, null, userId, userName, null, dto.Details);
             deal.LastActivity = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return MapActivity(activity);
@@ -861,7 +982,7 @@ namespace MyApi.Modules.Deals.Services
         {
             ArticleId = dto.ArticleId,
             Type = string.IsNullOrWhiteSpace(dto.Type) ? "article" : dto.Type,
-            ItemName = dto.ItemName,
+            ItemName = (dto.ItemName ?? "").Trim(),
             ItemCode = dto.ItemCode,
             Description = dto.Description,
             Quantity = dto.Quantity,
@@ -877,8 +998,9 @@ namespace MyApi.Modules.Deals.Services
         private static decimal ComputeLineTotal(decimal qty, decimal unitPrice, decimal discount, string discountType)
         {
             var gross = qty * unitPrice;
-            // Round to 2 dp to match the decimal(18,2) columns (no compute-vs-stored drift).
-            if (discount <= 0) return Math.Round(gross, 2);
+            // Round to 2 dp to match the decimal(18,2) columns (no compute-vs-stored drift)
+            // and never emit a negative total, on either branch.
+            if (discount <= 0) return Math.Round(Math.Max(gross, 0), 2);
             var net = discountType == "fixed" ? gross - discount : gross * (1 - discount / 100m);
             return Math.Round(Math.Max(net, 0), 2);
         }
