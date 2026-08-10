@@ -222,6 +222,14 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating job for service order {ServiceOrderId}", serviceOrderId);
+                try
+                {
+                    await _systemLogService.LogErrorAsync(
+                        $"[500] POST /api/service-orders/{serviceOrderId}/jobs: {ex.GetType().Name}: {ex.Message}",
+                        "ServiceOrders", "create", null, null, "ServiceOrderJob", null,
+                        (ex.InnerException?.ToString() ?? ex.ToString()).Substring(0, Math.Min(3000, (ex.InnerException?.ToString() ?? ex.ToString()).Length)));
+                }
+                catch { }
                 return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "Une erreur interne est survenue." } });
             }
         }

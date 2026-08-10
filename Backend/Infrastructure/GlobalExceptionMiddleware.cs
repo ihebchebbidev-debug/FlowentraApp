@@ -87,7 +87,12 @@ public class GlobalExceptionMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);
-            
+
+            // Persist the technical detail so it is retrievable through /api/systemlogs.
+            // Server stdout is not reachable from every environment, and without this an
+            // unhandled 500 leaves no trace at all beyond the generic client message.
+            await TryPersistErrorAsync(context, ex);
+
             var message = _env.IsDevelopment() 
                 ? ex.Message 
                 : "An internal error occurred. Please try again later.";
@@ -95,6 +100,45 @@ public class GlobalExceptionMiddleware
             await WriteErrorResponse(context, HttpStatusCode.InternalServerError, message);
         }
     }
+
+    private static async Task TryPersistErrorAsync(HttpContext context, Exception exception)
+    {
+        try
+        {
+            var logService = context.RequestServices
+                .GetService<MyApi.Modules.Shared.Services.ISystemLogService>();
+            if (logService == null) return;
+
+            var chain = new List<string>();
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                var extra = current is PostgresException pg
+                    ? $" [SqlState={pg.SqlState} Table={pg.TableName} Column={pg.ColumnName} Constraint={pg.ConstraintName}]"
+                    : string.Empty;
+                chain.Add($"{current.GetType().Name}: {current.Message}{extra}");
+            }
+
+            var stack = exception.StackTrace ?? string.Empty;
+            if (stack.Length > 4000) stack = stack.Substring(0, 4000);
+
+            await logService.LogErrorAsync(
+                $"[500] {context.Request.Method} {context.Request.Path}: {chain[0]}",
+                "Api",
+                "other",
+                details: JsonSerializer.Serialize(new
+                {
+                    path = context.Request.Path.Value,
+                    method = context.Request.Method,
+                    exceptions = chain,
+                    stack
+                }));
+        }
+        catch
+        {
+            // Diagnostics must never mask the original failure.
+        }
+    }
+
 
     private static bool TryGetSchemaDriftException(Exception exception, out PostgresException? postgresException)
     {
