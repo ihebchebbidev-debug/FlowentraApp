@@ -5,11 +5,13 @@ import type { EntityType } from './types';
 
 describe('sequential status transitions', () => {
   it('dispatch: only one step forward/back plus branches', () => {
-    expect(getAllowedTransitions('dispatch', 'planned').sort()).toEqual(
-      ['assigned', 'cancelled', 'rejected'].sort()
+    expect(getAllowedTransitions('dispatch', 'assigned').sort()).toEqual(
+      ['confirmed', 'cancelled', 'rejected'].sort()
     );
-    expect(isTransitionAllowed('dispatch', 'planned', 'completed')).toBe(false);
-    expect(isTransitionAllowed('dispatch', 'completed', 'planned')).toBe(false);
+    expect(isTransitionAllowed('dispatch', 'assigned', 'completed')).toBe(false);
+    expect(isTransitionAllowed('dispatch', 'completed', 'assigned')).toBe(false);
+    // legacy statuses re-enter the pipeline at 'assigned'
+    expect(isTransitionAllowed('dispatch', 'planned', 'assigned')).toBe(true);
   });
 
   it('service order: no skipping ahead', () => {

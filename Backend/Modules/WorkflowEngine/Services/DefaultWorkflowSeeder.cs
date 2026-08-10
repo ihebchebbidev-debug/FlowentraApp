@@ -207,7 +207,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     data = new {
                         label = "Dispatch Rejected",
                         type = "dispatch-status-trigger",
-                        fromStatus = "planned",
+                        fromStatus = "assigned",
                         toStatus = "rejected",
                         description = "Triggers when a dispatch is rejected"
                     }
@@ -367,7 +367,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     WorkflowId = workflowId,
                     NodeId = "trigger-dispatch-rejected",
                     EntityType = "dispatch",
-                    FromStatus = "planned",
+                    FromStatus = "assigned",
                     ToStatus = "rejected",
                     IsActive = true
                 },

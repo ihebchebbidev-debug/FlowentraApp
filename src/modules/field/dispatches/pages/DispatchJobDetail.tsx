@@ -161,7 +161,7 @@ export default function DispatchJobDetail() {
         scheduledStartTime: dispatchData.scheduling?.scheduledStartTime || dispatchData.scheduledStartTime,
         scheduledEndTime: dispatchData.scheduling?.scheduledEndTime || dispatchData.scheduledEndTime,
         estimatedDuration: dispatchData.scheduling?.estimatedDuration || (dispatchData.scheduling?.scheduledDate || dispatchData.scheduledDate ? 60 : 0),
-        status: (dispatchData.status || 'pending') as any,
+        status: (dispatchData.status || 'assigned') as any,
         priority: dispatchData.priority || 'medium',
         workloadHours: dispatchData.scheduling?.estimatedDuration ? dispatchData.scheduling.estimatedDuration / 60 : (dispatchData.scheduling?.scheduledDate || dispatchData.scheduledDate ? 1 : 0),
         dispatchedBy: dispatchData.dispatchedBy,

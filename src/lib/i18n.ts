@@ -527,6 +527,15 @@ const enTranslation = {
 (enTranslation as any).common = {
   ...((enTranslation as any).common ?? {}),
   back: 'Back',
+  view: 'View',
+  edit: 'Edit',
+  save: 'Save',
+  cancel: 'Cancel',
+  delete: 'Delete',
+  rows: 'Rows',
+  export: 'Export',
+  actions: 'Actions',
+  report: 'Report',
 };
 
 // Ensure shared statusFlow.* UI keys (mobile stepper: back/advance/stepOf/done/updating)
@@ -949,6 +958,15 @@ const frTranslation = {
 (frTranslation as any).common = {
   ...((frTranslation as any).common ?? {}),
   back: 'Retour',
+  view: 'Voir',
+  edit: 'Modifier',
+  save: 'Enregistrer',
+  cancel: 'Annuler',
+  delete: 'Supprimer',
+  rows: 'Lignes',
+  export: 'Exporter',
+  actions: 'Actions',
+  report: 'Rapport',
 };
 
 // Same guard as English: keep shared statusFlow UI keys after module spreads.

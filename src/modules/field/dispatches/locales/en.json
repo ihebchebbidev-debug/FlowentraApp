@@ -142,7 +142,11 @@
       "technician": "Technician",
       "activity": "Activity",
       "jobs": "Jobs",
-      "materials": "Materials"
+      "materials": "Materials",
+      "total": "Total",
+      "confirmed": "Confirmed",
+      "in_progress": "In Progress",
+      "completed": "Completed"
     },
     "time_booking": {
       "title": "Time Booking",

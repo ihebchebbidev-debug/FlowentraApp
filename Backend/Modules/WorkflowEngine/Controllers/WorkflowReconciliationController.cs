@@ -999,8 +999,10 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                 "dispatch" => status switch
                 {
                     // Aligned with src/config/entity-statuses/dispatch.config.ts
-                    // Flow: pending → planned → confirmed → in_progress → completed
-                    "pending" => 0, "planned" => 1, "confirmed" => 2, "in_progress" => 3, "completed" => 4,
+                    // Flow: assigned → confirmed → in_progress → completed
+                    // (pending/planned are legacy pre-assigned states)
+                    "pending" => 0, "planned" => 0, "assigned" => 1, "confirmed" => 2,
+                    "in_progress" => 3, "completed" => 4,
                     "rejected" => -1, "cancelled" => -1, _ => 0
                 },
                 "offer" => status switch

@@ -1230,9 +1230,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 },
                 "dispatch" => status switch
                 {
-                    "pending" => 0, "planned" => 1, "assigned" => 2, "acknowledged" => 3,
-                    "en_route" => 4, "on_site" => 5, "in_progress" => 6,
-                    "technically_completed" => 7, "completed" => 8, "cancelled" => -1, _ => 0
+                    // Flow: assigned -> confirmed -> in_progress -> completed
+                    // (pending/planned kept as legacy pre-assigned states)
+                    "pending" => 0, "planned" => 0, "assigned" => 1, "acknowledged" => 2,
+                    "confirmed" => 2, "en_route" => 3, "on_site" => 3, "in_progress" => 4,
+                    "technically_completed" => 5, "completed" => 6,
+                    "cancelled" => -1, "rejected" => -1, _ => 0
                 },
                 "offer" => status switch
                 {

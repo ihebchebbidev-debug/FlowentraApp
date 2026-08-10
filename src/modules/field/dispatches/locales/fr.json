@@ -142,7 +142,11 @@
       "technician": "Technicien",
       "activity": "Activité",
       "jobs": "Tâches",
-      "materials": "Matériaux"
+      "materials": "Matériaux",
+      "total": "Total",
+      "confirmed": "Confirmé",
+      "in_progress": "En Cours",
+      "completed": "Terminé"
     },
     "time_booking": {
       "title": "Réservation de Temps",

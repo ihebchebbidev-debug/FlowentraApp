@@ -647,7 +647,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         ServiceOrderId = serviceOrderId,
                         ContactId = serviceOrder.ContactId,
                         JobId = job.Id > 0 ? job.Id.ToString() : null, // Link dispatch to its job for CompletedDispatchCount tracking
-                        Status = "planned",
+                        Status = "assigned",
                         ScheduledDate = serviceOrder.ScheduledDate ?? DateTime.UtcNow.AddDays(1),
                         DispatchNumber = $"DSP-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                         Description = job.Title ?? job.Description,
@@ -663,7 +663,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     dispatchIds.Add(dispatch.Id);
 
                     // Log workflow note
-                    await LogWorkflowNoteAsync("dispatch", dispatch.Id, null, "planned", userId,
+                    await LogWorkflowNoteAsync("dispatch", dispatch.Id, null, "assigned", userId,
                         $"Auto-created from service order #{serviceOrderId}, job: {job.Title}");
                 }
 

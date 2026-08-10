@@ -295,9 +295,10 @@ namespace MyApi.Modules.Dispatches.Services
                     contactId = anyContact.Id;
             }
             
-            // Determine status based on whether technicians are assigned
+            // Dispatches always start as "assigned" — the workflow is
+            // assigned -> confirmed -> in_progress -> completed.
             var hasTechnicians = dto.AssignedTechnicianIds != null && dto.AssignedTechnicianIds.Count > 0;
-            var status = hasTechnicians ? "assigned" : "planned";
+            var status = "assigned";
 
             // Multiple dispatches per job/service order stay allowed, but the assigned technicians
             // must actually be free in this window. Checked before the dispatch number is drawn.
@@ -473,7 +474,7 @@ namespace MyApi.Modules.Dispatches.Services
             }
 
             var hasTechnicians = dto.AssignedTechnicianIds != null && dto.AssignedTechnicianIds.Count > 0;
-            var status = hasTechnicians ? "assigned" : "planned";
+            var status = "assigned";
 
             // Reject double-booking before we burn a dispatch number.
             await EnsureTechnicianAvailabilityAsync(
@@ -1079,9 +1080,8 @@ namespace MyApi.Modules.Dispatches.Services
                     });
                 }
 
-                // Keep the dispatch status consistent with whether anyone is actually assigned.
-                if (desired.Count > 0 && d.Status == "planned") d.Status = "assigned";
-                else if (desired.Count == 0 && d.Status == "assigned") d.Status = "planned";
+                // Legacy rows created as "planned" rejoin the active flow at "assigned".
+                if (d.Status == "planned" || d.Status == "pending") d.Status = "assigned";
             }
 
             d.ModifiedDate = DateTime.UtcNow;
@@ -2809,7 +2809,7 @@ namespace MyApi.Modules.Dispatches.Services
             {
                 TotalDispatches = dispatches.Count,
                 CompletedDispatches = dispatches.Count(d => d.Status == "completed"),
-                PendingDispatches = dispatches.Count(d => d.Status == "pending"),
+                PendingDispatches = dispatches.Count(d => d.Status == "pending" || d.Status == "planned" || d.Status == "assigned" || d.Status == "confirmed"),
                 InProgressDispatches = dispatches.Count(d => d.Status == "in_progress"),
                 CancelledDispatches = dispatches.Count(d => d.Status == "cancelled"),
                 HighPriorityCount = dispatches.Count(d => d.Priority == "high"),

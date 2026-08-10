@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
 import { getStatusColorClass } from "@/config/entity-statuses";
@@ -47,7 +47,8 @@ import {
   SlidersHorizontal,
   Search
 } from "lucide-react";
-import { mockDispatches } from "../data";
+import { dispatchesApi } from "@/services/api/dispatchesApi";
+import { mapApiDispatchToDispatchJob } from "../utils/mapApiDispatch";
 import { DispatchesAutopilotDemo } from "../components/onboarding/DispatchesAutopilotDemo";
 import type { DispatchJob } from "../types";
 import { isViewAllMode } from '@/utils/tenant';
@@ -69,7 +70,9 @@ export default function DispatchesList() {
   const { toast } = useToast();
   const { canCreate, canRead, canUpdate, canDelete, isLoading: permissionsLoading, isMainAdmin } = usePermissions();
   const { deleteDispatch, bulkDeleteDispatches, isDeleting: isDeletingHook } = useDispatchDeletion();
-  const [dispatches, setDispatches] = useState<DispatchJob[]>(mockDispatches);
+  const [dispatches, setDispatches] = useState<DispatchJob[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showMap, setShowMap] = useState(false);
@@ -87,6 +90,31 @@ export default function DispatchesList() {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  // Load real dispatches from the backend (server-side status filtering).
+  const loadDispatches = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await dispatchesApi.getAll({
+        pageNumber: 1,
+        pageSize: 200,
+        ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+      });
+      setDispatches((response.data || []).map(mapApiDispatchToDispatchJob));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load dispatches';
+      setLoadError(message);
+      setDispatches([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadDispatches();
+  }, [loadDispatches]);
+
 
   // Permission checks (disabled in view-all mode)
   const viewAll = isViewAllMode();
@@ -221,6 +249,22 @@ export default function DispatchesList() {
     return matchesSearch && matchesStatus;
   });
 
+  // Status filter tabs: Total, Confirmed, In Progress, Completed (Assigned removed)
+  const statusTabs = useMemo(() => [
+    { key: 'all', label: t('dispatches.tabs.total', 'Total') },
+    { key: 'confirmed', label: t('dispatches.tabs.confirmed', 'Confirmed') },
+    { key: 'in_progress', label: t('dispatches.tabs.in_progress', 'In Progress') },
+    { key: 'completed', label: t('dispatches.tabs.completed', 'Completed') },
+  ], [t]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: dispatches.length };
+    dispatches.forEach(dispatch => {
+      counts[dispatch.status] = (counts[dispatch.status] || 0) + 1;
+    });
+    return counts;
+  }, [dispatches]);
+
   const isAllSelected = filteredDispatches.length > 0 && filteredDispatches.every(d => selectedIds.has(d.id));
   const isSomeSelected = filteredDispatches.some(d => selectedIds.has(d.id));
 
@@ -311,8 +355,6 @@ export default function DispatchesList() {
               className="col-span-2 px-3 py-2 h-9 border border-border rounded-md bg-background text-foreground w-full text-sm"
             >
               <option value="all">{t("dispatches.all_statuses")}</option>
-              <option value="pending">{t("dispatches.statuses.pending")}</option>
-              <option value="planned">{t("dispatches.statuses.planned")}</option>
               <option value="confirmed">{t("dispatches.statuses.confirmed")}</option>
               <option value="rejected">{t("dispatches.statuses.rejected")}</option>
               <option value="in_progress">{t("dispatches.statuses.in_progress")}</option>
@@ -336,6 +378,31 @@ export default function DispatchesList() {
           </div>
         )}
 
+        {/* Status filter tabs */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {statusTabs.map((tab) => {
+            const isActive = statusFilter === tab.key;
+            const count = statusCounts[tab.key] ?? 0;
+            return (
+              <Button
+                key={tab.key}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter(tab.key)}
+                className="gap-2"
+              >
+                <span>{tab.label}</span>
+                <Badge
+                  variant="secondary"
+                  className={`text-xs ${isActive ? 'bg-primary-foreground/20 text-primary-foreground' : ''}`}
+                >
+                  {count}
+                </Badge>
+              </Button>
+            );
+          })}
+        </div>
+
         {/* Desktop toolbar — unchanged */}
         <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="sm:col-span-2 md:col-span-2">
@@ -352,8 +419,6 @@ export default function DispatchesList() {
             className="px-3 py-2 border border-border rounded-md bg-background text-foreground w-full"
           >
             <option value="all">{t("dispatches.all_statuses")}</option>
-            <option value="pending">{t("dispatches.statuses.pending")}</option>
-            <option value="planned">{t("dispatches.statuses.planned")}</option>
             <option value="confirmed">{t("dispatches.statuses.confirmed")}</option>
             <option value="rejected">{t("dispatches.statuses.rejected")}</option>
             <option value="in_progress">{t("dispatches.statuses.in_progress")}</option>
@@ -403,7 +468,18 @@ export default function DispatchesList() {
           )}
           
           <CardContent className={showMap ? "pt-4 p-0" : "p-0"}>
-            {filteredDispatches.length === 0 ? (
+            {isLoading ? (
+              <div className="p-12 text-center">
+                <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+                <p className="text-muted-foreground">{t('common.loading', 'Loading...')}</p>
+              </div>
+            ) : loadError ? (
+              <div className="p-12 text-center">
+                <Wrench className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <p className="text-destructive mb-4">{loadError}</p>
+                <Button variant="outline" onClick={loadDispatches}>{t('common.retry', 'Retry')}</Button>
+              </div>
+            ) : filteredDispatches.length === 0 ? (
               <div className="p-12 text-center">
                 <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">{t('dispatches.no_dispatches')}</h3>

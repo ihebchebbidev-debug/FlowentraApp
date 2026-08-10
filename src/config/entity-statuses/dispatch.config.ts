@@ -6,16 +6,16 @@ import type { EntityStatusConfig } from './types';
 // Backend: FlowServiceBackendOnlyFinal-main/Modules/Dispatches/Models/Dispatch.cs
 // StatusFlow: DispatchStatusFlow.tsx
 //
-// WORKFLOW: pending → planned → assigned → confirmed/rejected → in_progress → completed
-// 'assigned' = a technician is assigned but has not confirmed yet. The backend
-// creates dispatches as 'assigned' when techs are attached (else 'planned') —
-// see Dispatches/Services/DispatchService.cs CreateFromInstallationAsync.
+// WORKFLOW: assigned → confirmed/rejected → in_progress → completed
+// Dispatches are created directly as 'assigned'. 'pending'/'planned' are kept
+// as legacy statuses so old records still render, but they are not part of the
+// active workflow.
 // ============================================================================
 
 export const dispatchStatusConfig: EntityStatusConfig = {
   entityType: 'dispatch',
   entityLabelKey: 'entity.dispatch',
-  defaultStatus: 'pending',
+  defaultStatus: 'assigned',
 
   statuses: [
     { id: 'pending',    translationKey: 'dispatches.statuses.pending',    workflowTranslationKey: 'status.dispatch.pending',    color: 'default',     isTerminal: false },
@@ -30,13 +30,12 @@ export const dispatchStatusConfig: EntityStatusConfig = {
   ],
 
   workflow: {
-    // Happy path: Pending → Planned → Assigned → Confirmed → In Progress → Completed
-    steps: ['planned', 'assigned', 'confirmed', 'in_progress', 'completed'],
+    // Happy path: Assigned → Confirmed → In Progress → Completed
+    steps: ['assigned', 'confirmed', 'in_progress', 'completed'],
     terminalStatuses: ['completed', 'cancelled', 'rejected'],
     branchStatuses: {
-      planned: ['rejected', 'cancelled'],   // Rejection or cancellation from planning
-      assigned: ['rejected', 'cancelled'],  // …or after a technician was assigned
-      confirmed: ['cancelled'],             // "Confirmed" in the UI — can still be cancelled
+      assigned: ['rejected', 'cancelled'],  // Technician can reject, or dispatch cancelled
+      confirmed: ['cancelled'],             // Confirmed work can still be cancelled
       in_progress: ['cancelled'],           // Active work can be cancelled too
     },
   },
