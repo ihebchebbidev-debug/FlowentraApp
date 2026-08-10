@@ -66,12 +66,15 @@ interface NodeConfigurationModalProps {
     type: string;
     icon: LucideIcon;
     description?: string;
+    /** Previously saved configuration for this node, if any. */
+    config?: Record<string, any>;
   } | null;
   onSave: (config: any) => void;
 }
 
 export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: NodeConfigurationModalProps) {
   const [config, setConfig] = useState<any>({});
+
   const { t, i18n } = useTranslation();
 
   // Dynamic data from real APIs
@@ -90,6 +93,17 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Seed the form from the node's saved config. Without this the modal always
+    // opens blank and the first save overwrites every previously configured
+    // field with the defaults — silent data loss on every re-edit.
+    setConfig(nodeData?.config ? { ...nodeData.config } : {});
+  }, [isOpen, nodeData?.id]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+
 
     // Fetch all workflows (for subworkflow selector)
     workflowApi.getAll().then(setAvailableWorkflows).catch(() => setAvailableWorkflows([]));

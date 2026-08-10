@@ -26,6 +26,8 @@ import { extractApiErrorMessage } from '@/utils/extractApiErrorMessage';
 import { translateHrServerError } from '../../utils/hrServerError';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 /**
  * Build a SalaryBreakdown shape from a server-persisted PayrollEntry so the
@@ -233,6 +235,22 @@ export function PayrollPage() {
   const totalCnss = activeRun?.totalCnss ?? activeRun?.entries?.reduce((a, e) => a + Number(e.cnss || 0), 0) ?? 0;
   const totalIrpp = activeRun?.entries?.reduce((a, e) => a + Number(e.irpp || 0), 0) ?? 0;
 
+  const { sortKey: runsSortKey, sortDirection: runsSortDirection, toggleSort: toggleRunsSort, sortItems: sortRuns } = useTableSort<PayrollRun>({
+    month: (r) => `${r.year}-${String(r.month).padStart(2, '0')}`,
+    status: (r) => r.status,
+    totalNet: (r) => Number(r.totalNet),
+  });
+  const sortedRuns = useMemo(() => sortRuns(runs), [runs, sortRuns]);
+
+  const { sortKey: entriesSortKey, sortDirection: entriesSortDirection, toggleSort: toggleEntriesSort, sortItems: sortEntries } = useTableSort<PayrollEntry>({
+    employee: (e) => e.userName,
+    grossSalary: (e) => Number(e.grossSalary),
+    bonuses: (e) => Number(e.bonuses ?? 0),
+    cnss: (e) => Number(e.cnss),
+    netSalary: (e) => Number(e.netSalary),
+  });
+  const sortedEntries = useMemo(() => sortEntries(activeRun?.entries ?? []), [activeRun, sortEntries]);
+
   const isLoading = runsQuery.isLoading;
   const isMutating = generateMutation.isPending || confirmMutation.isPending || payMutation.isPending;
 
@@ -317,14 +335,14 @@ export function PayrollPage() {
                 <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('payrollPage.month')}</TableHead>
-                      <TableHead>{t('payrollPage.status')}</TableHead>
-                      <TableHead>{t('payrollPage.totalNet')}</TableHead>
+                      <SortableHeader columnKey="month" sortKey={runsSortKey} sortDirection={runsSortDirection} onSort={toggleRunsSort}>{t('payrollPage.month')}</SortableHeader>
+                      <SortableHeader columnKey="status" sortKey={runsSortKey} sortDirection={runsSortDirection} onSort={toggleRunsSort}>{t('payrollPage.status')}</SortableHeader>
+                      <SortableHeader columnKey="totalNet" sortKey={runsSortKey} sortDirection={runsSortDirection} onSort={toggleRunsSort}>{t('payrollPage.totalNet')}</SortableHeader>
                       <TableHead className="text-right">{t('payrollDraft.open')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {runs.map((r: PayrollRun) => (
+                    {sortedRuns.map((r: PayrollRun) => (
                       <TableRow key={r.id} className={cn(activeRun?.id === r.id && 'bg-muted/30')}>
                         <TableCell>{r.month}/{r.year}</TableCell>
                         <TableCell>
@@ -403,16 +421,16 @@ export function PayrollPage() {
                           aria-label={t('payrollDraft.selectAll')}
                         />
                       </TableHead>
-                      <TableHead>{t('employee.employee')}</TableHead>
-                      <TableHead>{t('payrollDraft.gross')}</TableHead>
-                      <TableHead>{t('payrollDraft.bonusesShort')}</TableHead>
-                      <TableHead>{t('payrollDraft.cnssShort')}</TableHead>
-                      <TableHead>{t('payrollDraft.net')}</TableHead>
+                      <SortableHeader columnKey="employee" sortKey={entriesSortKey} sortDirection={entriesSortDirection} onSort={toggleEntriesSort}>{t('employee.employee')}</SortableHeader>
+                      <SortableHeader columnKey="grossSalary" sortKey={entriesSortKey} sortDirection={entriesSortDirection} onSort={toggleEntriesSort}>{t('payrollDraft.gross')}</SortableHeader>
+                      <SortableHeader columnKey="bonuses" sortKey={entriesSortKey} sortDirection={entriesSortDirection} onSort={toggleEntriesSort}>{t('payrollDraft.bonusesShort')}</SortableHeader>
+                      <SortableHeader columnKey="cnss" sortKey={entriesSortKey} sortDirection={entriesSortDirection} onSort={toggleEntriesSort}>{t('payrollDraft.cnssShort')}</SortableHeader>
+                      <SortableHeader columnKey="netSalary" sortKey={entriesSortKey} sortDirection={entriesSortDirection} onSort={toggleEntriesSort}>{t('payrollDraft.net')}</SortableHeader>
                       <TableHead className="text-right">{t('payrollDraft.details')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeRun.entries.map(e => {
+                    {sortedEntries.map(e => {
                       const u = users.find(x => x.id === e.userId);
                       const isSelected = selectedUserIds.has(e.userId);
                       return (

@@ -24,6 +24,8 @@ import {
 // Import mock data from JSON file
 import { useContacts } from "@/modules/contacts/hooks/useContacts";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../../hooks/getInitialViewMode';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 interface Client {
   id: number;
@@ -80,6 +82,14 @@ export default function ClientsList() {
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [clients, query, filterStatus, filterType]);
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Client>({
+    name: (c) => c.name,
+    company: (c) => c.company,
+    status: (c) => c.status,
+    lastContact: (c) => c.lastContact,
+  });
+  const sortedFiltered = useMemo(() => sortItems(filtered), [filtered, sortItems]);
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
   const getStatusColor = (status: string) => {
@@ -298,17 +308,17 @@ export default function ClientsList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[200px]">Client</TableHead>
-                      <TableHead>Company</TableHead>
+                      <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[200px]">Client</SortableHeader>
+                      <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Company</SortableHeader>
                       <TableHead>Contact Info</TableHead>
-                      <TableHead>Status</TableHead>
+                      <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Status</SortableHeader>
                       <TableHead>Tags</TableHead>
-                      <TableHead>Last Contact</TableHead>
+                      <SortableHeader columnKey="lastContact" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Last Contact</SortableHeader>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((client) => (
+                    {sortedFiltered.map((client) => (
                       <TableRow 
                         key={client.id} 
                         className="cursor-pointer hover:bg-muted/50 group"

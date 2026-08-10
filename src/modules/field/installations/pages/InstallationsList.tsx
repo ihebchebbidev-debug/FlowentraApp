@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import TableLayout from "@/components/shared/TableLayout";
+import { useTableSort } from "@/hooks/useTableSort";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -472,7 +473,22 @@ export default function InstallationsList() {
 
   const [installPageSize, setInstallPageSize] = useState(50);
   const companyScopedInstallations = useFilteredByCompany(filteredInstallations);
-  const pagination = usePaginatedData(companyScopedInstallations, installPageSize);
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    installation: (i: any) => i.name || '',
+    company: (i: any) => i.tenantName ?? i.tenantId ?? '',
+    type: (i: any) => (!i.contactId ? 'internal' : (i.type || i.installationType || '')),
+    manufacturer: (i: any) => i.manufacturer || '',
+    customer: (i: any) => (i.contactId ? contactsMap.get(i.contactId)?.name || '' : ''),
+    warranty: (i: any) => i.warranty?.endDate || i.warranty?.expiryDate || (i.warranty?.hasWarranty ? 1 : 0),
+  });
+
+  const sortedInstallations = useMemo(
+    () => sortItems(companyScopedInstallations as any[]),
+    [companyScopedInstallations, sortItems]
+  );
+  const pagination = usePaginatedData(sortedInstallations, installPageSize);
 
   const manufacturerOptions = useMemo(() => {
     return Array.from(new Set(installations.map(i => i.manufacturer).filter(Boolean)));
@@ -976,10 +992,14 @@ export default function InstallationsList() {
                   enableSelection={true}
                   selectedIds={selectedIds as unknown as Set<string | number>}
                   onSelectionChange={(ids) => setSelectedIds(ids as Set<number>)}
+                  sortKey={sortKey}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
                   columns={[
                     {
                       key: 'installation',
                       title: t('list.table_installation'),
+                      sortable: true,
                       render: (installation: any) => (
                         <div className="min-w-0">
                           <p className="text-sm text-foreground truncate">{installation.name}</p>
@@ -989,11 +1009,13 @@ export default function InstallationsList() {
                     ...(isViewAllMode() ? [{
                       key: 'company',
                       title: t('list.table_company', 'Company'),
+                      sortable: true,
                       render: (installation: any) => <CompanyBadge tenantId={installation.tenantId} forceShow />,
                     }] : []),
                     {
                       key: 'type',
                       title: t('list.table_type'),
+                      sortable: true,
                       render: (installation: any) => {
                         const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
                         return (
@@ -1006,6 +1028,7 @@ export default function InstallationsList() {
                     {
                       key: 'manufacturer',
                       title: t('manufacturer'),
+                      sortable: true,
                       render: (installation: any) => (
                         <p className="text-sm text-foreground">{installation.manufacturer}</p>
                       )
@@ -1013,6 +1036,7 @@ export default function InstallationsList() {
                     {
                       key: 'customer',
                       title: t('list.table_customer'),
+                      sortable: true,
                       render: (installation: any) => {
                         const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
                         return installation.contactId && installation.contactId !== 0 && customer ? (
@@ -1033,6 +1057,7 @@ export default function InstallationsList() {
                     {
                       key: 'warranty',
                       title: t('list.table_warranty'),
+                      sortable: true,
                       width: 'w-28',
                       render: (installation: any) => {
                         const warrantyStatus = getWarrantyStatus(installation.warranty);

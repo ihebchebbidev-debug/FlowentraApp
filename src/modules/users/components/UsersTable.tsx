@@ -7,6 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { useMemo } from "react";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 
 interface MainAdminInfo {
@@ -29,18 +32,25 @@ interface UsersTableProps {
 
 export function UsersTable({ users, onEdit, onDelete, onManageRoles, canUpdate = true, canDelete = true, mainAdmin }: UsersTableProps) {
   const { t } = useTranslation('settings');
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<User>({
+    name: (u) => `${u.firstName} ${u.lastName}`,
+    email: (u) => u.email,
+    role: (u) => u.roles && u.roles.length > 0 ? u.roles.map(r => r.name).join(', ') : u.role,
+    status: (u) => u.isActive ? 1 : 0,
+    created: (u) => u.createdDate,
+  });
+  const sortedUsers = useMemo(() => sortItems(users), [users, sortItems]);
 
   return (
     <div className="rounded-lg border border-border/50 overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/20 border-b border-border/30 hover:bg-muted/20">
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.name')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.email')}</TableHead>
-            
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.role')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.status')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.created')}</TableHead>
+            <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.name')}</SortableHeader>
+            <SortableHeader columnKey="email" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.email')}</SortableHeader>
+            <SortableHeader columnKey="role" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.role')}</SortableHeader>
+            <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.status')}</SortableHeader>
+            <SortableHeader columnKey="created" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('users.table.created')}</SortableHeader>
             <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-right">{t('users.table.actions')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -89,7 +99,7 @@ export function UsersTable({ users, onEdit, onDelete, onManageRoles, canUpdate =
               </TableCell>
             </TableRow>
           ) : (
-            users.map((user) => (
+            sortedUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-2.5">

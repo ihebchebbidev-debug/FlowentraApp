@@ -39,6 +39,8 @@ import type { CompanyFilterValue } from "@/components/CompanyFilter";
 import { isViewAllMode } from "@/utils/tenant";
 import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal";
 import { TableRowActions } from "@/shared/components/TableRowActions";
+import { SortableHeader } from "@/components/shared/SortableHeader";
+import { useTableSort } from "@/hooks/useTableSort";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
@@ -179,6 +181,17 @@ function SupplierInvoiceListContent() {
     () => companyFilteredInvoices.filter((i) => companyId === "all" || (i as any).tenantId === companyId),
     [companyFilteredInvoices, companyId],
   );
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<SupplierInvoice>({
+    invoiceNumber: (i) => i.invoiceNumber,
+    supplier: (i) => i.supplierName,
+    poRef: (i) => i.purchaseOrderNumber,
+    date: (i) => i.invoiceDate,
+    dueDate: (i) => i.dueDate,
+    status: (i) => i.status,
+    total: (i) => i.grandTotal,
+  });
+  const sortedInvoices = useMemo(() => sortItems(companyScopedInvoices), [companyScopedInvoices, sortItems]);
 
   // Stats — fetched from server via pagination.total per status filter, so cards
   // reflect the FULL dataset (previously reduced over the loaded 20/page window,
@@ -576,19 +589,19 @@ function SupplierInvoiceListContent() {
                             aria-label="Select all"
                           />
                         </TableHead>
-                        <TableHead className="text-xs">{t("fields.invoiceNumber", "Invoice #")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.supplier", "Supplier")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.poRef", "PO Ref")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.dueDate", "Due Date")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
+                        <SortableHeader columnKey="invoiceNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.invoiceNumber", "Invoice #")}</SortableHeader>
+                        <SortableHeader columnKey="supplier" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.supplier", "Supplier")}</SortableHeader>
+                        <SortableHeader columnKey="poRef" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.poRef", "PO Ref")}</SortableHeader>
+                        <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.date", "Date")}</SortableHeader>
+                        <SortableHeader columnKey="dueDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.dueDate", "Due Date")}</SortableHeader>
+                        <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.status", "Status")}</SortableHeader>
                         <TableHead className="text-xs">{t("fields.rs", "RS")}</TableHead>
-                        <TableHead className="text-xs text-end">{t("fields.total", "Total")}</TableHead>
+                        <SortableHeader columnKey="total" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right" className="text-xs">{t("fields.total", "Total")}</SortableHeader>
                         <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {companyScopedInvoices.map((inv) => {
+                      {sortedInvoices.map((inv) => {
                         const isSelected = selectedIds.has(inv.id);
                         return (
                           <TableRow
@@ -672,7 +685,7 @@ function SupplierInvoiceListContent() {
               </Card>
             ) : (
               <div className="space-y-2">
-                {companyScopedInvoices.map((inv) => {
+                {sortedInvoices.map((inv) => {
                   const isSelected = selectedIds.has(inv.id);
                   return (
                     <Card

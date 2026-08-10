@@ -24,6 +24,8 @@ import { setTargetTenantId, clearTargetTenant } from '@/utils/targetTenant';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { translateHrServerError } from '../../utils/hrServerError';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 type FormState = {
   id?: number;
@@ -297,6 +299,15 @@ export function AttendancePage() {
     event.target.value = '';
   };
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<AttendanceRecord>({
+    employee: (r) => r.userName,
+    date: (r) => toCalendarDate(r.date),
+    hours: (r) => Number(r.totalHours || 0),
+    overtime: (r) => Number(r.overtimeHours || 0),
+    status: (r) => r.status,
+  });
+  const sortedRecords = useMemo(() => sortItems(records), [records, sortItems]);
+
   const loading = attendanceQuery.isLoading || employeesQuery.isLoading;
   const hasError = attendanceQuery.isError || employeesQuery.isError;
 
@@ -355,9 +366,16 @@ export function AttendancePage() {
                     <div className="py-10 text-center"><div className="text-sm font-medium">{t('attendancePage.emptyTitle')}</div><div className="mt-1 text-xs text-muted-foreground">{t('attendancePage.emptyHint')}</div></div>
                   ) : (
                     <Table className="min-w-[600px]">
-                      <TableHeader><TableRow><TableHead>{t('employee.employee')}</TableHead><TableHead>{t('attendanceFields.date')}</TableHead><TableHead>{t('attendanceFields.hoursWorked')}</TableHead><TableHead>{t('attendanceFields.overtimeHours')}</TableHead><TableHead>{t('attendanceFields.status')}</TableHead><TableHead className="text-right">{t('leavesPage.actions')}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow>
+                        <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.employee')}</SortableHeader>
+                        <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('attendanceFields.date')}</SortableHeader>
+                        <SortableHeader columnKey="hours" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('attendanceFields.hoursWorked')}</SortableHeader>
+                        <SortableHeader columnKey="overtime" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('attendanceFields.overtimeHours')}</SortableHeader>
+                        <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('attendanceFields.status')}</SortableHeader>
+                        <TableHead className="text-right">{t('leavesPage.actions')}</TableHead>
+                      </TableRow></TableHeader>
                       <TableBody>
-                        {records.map((record) => (
+                        {sortedRecords.map((record) => (
                           <TableRow key={record.id}>
                             <TableCell className="font-medium">{record.userName}</TableCell>
                             <TableCell>{toCalendarDate(record.date)}</TableCell>

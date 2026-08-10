@@ -33,6 +33,8 @@ import { EditUserGroupModal } from "./EditUserGroupModal";
 import { GroupMembersModal } from "./GroupMembersModal";
 import { extractApiErrorMessage } from "@/utils/extractApiErrorMessage";
 import { emitDataEvent, onDataEvent } from "@/lib/dataEvents";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 export function UserGroupManagement() {
   const { t } = useTranslation("settings");
@@ -111,6 +113,15 @@ export function UserGroupManagement() {
     );
   }, [groups, searchTerm]);
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<UserGroup>({
+    name: (g) => g.name,
+    description: (g) => g.description,
+    members: (g) => g.memberCount,
+    status: (g) => g.isActive ? 1 : 0,
+    created: (g) => g.createdAt,
+  });
+  const sortedGroups = useMemo(() => sortItems(filteredGroups), [filteredGroups, sortItems]);
+
   return (
     <Card className="shadow-card border-0 bg-card">
       <CardHeader className="p-4 sm:p-6">
@@ -162,11 +173,11 @@ export function UserGroupManagement() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/20 border-b border-border/30 hover:bg-muted/20">
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.name", { defaultValue: "Name" })}</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.description", { defaultValue: "Description" })}</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.members", { defaultValue: "Members" })}</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.status", { defaultValue: "Status" })}</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.created", { defaultValue: "Created" })}</TableHead>
+                <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.name", { defaultValue: "Name" })}</SortableHeader>
+                <SortableHeader columnKey="description" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.description", { defaultValue: "Description" })}</SortableHeader>
+                <SortableHeader columnKey="members" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.members", { defaultValue: "Members" })}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.status", { defaultValue: "Status" })}</SortableHeader>
+                <SortableHeader columnKey="created" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("userGroups.table.created", { defaultValue: "Created" })}</SortableHeader>
                 <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-right">{t("userGroups.table.actions", { defaultValue: "Actions" })}</TableHead>
               </TableRow>
             </TableHeader>
@@ -189,7 +200,7 @@ export function UserGroupManagement() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredGroups.map((group) => (
+                sortedGroups.map((group) => (
                   <TableRow key={group.id}>
                     <TableCell className="font-medium capitalize">{group.name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">

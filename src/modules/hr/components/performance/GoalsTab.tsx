@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useGoals, useReviewCycles } from '../../hooks/usePerformance';
 import { useEmployees } from '../../hooks/useEmployees';
 import type { GoalCategory, GoalStatus } from '../../types/performance.types';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_VARIANT: Record<GoalStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   not_started: 'outline',
@@ -103,6 +105,17 @@ export function GoalsTab() {
 
 
   const goals = goalsQuery.data ?? [];
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    employee: (g) => g.userName,
+    title: (g) => g.title,
+    category: (g) => g.category,
+    cycle: (g) => g.cycleName,
+    weight: (g) => g.weight,
+    progress: (g) => g.progress,
+    status: (g) => g.status,
+    due: (g) => g.dueDate,
+  });
+  const sortedGoals = useMemo(() => sortItems(goals), [goals, sortItems]);
 
   return (
     <Card>
@@ -226,14 +239,14 @@ export function GoalsTab() {
           <Table className="min-w-[750px]">
             <TableHeader>
               <TableRow>
-                <TableHead>{t('performancePage.goals.table.employee')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.title')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.category')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.cycle')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.weight')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.progress')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.status')}</TableHead>
-                <TableHead>{t('performancePage.goals.table.due')}</TableHead>
+                <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.employee')}</SortableHeader>
+                <SortableHeader columnKey="title" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.title')}</SortableHeader>
+                <SortableHeader columnKey="category" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.category')}</SortableHeader>
+                <SortableHeader columnKey="cycle" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.cycle')}</SortableHeader>
+                <SortableHeader columnKey="weight" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.weight')}</SortableHeader>
+                <SortableHeader columnKey="progress" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.progress')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.status')}</SortableHeader>
+                <SortableHeader columnKey="due" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.goals.table.due')}</SortableHeader>
                 <TableHead className="w-[160px]">{t('performancePage.goals.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -241,7 +254,7 @@ export function GoalsTab() {
               {goals.length === 0 && (
                 <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">{t('performancePage.goals.noGoals')}</TableCell></TableRow>
               )}
-              {goals.map(g => (
+              {sortedGoals.map(g => (
                 <TableRow key={g.id}>
                   <TableCell className="font-medium">{g.userName}</TableCell>
                   <TableCell>{g.title}</TableCell>

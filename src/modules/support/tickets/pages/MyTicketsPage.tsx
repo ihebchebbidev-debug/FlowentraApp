@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { useTicketsData } from '../hooks/useTicketsData';
 import { STATUS_CONFIG, TicketStatusBadge, TicketUrgencyBadge } from '../components/TicketStatusBadge';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export default function MyTicketsPage() {
   const { t } = useTranslation('support');
@@ -60,11 +62,20 @@ export default function MyTicketsPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [list, statusFilter, urgencyFilter, categoryFilter, search]);
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<typeof filtered[number]>({
+    id: (tk) => tk.id,
+    title: (tk) => tk.title,
+    category: (tk) => tk.category,
+    urgency: (tk) => tk.urgency,
+    status: (tk) => tk.status,
+  });
+  const sortedFiltered = useMemo(() => sortItems(filtered), [filtered, sortItems]);
+
   const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const pageSafe = Math.min(page, totalPages);
   const startIndex = (pageSafe - 1) * pageSize;
-  const paginated = filtered.slice(startIndex, startIndex + pageSize);
+  const paginated = sortedFiltered.slice(startIndex, startIndex + pageSize);
 
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
@@ -230,11 +241,11 @@ export default function MyTicketsPage() {
           <Table className="w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-border/40">
-                <TableHead className="w-[50px] text-center">#</TableHead>
-                <TableHead>{t('admin.colTicket', 'Ticket')}</TableHead>
-                <TableHead className="hidden md:table-cell">{t('admin.colCategory', 'Category')}</TableHead>
-                <TableHead>{t('admin.colUrgency', 'Urgency')}</TableHead>
-                <TableHead>{t('admin.colStatus', 'Status')}</TableHead>
+                <SortableHeader columnKey="id" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="w-[50px]">#</SortableHeader>
+                <SortableHeader columnKey="title" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('admin.colTicket', 'Ticket')}</SortableHeader>
+                <SortableHeader columnKey="category" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell">{t('admin.colCategory', 'Category')}</SortableHeader>
+                <SortableHeader columnKey="urgency" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('admin.colUrgency', 'Urgency')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('admin.colStatus', 'Status')}</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>

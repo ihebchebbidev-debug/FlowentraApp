@@ -16,6 +16,8 @@ import { CreateActionButton } from '@/components/CreateActionButton';
 import { cn } from "@/lib/utils";
 import { PurchaseAutopilotDemo } from "../components/onboarding/PurchaseAutopilotDemo";
 import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -81,6 +83,22 @@ function PurchaseDashboardContent() {
   useEffect(() => { load(); }, []);
 
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  const { sortKey: recentSortKey, sortDirection: recentSortDirection, toggleSort: toggleRecentSort, sortItems: sortRecentItems } = useTableSort<PurchaseOrder>({
+    orderNumber: (po) => po.orderNumber,
+    supplierName: (po) => po.supplierName,
+    status: (po) => po.status,
+    grandTotal: (po) => po.grandTotal,
+  });
+  const sortedRecentOrders = sortRecentItems(recentOrders.slice(0, 5));
+
+  const { sortKey: pendingSortKey, sortDirection: pendingSortDirection, toggleSort: togglePendingSort, sortItems: sortPendingItems } = useTableSort<PurchaseOrder>({
+    orderNumber: (po) => po.orderNumber,
+    supplierName: (po) => po.supplierName,
+    expectedDelivery: (po) => po.expectedDelivery,
+    status: (po) => po.status,
+  });
+  const sortedPendingOrders = sortPendingItems(pendingOrders);
 
   return (
     <div className="flex flex-col">
@@ -182,14 +200,14 @@ function PurchaseDashboardContent() {
                 <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs">{t('fields.orderNumber')}</TableHead>
-                      <TableHead className="text-xs">{t('fields.supplier')}</TableHead>
-                      <TableHead className="text-xs">{t('fields.status')}</TableHead>
-                      <TableHead className="text-xs text-end">{t('fields.total')}</TableHead>
+                      <SortableHeader columnKey="orderNumber" sortKey={recentSortKey} sortDirection={recentSortDirection} onSort={toggleRecentSort} className="text-xs">{t('fields.orderNumber')}</SortableHeader>
+                      <SortableHeader columnKey="supplierName" sortKey={recentSortKey} sortDirection={recentSortDirection} onSort={toggleRecentSort} className="text-xs">{t('fields.supplier')}</SortableHeader>
+                      <SortableHeader columnKey="status" sortKey={recentSortKey} sortDirection={recentSortDirection} onSort={toggleRecentSort} className="text-xs">{t('fields.status')}</SortableHeader>
+                      <SortableHeader columnKey="grandTotal" sortKey={recentSortKey} sortDirection={recentSortDirection} onSort={toggleRecentSort} align="right" className="text-xs">{t('fields.total')}</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentOrders.slice(0, 5).map(po => (
+                    {sortedRecentOrders.map(po => (
                       <TableRow key={po.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}>
                         <TableCell className="text-xs font-medium">{po.orderNumber}</TableCell>
                         <TableCell className="text-xs">{po.supplierName}</TableCell>
@@ -216,14 +234,14 @@ function PurchaseDashboardContent() {
                 <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs">{t('fields.orderNumber')}</TableHead>
-                      <TableHead className="text-xs">{t('fields.supplier')}</TableHead>
-                      <TableHead className="text-xs">{t('fields.expectedDelivery')}</TableHead>
-                      <TableHead className="text-xs">{t('fields.status')}</TableHead>
+                      <SortableHeader columnKey="orderNumber" sortKey={pendingSortKey} sortDirection={pendingSortDirection} onSort={togglePendingSort} className="text-xs">{t('fields.orderNumber')}</SortableHeader>
+                      <SortableHeader columnKey="supplierName" sortKey={pendingSortKey} sortDirection={pendingSortDirection} onSort={togglePendingSort} className="text-xs">{t('fields.supplier')}</SortableHeader>
+                      <SortableHeader columnKey="expectedDelivery" sortKey={pendingSortKey} sortDirection={pendingSortDirection} onSort={togglePendingSort} className="text-xs">{t('fields.expectedDelivery')}</SortableHeader>
+                      <SortableHeader columnKey="status" sortKey={pendingSortKey} sortDirection={pendingSortDirection} onSort={togglePendingSort} className="text-xs">{t('fields.status')}</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingOrders.map(po => (
+                    {sortedPendingOrders.map(po => (
                       <TableRow key={po.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}>
                         <TableCell className="text-xs font-medium">{po.orderNumber}</TableCell>
                         <TableCell className="text-xs">{po.supplierName}</TableCell>

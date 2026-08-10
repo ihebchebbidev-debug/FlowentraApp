@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ServiceOrderDispatch } from "../entities/dispatches/types";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableLabel } from "@/components/shared/SortableHeader";
 
 interface DispatchesTableProps {
   dispatches: ServiceOrderDispatch[];
@@ -41,7 +43,7 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
   ).sort((a, b) => a.localeCompare(b));
 
   // Filter the dispatches based on current filters and search term
-  const filteredDispatches = dispatches.filter(dispatch => {
+  const rawFilteredDispatches = dispatches.filter(dispatch => {
     // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -59,6 +61,16 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
     if (filterTechnician !== 'all' && !dispatch.assignedTechnicians.includes(filterTechnician)) return false;
     return true;
   });
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ServiceOrderDispatch>({
+    dispatch: (d) => d.dispatchNumber || '',
+    status: (d) => String(d.status ?? ''),
+    priority: (d) => String(d.priority ?? ''),
+    technician: (d) => getTechnicianNames(d.assignedTechnicians || []),
+    schedule: (d) => (d.scheduledDate ? new Date(d.scheduledDate).getTime() : null),
+  });
+  const filteredDispatches = sortItems(rawFilteredDispatches);
 
   // Count active filters
   const activeFiltersCount = [
@@ -240,11 +252,11 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Dispatch</th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Priority</th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Technician</th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Schedule</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground"><SortableLabel columnKey="dispatch" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Dispatch</SortableLabel></th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground"><SortableLabel columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Status</SortableLabel></th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground"><SortableLabel columnKey="priority" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Priority</SortableLabel></th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground"><SortableLabel columnKey="technician" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Technician</SortableLabel></th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground"><SortableLabel columnKey="schedule" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Schedule</SortableLabel></th>
                 <th className="w-[50px]"></th>
               </tr>
             </thead>

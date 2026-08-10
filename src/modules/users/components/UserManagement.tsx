@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { extractApiErrorMessage } from "@/utils/extractApiErrorMessage";
 import { emitDataEvent, onDataEvent } from "@/lib/dataEvents";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 export function UserManagement() {
   const { t } = useTranslation('settings');
@@ -128,12 +130,21 @@ export function UserManagement() {
     );
   }, [users, searchTerm]);
 
+  const { sortKey: loginSortKey, sortDirection: loginSortDirection, toggleSort: toggleLoginSort, sortItems: sortLoginItems } = useTableSort<UserType>({
+    user: (u) => `${u.firstName} ${u.lastName}`,
+    role: (u) => u.role,
+    time: (u) => u.lastLoginAt,
+    status: (u) => u.isActive,
+  });
+
   const recentLogins = useMemo(() => {
     return [...filteredUsers]
       .filter(user => user.lastLoginAt)
       .sort((a, b) => new Date(b.lastLoginAt!).getTime() - new Date(a.lastLoginAt!).getTime())
       .slice(0, 6);
   }, [filteredUsers]);
+
+  const sortedRecentLogins = useMemo(() => sortLoginItems(recentLogins), [recentLogins, sortLoginItems]);
 
   if (loading) {
     return (
@@ -275,15 +286,15 @@ export function UserManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('connectionLogs.table.user')}</TableHead>
-                  <TableHead>{t('connectionLogs.table.role')}</TableHead>
-                  <TableHead>{t('connectionLogs.table.time')}</TableHead>
+                  <SortableHeader columnKey="user" sortKey={loginSortKey} sortDirection={loginSortDirection} onSort={toggleLoginSort}>{t('connectionLogs.table.user')}</SortableHeader>
+                  <SortableHeader columnKey="role" sortKey={loginSortKey} sortDirection={loginSortDirection} onSort={toggleLoginSort}>{t('connectionLogs.table.role')}</SortableHeader>
+                  <SortableHeader columnKey="time" sortKey={loginSortKey} sortDirection={loginSortDirection} onSort={toggleLoginSort}>{t('connectionLogs.table.time')}</SortableHeader>
                   <TableHead>{t('connectionLogs.table.ip')}</TableHead>
-                  <TableHead>{t('connectionLogs.table.status')}</TableHead>
+                  <SortableHeader columnKey="status" sortKey={loginSortKey} sortDirection={loginSortDirection} onSort={toggleLoginSort}>{t('connectionLogs.table.status')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentLogins.map((u) => (
+                {sortedRecentLogins.map((u) => (
                   <TableRow key={`login-${u.id}`} className="hover:bg-muted/20">
                     <TableCell>
                       <div className="flex items-center gap-3">

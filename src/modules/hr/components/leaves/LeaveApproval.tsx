@@ -13,6 +13,8 @@ import dayjs from 'dayjs';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { translateHrServerError } from '../../utils/hrServerError';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 
 type LeaveRow = UserLeave & { userId: number; userName: string; profilePictureUrl?: string | null; email?: string | null };
@@ -101,6 +103,14 @@ export function LeaveApproval() {
   });
 
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<LeaveRow>({
+    employee: (l) => l.userName,
+    type: (l) => l.leaveType,
+    dates: (l) => l.startDate,
+    reason: (l) => l.reason,
+  });
+  const sortedPending = useMemo(() => sortItems(pending), [pending, sortItems]);
+
   const formatRange = (start: string, end: string) => {
     const s = dayjs(start);
     const e = dayjs(end);
@@ -141,15 +151,15 @@ export function LeaveApproval() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('employee.employee')}</TableHead>
-                <TableHead>{t('leavesPage.type')}</TableHead>
-                <TableHead>{t('leavesPage.dates')}</TableHead>
-                <TableHead>{t('leavesPage.reason')}</TableHead>
+                <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.employee')}</SortableHeader>
+                <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.type')}</SortableHeader>
+                <SortableHeader columnKey="dates" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.dates')}</SortableHeader>
+                <SortableHeader columnKey="reason" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.reason')}</SortableHeader>
                 <TableHead className="text-right">{t('leavesPage.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pending.map(l => (
+              {sortedPending.map(l => (
                 <TableRow key={l.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2.5 min-w-0">

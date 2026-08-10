@@ -16,6 +16,8 @@ import { InventoryTableView } from "./InventoryTableView";
 import { useArticles } from "@/modules/articles/hooks/useArticles";
 import { ArticleImportModal } from "./ArticleImportModal";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortMenu } from "@/components/shared/SortMenu";
 
 // Helper to translate status
 const translateStatus = (status: string, t: (key: string, options?: any) => string): string => {
@@ -188,7 +190,7 @@ export function InventoryServicesList() {
     setBulkDeleteProgress(0);
   };
 
-  const filteredItems = allItems.filter(item => {
+  const rawFilteredItems = allItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.sku?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.category.toLowerCase().includes(searchTerm.toLowerCase());
@@ -205,6 +207,19 @@ export function InventoryServicesList() {
     
     return matchesSearch && matchesType && matchesLocation;
   });
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    item: (i: any) => i.name || '',
+    company: (i: any) => i.tenantName ?? i.tenantId ?? '',
+    category: (i: any) => i.category || '',
+    location: (i: any) => (i.type === 'material' ? (i.location || '') : Number(i.duration ?? 0)),
+    price: (i: any) => Number(i.type === 'material' ? (i.sellPrice ?? 0) : (i.basePrice ?? 0)),
+  });
+
+  const filteredItems = useMemo(() => sortItems(rawFilteredItems), [rawFilteredItems, sortItems]);
+
+
 
   // Paginate filtered items
   const paginatedItems = useMemo(() => {
@@ -327,14 +342,34 @@ export function InventoryServicesList() {
               </p>
             </div>
           ) : viewMode === 'list' ? (
-            <InventoryListView items={paginatedItems} onClick={handleItemClick} />
+            <>
+              <div className="flex justify-end px-3 pb-2">
+                <SortMenu
+                  label={t('table.sort', { defaultValue: 'Sort' })}
+                  sortKey={sortKey}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                  options={[
+                    { key: 'item', label: t('table.item_service') },
+                    { key: 'category', label: t('table.category') },
+                    { key: 'location', label: t('table.location_duration') },
+                    { key: 'price', label: t('table.price') },
+                  ]}
+                />
+              </div>
+              <InventoryListView items={paginatedItems} onClick={handleItemClick} />
+            </>
           ) : (
             <InventoryTableView 
               items={paginatedItems} 
               onClick={handleItemClick}
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={toggleSort}
             />
+
           )}
           {filteredItems.length > 0 && Math.ceil(filteredItems.length / invPageSize) > 1 && (
             <SimplePaginationBar

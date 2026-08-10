@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { SetAllowanceDialog, type AllowanceTarget } from './SetAllowanceDialog';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function LeaveBalances(props: { year: number }) {
   const { t } = useTranslation('hr');
@@ -36,6 +38,16 @@ export function LeaveBalances(props: { year: number }) {
   const openCreate = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (target: AllowanceTarget) => { setEditing(target); setDialogOpen(true); };
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    employee: (b) => nameOf(b.userId),
+    type: (b) => b.leaveType,
+    allowance: (b) => b.annualAllowance,
+    used: (b) => b.used,
+    pending: (b) => b.pending,
+    remaining: (b) => b.remaining,
+  });
+  const sortedBalances = useMemo(() => sortItems(balancesQuery.data ?? []), [balancesQuery.data, sortItems]);
+
   return (
     <Card className="shadow-card border-0 bg-card">
       <CardHeader>
@@ -60,12 +72,12 @@ export function LeaveBalances(props: { year: number }) {
             <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('leavesPage.allowanceDialog.employee')}</TableHead>
-                  <TableHead>{t('leavesPage.type')}</TableHead>
-                  <TableHead>{t('leavesPage.allowance')}</TableHead>
-                  <TableHead>{t('leavesPage.used')}</TableHead>
-                  <TableHead>{t('leavesPage.pending')}</TableHead>
-                  <TableHead>{t('leavesPage.remaining')}</TableHead>
+                  <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.allowanceDialog.employee')}</SortableHeader>
+                  <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.type')}</SortableHeader>
+                  <SortableHeader columnKey="allowance" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.allowance')}</SortableHeader>
+                  <SortableHeader columnKey="used" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.used')}</SortableHeader>
+                  <SortableHeader columnKey="pending" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.pending')}</SortableHeader>
+                  <SortableHeader columnKey="remaining" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.remaining')}</SortableHeader>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -77,7 +89,7 @@ export function LeaveBalances(props: { year: number }) {
                     </TableCell>
                   </TableRow>
                 )}
-                {(balancesQuery.data ?? []).map(b => (
+                {sortedBalances.map(b => (
                   <TableRow key={`${b.userId}-${b.leaveType}`}>
                     <TableCell className="font-medium">{nameOf(b.userId)}</TableCell>
                     <TableCell className="capitalize">{t(`leaveType.${String(b.leaveType)}`, { defaultValue: String(b.leaveType).replace(/_/g, ' ') })}</TableCell>

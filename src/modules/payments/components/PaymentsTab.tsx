@@ -73,6 +73,8 @@ import i18n from 'i18next';
 import en from '@/modules/payments/locale/en.json';
 import fr from '@/modules/payments/locale/fr.json';
 import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
 if (!i18n.hasResourceBundle('en', 'payments')) {
   i18n.addResourceBundle('en', 'payments', en, true, true);
   i18n.addResourceBundle('fr', 'payments', fr, true, true);
@@ -177,6 +179,15 @@ function PaymentsTabInner({ entityType, entityId, entityNumber, totalAmount, cur
   }, []);
 
   const [emailPayment, setEmailPayment] = useState<Payment | null>(null);
+
+  const { sortKey: paymentSortKey, sortDirection: paymentSortDirection, toggleSort: togglePaymentSort, sortItems: sortPayments } = useTableSort<Payment>({
+    reference: (row) => row.paymentReference || row.receiptNumber,
+    date: (row) => row.paymentDate,
+    method: (row) => row.paymentMethod,
+    amount: (row) => row.amount,
+    status: (row) => row.status,
+  });
+  const sortedPayments = useMemo(() => sortPayments(payments), [payments, sortPayments]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -446,16 +457,16 @@ function PaymentsTabInner({ entityType, entityId, entityNumber, totalAmount, cur
             <Table>
               <TableHeader>
                 <TableRow className="h-8">
-                  <TableHead className="text-xs py-1.5">{t('reference')}</TableHead>
-                  <TableHead className="text-xs py-1.5">{t('date')}</TableHead>
-                  <TableHead className="text-xs py-1.5">{t('method')}</TableHead>
-                  <TableHead className="text-xs py-1.5 text-right">{t('amount')}</TableHead>
-                  <TableHead className="text-xs py-1.5">{t('status')}</TableHead>
+                  <SortableHeader columnKey="reference" sortKey={paymentSortKey} sortDirection={paymentSortDirection} onSort={togglePaymentSort} className="text-xs py-1.5">{t('reference')}</SortableHeader>
+                  <SortableHeader columnKey="date" sortKey={paymentSortKey} sortDirection={paymentSortDirection} onSort={togglePaymentSort} className="text-xs py-1.5">{t('date')}</SortableHeader>
+                  <SortableHeader columnKey="method" sortKey={paymentSortKey} sortDirection={paymentSortDirection} onSort={togglePaymentSort} className="text-xs py-1.5">{t('method')}</SortableHeader>
+                  <SortableHeader columnKey="amount" sortKey={paymentSortKey} sortDirection={paymentSortDirection} onSort={togglePaymentSort} className="text-xs py-1.5" align="right">{t('amount')}</SortableHeader>
+                  <SortableHeader columnKey="status" sortKey={paymentSortKey} sortDirection={paymentSortDirection} onSort={togglePaymentSort} className="text-xs py-1.5">{t('status')}</SortableHeader>
                   <TableHead className="text-xs py-1.5 w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payments.map((payment) => (
+                {sortedPayments.map((payment) => (
                   <TableRow key={payment.id} className="h-9 group">
                     <TableCell className="text-xs py-1.5 font-medium">
                       {payment.paymentReference || payment.receiptNumber || '—'}

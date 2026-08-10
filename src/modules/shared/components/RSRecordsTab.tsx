@@ -11,6 +11,8 @@ import { Plus, MoreVertical, Trash2, Edit, FileDown, Receipt, Info, Loader2 } fr
 import { toast } from 'sonner';
 import { RSRecordModal } from './RSRecordModal';
 import { TEJExportModal } from './TEJExportModal';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 import {
   fetchRSRecords,
   deleteRSRecord as deleteRSRecordApi,
@@ -86,6 +88,18 @@ export function RSRecordsTab({
       toast.error(err.message);
     }
   };
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<RSRecordDto>({
+    invoiceNo: (r) => r.invoiceNumber,
+    supplier: (r) => r.supplierName,
+    paymentDate: (r) => r.paymentDate,
+    amountPaid: (r) => r.amountPaid,
+    rsAmount: (r) => r.rsAmount,
+    rsType: (r) => r.rsTypeCode,
+    status: (r) => r.status,
+    compliance: (r) => r.isOverdue ? -Infinity : r.declarationDeadline,
+  });
+  const sortedRecords = sortItems(records);
 
   const totalRS = records.reduce((sum, r) => sum + r.rsAmount, 0);
   const pendingCount = records.filter(r => r.status === 'pending').length;
@@ -173,19 +187,19 @@ export function RSRecordsTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('rs.invoiceNo', 'N° Facture')}</TableHead>
-                  <TableHead>{t('rs.supplier', 'Fournisseur')}</TableHead>
-                  <TableHead>{t('rs.paymentDate', 'Date paiement')}</TableHead>
-                  <TableHead className="text-right">{t('rs.amountPaid', 'Montant payé')}</TableHead>
-                  <TableHead className="text-right">{t('rs.rsAmount', 'Montant RS')}</TableHead>
-                  <TableHead>{t('rs.rsType', 'Type')}</TableHead>
-                  <TableHead>{t('rs.status', 'Statut')}</TableHead>
-                  <TableHead className="text-center">⚠️ {t('rs.compliance', 'Conformité')}</TableHead>
+                  <SortableHeader columnKey="invoiceNo" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('rs.invoiceNo', 'N° Facture')}</SortableHeader>
+                  <SortableHeader columnKey="supplier" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('rs.supplier', 'Fournisseur')}</SortableHeader>
+                  <SortableHeader columnKey="paymentDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('rs.paymentDate', 'Date paiement')}</SortableHeader>
+                  <SortableHeader columnKey="amountPaid" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('rs.amountPaid', 'Montant payé')}</SortableHeader>
+                  <SortableHeader columnKey="rsAmount" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('rs.rsAmount', 'Montant RS')}</SortableHeader>
+                  <SortableHeader columnKey="rsType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('rs.rsType', 'Type')}</SortableHeader>
+                  <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('rs.status', 'Statut')}</SortableHeader>
+                  <SortableHeader columnKey="compliance" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">⚠️ {t('rs.compliance', 'Conformité')}</SortableHeader>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {records.map(record => (
+                {sortedRecords.map(record => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">{record.invoiceNumber}</TableCell>
                     <TableCell>

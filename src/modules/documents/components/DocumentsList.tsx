@@ -56,6 +56,8 @@ import { DocumentsService } from '../services/documents.service';
 import { TableRowActions } from '@/shared/components/TableRowActions';
 import { toast } from 'sonner';
 import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function DocumentsList() {
   const { t } = useTranslation();
@@ -131,8 +133,18 @@ export function DocumentsList() {
     return moduleFiltered.filter(doc => doc.moduleType === activeTab);
   }, [allDocuments, activeTab, relevantModuleTypes, isWorkspaceScoped]);
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Document>({
+    fileName: (d) => d.fileName,
+    moduleType: (d) => d.moduleType,
+    fileType: (d) => d.fileType,
+    fileSize: (d) => d.fileSize,
+    uploadedAt: (d) => d.uploadedAt,
+    uploadedByName: (d) => d.uploadedByName,
+  });
+  const sortedDocuments = useMemo(() => sortItems(documents), [documents, sortItems]);
+
   // Client-side pagination over filtered documents
-  const pagination = usePaginatedData(documents, 20);
+  const pagination = usePaginatedData(sortedDocuments, 20);
   const paginatedDocuments = pagination.data;
 
 
@@ -811,13 +823,13 @@ export function DocumentsList() {
                                 onCheckedChange={toggleSelectAll}
                               />
                             </TableHead>
-                            <TableHead>{t('documents.fileName')}</TableHead>
-                            <TableHead>{t('documents.module')}</TableHead>
+                            <SortableHeader columnKey="fileName" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.fileName')}</SortableHeader>
+                            <SortableHeader columnKey="moduleType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.module')}</SortableHeader>
                             <TableHead>{t('documents.linkedTo', 'Linked To')}</TableHead>
-                            <TableHead>{t('documents.fileType')}</TableHead>
-                            <TableHead>{t('documents.fileSize')}</TableHead>
-                            <TableHead>{t('documents.uploadDate')}</TableHead>
-                            <TableHead>{t('documents.uploadedBy')}</TableHead>
+                            <SortableHeader columnKey="fileType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.fileType')}</SortableHeader>
+                            <SortableHeader columnKey="fileSize" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.fileSize')}</SortableHeader>
+                            <SortableHeader columnKey="uploadedAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.uploadDate')}</SortableHeader>
+                            <SortableHeader columnKey="uploadedByName" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.uploadedBy')}</SortableHeader>
                             {isViewAllMode() && (
                               <TableHead className="w-[160px]">{t('documents.company', 'Company')}</TableHead>
                             )}

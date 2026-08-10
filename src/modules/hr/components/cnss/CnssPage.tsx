@@ -16,6 +16,8 @@ import dayjs from 'dayjs';
 import { z } from 'zod';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 type TFunc = (key: string, options?: any) => string;
 
@@ -106,6 +108,16 @@ export function CnssPage() {
     });
     toast({ title: t('cnssPage.rateSaved') });
   };
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    cnssNumber: (r) => r.cnssNumber,
+    employee: (r) => r.userName,
+    subject: (r) => Number(r.salarySubject),
+    employeeShare: (r) => Number(r.employeeCnss),
+    employerShare: (r) => Number(r.employerCnss),
+    css: (r) => Number(r.css),
+  });
+  const sortedLines = useMemo(() => sortItems(lines), [lines, sortItems]);
 
   const exportCsv = () => {
     const header = ['cnssNumber', 'employee', 'salarySubject', 'employeeCnss', 'employerCnss', 'css'];
@@ -238,12 +250,12 @@ export function CnssPage() {
             <Table className="min-w-[550px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('cnssPage.cnssNumber')}</TableHead>
-                  <TableHead>{t('cnssPage.employee')}</TableHead>
-                  <TableHead>{t('cnssPage.subject')}</TableHead>
-                  <TableHead>{t('cnssPage.employeeShare')}</TableHead>
-                  <TableHead>{t('cnssPage.employerShare')}</TableHead>
-                  <TableHead>{t('cnssPage.totals.css', { defaultValue: 'CSS' })}</TableHead>
+                  <SortableHeader columnKey="cnssNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('cnssPage.cnssNumber')}</SortableHeader>
+                  <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('cnssPage.employee')}</SortableHeader>
+                  <SortableHeader columnKey="subject" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('cnssPage.subject')}</SortableHeader>
+                  <SortableHeader columnKey="employeeShare" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('cnssPage.employeeShare')}</SortableHeader>
+                  <SortableHeader columnKey="employerShare" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('cnssPage.employerShare')}</SortableHeader>
+                  <SortableHeader columnKey="css" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('cnssPage.totals.css', { defaultValue: 'CSS' })}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -253,7 +265,7 @@ export function CnssPage() {
                 {!declarationQuery.isLoading && lines.length === 0 && (
                   <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t('cnssPage.noData', { defaultValue: 'No declaration data for this period.' })}</TableCell></TableRow>
                 )}
-                {lines.map(r => (
+                {sortedLines.map(r => (
                   <TableRow key={r.userId}>
                     <TableCell className="font-mono text-xs">{r.cnssNumber ?? '—'}</TableCell>
                     <TableCell className="font-medium">{r.userName}</TableCell>

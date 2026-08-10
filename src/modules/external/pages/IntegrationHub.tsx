@@ -27,6 +27,8 @@ import {
   type ConnectorDefinition,
 } from '../utils/connectorCatalog';
 import type { ConnectorGroup } from '../types';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 // ─── Connector card ───────────────────────────────────────────────────────────
 
@@ -245,6 +247,16 @@ export function IntegrationHub() {
 
   const totalEventsToday = stats.totalReceivedToday;
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<typeof endpoints[number]>({
+    name: (ep) => ep.name,
+    slug: (ep) => ep.slug,
+    status: (ep) => ep.isActive,
+    received: (ep) => ep.totalReceived,
+    sent: (ep) => ep.totalSent,
+    createdAt: (ep) => ep.createdAt,
+  });
+  const sortedEndpoints = sortItems(endpoints);
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Page header */}
@@ -424,18 +436,18 @@ export function IntegrationHub() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('external.table.name')}</TableHead>
-                    <TableHead className="hidden sm:table-cell">{t('external.table.slug')}</TableHead>
-                    <TableHead>{t('external.table.status')}</TableHead>
+                    <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.name')}</SortableHeader>
+                    <SortableHeader columnKey="slug" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell">{t('external.table.slug')}</SortableHeader>
+                    <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.status')}</SortableHeader>
                     <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
-                    <TableHead className="text-center">{t('external.table.received')}</TableHead>
-                    <TableHead className="text-center hidden lg:table-cell">{t('external.table.sent', 'Sent')}</TableHead>
-                    <TableHead className="hidden md:table-cell">{t('external.table.created')}</TableHead>
+                    <SortableHeader columnKey="received" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t('external.table.received')}</SortableHeader>
+                    <SortableHeader columnKey="sent" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="hidden lg:table-cell">{t('external.table.sent', 'Sent')}</SortableHeader>
+                    <SortableHeader columnKey="createdAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell">{t('external.table.created')}</SortableHeader>
                     <TableHead className="w-[50px]">{t('external.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {endpoints.map(ep => {
+                  {sortedEndpoints.map(ep => {
                     const connDef = getConnectorFromEndpointName(ep.name);
                     const isBidirectional = !!ep.webhookForwardUrl;
                     return (

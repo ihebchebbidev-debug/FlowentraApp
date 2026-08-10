@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Edit, Star, Tag, Trash2 } from "lucide-react";
 import { LookupItem } from "@/shared/contexts/LookupsContext";
 import { getCategoryIcon } from "../types";
+import { useMemo } from "react";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 export function CategoryList({
   title,
@@ -108,6 +111,11 @@ export function CategoryTable({
 }) {
   const { t } = useTranslation('lookups');
   const Icon = getCategoryIcon(category);
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<LookupItem>({
+    name: (i) => i.name,
+    isDefault: (i) => i.isDefault ? 1 : 0,
+  });
+  const sortedItems = useMemo(() => sortItems(items), [items, sortItems]);
   return (
     <Card className="shadow-card border-0 bg-card">
       <CardHeader className="p-4 sm:p-6">
@@ -123,14 +131,14 @@ export function CategoryTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('name', 'Name')}</TableHead>
+                <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('name', 'Name')}</SortableHeader>
                 {category === 'currencies' && <TableHead>{t('code', 'Code')}</TableHead>}
-                <TableHead>{t('default')}</TableHead>
+                <SortableHeader columnKey="isDefault" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('default')}</SortableHeader>
                 <TableHead className="text-right">{t('actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {sortedItems.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>

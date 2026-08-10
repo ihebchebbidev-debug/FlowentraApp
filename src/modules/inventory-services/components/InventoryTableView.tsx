@@ -13,15 +13,20 @@ import { useArticles } from "@/modules/articles/hooks/useArticles";
 import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { TableRowActions } from "@/shared/components/TableRowActions";
+import { SortableHeader } from "@/components/shared/SortableHeader";
+import type { SortDirection } from "@/hooks/useTableSort";
 
 interface InventoryTableViewProps {
   items: any[];
   onClick: (item: any) => void;
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
+  sortKey?: string | null;
+  sortDirection?: SortDirection;
+  onSort?: (key: string) => void;
 }
 
-export function InventoryTableView({ items, onClick, selectedIds, onSelectionChange }: InventoryTableViewProps) {
+export function InventoryTableView({ items, onClick, selectedIds, onSelectionChange, sortKey = null, sortDirection = null, onSort }: InventoryTableViewProps) {
   const navigate = useNavigate();
   const { t } = useTranslation('inventory-services');
   const { current: currency } = useCurrency();
@@ -108,11 +113,23 @@ export function InventoryTableView({ items, onClick, selectedIds, onSelectionCha
                     className={someSelected ? "data-[state=checked]:bg-primary" : ""}
                   />
                 </TableHead>
-                <TableHead>{t('table.item_service')}</TableHead>
-                {isViewAllMode() && <TableHead>Company</TableHead>}
-                <TableHead>{t('table.category')}</TableHead>
-                <TableHead>{t('table.location_duration')}</TableHead>
-                <TableHead>{t('table.price')}</TableHead>
+                {onSort ? (
+                  <>
+                    <SortableHeader columnKey="item" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.item_service')}</SortableHeader>
+                    {isViewAllMode() && <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>Company</SortableHeader>}
+                    <SortableHeader columnKey="category" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.category')}</SortableHeader>
+                    <SortableHeader columnKey="location" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.location_duration')}</SortableHeader>
+                    <SortableHeader columnKey="price" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.price')}</SortableHeader>
+                  </>
+                ) : (
+                  <>
+                    <TableHead>{t('table.item_service')}</TableHead>
+                    {isViewAllMode() && <TableHead>Company</TableHead>}
+                    <TableHead>{t('table.category')}</TableHead>
+                    <TableHead>{t('table.location_duration')}</TableHead>
+                    <TableHead>{t('table.price')}</TableHead>
+                  </>
+                )}
                 <TableHead>{t('table.actions')}</TableHead>
               </TableRow>
             </TableHeader>

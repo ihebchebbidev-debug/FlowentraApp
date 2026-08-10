@@ -22,6 +22,9 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Project, ProjectStats, Technician } from "../types";
 import { format } from "date-fns";
+import { useMemo } from "react";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 interface ProjectsTableProps {
   projects: Project[];
@@ -75,6 +78,15 @@ export function ProjectsTable({
 }: ProjectsTableProps) {
   const navigate = useNavigate();
   const { t } = useTranslation('tasks');
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Project>({
+    name: (p) => p.name,
+    type: (p) => p.type,
+    status: (p) => p.status,
+    progress: (p) => (projectStats[p.id] || { completionPercentage: 0 }).completionPercentage,
+    team: (p) => p.teamMembers.length,
+    startDate: (p) => p.startDate,
+  });
+  const sortedProjects = useMemo(() => sortItems(projects), [projects, sortItems]);
 
   const handleProjectClick = (project: Project) => {
     navigate(`/dashboard/tasks/projects/${project.id}`);
@@ -233,12 +245,12 @@ export function ProjectsTable({
         <Table className="w-full min-w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[250px]">{t('projects.list.table.project')}</TableHead>
-              <TableHead>{t('projects.list.table.type')}</TableHead>
-              <TableHead>{t('projects.list.table.status')}</TableHead>
-              <TableHead>{t('projects.list.table.progress')}</TableHead>
-              <TableHead>{t('projects.list.table.team')}</TableHead>
-              <TableHead>{t('projects.list.table.startDate')}</TableHead>
+              <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[250px]">{t('projects.list.table.project')}</SortableHeader>
+              <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.type')}</SortableHeader>
+              <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.status')}</SortableHeader>
+              <SortableHeader columnKey="progress" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.progress')}</SortableHeader>
+              <SortableHeader columnKey="team" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.team')}</SortableHeader>
+              <SortableHeader columnKey="startDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.startDate')}</SortableHeader>
               {isViewAllMode() && (
                 <TableHead className="w-[160px]">{t('projects.list.table.company', 'Company')}</TableHead>
               )}
@@ -246,7 +258,7 @@ export function ProjectsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projects.map(project => {
+            {sortedProjects.map(project => {
               const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, completionPercentage: 0 };
               return (
                 <TableRow key={project.id} className="cursor-pointer hover:bg-muted/50 group" onClick={() => handleProjectClick(project)}>

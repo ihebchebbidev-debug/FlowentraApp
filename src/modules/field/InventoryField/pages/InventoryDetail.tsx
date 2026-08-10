@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import AddMaintenanceLogModal from "../components/AddMaintenanceLogModal";
 import { Package, MapPin, Calendar, ArrowLeft, Plus, Upload, FileText, Download, Trash2, User, Hash, Wrench } from "lucide-react";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 interface MaintenanceLog {
   id: string;
   title: string;
@@ -112,6 +114,22 @@ export default function InventoryDetail() {
     event.target.value = '';
   };
   const removeFile = (fileId: string) => setFiles(prev => prev.filter(f => f.id !== fileId));
+
+  const logsSort = useTableSort<MaintenanceLog>({
+    title: (row) => row.title,
+    description: (row) => row.description,
+    date: (row) => row.date || row.createdAt,
+  });
+  const sortedLogs = logsSort.sortItems(logs);
+
+  const filesSort = useTableSort<FileAttachment>({
+    name: (row) => row.name,
+    type: (row) => row.type,
+    size: (row) => row.size,
+    uploaded: (row) => row.uploadedAt,
+  });
+  const sortedFiles = filesSort.sortItems(files);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Available':
@@ -293,14 +311,14 @@ export default function InventoryDetail() {
                 {logs.length === 0 ? <p className="text-muted-foreground">No maintenance logs yet.</p> : <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Date</TableHead>
+                        <SortableHeader columnKey="title" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort}>Title</SortableHeader>
+                        <SortableHeader columnKey="description" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort}>Description</SortableHeader>
+                        <SortableHeader columnKey="date" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort}>Date</SortableHeader>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {logs.map(log => <TableRow key={log.id} className="hover:bg-muted/50">
+                      {sortedLogs.map(log => <TableRow key={log.id} className="hover:bg-muted/50">
                           <TableCell className="font-medium">{log.title}</TableCell>
                           <TableCell>{log.description}</TableCell>
                           <TableCell>{log.date || new Date(log.createdAt).toLocaleDateString()}</TableCell>
@@ -338,15 +356,15 @@ export default function InventoryDetail() {
                   </div> : <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>File Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead>Uploaded</TableHead>
+                        <SortableHeader columnKey="name" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>File Name</SortableHeader>
+                        <SortableHeader columnKey="type" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>Type</SortableHeader>
+                        <SortableHeader columnKey="size" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>Size</SortableHeader>
+                        <SortableHeader columnKey="uploaded" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>Uploaded</SortableHeader>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {files.map(file => <TableRow key={file.id} className="hover:bg-muted/50">
+                      {sortedFiles.map(file => <TableRow key={file.id} className="hover:bg-muted/50">
                           <TableCell className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">{file.name}</span>

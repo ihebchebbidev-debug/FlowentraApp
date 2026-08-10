@@ -8,6 +8,9 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import TableLayout, { Column } from "@/components/shared/TableLayout";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortMenu } from "@/components/shared/SortMenu";
+
 import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -341,7 +344,19 @@ export function OffersList() {
   }, [offers, searchTerm, filterStatus, selectedStat, filterAssigned, filterDateRange]);
 
   const companyScopedOffers = useFilteredByCompany(filteredOffers);
-  const pagination = usePaginatedData(companyScopedOffers, 20);
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Offer>({
+    offer: (o) => o.title || o.offerNumber || '',
+    company: (o: any) => o.tenantName ?? o.tenantId ?? '',
+    contact: (o) => o.contactName || '',
+    amount: (o) => calculateItemsTotal(o),
+    status: (o) => t(getStatusTranslationKey('offer', o.status)),
+  });
+
+  const sortedOffers = useMemo(() => sortItems(companyScopedOffers as Offer[]), [companyScopedOffers, sortItems]);
+  const pagination = usePaginatedData(sortedOffers, 20);
+
 
   // Check if all items are selected
   const allSelected = useMemo(() => {
@@ -815,6 +830,19 @@ export function OffersList() {
         />
       ) : viewMode === 'list' ? (
         <div className="p-2 sm:p-3 lg:p-4">
+          <div className="flex justify-end pb-2">
+            <SortMenu
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={toggleSort}
+              options={[
+                { key: 'offer', label: t('table.offer', { defaultValue: 'Offer' }) },
+                { key: 'contact', label: t('table.contact', { defaultValue: 'Contact' }) },
+                { key: 'amount', label: t('table.amount', { defaultValue: 'Amount' }) },
+                { key: 'status', label: t('table.status', { defaultValue: 'Status' }) },
+              ]}
+            />
+          </div>
           <Card className="shadow-card border-0 bg-card text-rem-85">
             <MapOverlay
               items={mapOffersToMapItems(filteredOffers)}
@@ -998,10 +1026,14 @@ export function OffersList() {
                       onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
                       emptyTitle={t("no_offers_found")}
                       emptyDescription={t("listView.noOffersDescription") || "Get started by creating your first offer"}
+                      sortKey={sortKey}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
                       columns={[
                         {
                           key: 'offer',
                           title: t('table.offer'),
+                          sortable: true,
                           width: 'w-[200px]',
                           render: (offer: Offer) => (
                             <div className="min-w-0">
@@ -1013,11 +1045,13 @@ export function OffersList() {
                         ...(isViewAllMode() ? [{
                           key: 'company',
                           title: t('table.company', 'Company'),
+                          sortable: true,
                           render: (offer: Offer) => <CompanyBadge tenantId={(offer as any).tenantId} forceShow />,
                         } as Column<Offer>] : []),
                         {
                           key: 'contact',
                           title: t('table.contact'),
+                          sortable: true,
                           render: (offer: Offer) => (
                             <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
                               <Link
@@ -1033,6 +1067,7 @@ export function OffersList() {
                         {
                           key: 'amount',
                           title: t('table.amount'),
+                          sortable: true,
                           render: (offer: Offer) => (
                             <div className="text-sm text-foreground">
                               {Math.floor(calculateItemsTotal(offer)).toLocaleString()} {offer.currency}
@@ -1043,6 +1078,7 @@ export function OffersList() {
                         {
                           key: 'status',
                           title: t('table.status'),
+                          sortable: true,
                           render: (offer: Offer) => (
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge className={getStatusColor(offer.status)}>

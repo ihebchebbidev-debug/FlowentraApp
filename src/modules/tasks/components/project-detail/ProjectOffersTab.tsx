@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { FileText, CheckCircle2, Plus, Handshake } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { dealsApi } from '@/services/api/dealsApi';
 import { formatCurrencyValue } from '@/lib/formatters';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 interface LinkedEntity {
   entityType: string;
@@ -83,6 +85,14 @@ export function ProjectOffersTab({ projectLinks, mode = 'offers', sales, project
 
   const totalAmount = items.reduce((sum, i) => sum + (i.amount ?? 0), 0);
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<LinkedEntity>({
+    title: (i) => i.title,
+    status: (i) => i.status,
+    amount: (i) => i.amount,
+    date: (i) => i.date,
+  });
+  const sortedItems = useMemo(() => sortItems(items), [items, sortItems]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -124,14 +134,14 @@ export function ProjectOffersTab({ projectLinks, mode = 'offers', sales, project
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{isDeals ? t('projects.detail.deals.title', 'Deal') : t('projects.detail.offers.title', 'Offer')}</TableHead>
-                <TableHead>{isDeals ? t('projects.detail.deals.stage', 'Stage') : t('projects.detail.offers.status', 'Status')}</TableHead>
-                <TableHead className="text-right">{isDeals ? t('projects.detail.deals.value', 'Value') : t('projects.detail.offers.amount', 'Amount')}</TableHead>
-                <TableHead className="text-right">{t('projects.detail.offers.date', 'Date')}</TableHead>
+                <SortableHeader columnKey="title" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{isDeals ? t('projects.detail.deals.title', 'Deal') : t('projects.detail.offers.title', 'Offer')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{isDeals ? t('projects.detail.deals.stage', 'Stage') : t('projects.detail.offers.status', 'Status')}</SortableHeader>
+                <SortableHeader columnKey="amount" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{isDeals ? t('projects.detail.deals.value', 'Value') : t('projects.detail.offers.amount', 'Amount')}</SortableHeader>
+                <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('projects.detail.offers.date', 'Date')}</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((it) => (
+              {sortedItems.map((it) => (
                 <TableRow
                   key={`${it.entityType}-${it.entityId}`}
                   className="cursor-pointer"

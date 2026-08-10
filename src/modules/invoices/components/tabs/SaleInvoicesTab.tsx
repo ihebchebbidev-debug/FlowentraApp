@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus, FileText, Receipt, ExternalLink, Eye, Scale } from 'lucide-react';
 import { getStatusColorClass } from '@/config/entity-statuses';
 import { useCustomerInvoicesList, useInvoiceMutations } from '../../hooks/useCustomerInvoices';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
 interface Props {
@@ -33,7 +35,16 @@ export function SaleInvoicesTab({ saleId, saleTotal, currency }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data, isLoading } = useCustomerInvoicesList({ saleId, limit: 100 });
-  const invoices = data?.data ?? [];
+  const rawInvoices = data?.data ?? [];
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<typeof rawInvoices[number]>({
+    invoiceNumber: (row) => row.invoiceNumber,
+    status: (row) => row.status,
+    issueDate: (row) => row.issueDate,
+    grandTotal: (row) => row.grandTotal,
+    amountPaid: (row) => row.amountPaid,
+    amountDue: (row) => row.amountDue,
+  });
+  const invoices = useMemo(() => sortItems(rawInvoices), [rawInvoices, sortItems]);
 
   const summary = useMemo(() => {
     const active = invoices.filter((i) => i.status !== 'void');
@@ -92,12 +103,12 @@ export function SaleInvoicesTab({ saleId, saleTotal, currency }: Props) {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
-                    <TableHead>{t('columns.number')}</TableHead>
-                    <TableHead>{t('columns.status')}</TableHead>
-                    <TableHead>{t('columns.issue_date')}</TableHead>
-                    <TableHead className="text-right">{t('columns.total')}</TableHead>
-                    <TableHead className="text-right">{t('columns.paid')}</TableHead>
-                    <TableHead className="text-right">{t('columns.due')}</TableHead>
+                    <SortableHeader columnKey="invoiceNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.number')}</SortableHeader>
+                    <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.status')}</SortableHeader>
+                    <SortableHeader columnKey="issueDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.issue_date')}</SortableHeader>
+                    <SortableHeader columnKey="grandTotal" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('columns.total')}</SortableHeader>
+                    <SortableHeader columnKey="amountPaid" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('columns.paid')}</SortableHeader>
+                    <SortableHeader columnKey="amountDue" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('columns.due')}</SortableHeader>
                     <TableHead className="text-center">{t('columns.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -20,6 +20,8 @@ import {
 } from '../../hooks/useRecruitment';
 import { APPLICANT_STAGES, type ApplicantStage, type HrApplicant, type JobOpeningStatus } from '../../types/recruitment.types';
 import { EditApplicantDialog } from './EditApplicantDialog';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 
 const STAGE_COLOR: Record<ApplicantStage, string> = {
@@ -47,6 +49,16 @@ export function RecruitmentPage() {
   const [oCount, setOCount] = useState(1);
   const [oDesc, setODesc] = useState('');
   const [oStatus, setOStatus] = useState<JobOpeningStatus>('open');
+
+  const { sortKey: openingsSortKey, sortDirection: openingsSortDirection, toggleSort: toggleOpeningsSort, sortItems: sortOpenings } = useTableSort<any>({
+    title: (o) => o.title,
+    contract: (o) => o.contractType,
+    seniority: (o) => o.seniority,
+    openings: (o) => o.openingsCount,
+    applicants: (o) => o.applicantsCount,
+    status: (o) => o.status,
+  });
+  const sortedOpenings = useMemo(() => sortOpenings(openingsQuery.data ?? []), [openingsQuery.data, sortOpenings]);
 
   const submitOpening = async () => {
     if (!oTitle) { toast({ title: t('recruitmentPage.openings.toasts.titleRequired'), variant: 'destructive' }); return; }
@@ -167,12 +179,12 @@ export function RecruitmentPage() {
                   <Table className="min-w-[550px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('recruitmentPage.openings.table.title')}</TableHead>
-                        <TableHead>{t('recruitmentPage.openings.table.contract')}</TableHead>
-                        <TableHead>{t('recruitmentPage.openings.table.seniority')}</TableHead>
-                        <TableHead>{t('recruitmentPage.openings.table.openings')}</TableHead>
-                        <TableHead>{t('recruitmentPage.openings.table.applicants')}</TableHead>
-                        <TableHead>{t('recruitmentPage.openings.table.status')}</TableHead>
+                        <SortableHeader columnKey="title" sortKey={openingsSortKey} sortDirection={openingsSortDirection} onSort={toggleOpeningsSort}>{t('recruitmentPage.openings.table.title')}</SortableHeader>
+                        <SortableHeader columnKey="contract" sortKey={openingsSortKey} sortDirection={openingsSortDirection} onSort={toggleOpeningsSort}>{t('recruitmentPage.openings.table.contract')}</SortableHeader>
+                        <SortableHeader columnKey="seniority" sortKey={openingsSortKey} sortDirection={openingsSortDirection} onSort={toggleOpeningsSort}>{t('recruitmentPage.openings.table.seniority')}</SortableHeader>
+                        <SortableHeader columnKey="openings" sortKey={openingsSortKey} sortDirection={openingsSortDirection} onSort={toggleOpeningsSort}>{t('recruitmentPage.openings.table.openings')}</SortableHeader>
+                        <SortableHeader columnKey="applicants" sortKey={openingsSortKey} sortDirection={openingsSortDirection} onSort={toggleOpeningsSort}>{t('recruitmentPage.openings.table.applicants')}</SortableHeader>
+                        <SortableHeader columnKey="status" sortKey={openingsSortKey} sortDirection={openingsSortDirection} onSort={toggleOpeningsSort}>{t('recruitmentPage.openings.table.status')}</SortableHeader>
                         <TableHead className="w-[200px]">{t('recruitmentPage.openings.table.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -180,7 +192,7 @@ export function RecruitmentPage() {
                       {(openingsQuery.data ?? []).length === 0 && (
                         <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('recruitmentPage.openings.empty')}</TableCell></TableRow>
                       )}
-                      {(openingsQuery.data ?? []).map(o => (
+                      {sortedOpenings.map(o => (
                         <TableRow key={o.id}>
                           <TableCell className="font-medium">{o.title}</TableCell>
                           <TableCell>{t(`recruitmentPage.contracts.${o.contractType}`, { defaultValue: o.contractType })}</TableCell>
@@ -256,6 +268,16 @@ function ApplicantsTab() {
     openingId: filterOpening === 'all' ? undefined : Number(filterOpening),
     stage: filterStage === 'all' ? undefined : filterStage,
   });
+
+  const { sortKey: applicantsSortKey, sortDirection: applicantsSortDirection, toggleSort: toggleApplicantsSort, sortItems: sortApplicants } = useTableSort<HrApplicant>({
+    name: (a) => `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim(),
+    opening: (a) => a.openingTitle,
+    email: (a) => a.email,
+    source: (a) => a.source,
+    stage: (a) => a.stage,
+    interviews: (a) => a.interviewsCount,
+  });
+  const sortedApplicants = useMemo(() => sortApplicants(applicantsQuery.data ?? []), [applicantsQuery.data, sortApplicants]);
 
   const [open, setOpen] = useState(false);
   const [openingId, setOpeningId] = useState('');
@@ -364,12 +386,12 @@ function ApplicantsTab() {
           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
-                <TableHead>{t('recruitmentPage.applicants.table.name')}</TableHead>
-                <TableHead>{t('recruitmentPage.applicants.table.opening')}</TableHead>
-                <TableHead>{t('recruitmentPage.applicants.table.email')}</TableHead>
-                <TableHead>{t('recruitmentPage.applicants.table.source')}</TableHead>
-                <TableHead>{t('recruitmentPage.applicants.table.stage')}</TableHead>
-                <TableHead>{t('recruitmentPage.applicants.table.interviews')}</TableHead>
+                <SortableHeader columnKey="name" sortKey={applicantsSortKey} sortDirection={applicantsSortDirection} onSort={toggleApplicantsSort}>{t('recruitmentPage.applicants.table.name')}</SortableHeader>
+                <SortableHeader columnKey="opening" sortKey={applicantsSortKey} sortDirection={applicantsSortDirection} onSort={toggleApplicantsSort}>{t('recruitmentPage.applicants.table.opening')}</SortableHeader>
+                <SortableHeader columnKey="email" sortKey={applicantsSortKey} sortDirection={applicantsSortDirection} onSort={toggleApplicantsSort}>{t('recruitmentPage.applicants.table.email')}</SortableHeader>
+                <SortableHeader columnKey="source" sortKey={applicantsSortKey} sortDirection={applicantsSortDirection} onSort={toggleApplicantsSort}>{t('recruitmentPage.applicants.table.source')}</SortableHeader>
+                <SortableHeader columnKey="stage" sortKey={applicantsSortKey} sortDirection={applicantsSortDirection} onSort={toggleApplicantsSort}>{t('recruitmentPage.applicants.table.stage')}</SortableHeader>
+                <SortableHeader columnKey="interviews" sortKey={applicantsSortKey} sortDirection={applicantsSortDirection} onSort={toggleApplicantsSort}>{t('recruitmentPage.applicants.table.interviews')}</SortableHeader>
                 <TableHead className="w-[230px]">{t('recruitmentPage.applicants.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -377,7 +399,7 @@ function ApplicantsTab() {
               {(applicantsQuery.data ?? []).length === 0 && (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('recruitmentPage.applicants.empty')}</TableCell></TableRow>
               )}
-              {(applicantsQuery.data ?? []).map(a => (
+              {sortedApplicants.map(a => (
                 <TableRow key={a.id}>
                   <TableCell className="font-medium">{a.firstName} {a.lastName}</TableCell>
                   <TableCell className="text-xs">{a.openingTitle}</TableCell>
@@ -483,6 +505,16 @@ function InterviewsTab() {
     return m;
   }, [applicantsQuery.data]);
 
+  const { sortKey: interviewsSortKey, sortDirection: interviewsSortDirection, toggleSort: toggleInterviewsSort, sortItems: sortInterviews } = useTableSort<any>({
+    applicant: (i) => i.applicantName ?? applicantById.get(i.applicantId),
+    kind: (i) => i.kind,
+    when: (i) => i.scheduledAt,
+    duration: (i) => i.durationMinutes,
+    status: (i) => i.status,
+    recommendation: (i) => i.recommendation,
+  });
+  const sortedInterviews = useMemo(() => sortInterviews(interviewsQuery.data ?? []), [interviewsQuery.data, sortInterviews]);
+
   const [open, setOpen] = useState(false);
   const [applicantId, setApplicantId] = useState('');
   const [kind, setKind] = useState('phone');
@@ -565,12 +597,12 @@ function InterviewsTab() {
           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
-                <TableHead>{t('recruitmentPage.interviews.table.applicant')}</TableHead>
-                <TableHead>{t('recruitmentPage.interviews.table.kind')}</TableHead>
-                <TableHead>{t('recruitmentPage.interviews.table.when')}</TableHead>
-                <TableHead>{t('recruitmentPage.interviews.table.duration')}</TableHead>
-                <TableHead>{t('recruitmentPage.interviews.table.status')}</TableHead>
-                <TableHead>{t('recruitmentPage.interviews.table.recommendation')}</TableHead>
+                <SortableHeader columnKey="applicant" sortKey={interviewsSortKey} sortDirection={interviewsSortDirection} onSort={toggleInterviewsSort}>{t('recruitmentPage.interviews.table.applicant')}</SortableHeader>
+                <SortableHeader columnKey="kind" sortKey={interviewsSortKey} sortDirection={interviewsSortDirection} onSort={toggleInterviewsSort}>{t('recruitmentPage.interviews.table.kind')}</SortableHeader>
+                <SortableHeader columnKey="when" sortKey={interviewsSortKey} sortDirection={interviewsSortDirection} onSort={toggleInterviewsSort}>{t('recruitmentPage.interviews.table.when')}</SortableHeader>
+                <SortableHeader columnKey="duration" sortKey={interviewsSortKey} sortDirection={interviewsSortDirection} onSort={toggleInterviewsSort}>{t('recruitmentPage.interviews.table.duration')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={interviewsSortKey} sortDirection={interviewsSortDirection} onSort={toggleInterviewsSort}>{t('recruitmentPage.interviews.table.status')}</SortableHeader>
+                <SortableHeader columnKey="recommendation" sortKey={interviewsSortKey} sortDirection={interviewsSortDirection} onSort={toggleInterviewsSort}>{t('recruitmentPage.interviews.table.recommendation')}</SortableHeader>
                 <TableHead className="w-[200px]">{t('recruitmentPage.interviews.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -578,7 +610,7 @@ function InterviewsTab() {
               {(interviewsQuery.data ?? []).length === 0 && (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('recruitmentPage.interviews.empty')}</TableCell></TableRow>
               )}
-              {(interviewsQuery.data ?? []).map(i => (
+              {sortedInterviews.map(i => (
                 <TableRow key={i.id}>
                   <TableCell className="font-medium">{i.applicantName ?? applicantById.get(i.applicantId)}</TableCell>
                   <TableCell className="capitalize">{t(`recruitmentPage.interviewKinds.${i.kind}`, { defaultValue: i.kind })}</TableCell>

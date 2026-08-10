@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,6 +11,8 @@ import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { ListTableSkeleton } from "../components/PurchaseSkeletons";
 import type { PurchaseActivity } from "../types";
+import { SortableHeader } from "@/components/shared/SortableHeader";
+import { useTableSort } from "@/hooks/useTableSort";
 
 const ACTION_COLORS: Record<string, string> = {
   created: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -66,7 +68,13 @@ function PurchaseAuditLogContent() {
 
   useEffect(() => { fetchActivities(); }, [fetchActivities]);
 
-  const filtered = activities;
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<PurchaseActivity>({
+    dateTime: (a) => a.performedAt,
+    user: (a) => a.performedByName,
+    entityType: (a) => a.entityType,
+    action: (a) => a.activityType,
+  });
+  const filtered = useMemo(() => sortItems(activities), [activities, sortItems]);
 
 
 
@@ -97,10 +105,10 @@ function PurchaseAuditLogContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs">{t('auditLog.dateTime')}</TableHead>
-                    <TableHead className="text-xs">{t('auditLog.user')}</TableHead>
-                    <TableHead className="text-xs">{t('auditLog.entityType')}</TableHead>
-                    <TableHead className="text-xs">{t('auditLog.action')}</TableHead>
+                    <SortableHeader columnKey="dateTime" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.dateTime')}</SortableHeader>
+                    <SortableHeader columnKey="user" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.user')}</SortableHeader>
+                    <SortableHeader columnKey="entityType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.entityType')}</SortableHeader>
+                    <SortableHeader columnKey="action" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.action')}</SortableHeader>
                     <TableHead className="text-xs">{t('auditLog.description')}</TableHead>
                   </TableRow>
                 </TableHeader>

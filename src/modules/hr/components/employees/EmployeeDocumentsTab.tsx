@@ -15,6 +15,8 @@ import { useEmployeeDocuments } from '../../hooks/useEmployeeDocuments';
 import type { EmployeeDocument } from '../../types/hr.types';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const DOC_TYPES: EmployeeDocument['docType'][] = ['contract', 'payslip', 'id_card', 'cnss', 'medical', 'other'];
 
@@ -80,6 +82,14 @@ export function EmployeeDocumentsTab({ userId }: Props) {
   };
 
   const docs = documentsQuery.data ?? [];
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<EmployeeDocument>({
+    type: (d) => d.docType,
+    title: (d) => d.title || d.fileName,
+    issuedDate: (d) => d.issuedDate,
+    expiresAt: (d) => d.expiresAt,
+    uploadedAt: (d) => d.createdAt,
+  });
+  const sortedDocs = sortItems(docs);
 
   return (
     <div className="space-y-4">
@@ -157,16 +167,16 @@ export function EmployeeDocumentsTab({ userId }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('documentsTab.type', 'Type')}</TableHead>
-              <TableHead>{t('documentsTab.title', 'Title')}</TableHead>
-              <TableHead>{t('documentsTab.issuedDate', 'Issued')}</TableHead>
-              <TableHead>{t('documentsTab.expiresAt', 'Expires')}</TableHead>
-              <TableHead>{t('documentsTab.uploadedAt', 'Uploaded')}</TableHead>
+              <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documentsTab.type', 'Type')}</SortableHeader>
+              <SortableHeader columnKey="title" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documentsTab.title', 'Title')}</SortableHeader>
+              <SortableHeader columnKey="issuedDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documentsTab.issuedDate', 'Issued')}</SortableHeader>
+              <SortableHeader columnKey="expiresAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documentsTab.expiresAt', 'Expires')}</SortableHeader>
+              <SortableHeader columnKey="uploadedAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documentsTab.uploadedAt', 'Uploaded')}</SortableHeader>
               <TableHead className="text-right">{t('documentsTab.actions', 'Actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {docs.map((d) => (
+            {sortedDocs.map((d) => (
               <TableRow key={d.id}>
                 <TableCell>
                   <Badge variant="secondary" className="capitalize">

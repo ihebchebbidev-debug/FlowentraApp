@@ -27,6 +27,8 @@ import { useCurrency } from "@/shared/hooks/useCurrency";
 import { toast } from "sonner";
 import type { SupplierInvoice, SupplierInvoiceItem, PurchaseActivity } from "../types";
 import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -360,12 +362,21 @@ function SupplierInvoiceDetailContent() {
 
 
 
+  const { sortKey: itemSortKey, sortDirection: itemSortDirection, toggleSort: toggleItemSort, sortItems: sortInvItems } = useTableSort<SupplierInvoiceItem>({
+    article: (it) => it.articleName || it.description,
+    quantity: (it) => it.quantity,
+    unitPrice: (it) => it.unitPrice,
+    taxRate: (it) => it.taxRate,
+    lineTotal: (it) => it.lineTotal,
+  });
+
   if (loading) return <DetailSkeleton />;
   if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/invoices" />;
   if (!inv) return <PurchaseErrorFallback error={t('invoices.notFound')} backTo="/dashboard/purchases/invoices" />;
 
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
   const rsType = RS_TRANSACTION_TYPES.find(r => r.code === inv.rsTypeCode);
+  const sortedInvItems = sortInvItems(inv.items);
 
   // Backend audit trail → shared timeline shape.
   const timelineEvents: TimelineEvent[] = activities.map((a) => ({
@@ -512,14 +523,14 @@ function SupplierInvoiceDetailContent() {
                 {!isEditingItems ? (
                   <Table className="min-w-[500px]">
                     <TableHeader><TableRow>
-                      <TableHead className="text-xs">{t('fields.article')}</TableHead>
-                      <TableHead className="text-xs text-center">{t('fields.quantity')}</TableHead>
-                      <TableHead className="text-xs text-end">{t('fields.unitPrice')}</TableHead>
-                      <TableHead className="text-xs text-end">{t('fields.tax', 'Tax')} %</TableHead>
-                      <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
+                      <SortableHeader columnKey="article" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} className="text-xs">{t('fields.article')}</SortableHeader>
+                      <SortableHeader columnKey="quantity" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="center" className="text-xs">{t('fields.quantity')}</SortableHeader>
+                      <SortableHeader columnKey="unitPrice" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.unitPrice')}</SortableHeader>
+                      <SortableHeader columnKey="taxRate" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.tax', 'Tax')} %</SortableHeader>
+                      <SortableHeader columnKey="lineTotal" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.lineTotal')}</SortableHeader>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {inv.items.map(item => (
+                      {sortedInvItems.map(item => (
                         <TableRow key={item.id}>
                           <TableCell><div className="text-xs font-medium">{item.articleName || item.description}</div></TableCell>
                           <TableCell className="text-xs text-center">{Number(item.quantity || 0).toFixed(2)}</TableCell>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,8 @@ import { Users, Plus, TrendingUp, TrendingDown, Minus, Calendar, Building2, Tras
 import { apiFetch } from "@/services/api/apiClient";
 import { articleSupplierService } from "@/modules/purchases/services/purchaseService";
 import type { ArticleSupplier, ArticleSupplierPriceHistory } from "@/modules/purchases/types";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 interface ArticleSuppliersTabProps {
   articleId: string;
@@ -38,6 +40,17 @@ export function ArticleSuppliersTab({ articleId }: ArticleSuppliersTabProps) {
   const [form, setForm] = useState({ supplierId: '', supplierRef: '', purchasePrice: '', leadTimeDays: '', minOrderQty: '', isPreferred: false });
 
   const fmt = (n: number) => (n ?? 0).toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ArticleSupplier>({
+    supplierName: (a) => a.supplierName,
+    supplierRef: (a) => a.supplierRef,
+    purchasePrice: (a) => a.purchasePrice,
+    leadTimeDays: (a) => a.leadTimeDays,
+    minOrderQty: (a) => a.minOrderQty,
+    isPreferred: (a) => a.isPreferred ? 1 : 0,
+    modifiedDate: (a) => a.modifiedDate,
+  });
+  const sortedSuppliers = useMemo(() => sortItems(suppliers), [suppliers, sortItems]);
 
   const load = useCallback(async () => {
     if (!articleId) return;
@@ -130,13 +143,13 @@ export function ArticleSuppliersTab({ articleId }: ArticleSuppliersTabProps) {
           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs">{t('detail.suppliers.supplierName')}</TableHead>
-                <TableHead className="text-xs">{t('detail.suppliers.supplierRef')}</TableHead>
-                <TableHead className="text-xs text-right">{t('detail.suppliers.purchasePrice')}</TableHead>
-                <TableHead className="text-xs text-center">{t('detail.suppliers.leadTime')}</TableHead>
-                <TableHead className="text-xs text-center">{t('detail.suppliers.moq')}</TableHead>
-                <TableHead className="text-xs text-center">{t('detail.suppliers.preferred')}</TableHead>
-                <TableHead className="text-xs">{t('detail.suppliers.lastDelivery')}</TableHead>
+                <SortableHeader columnKey="supplierName" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('detail.suppliers.supplierName')}</SortableHeader>
+                <SortableHeader columnKey="supplierRef" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('detail.suppliers.supplierRef')}</SortableHeader>
+                <SortableHeader columnKey="purchasePrice" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right" className="text-xs">{t('detail.suppliers.purchasePrice')}</SortableHeader>
+                <SortableHeader columnKey="leadTimeDays" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="text-xs">{t('detail.suppliers.leadTime')}</SortableHeader>
+                <SortableHeader columnKey="minOrderQty" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="text-xs">{t('detail.suppliers.moq')}</SortableHeader>
+                <SortableHeader columnKey="isPreferred" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="text-xs">{t('detail.suppliers.preferred')}</SortableHeader>
+                <SortableHeader columnKey="modifiedDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('detail.suppliers.lastDelivery')}</SortableHeader>
                 <TableHead className="text-xs"></TableHead>
               </TableRow>
             </TableHeader>
@@ -156,7 +169,7 @@ export function ArticleSuppliersTab({ articleId }: ArticleSuppliersTabProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                suppliers.map(as => (
+                sortedSuppliers.map(as => (
                   <TableRow key={as.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">

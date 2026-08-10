@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,8 @@ import { useReviewCycles } from '../../hooks/usePerformance';
 import type { HrReviewCycle, ReviewCycleFrequency, ReviewCycleStatus } from '../../types/performance.types';
 import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 import { EditCycleDialog } from './EditCycleDialog';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 
 const FREQUENCIES: ReviewCycleFrequency[] = ['annual', 'semi_annual', 'quarterly', 'custom'];
@@ -47,6 +49,16 @@ export function ReviewCyclesTab() {
     setOpen(false);
     setName(''); setPeriodStart(''); setPeriodEnd(''); setSelfReq(true);
   };
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<HrReviewCycle>({
+    name: (c) => c.name,
+    frequency: (c) => c.frequency,
+    period: (c) => c.periodStart,
+    status: (c) => c.status,
+    reviews: (c) => c.reviewsCount,
+    selfAssessment: (c) => c.selfAssessmentRequired ? 1 : 0,
+  });
+  const sortedCycles = useMemo(() => sortItems(cyclesQuery.data ?? []), [cyclesQuery.data, sortItems]);
 
   return (
     <Card>
@@ -101,12 +113,12 @@ export function ReviewCyclesTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('performancePage.cycles.table.name')}</TableHead>
-                <TableHead>{t('performancePage.cycles.table.frequency')}</TableHead>
-                <TableHead>{t('performancePage.cycles.table.period')}</TableHead>
-                <TableHead>{t('performancePage.cycles.table.status')}</TableHead>
-                <TableHead>{t('performancePage.cycles.table.reviews')}</TableHead>
-                <TableHead>{t('performancePage.cycles.table.selfAssessment')}</TableHead>
+                <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.cycles.table.name')}</SortableHeader>
+                <SortableHeader columnKey="frequency" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.cycles.table.frequency')}</SortableHeader>
+                <SortableHeader columnKey="period" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.cycles.table.period')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.cycles.table.status')}</SortableHeader>
+                <SortableHeader columnKey="reviews" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.cycles.table.reviews')}</SortableHeader>
+                <SortableHeader columnKey="selfAssessment" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.cycles.table.selfAssessment')}</SortableHeader>
                 <TableHead className="w-[200px]">{t('performancePage.cycles.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -114,7 +126,7 @@ export function ReviewCyclesTab() {
               {(cyclesQuery.data ?? []).length === 0 && (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('performancePage.cycles.noCycles')}</TableCell></TableRow>
               )}
-              {(cyclesQuery.data ?? []).map(c => (
+              {sortedCycles.map(c => (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell>{t(`performancePage.cycles.frequencyOptions.${c.frequency}`, { defaultValue: c.frequency.replace('_', ' ') })}</TableCell>

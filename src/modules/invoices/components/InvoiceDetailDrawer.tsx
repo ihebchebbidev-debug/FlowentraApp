@@ -27,6 +27,8 @@ import { useCustomerInvoice, useInvoiceMutations } from '../hooks/useCustomerInv
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
 import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -50,6 +52,14 @@ export function InvoiceDetailDrawer({ invoiceId, open, onOpenChange }: InvoiceDe
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const { sortKey: lineSortKey, sortDirection: lineSortDirection, toggleSort: toggleLineSort, sortItems: sortLineItems } = useTableSort<NonNullable<typeof invoice>['lines'][number]>({
+    item: (l) => l.itemName,
+    qty: (l) => l.quantity,
+    unitPrice: (l) => l.unitPrice,
+    lineTotal: (l) => l.lineTotal,
+  });
+  const sortedLines = invoice ? sortLineItems(invoice.lines) : [];
 
   const handlePost = () => {
     if (invoice) post.mutate(invoice.id);
@@ -152,14 +162,14 @@ export function InvoiceDetailDrawer({ invoiceId, open, onOpenChange }: InvoiceDe
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('columns.number')}</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <SortableHeader columnKey="item" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort}>{t('columns.number')}</SortableHeader>
+                      <SortableHeader columnKey="qty" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort} align="right">Qty</SortableHeader>
+                      <SortableHeader columnKey="unitPrice" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort} align="right">Price</SortableHeader>
+                      <SortableHeader columnKey="lineTotal" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort} align="right">Total</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoice.lines.map((line) => (
+                    {sortedLines.map((line) => (
                       <TableRow key={line.id}>
                         <TableCell>{formatSaleItemLabel(line.itemName)}</TableCell>
                         <TableCell className="text-right">{line.quantity}</TableCell>

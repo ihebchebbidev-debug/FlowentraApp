@@ -6,6 +6,9 @@ import { Role } from "@/types/users";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 interface RolesTableProps {
   roles: Role[];
@@ -17,16 +20,24 @@ interface RolesTableProps {
 
 export function RolesTable({ roles, onEdit, onDelete, canUpdate = true, canDelete = true }: RolesTableProps) {
   const { t } = useTranslation('settings');
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Role>({
+    name: (r) => r.name,
+    description: (r) => r.description,
+    users: (r) => r.userCount,
+    status: (r) => r.isActive ? 1 : 0,
+    created: (r) => r.createdAt,
+  });
+  const sortedRoles = useMemo(() => sortItems(roles), [roles, sortItems]);
   return (
     <div className="rounded-lg border border-border/50 overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/20 border-b border-border/30 hover:bg-muted/20">
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.name')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.description')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.users')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.status')}</TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.created')}</TableHead>
+            <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.name')}</SortableHeader>
+            <SortableHeader columnKey="description" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.description')}</SortableHeader>
+            <SortableHeader columnKey="users" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.users')}</SortableHeader>
+            <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.status')}</SortableHeader>
+            <SortableHeader columnKey="created" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('roles.table.created')}</SortableHeader>
             <TableHead className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-right">{t('roles.table.actions')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -38,7 +49,7 @@ export function RolesTable({ roles, onEdit, onDelete, canUpdate = true, canDelet
               </TableCell>
             </TableRow>
           ) : (
-            roles.map((role) => (
+            sortedRoles.map((role) => (
               <TableRow key={role.id}>
                 <TableCell className="font-medium capitalize">{role.name}</TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-xs truncate">

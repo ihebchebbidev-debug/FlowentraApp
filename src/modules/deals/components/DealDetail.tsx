@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ContactUserGroupsInline } from "@/modules/contacts/components/ContactUserGroupsInline";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 export function DealDetail() {
   const { t } = useTranslation("deals");
@@ -529,6 +531,16 @@ function ItemsTab({ deal }: { deal: Deal }) {
   const subtotal = items.reduce((s, it) => s + (it.lineTotal ?? 0), 0);
   const services = items.filter(it => it.type === "service").length;
   const articles = items.filter(it => it.type === "article").length;
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<typeof items[number]>({
+    name: (it) => it.itemName,
+    type: (it) => it.type,
+    quantity: (it) => it.quantity,
+    unitPrice: (it) => it.unitPrice,
+    discount: (it) => it.discount,
+    lineTotal: (it) => it.lineTotal,
+    installation: (it) => it.installationName,
+  });
+  const sortedItems = sortItems(items);
   return (
     <Card>
       <div className="flex items-center gap-2 px-4 py-3 border-b">
@@ -540,17 +552,17 @@ function ItemsTab({ deal }: { deal: Deal }) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10" />
-              <TableHead>{t("items.name")}</TableHead>
-              <TableHead>{t("items.type")}</TableHead>
-              <TableHead className="text-center">{t("items.quantity")}</TableHead>
-              <TableHead className="text-right">{t("items.unitPrice")}</TableHead>
-              <TableHead className="text-right">{t("items.discount", { defaultValue: "Discount" })}</TableHead>
-              <TableHead className="text-right">{t("items.lineTotal")}</TableHead>
-              <TableHead className="text-center">{t("items.installation", { defaultValue: "Installation" })}</TableHead>
+              <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t("items.name")}</SortableHeader>
+              <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t("items.type")}</SortableHeader>
+              <SortableHeader columnKey="quantity" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t("items.quantity")}</SortableHeader>
+              <SortableHeader columnKey="unitPrice" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t("items.unitPrice")}</SortableHeader>
+              <SortableHeader columnKey="discount" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t("items.discount", { defaultValue: "Discount" })}</SortableHeader>
+              <SortableHeader columnKey="lineTotal" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t("items.lineTotal")}</SortableHeader>
+              <SortableHeader columnKey="installation" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t("items.installation", { defaultValue: "Installation" })}</SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map(it => (
+            {sortedItems.map(it => (
               <TableRow key={it.id} className="hover:bg-muted/50 transition-colors">
                 <TableCell className="text-center">
                   {it.type === "service" ? <Wrench className="h-4 w-4 text-muted-foreground" /> : <Package className="h-4 w-4 text-muted-foreground" />}

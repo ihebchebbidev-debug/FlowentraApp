@@ -12,6 +12,8 @@ import { SearchAndFilterBar } from '@/shared/components/SearchAndFilterBar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { selectEmployeeRows } from '../../utils/employeeRows';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function EmployeeList() {
   const { t } = useTranslation('hr');
@@ -44,6 +46,17 @@ export function EmployeeList() {
     if (salaryFilter === 'ready') return filtered.filter((r: any) => Number.isFinite(Number(r?.salaryConfig?.grossSalary)));
     return filtered.filter((r: any) => !Number.isFinite(Number(r?.salaryConfig?.grossSalary)));
   }, [filtered, salaryFilter]);
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    name: (r) => `${r?.user?.firstName ?? ''} ${r?.user?.lastName ?? ''}`.trim() || r?.user?.email,
+    cin: (r) => r?.salaryConfig?.cin,
+    position: (r) => r?.salaryConfig?.position,
+    department: (r) => r?.salaryConfig?.department,
+    status: (r) => Number.isFinite(Number(r?.salaryConfig?.grossSalary)) ? 1 : 0,
+    cnssNumber: (r) => r?.salaryConfig?.cnssNumber,
+    grossSalary: (r) => r?.salaryConfig?.grossSalary,
+  });
+  const sortedRows = useMemo(() => sortItems(filteredBySalary), [filteredBySalary, sortItems]);
 
   return (
     <div className="flex flex-col">
@@ -105,7 +118,7 @@ export function EmployeeList() {
             <>
               {/* Mobile cards */}
               <div className="md:hidden divide-y divide-border/50">
-                {filteredBySalary.map((r: any) => {
+                {sortedRows.map((r: any) => {
                   const user = r.user ?? {};
                   const cfg = r.salaryConfig ?? null;
                   const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email || `#${user.id}`;
@@ -181,17 +194,17 @@ export function EmployeeList() {
                 <Table className="min-w-[650px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('employee.name')}</TableHead>
-                      <TableHead>{t('employeesPage.cin')}</TableHead>
-                      <TableHead>{t('employee.position')}</TableHead>
-                      <TableHead>{t('employee.department')}</TableHead>
-                      <TableHead>{t('employeesPage.status')}</TableHead>
-                      <TableHead>{t('employee.cnssNumber')}</TableHead>
-                      <TableHead>{t('employee.grossSalary')}</TableHead>
+                      <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.name')}</SortableHeader>
+                      <SortableHeader columnKey="cin" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employeesPage.cin')}</SortableHeader>
+                      <SortableHeader columnKey="position" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.position')}</SortableHeader>
+                      <SortableHeader columnKey="department" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.department')}</SortableHeader>
+                      <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employeesPage.status')}</SortableHeader>
+                      <SortableHeader columnKey="cnssNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.cnssNumber')}</SortableHeader>
+                      <SortableHeader columnKey="grossSalary" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.grossSalary')}</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredBySalary.map((r: any) => {
+                    {sortedRows.map((r: any) => {
                       const user = r.user ?? {};
                       const cfg = r.salaryConfig ?? null;
                       const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email || `#${user.id}`;

@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import type { PurchaseOrder, GoodsReceipt, SupplierInvoice, PurchaseActivity, PurchaseOrderItem } from "../types";
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -243,6 +245,17 @@ function PurchaseOrderDetailPage() {
     }
   };
 
+  const { sortKey: itemSortKey, sortDirection: itemSortDirection, toggleSort: toggleItemSort, sortItems: sortPoItems } = useTableSort<PurchaseOrderItem>({
+    article: (it) => it.articleName || it.description,
+    supplierRef: (it) => it.supplierRef,
+    quantity: (it) => it.quantity,
+    receivedQty: (it) => it.receivedQty,
+    unitPrice: (it) => it.unitPrice,
+    discount: (it) => it.discount,
+    taxRate: (it) => it.taxRate,
+    lineTotal: (it) => it.lineTotal,
+  });
+
   if (loading) return <DetailSkeleton />;
   if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/orders" />;
   if (!po) return <PurchaseErrorFallback error={t('orders.notFound')} backTo="/dashboard/purchases/orders" />;
@@ -261,6 +274,7 @@ function PurchaseOrderDetailPage() {
   }));
 
   const hasItems = (po.items?.length ?? 0) > 0;
+  const sortedPoItems = sortPoItems(po.items);
 
   const handleStatusChange = async (next: string) => {
 
@@ -456,18 +470,18 @@ function PurchaseOrderDetailPage() {
                   <Table className="min-w-[650px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-xs">{t('fields.article')}</TableHead>
-                        <TableHead className="text-xs">{t('fields.supplierRef')}</TableHead>
-                        <TableHead className="text-xs text-center">{t('fields.quantity')}</TableHead>
-                        <TableHead className="text-xs text-center">{t('fields.received')}</TableHead>
-                        <TableHead className="text-xs text-end">{t('fields.unitPrice')}</TableHead>
-                        <TableHead className="text-xs text-end">{t('fields.discount', 'Discount')}</TableHead>
-                        <TableHead className="text-xs text-end">{t('fields.tax', 'Tax')} %</TableHead>
-                        <TableHead className="text-xs text-end">{t('fields.lineTotal')}</TableHead>
+                        <SortableHeader columnKey="article" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} className="text-xs">{t('fields.article')}</SortableHeader>
+                        <SortableHeader columnKey="supplierRef" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} className="text-xs">{t('fields.supplierRef')}</SortableHeader>
+                        <SortableHeader columnKey="quantity" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="center" className="text-xs">{t('fields.quantity')}</SortableHeader>
+                        <SortableHeader columnKey="receivedQty" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="center" className="text-xs">{t('fields.received')}</SortableHeader>
+                        <SortableHeader columnKey="unitPrice" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.unitPrice')}</SortableHeader>
+                        <SortableHeader columnKey="discount" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.discount', 'Discount')}</SortableHeader>
+                        <SortableHeader columnKey="taxRate" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.tax', 'Tax')} %</SortableHeader>
+                        <SortableHeader columnKey="lineTotal" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="right" className="text-xs">{t('fields.lineTotal')}</SortableHeader>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {po.items.map(item => (
+                      {sortedPoItems.map(item => (
                         <TableRow key={item.id}>
                           <TableCell>
                             <div className="text-xs font-medium">{item.articleName || item.description}</div>

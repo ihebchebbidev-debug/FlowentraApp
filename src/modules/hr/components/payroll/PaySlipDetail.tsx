@@ -6,10 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Landmark, Scale, ShieldCheck, TrendingDown, TrendingUp } from 'lucide-react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function PaySlipDetail(props: { breakdown: SalaryBreakdown }) {
   const { t } = useTranslation('hr');
   const b = props.breakdown;
+  const bracketsSort = useTableSort<typeof b.irppBrackets[number]>({
+    from: (br) => br.from,
+    to: (br) => br.to,
+    rate: (br) => br.rate,
+    taxableInBracket: (br) => br.taxableInBracket,
+    taxAmount: (br) => br.taxAmount,
+  });
+  const sortedBrackets = bracketsSort.sortItems(b.irppBrackets);
 
   const totalDeductions = b.cnss + b.irpp + b.css;
 
@@ -113,15 +123,15 @@ export function PaySlipDetail(props: { breakdown: SalaryBreakdown }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('payrollSlip.from')}</TableHead>
-                <TableHead>{t('payrollSlip.to')}</TableHead>
-                <TableHead>{t('payrollSlip.rate')}</TableHead>
-                <TableHead>{t('payrollSlip.taxableInBracket')}</TableHead>
-                <TableHead>{t('payrollSlip.taxAmount')}</TableHead>
+                <SortableHeader columnKey="from" sortKey={bracketsSort.sortKey} sortDirection={bracketsSort.sortDirection} onSort={bracketsSort.toggleSort}>{t('payrollSlip.from')}</SortableHeader>
+                <SortableHeader columnKey="to" sortKey={bracketsSort.sortKey} sortDirection={bracketsSort.sortDirection} onSort={bracketsSort.toggleSort}>{t('payrollSlip.to')}</SortableHeader>
+                <SortableHeader columnKey="rate" sortKey={bracketsSort.sortKey} sortDirection={bracketsSort.sortDirection} onSort={bracketsSort.toggleSort}>{t('payrollSlip.rate')}</SortableHeader>
+                <SortableHeader columnKey="taxableInBracket" sortKey={bracketsSort.sortKey} sortDirection={bracketsSort.sortDirection} onSort={bracketsSort.toggleSort}>{t('payrollSlip.taxableInBracket')}</SortableHeader>
+                <SortableHeader columnKey="taxAmount" sortKey={bracketsSort.sortKey} sortDirection={bracketsSort.sortDirection} onSort={bracketsSort.toggleSort}>{t('payrollSlip.taxAmount')}</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {b.irppBrackets.map((br, idx) => (
+              {sortedBrackets.map((br, idx) => (
                 <TableRow key={idx}>
                   <TableCell>{br.from}</TableCell>
                   <TableCell>{Number.isFinite(br.to) ? br.to : t('payrollSlip.infinity')}</TableCell>

@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { TransferModal } from "../../articles/components/TransferModal";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 // Mock inventory data - replace with real data from Supabase
 const mockInventoryItems = [
@@ -274,6 +276,23 @@ export default function InventoryDetail() {
       description: "File removed successfully.",
     });
   };
+
+  const logsSort = useTableSort<MaintenanceLog>({
+    date: (row) => row.date,
+    type: (row) => row.type,
+    description: (row) => row.description,
+    performedBy: (row) => row.performedBy,
+    cost: (row) => row.cost,
+  });
+  const sortedLogs = logsSort.sortItems(maintenanceLogs);
+
+  const filesSort = useTableSort<FileAttachment>({
+    name: (row) => row.name,
+    size: (row) => row.size,
+    uploadedBy: (row) => row.uploadedBy,
+    uploadedAt: (row) => row.uploadedAt,
+  });
+  const sortedFiles = filesSort.sortItems(files);
 
   const handleTransferArticle = () => {
     setTransferModal({isOpen: true, article: {
@@ -659,16 +678,16 @@ export default function InventoryDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[80px]">Date</TableHead>
-                        <TableHead className="min-w-[100px]">Type</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="min-w-[120px]">Performed By</TableHead>
-                        <TableHead className="min-w-[80px]">Cost</TableHead>
+                        <SortableHeader columnKey="date" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort} className="min-w-[80px]">Date</SortableHeader>
+                        <SortableHeader columnKey="type" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort} className="min-w-[100px]">Type</SortableHeader>
+                        <SortableHeader columnKey="description" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort}>Description</SortableHeader>
+                        <SortableHeader columnKey="performedBy" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort} className="min-w-[120px]">Performed By</SortableHeader>
+                        <SortableHeader columnKey="cost" sortKey={logsSort.sortKey} sortDirection={logsSort.sortDirection} onSort={logsSort.toggleSort} className="min-w-[80px]">Cost</SortableHeader>
                         <TableHead className="w-[60px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {maintenanceLogs.map((log) => (
+                      {sortedLogs.map((log) => (
                         <TableRow key={log.id}>
                           <TableCell className="text-sm">{log.date}</TableCell>
                           <TableCell>
@@ -737,15 +756,15 @@ export default function InventoryDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="min-w-[80px]">Size</TableHead>
-                        <TableHead className="min-w-[120px]">Uploaded By</TableHead>
-                        <TableHead className="min-w-[100px]">Date</TableHead>
+                        <SortableHeader columnKey="name" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>Name</SortableHeader>
+                        <SortableHeader columnKey="size" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort} className="min-w-[80px]">Size</SortableHeader>
+                        <SortableHeader columnKey="uploadedBy" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort} className="min-w-[120px]">Uploaded By</SortableHeader>
+                        <SortableHeader columnKey="uploadedAt" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort} className="min-w-[100px]">Date</SortableHeader>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {files.map((file) => (
+                      {sortedFiles.map((file) => (
                         <TableRow key={file.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">

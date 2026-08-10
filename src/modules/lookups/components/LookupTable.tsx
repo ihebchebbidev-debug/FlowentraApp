@@ -25,6 +25,8 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit2, Trash2, Loader2, Star, Tag, Clock, FolderOpen } from 'lucide-react';
 import { LookupItem, CreateLookupRequest, UpdateLookupRequest } from '@/services/lookupsApi';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 interface LookupTableProps {
   title?: string;
@@ -62,6 +64,15 @@ export function LookupTable({
       || String(a.id).localeCompare(String(b.id))),
     [rawItems],
   );
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<LookupItem>({
+    name: (i) => i.name,
+    isCompleted: (i) => i.isCompleted ? 1 : 0,
+    defaultDuration: (i) => i.defaultDuration,
+    isPaid: (i) => i.isPaid ? 1 : 0,
+    category: (i) => i.category,
+    isActive: (i) => i.isActive ? 1 : 0,
+  });
+  const sortedItems = useMemo(() => sortItems(items), [items, sortItems]);
   const [isSettingDefault, setIsSettingDefault] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<LookupItem | null>(null);
@@ -377,17 +388,17 @@ export function LookupTable({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">{t('default')}</TableHead>
-                  <TableHead>{t('name')}</TableHead>
-                  {showTypeFields.isCompleted && <TableHead>{t('completed')}</TableHead>}
-                  {showTypeFields.defaultDuration && <TableHead>{t('duration')}</TableHead>}
-                  {showTypeFields.isPaid && <TableHead>{t('paid')}</TableHead>}
-                  {showTypeFields.category && <TableHead>{t('category')}</TableHead>}
-                  <TableHead>{t('status')}</TableHead>
+                  <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('name')}</SortableHeader>
+                  {showTypeFields.isCompleted && <SortableHeader columnKey="isCompleted" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('completed')}</SortableHeader>}
+                  {showTypeFields.defaultDuration && <SortableHeader columnKey="defaultDuration" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('duration')}</SortableHeader>}
+                  {showTypeFields.isPaid && <SortableHeader columnKey="isPaid" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('paid')}</SortableHeader>}
+                  {showTypeFields.category && <SortableHeader columnKey="category" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('category')}</SortableHeader>}
+                  <SortableHeader columnKey="isActive" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('status')}</SortableHeader>
                   <TableHead>{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
+                {sortedItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <TooltipProvider>

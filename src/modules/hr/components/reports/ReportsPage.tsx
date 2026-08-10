@@ -17,6 +17,8 @@ import { useQuery } from '@tanstack/react-query';
 import { schedulesApi, type UserLeave } from '@/services/api/schedulesApi';
 import * as XLSX from 'xlsx';
 import { useCurrency } from '@/shared/hooks/useCurrency';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function ReportsPage() {
   const { t } = useTranslation('hr');
@@ -35,6 +37,17 @@ export function ReportsPage() {
     queryFn: () => hrApi.getEmployeeCostReport(year, month),
   });
   const employeeCostRows = costQuery.data ?? [];
+
+  const { sortKey: costSortKey, sortDirection: costSortDirection, toggleSort: toggleCostSort, sortItems: sortCostItems } = useTableSort<typeof employeeCostRows[number]>({
+    userName: (r) => r.userName,
+    gross: (r) => r.gross,
+    bonuses: (r) => r.bonuses,
+    allowances: (r) => r.allowances,
+    employerCnss: (r) => r.employerCnss,
+    totalCost: (r) => r.totalCost,
+    ytdTotalCost: (r) => r.ytdTotalCost,
+  });
+  const sortedEmployeeCostRows = useMemo(() => sortCostItems(employeeCostRows), [employeeCostRows, sortCostItems]);
 
   const totals = useMemo(() => employeeCostRows.reduce(
     (acc, r) => ({
@@ -146,13 +159,13 @@ export function ReportsPage() {
                 <Table className="min-w-[650px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('reportsPage.employee')}</TableHead>
-                      <TableHead>{t('reportsPage.gross')}</TableHead>
-                      <TableHead>{t('reportsPage.bonuses')}</TableHead>
-                      <TableHead>{t('reportsPage.allowances', 'Allowances')}</TableHead>
-                      <TableHead>{t('reportsPage.cnssEmployer')}</TableHead>
-                      <TableHead>{t('reportsPage.totalCost')}</TableHead>
-                      <TableHead className="border-l">{t('reportsPage.ytdTotalCost', 'YTD total cost')}</TableHead>
+                      <SortableHeader columnKey="userName" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort}>{t('reportsPage.employee')}</SortableHeader>
+                      <SortableHeader columnKey="gross" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort}>{t('reportsPage.gross')}</SortableHeader>
+                      <SortableHeader columnKey="bonuses" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort}>{t('reportsPage.bonuses')}</SortableHeader>
+                      <SortableHeader columnKey="allowances" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort}>{t('reportsPage.allowances', 'Allowances')}</SortableHeader>
+                      <SortableHeader columnKey="employerCnss" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort}>{t('reportsPage.cnssEmployer')}</SortableHeader>
+                      <SortableHeader columnKey="totalCost" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort}>{t('reportsPage.totalCost')}</SortableHeader>
+                      <SortableHeader columnKey="ytdTotalCost" sortKey={costSortKey} sortDirection={costSortDirection} onSort={toggleCostSort} className="border-l">{t('reportsPage.ytdTotalCost', 'YTD total cost')}</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -162,7 +175,7 @@ export function ReportsPage() {
                     {!costQuery.isLoading && employeeCostRows.length === 0 && (
                       <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t('reportsPage.noData', { defaultValue: 'No data for this period.' })}</TableCell></TableRow>
                     )}
-                    {employeeCostRows.map(r => (
+                    {sortedEmployeeCostRows.map(r => (
                       <TableRow key={r.userId}>
                         <TableCell className="font-medium">{r.userName}</TableCell>
                         <TableCell>{formatMoney(r.gross)}</TableCell>
@@ -331,6 +344,11 @@ function AbsenceStatsTab({ year, month, employeesQuery, t, exportCsv, exportXlsx
   });
 
 
+  const { sortKey: absenceSortKey, sortDirection: absenceSortDirection, toggleSort: toggleAbsenceSort, sortItems: sortAbsenceItems } = useTableSort<[string, number]>({
+    type: (entry) => entry[0],
+    count: (entry) => entry[1],
+  });
+
   const stats = useMemo(() => {
     const leaves = leavesQuery.data ?? [];
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
@@ -349,6 +367,8 @@ function AbsenceStatsTab({ year, month, employeesQuery, t, exportCsv, exportXlsx
     }
     return { total: inPeriod.length, byType, byStatus };
   }, [leavesQuery.data, year, month]);
+
+  const sortedByTypeEntries = useMemo(() => sortAbsenceItems(Object.entries(stats.byType)), [stats.byType, sortAbsenceItems]);
 
   return (
     <TabsContent value="absences" className="mt-3">
@@ -396,12 +416,12 @@ function AbsenceStatsTab({ year, month, employeesQuery, t, exportCsv, exportXlsx
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('reportsPage.absenceType')}</TableHead>
-                <TableHead>{t('reportsPage.absenceCount')}</TableHead>
+                <SortableHeader columnKey="type" sortKey={absenceSortKey} sortDirection={absenceSortDirection} onSort={toggleAbsenceSort}>{t('reportsPage.absenceType')}</SortableHeader>
+                <SortableHeader columnKey="count" sortKey={absenceSortKey} sortDirection={absenceSortDirection} onSort={toggleAbsenceSort}>{t('reportsPage.absenceCount')}</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(stats.byType).map(([type, count]) => (
+              {sortedByTypeEntries.map(([type, count]) => (
                 <TableRow key={type}>
                   <TableCell className="capitalize">{t(`leaveType.${type}`, { defaultValue: type.replace(/_/g, ' ') })}</TableCell>
                   <TableCell>{count}</TableCell>

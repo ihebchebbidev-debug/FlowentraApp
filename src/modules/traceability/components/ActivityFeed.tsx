@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { ActivityActor, ActivityEvent } from '../types';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 function resolveActorName(actor: ActivityActor): string {
   const idStr = actor.id != null ? String(actor.id) : '';
@@ -44,6 +46,15 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   const { t, i18n } = useTranslation('traceability');
   const dateLocale = localeFor(i18n.language);
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ActivityEvent>({
+    timestamp: (ev) => ev.performedAt,
+    source: (ev) => ev.source,
+    action: (ev) => ev.actionLabel,
+    entity: (ev) => ev.entityLabel,
+    message: (ev) => ev.message,
+    user: (ev) => resolveActorName(ev.actor),
+  });
+  const sortedEvents = sortItems(events);
 
   if (!events.length) {
     return (
@@ -61,16 +72,16 @@ export function ActivityFeed({
         <Table>
           <TableHeader>
             <TableRow className="bg-white hover:bg-white">
-              <TableHead className="w-[160px] text-xs font-medium">{t('csv.timestamp')}</TableHead>
-              <TableHead className="w-[110px] text-xs font-medium">{t('csv.source')}</TableHead>
-              <TableHead className="w-[140px] text-xs font-medium">{t('csv.action')}</TableHead>
-              <TableHead className="text-xs font-medium">{t('csv.entity')}</TableHead>
-              <TableHead className="text-xs font-medium">{t('csv.message')}</TableHead>
-              <TableHead className="w-[160px] text-xs font-medium">{t('csv.user')}</TableHead>
+              <SortableHeader columnKey="timestamp" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[160px] text-xs font-medium">{t('csv.timestamp')}</SortableHeader>
+              <SortableHeader columnKey="source" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[110px] text-xs font-medium">{t('csv.source')}</SortableHeader>
+              <SortableHeader columnKey="action" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[140px] text-xs font-medium">{t('csv.action')}</SortableHeader>
+              <SortableHeader columnKey="entity" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium">{t('csv.entity')}</SortableHeader>
+              <SortableHeader columnKey="message" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs font-medium">{t('csv.message')}</SortableHeader>
+              <SortableHeader columnKey="user" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[160px] text-xs font-medium">{t('csv.user')}</SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.map((ev) => {
+            {sortedEvents.map((ev) => {
               const performedAt = ev.performedAt ? new Date(ev.performedAt) : null;
               const isNew = highlightIds?.has(ev.id);
               const sourceLabel = t(`source.${ev.source}`, { defaultValue: ev.source });

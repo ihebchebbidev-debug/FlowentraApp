@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CollapsibleSearch } from '@/components/ui/collapsible-search';
 import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { TableRowActions } from '@/shared/components/TableRowActions';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { cn } from '@/lib/utils';
 import {
@@ -78,7 +80,18 @@ export function InvoicesPage() {
   }), [status, search, dateFrom, dateTo, page]);
 
   const { data, isLoading } = useCustomerInvoicesList(params);
-  const invoices = data?.data ?? [];
+  const rawInvoices = data?.data ?? [];
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<typeof rawInvoices[number]>({
+    invoiceNumber: (row) => row.invoiceNumber,
+    contactName: (row) => row.contactName,
+    saleNumber: (row) => row.saleNumber,
+    issueDate: (row) => row.issueDate,
+    dueDate: (row) => row.dueDate,
+    grandTotal: (row) => row.grandTotal,
+    amountDue: (row) => row.amountDue,
+    status: (row) => row.status,
+  });
+  const invoices = useMemo(() => sortItems(rawInvoices), [rawInvoices, sortItems]);
   const totalItems = data?.totalItems ?? 0;
   const totalPages = data?.totalPages ?? 1;
 
@@ -424,14 +437,14 @@ export function InvoicesPage() {
                     <Table className="min-w-[720px]">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[220px]">{t('columns.number')}</TableHead>
-                          <TableHead>{t('columns.contact')}</TableHead>
-                          <TableHead>{t('columns.sale')}</TableHead>
-                          <TableHead>{t('columns.issue_date')}</TableHead>
-                          <TableHead>{t('columns.due_date')}</TableHead>
-                          <TableHead className="text-right">{t('columns.total')}</TableHead>
-                          <TableHead className="text-right">{t('columns.due')}</TableHead>
-                          <TableHead>{t('columns.status')}</TableHead>
+                          <SortableHeader columnKey="invoiceNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[220px]">{t('columns.number')}</SortableHeader>
+                          <SortableHeader columnKey="contactName" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.contact')}</SortableHeader>
+                          <SortableHeader columnKey="saleNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.sale')}</SortableHeader>
+                          <SortableHeader columnKey="issueDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.issue_date')}</SortableHeader>
+                          <SortableHeader columnKey="dueDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.due_date')}</SortableHeader>
+                          <SortableHeader columnKey="grandTotal" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('columns.total')}</SortableHeader>
+                          <SortableHeader columnKey="amountDue" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('columns.due')}</SortableHeader>
+                          <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('columns.status')}</SortableHeader>
                           <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                       </TableHeader>

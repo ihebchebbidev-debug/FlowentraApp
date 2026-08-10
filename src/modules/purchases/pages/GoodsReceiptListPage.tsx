@@ -37,6 +37,8 @@ import type { CompanyFilterValue } from "@/components/CompanyFilter";
 import { isViewAllMode } from "@/utils/tenant";
 import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal";
 import { TableRowActions } from "@/shared/components/TableRowActions";
+import { SortableHeader } from "@/components/shared/SortableHeader";
+import { useTableSort } from "@/hooks/useTableSort";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
@@ -156,6 +158,16 @@ function GoodsReceiptListContent() {
     () => companyFilteredReceipts.filter((r) => companyId === "all" || (r as any).tenantId === companyId),
     [companyFilteredReceipts, companyId],
   );
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<GoodsReceipt>({
+    receiptNumber: (r) => r.receiptNumber,
+    orderNumber: (r) => r.purchaseOrderNumber,
+    supplier: (r) => r.supplierName,
+    date: (r) => r.receiptDate,
+    status: (r) => r.status,
+    receivedBy: (r) => r.receivedByName || r.receivedBy,
+  });
+  const sortedReceipts = useMemo(() => sortItems(companyScopedReceipts), [companyScopedReceipts, sortItems]);
 
   // Stats
   const stats = useMemo(() => {
@@ -482,17 +494,17 @@ function GoodsReceiptListContent() {
                             aria-label="Select all"
                           />
                         </TableHead>
-                        <TableHead className="text-xs">{t("fields.receiptNumber", "Receipt #")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.orderNumber", "Order #")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.supplier", "Supplier")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.receivedBy", "Received By")}</TableHead>
+                        <SortableHeader columnKey="receiptNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.receiptNumber", "Receipt #")}</SortableHeader>
+                        <SortableHeader columnKey="orderNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.orderNumber", "Order #")}</SortableHeader>
+                        <SortableHeader columnKey="supplier" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.supplier", "Supplier")}</SortableHeader>
+                        <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.date", "Date")}</SortableHeader>
+                        <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.status", "Status")}</SortableHeader>
+                        <SortableHeader columnKey="receivedBy" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.receivedBy", "Received By")}</SortableHeader>
                         <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {companyScopedReceipts.map((gr) => {
+                      {sortedReceipts.map((gr) => {
                         const isSelected = selectedIds.has(gr.id);
                         return (
                           <TableRow
@@ -566,7 +578,7 @@ function GoodsReceiptListContent() {
               </Card>
             ) : (
               <div className="space-y-2">
-                {companyScopedReceipts.map((gr) => {
+                {sortedReceipts.map((gr) => {
                   const isSelected = selectedIds.has(gr.id);
                   return (
                     <Card

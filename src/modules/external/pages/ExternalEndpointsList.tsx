@@ -13,6 +13,9 @@ import { useExternalEndpoints } from '../hooks/useExternalEndpoints';
 import { useExternalTranslations } from '../hooks/useExternalTranslations';
 import { toast } from 'sonner';
 import { API_URL } from '@/config/api';
+import { useMemo } from 'react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function ExternalEndpointsList() {
   useExternalTranslations();
@@ -20,6 +23,15 @@ export function ExternalEndpointsList() {
   const navigate = useNavigate();
   const { endpoints, stats, loading, search, setSearch, statusFilter, setStatusFilter, deleteEndpoint } = useExternalEndpoints();
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<typeof endpoints[number]>({
+    name: (ep) => ep.name,
+    slug: (ep) => ep.slug,
+    isActive: (ep) => ep.isActive ? 1 : 0,
+    totalReceived: (ep) => ep.totalReceived,
+    totalSent: (ep) => ep.totalSent,
+    createdAt: (ep) => ep.createdAt,
+  });
+  const sortedEndpoints = useMemo(() => sortItems(endpoints), [endpoints, sortItems]);
 
   // Public inbound URL points at the BACKEND (VITE_API_URL), not the frontend origin.
   const getPublicUrl = (slug: string) => {
@@ -212,18 +224,18 @@ export function ExternalEndpointsList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('external.table.name')}</TableHead>
-                  <TableHead>{t('external.table.slug')}</TableHead>
-                  <TableHead>{t('external.table.status')}</TableHead>
+                  <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.name')}</SortableHeader>
+                  <SortableHeader columnKey="slug" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.slug')}</SortableHeader>
+                  <SortableHeader columnKey="isActive" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.status')}</SortableHeader>
                   <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
-                  <TableHead className="text-center">{t('external.table.received')}</TableHead>
-                  <TableHead className="text-center hidden md:table-cell">{t('external.table.sent', 'Sent')}</TableHead>
-                  <TableHead>{t('external.table.created')}</TableHead>
+                  <SortableHeader columnKey="totalReceived" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t('external.table.received')}</SortableHeader>
+                  <SortableHeader columnKey="totalSent" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="hidden md:table-cell">{t('external.table.sent', 'Sent')}</SortableHeader>
+                  <SortableHeader columnKey="createdAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.created')}</SortableHeader>
                   <TableHead className="w-[50px]">{t('external.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {endpoints.map((ep) => {
+                {sortedEndpoints.map((ep) => {
                   const isBidirectional = !!ep.webhookForwardUrl;
                   return (
                   <TableRow key={ep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ep.id}`)}>

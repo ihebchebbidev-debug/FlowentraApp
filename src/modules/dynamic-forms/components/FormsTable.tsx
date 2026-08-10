@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Edit, Trash2, Copy, Eye, CheckCircle, Archive, RotateCcw, FileText, Share2, Globe, GlobeLock } from 'lucide-react';
@@ -60,6 +62,13 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
   const canCreate = isMainAdmin || hasPermission('dynamic_forms', 'create'); // For duplicate
   
   const isEnglish = i18n.language === 'en';
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<DynamicForm>({
+    name: (f) => isEnglish ? f.name_en : f.name_fr,
+    status: (f) => f.status,
+    fields: (f) => f.fields.length,
+    updated: (f) => f.updated_at || f.created_at,
+  });
+  const sortedForms = useMemo(() => sortItems(forms), [forms, sortItems]);
   
   const handleEdit = (id: number) => {
     if (!canEdit) return;
@@ -321,16 +330,16 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">{t('table.name')}</TableHead>
-              <TableHead>{t('table.status')}</TableHead>
-              <TableHead className="text-center">{t('table.fields')}</TableHead>
-              <TableHead>{t('table.updated')}</TableHead>
+              <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[300px]">{t('table.name')}</SortableHeader>
+              <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.status')}</SortableHeader>
+              <SortableHeader columnKey="fields" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t('table.fields')}</SortableHeader>
+              <SortableHeader columnKey="updated" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.updated')}</SortableHeader>
               <TableHead className="w-[60px] text-center">{t('table.share')}</TableHead>
               <TableHead className="w-[70px]">{t('table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {forms.map((form) => (
+            {sortedForms.map((form) => (
               <TableRow key={form.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handlePreview(form.id)}>
                 <TableCell>
                   <div>

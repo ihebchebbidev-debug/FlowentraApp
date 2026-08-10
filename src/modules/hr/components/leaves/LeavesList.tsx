@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import dayjs from 'dayjs';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { cn } from '@/lib/utils';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 type LeaveRow = UserLeave & { userId: number; userName: string };
 
@@ -164,6 +166,15 @@ export function LeavesList() {
     return counts;
   }, [filtered]);
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<LeaveRow>({
+    employee: (l) => usersById.get(Number(l.userId))?.name ?? l.userName,
+    type: (l) => l.leaveType,
+    dates: (l) => l.startDate,
+    status: (l) => l.status,
+    reason: (l) => l.reason,
+  });
+  const sortedFiltered = useMemo(() => sortItems(filtered), [filtered, sortItems]);
+
   return (
     <Card className="shadow-card border-0 bg-card">
       <CardHeader>
@@ -212,11 +223,11 @@ export function LeavesList() {
           <Table className="min-w-[550px]">
             <TableHeader>
               <TableRow>
-                <TableHead>{t('employee.employee')}</TableHead>
-                <TableHead>{t('leavesPage.type')}</TableHead>
-                <TableHead>{t('leavesPage.dates')}</TableHead>
-                <TableHead>{t('leavesPage.status')}</TableHead>
-                <TableHead>{t('leavesPage.reason')}</TableHead>
+                <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('employee.employee')}</SortableHeader>
+                <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.type')}</SortableHeader>
+                <SortableHeader columnKey="dates" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.dates')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.status')}</SortableHeader>
+                <SortableHeader columnKey="reason" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('leavesPage.reason')}</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -227,7 +238,7 @@ export function LeavesList() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map(l => (
+                sortedFiltered.map(l => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">
                       {(() => {

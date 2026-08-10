@@ -33,6 +33,8 @@ import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function DepartmentsPage() {
   const { t } = useTranslation('hr');
@@ -132,6 +134,13 @@ export function DepartmentsPage() {
     }
   };
 
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    name: (d) => d.name,
+    code: (d) => d.code,
+    employees: (d) => d.employeeCount,
+  });
+  const sortedDepartments = useMemo(() => sortItems(mergedDepartments), [mergedDepartments, sortItems]);
+
   const openEdit = (d: { id: number; name: string; code?: string; description?: string }) => {
     if (d.id < 0) return;
     setEditId(d.id);
@@ -200,9 +209,9 @@ export function DepartmentsPage() {
             <Table className="min-w-[400px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('departments.name')}</TableHead>
-                  <TableHead>{t('departments.code')}</TableHead>
-                  <TableHead className="text-right">{t('departments.employees')}</TableHead>
+                  <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('departments.name')}</SortableHeader>
+                  <SortableHeader columnKey="code" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('departments.code')}</SortableHeader>
+                  <SortableHeader columnKey="employees" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('departments.employees')}</SortableHeader>
               <TableHead className="w-[100px]">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -220,7 +229,7 @@ export function DepartmentsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  mergedDepartments.map((d) => (
+                  sortedDepartments.map((d) => (
                     <TableRow key={d.name}>
                       <TableCell className="font-medium">{d.name}</TableCell>
                       <TableCell>{d.code ?? '—'}</TableCell>

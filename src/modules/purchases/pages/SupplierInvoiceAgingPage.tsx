@@ -11,6 +11,8 @@ import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { ChartSkeleton } from "../components/PurchaseSkeletons";
 import type { SupplierInvoice } from "../types";
+import { SortableHeader } from "@/components/shared/SortableHeader";
+import { useTableSort } from "@/hooks/useTableSort";
 
 /**
  * Supplier Invoice Aging Report — buckets unpaid balance into:
@@ -45,6 +47,25 @@ function InvoiceAgingContent() {
   const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const supplierSort = useTableSort<{ name: string; total: number; buckets: Record<Bucket, number> }>({
+    supplier: (r) => r.name,
+    notDue: (r) => r.buckets.notDue,
+    b30: (r) => r.buckets.b30,
+    b60: (r) => r.buckets.b60,
+    b90: (r) => r.buckets.b90,
+    b90plus: (r) => r.buckets.b90plus,
+    total: (r) => r.total,
+  });
+
+  const invoiceSort = useTableSort<{ inv: SupplierInvoice; outstanding: number; daysOverdue: number; bucket: Bucket }>({
+    invoiceNumber: (r) => r.inv.invoiceNumber,
+    supplier: (r) => r.inv.supplierName,
+    dueDate: (r) => r.inv.dueDate,
+    daysOverdue: (r) => r.daysOverdue,
+    bucket: (r) => r.bucket,
+    outstanding: (r) => r.outstanding,
+  });
 
   const load = () => {
     setError(null);
@@ -89,6 +110,9 @@ function InvoiceAgingContent() {
     perInvoice.sort((a, b) => b.daysOverdue - a.daysOverdue);
     return { perInvoice, perBucket, perSupplier: Array.from(perSupplier.values()).sort((a, b) => b.total - a.total), totalOutstanding };
   }, [invoices]);
+
+  const sortedPerSupplier = useMemo(() => supplierSort.sortItems(perSupplier), [perSupplier, supplierSort.sortItems]);
+  const sortedPerInvoice = useMemo(() => invoiceSort.sortItems(perInvoice), [perInvoice, invoiceSort.sortItems]);
 
   if (loading) return <><PurchasePageHeader title={t('reports.aging.title', 'Supplier Invoice Aging')} icon={Clock} backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }} /><ChartSkeleton /></>;
   if (error) return <><PurchasePageHeader title={t('reports.aging.title', 'Supplier Invoice Aging')} icon={Clock} backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }} /><PurchaseErrorFallback error={error} onRetry={load} backTo="/dashboard/purchases" /></>;
@@ -137,18 +161,18 @@ function InvoiceAgingContent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">{t('reports.aging.supplier', 'Supplier')}</TableHead>
+                  <SortableHeader columnKey="supplier" sortKey={supplierSort.sortKey} sortDirection={supplierSort.sortDirection} onSort={supplierSort.toggleSort} className="text-xs">{t('reports.aging.supplier', 'Supplier')}</SortableHeader>
                   {(Object.keys(BUCKET_LABELS) as Bucket[]).map(b => (
-                    <TableHead key={b} className="text-xs text-end">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</TableHead>
+                    <SortableHeader key={b} columnKey={b} sortKey={supplierSort.sortKey} sortDirection={supplierSort.sortDirection} onSort={supplierSort.toggleSort} align="right" className="text-xs">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</SortableHeader>
                   ))}
-                  <TableHead className="text-xs text-end">{t('reports.aging.total', 'Total')}</TableHead>
+                  <SortableHeader columnKey="total" sortKey={supplierSort.sortKey} sortDirection={supplierSort.sortDirection} onSort={supplierSort.toggleSort} align="right" className="text-xs">{t('reports.aging.total', 'Total')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {perSupplier.length === 0 ? (
+                {sortedPerSupplier.length === 0 ? (
                   <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">{t('reports.noData', 'No outstanding invoices')}</TableCell></TableRow>
                 ) : (
-                  perSupplier.map(r => (
+                  sortedPerSupplier.map(r => (
                     <TableRow key={r.name}>
                       <TableCell className="text-xs font-medium">{r.name}</TableCell>
                       {(Object.keys(BUCKET_LABELS) as Bucket[]).map(b => (
@@ -170,19 +194,19 @@ function InvoiceAgingContent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">{t('reports.aging.invoice', 'Invoice')}</TableHead>
-                  <TableHead className="text-xs">{t('reports.aging.supplier', 'Supplier')}</TableHead>
-                  <TableHead className="text-xs">{t('reports.aging.dueDate', 'Due date')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.aging.daysOverdue', 'Days overdue')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.aging.bucketLabel', 'Bucket')}</TableHead>
-                  <TableHead className="text-xs text-end">{t('reports.aging.outstanding', 'Outstanding')}</TableHead>
+                  <SortableHeader columnKey="invoiceNumber" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} className="text-xs">{t('reports.aging.invoice', 'Invoice')}</SortableHeader>
+                  <SortableHeader columnKey="supplier" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} className="text-xs">{t('reports.aging.supplier', 'Supplier')}</SortableHeader>
+                  <SortableHeader columnKey="dueDate" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} className="text-xs">{t('reports.aging.dueDate', 'Due date')}</SortableHeader>
+                  <SortableHeader columnKey="daysOverdue" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="center" className="text-xs">{t('reports.aging.daysOverdue', 'Days overdue')}</SortableHeader>
+                  <SortableHeader columnKey="bucket" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="center" className="text-xs">{t('reports.aging.bucketLabel', 'Bucket')}</SortableHeader>
+                  <SortableHeader columnKey="outstanding" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="right" className="text-xs">{t('reports.aging.outstanding', 'Outstanding')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {perInvoice.length === 0 ? (
+                {sortedPerInvoice.length === 0 ? (
                   <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">{t('reports.noData', 'No outstanding invoices')}</TableCell></TableRow>
                 ) : (
-                  perInvoice.map(({ inv, outstanding, daysOverdue, bucket }) => (
+                  sortedPerInvoice.map(({ inv, outstanding, daysOverdue, bucket }) => (
                     <TableRow key={inv.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/purchases/invoices/${inv.id}`)}>
                       <TableCell className="text-xs font-medium">{inv.invoiceNumber}</TableCell>
                       <TableCell className="text-xs">{inv.supplierName}</TableCell>

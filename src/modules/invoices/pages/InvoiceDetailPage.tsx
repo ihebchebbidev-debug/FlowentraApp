@@ -28,6 +28,8 @@ import { PostInvoiceReconciliationDialog } from '../components/PostInvoiceReconc
 import { usePermissions } from '@/hooks/usePermissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -89,6 +91,14 @@ export function InvoiceDetailPage() {
   if (!contactAccess.checking && !contactAccess.allowed) {
     return <ContactAccessDenied entityLabel={'invoice'} />;
   }
+
+  const { sortKey: lineSortKey, sortDirection: lineSortDirection, toggleSort: toggleLineSort, sortItems: sortLineItems } = useTableSort<typeof invoice.lines[number]>({
+    item: (l) => l.itemName,
+    qty: (l) => l.quantity,
+    unitPrice: (l) => l.unitPrice,
+    lineTotal: (l) => l.lineTotal,
+  });
+  const sortedLines = sortLineItems(invoice.lines);
 
   return (
     <div className="flex flex-col">
@@ -218,14 +228,14 @@ export function InvoiceDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('detail.item')}</TableHead>
-                      <TableHead className="text-right">{t('detail.qty')}</TableHead>
-                      <TableHead className="text-right">{t('detail.unit_price')}</TableHead>
-                      <TableHead className="text-right">{t('detail.line_total')}</TableHead>
+                      <SortableHeader columnKey="item" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort}>{t('detail.item')}</SortableHeader>
+                      <SortableHeader columnKey="qty" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort} align="right">{t('detail.qty')}</SortableHeader>
+                      <SortableHeader columnKey="unitPrice" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort} align="right">{t('detail.unit_price')}</SortableHeader>
+                      <SortableHeader columnKey="lineTotal" sortKey={lineSortKey} sortDirection={lineSortDirection} onSort={toggleLineSort} align="right">{t('detail.line_total')}</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoice.lines.map((line) => (
+                    {sortedLines.map((line) => (
                       <TableRow key={line.id}>
                         <TableCell>{formatSaleItemLabel(line.itemName)}</TableCell>
                         <TableCell className="text-right">{line.quantity}</TableCell>

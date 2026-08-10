@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
 import { ArrowLeft, ExternalLink, RefreshCw, Scale, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { getStatusColorClass } from '@/config/entity-statuses';
@@ -76,6 +78,26 @@ export function InvoiceReconciliationPage() {
   if (isLoading || !result) {
     return <div className="p-6 text-sm text-muted-foreground">{t('loading')}</div>;
   }
+
+  const invoiceSort = useTableSort<typeof result.invoices[number]>({
+    invoiceNumber: (row) => row.invoiceNumber,
+    status: (row) => row.status,
+    subtotal: (row) => row.subtotal,
+    taxAmount: (row) => row.taxAmount,
+    grandTotal: (row) => row.grandTotal,
+    computedGrandTotal: (row) => row.computedGrandTotal,
+    delta: (row) => row.delta,
+  });
+  const sortedInvoices = useMemo(() => invoiceSort.sortItems(result.invoices), [result.invoices, invoiceSort.sortItems]);
+
+  const itemSort = useTableSort<typeof result.items[number]>({
+    itemName: (row) => row.itemName,
+    saleQuantity: (row) => row.saleQuantity,
+    saleLineTotal: (row) => row.saleLineTotal,
+    invoicedLineTotal: (row) => row.invoicedLineTotal,
+    coverage: (row) => row.coverage,
+  });
+  const sortedItems = useMemo(() => itemSort.sortItems(result.items), [result.items, itemSort.sortItems]);
 
   const rows: Array<{ label: string; value: string; strong?: boolean; tone?: string }> = [
     { label: t('reconciliation.sale_subtotal', 'Sale subtotal'), value: money(result.sale.subtotal) },
@@ -222,13 +244,13 @@ export function InvoiceReconciliationPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('columns.number')}</TableHead>
-                  <TableHead>{t('columns.status')}</TableHead>
-                  <TableHead className="text-right">{t('detail.subtotal')}</TableHead>
-                  <TableHead className="text-right">{t('detail.tax')}</TableHead>
-                  <TableHead className="text-right">{t('detail.grand_total')}</TableHead>
-                  <TableHead className="text-right">{t('reconciliation.from_lines', 'From lines')}</TableHead>
-                  <TableHead className="text-right">{t('reconciliation.delta', 'Delta')}</TableHead>
+                  <SortableHeader columnKey="invoiceNumber" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort}>{t('columns.number')}</SortableHeader>
+                  <SortableHeader columnKey="status" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort}>{t('columns.status')}</SortableHeader>
+                  <SortableHeader columnKey="subtotal" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="right">{t('detail.subtotal')}</SortableHeader>
+                  <SortableHeader columnKey="taxAmount" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="right">{t('detail.tax')}</SortableHeader>
+                  <SortableHeader columnKey="grandTotal" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="right">{t('detail.grand_total')}</SortableHeader>
+                  <SortableHeader columnKey="computedGrandTotal" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="right">{t('reconciliation.from_lines', 'From lines')}</SortableHeader>
+                  <SortableHeader columnKey="delta" sortKey={invoiceSort.sortKey} sortDirection={invoiceSort.sortDirection} onSort={invoiceSort.toggleSort} align="right">{t('reconciliation.delta', 'Delta')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -239,7 +261,7 @@ export function InvoiceReconciliationPage() {
                     </TableCell>
                   </TableRow>
                 )}
-                {result.invoices.map((inv) => (
+                {sortedInvoices.map((inv) => (
                   <TableRow
                     key={inv.id}
                     className="cursor-pointer hover:bg-muted/50"
@@ -274,16 +296,16 @@ export function InvoiceReconciliationPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('detail.item')}</TableHead>
-                  <TableHead className="text-right">{t('detail.qty')}</TableHead>
-                  <TableHead className="text-right">{t('reconciliation.sale_line_total', 'Sale line')}</TableHead>
-                  <TableHead className="text-right">{t('reconciliation.invoiced_line_total', 'Invoiced')}</TableHead>
-                  <TableHead>{t('reconciliation.coverage_state', 'Coverage')}</TableHead>
+                  <SortableHeader columnKey="itemName" sortKey={itemSort.sortKey} sortDirection={itemSort.sortDirection} onSort={itemSort.toggleSort}>{t('detail.item')}</SortableHeader>
+                  <SortableHeader columnKey="saleQuantity" sortKey={itemSort.sortKey} sortDirection={itemSort.sortDirection} onSort={itemSort.toggleSort} align="right">{t('detail.qty')}</SortableHeader>
+                  <SortableHeader columnKey="saleLineTotal" sortKey={itemSort.sortKey} sortDirection={itemSort.sortDirection} onSort={itemSort.toggleSort} align="right">{t('reconciliation.sale_line_total', 'Sale line')}</SortableHeader>
+                  <SortableHeader columnKey="invoicedLineTotal" sortKey={itemSort.sortKey} sortDirection={itemSort.sortDirection} onSort={itemSort.toggleSort} align="right">{t('reconciliation.invoiced_line_total', 'Invoiced')}</SortableHeader>
+                  <SortableHeader columnKey="coverage" sortKey={itemSort.sortKey} sortDirection={itemSort.sortDirection} onSort={itemSort.toggleSort}>{t('reconciliation.coverage_state', 'Coverage')}</SortableHeader>
                   <TableHead>{t('reconciliation.on_invoices', 'On invoices')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {result.items.map((it, idx) => (
+                {sortedItems.map((it, idx) => (
                   <TableRow key={it.saleItemId ?? idx}>
                     <TableCell className="text-sm">{formatSaleItemLabel(it.itemName)}</TableCell>
                     <TableCell className="text-right text-sm">

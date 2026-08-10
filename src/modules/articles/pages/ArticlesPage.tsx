@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageSizeSelector } from '@/components/shared/PageSizeSelector';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
 import { Plus, Search, Package, Wrench, AlertTriangle, History, Upload, ShoppingCart, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -372,11 +374,24 @@ export default function ArticlesPage() {
   });
 
   // Defensive client-side filter (in case backend ignores type/status params)
-  const articles = (rawArticles || []).filter((a: any) => {
+  const filteredArticles = (rawArticles || []).filter((a: any) => {
     if (typeFilter !== 'all' && a.type !== typeFilter) return false;
     if (statusFilter !== 'all' && a.status !== statusFilter) return false;
     return true;
   });
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    type: (a: any) => a.type || '',
+    name: (a: any) => a.name || '',
+    sku_category: (a: any) => (a.type === 'material' ? a.sku || '' : a.category || ''),
+    status: (a: any) => a.status || '',
+    stock: (a: any) => (a.type === 'material' ? Number(a.stock ?? 0) : null),
+    price: (a: any) => (a.type === 'material' ? Number(a.sellPrice ?? 0) : Number(a.hourlyRate ?? a.sellPrice ?? 0)),
+    location: (a: any) => a.location || a.storageLocation || '',
+  });
+
+  const articles = useMemo(() => sortItems(filteredArticles), [filteredArticles, sortItems]);
 
   // Separate query for global KPI totals (unfiltered, unpaginated-ish)
   const { articles: allArticlesForStats } = useArticles({ limit: 999, page: 1 });
@@ -576,13 +591,13 @@ export default function ArticlesPage() {
         <Table>
           <TableHeader>
               <TableRow>
-              <TableHead>{t('table.type')}</TableHead>
-              <TableHead>{t('table.name')}</TableHead>
-              <TableHead>{t('table.sku_category')}</TableHead>
-              <TableHead>{t('table.status')}</TableHead>
-              <TableHead>{t('table.stock')}</TableHead>
-              <TableHead>{t('table.price')}</TableHead>
-              <TableHead>{t('table.location')}</TableHead>
+              <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.type')}</SortableHeader>
+              <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.name')}</SortableHeader>
+              <SortableHeader columnKey="sku_category" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.sku_category')}</SortableHeader>
+              <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.status')}</SortableHeader>
+              <SortableHeader columnKey="stock" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.stock')}</SortableHeader>
+              <SortableHeader columnKey="price" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.price')}</SortableHeader>
+              <SortableHeader columnKey="location" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('table.location')}</SortableHeader>
               <TableHead className="text-right">{t('table.actions')}</TableHead>
             </TableRow>
           </TableHeader>

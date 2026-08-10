@@ -42,6 +42,8 @@ import type { CompanyFilterValue } from "@/components/CompanyFilter";
 import { isViewAllMode } from "@/utils/tenant";
 import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal";
 import { TableRowActions } from "@/shared/components/TableRowActions";
+import { SortableHeader } from "@/components/shared/SortableHeader";
+import { useTableSort } from "@/hooks/useTableSort";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
@@ -202,6 +204,16 @@ function PurchaseOrderListContent() {
   // Tenant scoping is handled server-side via the header company switcher,
   // so the list renders whatever the API returns — no extra client filter.
   const companyScopedOrders = filteredOrders;
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<PurchaseOrder>({
+    orderNumber: (o) => o.orderNumber,
+    supplier: (o) => o.supplierName,
+    date: (o) => o.orderDate,
+    status: (o) => o.status,
+    paymentStatus: (o) => o.paymentStatus,
+    total: (o) => o.grandTotal,
+  });
+  const sortedOrders = useMemo(() => sortItems(companyScopedOrders), [companyScopedOrders, sortItems]);
 
   // Stats — fetched from server so cards reflect the FULL dataset, not just
   // the currently loaded infinite-scroll pages. Previous implementation used
@@ -535,7 +547,7 @@ function PurchaseOrderListContent() {
                       <span className="text-sm">{t("orders.empty", "No purchase orders found")}</span>
                     </div>
                   ) : (
-                    companyScopedOrders.map((po) => {
+                    sortedOrders.map((po) => {
                       const isSelected = selectedIds.has(po.id);
                       return (
                         <div
@@ -638,17 +650,17 @@ function PurchaseOrderListContent() {
                                 aria-label="Select all"
                               />
                             </TableHead>
-                            <TableHead className="text-xs">{t("fields.orderNumber", "Order #")}</TableHead>
-                            <TableHead className="text-xs">{t("fields.supplier", "Supplier")}</TableHead>
-                            <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
-                            <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
-                            <TableHead className="text-xs">{t("fields.paymentStatus", "Payment")}</TableHead>
-                            <TableHead className="text-xs text-end">{t("fields.total", "Total")}</TableHead>
+                            <SortableHeader columnKey="orderNumber" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.orderNumber", "Order #")}</SortableHeader>
+                            <SortableHeader columnKey="supplier" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.supplier", "Supplier")}</SortableHeader>
+                            <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.date", "Date")}</SortableHeader>
+                            <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.status", "Status")}</SortableHeader>
+                            <SortableHeader columnKey="paymentStatus" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.paymentStatus", "Payment")}</SortableHeader>
+                            <SortableHeader columnKey="total" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right" className="text-xs">{t("fields.total", "Total")}</SortableHeader>
                             <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {companyScopedOrders.map((po) => {
+                          {sortedOrders.map((po) => {
                             const isSelected = selectedIds.has(po.id);
                             return (
                               <TableRow
@@ -734,7 +746,7 @@ function PurchaseOrderListContent() {
               </>
             ) : (
               <div className="space-y-2">
-                {companyScopedOrders.map((po) => {
+                {sortedOrders.map((po) => {
                   const isSelected = selectedIds.has(po.id);
                   return (
                     <Card

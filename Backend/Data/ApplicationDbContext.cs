@@ -760,7 +760,30 @@ namespace MyApi.Data
                 entity.HasIndex(e => new { e.TenantId, e.PluginCode }).IsUnique();
                 entity.HasIndex(e => e.TenantId);
             });
+
+            // Workflow engine: dedupe + hot-path indexes.
+            // The unique index is load-bearing — WorkflowPollingService relies on the
+            // insert conflict to detect an entity already claimed by a concurrent poll.
+            modelBuilder.Entity<MyApi.Modules.WorkflowEngine.Models.WorkflowProcessedEntity>(entity =>
+            {
+                entity.HasIndex(e => new { e.TenantId, e.TriggerId, e.EntityType, e.EntityId, e.ProcessedStatus })
+                      .IsUnique()
+                      .HasDatabaseName("IX_WorkflowProcessedEntities_Dedupe");
+            });
+
+            modelBuilder.Entity<MyApi.Modules.WorkflowEngine.Models.WorkflowExecution>(entity =>
+            {
+                entity.HasIndex(e => new { e.TenantId, e.WorkflowId, e.StartedAt });
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.HasIndex(e => new { e.TenantId, e.TriggerEntityType, e.TriggerEntityId });
+            });
+
+            modelBuilder.Entity<MyApi.Modules.WorkflowEngine.Models.WorkflowTrigger>(entity =>
+            {
+                entity.HasIndex(e => new { e.TenantId, e.EntityType, e.IsActive });
+            });
         }
+
 
         private void ConfigureArticleEntities(ModelBuilder modelBuilder)
         {

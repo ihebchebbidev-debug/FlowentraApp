@@ -16,6 +16,9 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { externalEndpointsApi } from '../services/externalEndpoints.service';
 import type { ExternalEndpointLog, ConvertLogPreview, FieldConfidence } from '../types';
+import { useMemo } from 'react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 interface Props { endpointId: number; }
 
@@ -55,6 +58,12 @@ export function EndpointLogsTable({ endpointId }: Props) {
   // Unique company IDs seen in current page — used for the filter dropdown.
   const companyIds = Array.from(new Set(logs.map(l => l.companyId).filter(Boolean) as string[])).sort();
   const filteredLogs = companyFilter ? logs.filter(l => l.companyId === companyFilter) : logs;
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ExternalEndpointLog>({
+    method: (l) => l.method,
+    statusCode: (l) => l.statusCode,
+    receivedAt: (l) => l.receivedAt,
+  });
+  const sortedLogs = useMemo(() => sortItems(filteredLogs), [filteredLogs, sortItems]);
   const [selectedLog, setSelectedLog] = useState<ExternalEndpointLog | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [convertingId, setConvertingId] = useState<number | null>(null);
@@ -182,16 +191,16 @@ export function EndpointLogsTable({ endpointId }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('external.logs.method')}</TableHead>
+              <SortableHeader columnKey="method" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.logs.method')}</SortableHeader>
               <TableHead className="hidden sm:table-cell">{t('external.logs.format', 'Format')}</TableHead>
               <TableHead className="hidden md:table-cell">{t('external.logs.company', 'Company')}</TableHead>
-              <TableHead>{t('external.logs.statusCode')}</TableHead>
-              <TableHead>{t('external.logs.receivedAt')}</TableHead>
+              <SortableHeader columnKey="statusCode" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.logs.statusCode')}</SortableHeader>
+              <SortableHeader columnKey="receivedAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.logs.receivedAt')}</SortableHeader>
               <TableHead className="w-[80px]">{t('external.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLogs.map(log => {
+            {sortedLogs.map(log => {
               const ctInfo = formatContentType(log.contentType);
               return (
               <TableRow key={log.id} className={!log.isRead ? 'bg-primary/5' : ''}>

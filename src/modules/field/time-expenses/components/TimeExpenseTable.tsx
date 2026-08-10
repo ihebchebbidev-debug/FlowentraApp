@@ -18,6 +18,9 @@ import { TimeExpenseEntry, User } from '../types';
 import { cn } from '@/lib/utils';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { isViewAllMode } from '@/utils/tenant';
+import { useMemo } from 'react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 interface TimeExpenseTableProps {
   entries: TimeExpenseEntry[];
@@ -32,6 +35,17 @@ export function TimeExpenseTable({ entries, users, className }: TimeExpenseTable
   const getUserById = (userId: string) => {
     return users.find(user => user.id === userId);
   };
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<TimeExpenseEntry>({
+    technician: (e) => getUserById(e.userId)?.name || e.userName,
+    date: (e) => e.date,
+    type: (e) => e.type,
+    timeBooked: (e) => e.timeBooked,
+    expenses: (e) => e.expenses,
+    earnings: (e) => (e.timeBooked / 60) * e.hourlyRate,
+    status: (e) => e.status,
+  });
+  const sortedEntries = useMemo(() => sortItems(entries), [entries, sortItems]);
 
   const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
@@ -94,13 +108,13 @@ export function TimeExpenseTable({ entries, users, className }: TimeExpenseTable
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('time-expenses:table.technician')}</TableHead>
-              <TableHead>{t('time-expenses:table.date')}</TableHead>
-              <TableHead>{t('time-expenses:table.type')}</TableHead>
-              <TableHead className="text-right">{t('time-expenses:table.time_booked')}</TableHead>
-              <TableHead className="text-right">{t('time-expenses:table.expenses')}</TableHead>
-              <TableHead className="text-right">{t('time-expenses:table.earnings')}</TableHead>
-              <TableHead>{t('time-expenses:table.status')}</TableHead>
+              <SortableHeader columnKey="technician" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('time-expenses:table.technician')}</SortableHeader>
+              <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('time-expenses:table.date')}</SortableHeader>
+              <SortableHeader columnKey="type" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('time-expenses:table.type')}</SortableHeader>
+              <SortableHeader columnKey="timeBooked" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('time-expenses:table.time_booked')}</SortableHeader>
+              <SortableHeader columnKey="expenses" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('time-expenses:table.expenses')}</SortableHeader>
+              <SortableHeader columnKey="earnings" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('time-expenses:table.earnings')}</SortableHeader>
+              <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('time-expenses:table.status')}</SortableHeader>
               <TableHead className="hidden md:table-cell">{t('time-expenses:table.description')}</TableHead>
               {isViewAllMode() && (
                 <TableHead className="w-[160px]">{t('time-expenses:table.company', 'Company')}</TableHead>
@@ -108,7 +122,7 @@ export function TimeExpenseTable({ entries, users, className }: TimeExpenseTable
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => {
+            {sortedEntries.map((entry) => {
               const user = getUserById(entry.userId);
               const earnings = (entry.timeBooked / 60) * entry.hourlyRate;
 

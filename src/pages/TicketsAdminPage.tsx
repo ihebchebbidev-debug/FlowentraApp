@@ -90,7 +90,7 @@ export default function TicketsAdminPage() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketResponse | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [sortField, setSortField] = useState<'createdAt' | 'urgency'>('createdAt');
+  const [sortField, setSortField] = useState<'createdAt' | 'urgency' | 'userEmail' | 'category'>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -170,6 +170,10 @@ export default function TicketsAdminPage() {
         const diff = (urgencyOrder[a.urgency || 'medium'] ?? 2) - (urgencyOrder[b.urgency || 'medium'] ?? 2);
         return sortDir === 'asc' ? diff : -diff;
       }
+      if (sortField === 'userEmail' || sortField === 'category') {
+        const diff = (a[sortField] || '').localeCompare(b[sortField] || '');
+        return sortDir === 'asc' ? diff : -diff;
+      }
       const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return sortDir === 'asc' ? diff : -diff;
     });
@@ -234,7 +238,7 @@ export default function TicketsAdminPage() {
 
   const [previewAttachment, setPreviewAttachment] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
 
-  const toggleSort = (field: 'createdAt' | 'urgency') => {
+  const toggleSort = (field: 'createdAt' | 'urgency' | 'userEmail' | 'category') => {
     if (sortField === field) {
       setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
     } else {
@@ -243,7 +247,7 @@ export default function TicketsAdminPage() {
     }
   };
 
-  const SortIcon = ({ field }: { field: 'createdAt' | 'urgency' }) => {
+  const SortIcon = ({ field }: { field: 'createdAt' | 'urgency' | 'userEmail' | 'category' }) => {
     if (sortField !== field) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
     return sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />;
   };
@@ -480,8 +484,22 @@ export default function TicketsAdminPage() {
                       {t('admin.colTicket', 'Ticket')} <SortIcon field="createdAt" />
                     </button>
                   </TableHead>
-                  <TableHead className="hidden md:table-cell">{t('admin.colEmail', 'Email')}</TableHead>
-                  <TableHead className="hidden lg:table-cell">{t('admin.colCategory', 'Category')}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    <button
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      onClick={() => toggleSort('userEmail')}
+                    >
+                      {t('admin.colEmail', 'Email')} <SortIcon field="userEmail" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    <button
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      onClick={() => toggleSort('category')}
+                    >
+                      {t('admin.colCategory', 'Category')} <SortIcon field="category" />
+                    </button>
+                  </TableHead>
                   <TableHead>
                     <button
                       className="flex items-center gap-1 hover:text-foreground transition-colors"

@@ -30,6 +30,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import dayjs from 'dayjs';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export function EmployeeDetail() {
   const { id } = useParams();
@@ -160,6 +162,36 @@ export function EmployeeDetail() {
   const cnssBase = cnssCeiling > 0 ? Math.min(grossForCnss, cnssCeiling) : grossForCnss;
   const employeeShare = cnssBase * Number(activeRateQuery.data?.employeeRate ?? 0.0918);
   const employerShare = cnssBase * Number(activeRateQuery.data?.employerRate ?? 0.1657);
+
+  const salaryHistorySort = useTableSort<NonNullable<typeof salaryHistoryQuery.data>[number]>({
+    effectiveDate: (row) => row.effectiveDate,
+    gross: (row) => row.newGross,
+    notes: (row) => row.reason,
+  });
+  const sortedSalaryHistory = salaryHistorySort.sortItems(salaryHistoryQuery.data ?? []);
+
+  const bonusesSort = useTableSort<NonNullable<typeof bonusesQuery.data>[number]>({
+    kind: (row) => row.kind,
+    label: (row) => row.label,
+    period: (row) => (row.year && row.month ? row.year * 100 + row.month : null),
+    amount: (row) => row.amount,
+  });
+  const sortedBonuses = bonusesSort.sortItems(bonusesQuery.data ?? []);
+
+  const leavesSort = useTableSort<UserLeave>({
+    type: (row) => row.leaveType,
+    dates: (row) => row.startDate,
+    status: (row) => row.status,
+    reason: (row) => row.reason,
+  });
+  const sortedLeaves = leavesSort.sortItems(planningLeavesQuery.data ?? []);
+
+  const auditSort = useTableSort<NonNullable<typeof auditQuery.data>[number]>({
+    timestamp: (row) => row.timestamp,
+    event: (row) => row.eventType,
+    description: (row) => row.description,
+  });
+  const sortedAudit = auditSort.sortItems(auditQuery.data ?? []);
 
   return (
     <div className="flex flex-col">
@@ -303,13 +335,13 @@ export function EmployeeDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('employeeDetail.effectiveDate')}</TableHead>
-                        <TableHead>{t('employeeDetail.gross')}</TableHead>
-                        <TableHead>{t('employeeDetail.notes')}</TableHead>
+                        <SortableHeader columnKey="effectiveDate" sortKey={salaryHistorySort.sortKey} sortDirection={salaryHistorySort.sortDirection} onSort={salaryHistorySort.toggleSort}>{t('employeeDetail.effectiveDate')}</SortableHeader>
+                        <SortableHeader columnKey="gross" sortKey={salaryHistorySort.sortKey} sortDirection={salaryHistorySort.sortDirection} onSort={salaryHistorySort.toggleSort}>{t('employeeDetail.gross')}</SortableHeader>
+                        <SortableHeader columnKey="notes" sortKey={salaryHistorySort.sortKey} sortDirection={salaryHistorySort.sortDirection} onSort={salaryHistorySort.toggleSort}>{t('employeeDetail.notes')}</SortableHeader>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(salaryHistoryQuery.data ?? []).map(h => (
+                      {sortedSalaryHistory.map(h => (
                         <TableRow key={h.id}>
                           <TableCell>{h.effectiveDate ? new Date(h.effectiveDate).toLocaleDateString() : '—'}</TableCell>
                           <TableCell>{formatTnd(h.newGross)}</TableCell>
@@ -430,15 +462,15 @@ export function EmployeeDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('bonusesPage.kind')}</TableHead>
-                        <TableHead>{t('bonusesPage.label')}</TableHead>
-                        <TableHead>{t('bonusesPage.period')}</TableHead>
-                        <TableHead>{t('bonusesPage.amount')}</TableHead>
+                        <SortableHeader columnKey="kind" sortKey={bonusesSort.sortKey} sortDirection={bonusesSort.sortDirection} onSort={bonusesSort.toggleSort}>{t('bonusesPage.kind')}</SortableHeader>
+                        <SortableHeader columnKey="label" sortKey={bonusesSort.sortKey} sortDirection={bonusesSort.sortDirection} onSort={bonusesSort.toggleSort}>{t('bonusesPage.label')}</SortableHeader>
+                        <SortableHeader columnKey="period" sortKey={bonusesSort.sortKey} sortDirection={bonusesSort.sortDirection} onSort={bonusesSort.toggleSort}>{t('bonusesPage.period')}</SortableHeader>
+                        <SortableHeader columnKey="amount" sortKey={bonusesSort.sortKey} sortDirection={bonusesSort.sortDirection} onSort={bonusesSort.toggleSort}>{t('bonusesPage.amount')}</SortableHeader>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(bonusesQuery.data ?? []).map(b => (
+                      {sortedBonuses.map(b => (
                         <TableRow key={b.id}>
                           <TableCell><Badge variant="outline" className="capitalize">{t(`bonusKind.${b.kind}`)}</Badge></TableCell>
                           <TableCell>{b.label}</TableCell>
@@ -482,10 +514,10 @@ export function EmployeeDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('leavesPage.type')}</TableHead>
-                        <TableHead>{t('leavesPage.dates')}</TableHead>
-                        <TableHead>{t('leavesPage.status')}</TableHead>
-                        <TableHead>{t('leavesPage.reason')}</TableHead>
+                        <SortableHeader columnKey="type" sortKey={leavesSort.sortKey} sortDirection={leavesSort.sortDirection} onSort={leavesSort.toggleSort}>{t('leavesPage.type')}</SortableHeader>
+                        <SortableHeader columnKey="dates" sortKey={leavesSort.sortKey} sortDirection={leavesSort.sortDirection} onSort={leavesSort.toggleSort}>{t('leavesPage.dates')}</SortableHeader>
+                        <SortableHeader columnKey="status" sortKey={leavesSort.sortKey} sortDirection={leavesSort.sortDirection} onSort={leavesSort.toggleSort}>{t('leavesPage.status')}</SortableHeader>
+                        <SortableHeader columnKey="reason" sortKey={leavesSort.sortKey} sortDirection={leavesSort.sortDirection} onSort={leavesSort.toggleSort}>{t('leavesPage.reason')}</SortableHeader>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -496,7 +528,7 @@ export function EmployeeDetail() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        (planningLeavesQuery.data ?? []).map(l => (
+                        sortedLeaves.map(l => (
                           <TableRow key={l.id}>
                             <TableCell className="capitalize">{t(`leaveType.${String(l.leaveType)}`, { defaultValue: String(l.leaveType).replace(/_/g, ' ') })}</TableCell>
                             <TableCell className="whitespace-nowrap">{formatLeaveRange(l)}</TableCell>
@@ -542,13 +574,13 @@ export function EmployeeDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('historyTab.timestamp')}</TableHead>
-                        <TableHead>{t('historyTab.event')}</TableHead>
-                        <TableHead>{t('historyTab.description')}</TableHead>
+                        <SortableHeader columnKey="timestamp" sortKey={auditSort.sortKey} sortDirection={auditSort.sortDirection} onSort={auditSort.toggleSort}>{t('historyTab.timestamp')}</SortableHeader>
+                        <SortableHeader columnKey="event" sortKey={auditSort.sortKey} sortDirection={auditSort.sortDirection} onSort={auditSort.toggleSort}>{t('historyTab.event')}</SortableHeader>
+                        <SortableHeader columnKey="description" sortKey={auditSort.sortKey} sortDirection={auditSort.sortDirection} onSort={auditSort.toggleSort}>{t('historyTab.description')}</SortableHeader>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(auditQuery.data ?? []).map(e => (
+                      {sortedAudit.map(e => (
                         <TableRow key={e.id}>
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {dayjs(e.timestamp).format('YYYY-MM-DD HH:mm')}

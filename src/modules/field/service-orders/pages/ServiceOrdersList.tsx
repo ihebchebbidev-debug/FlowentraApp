@@ -51,6 +51,8 @@ import { MapOverlay } from "@/components/shared/MapOverlay";
 import { mapServiceOrdersToMapItems } from "@/components/shared/mappers";
 import { ExportModal } from "../components/ExportModal";
 import TableLayout, { Column } from "@/components/shared/TableLayout";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortMenu } from "@/components/shared/SortMenu";
 import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { toast } from "sonner";
@@ -298,13 +300,32 @@ export default function ServiceOrdersList() {
 
   const companyScopedServiceOrders = useFilteredByCompany(filteredServiceOrders);
 
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ServiceOrder>({
+    order: (o: any) => o.orderNumber || '',
+    company: (o: any) => o.tenantName ?? o.tenantId ?? '',
+    customer: (o: any) => o.customer?.company || o.customer?.contactPerson || '',
+    location: (o: any) => o.location?.city || o.location?.address || '',
+    status: (o: any) => String(o.status ?? ''),
+    priority: (o: any) => String(o.priority ?? ''),
+    cost: (o: any) => Number(o.estimatedCost ?? o.totalCost ?? 0),
+    technicians: (o: any) => (o.assignedTechnicians?.length ?? 0),
+    sale: (o: any) => o.saleNumber || o.saleId || '',
+    created: (o: any) => o.createdAt || '',
+  });
+
+  const sortedServiceOrders = useMemo(
+    () => sortItems(companyScopedServiceOrders as ServiceOrder[]),
+    [companyScopedServiceOrders, sortItems]
+  );
+
   // Union of preferred skills across all loaded service orders, for the filter dropdown.
   const skillOptions = useMemo(() => {
     const set = new Set<string>();
     serviceOrders.forEach(o => (o.preferredSkills || []).forEach(s => { if (s) set.add(s); }));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [serviceOrders]);
-  const pagination = usePaginatedData(companyScopedServiceOrders, 20);
+  const pagination = usePaginatedData(sortedServiceOrders, 20);
 
   // Check if all items are selected
   const allSelected = useMemo(() => {
@@ -803,6 +824,20 @@ export default function ServiceOrdersList() {
         />
       ) : viewMode === 'list' ? (
         <section className="p-3 sm:p-4 lg:p-6">
+          <div className="flex justify-end pb-2">
+            <SortMenu
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={toggleSort}
+              options={[
+                { key: 'order', label: t('list.table_order') },
+                { key: 'customer', label: t('list.table_customer') },
+                { key: 'status', label: t('list.table_status') },
+                { key: 'priority', label: t('list.table_priority') },
+                { key: 'created', label: t('list.table_created') },
+              ]}
+            />
+          </div>
           <Card className="shadow-card border-0 bg-card">
             {/* Map Section */}
             {showMap && (
@@ -974,6 +1009,9 @@ export default function ServiceOrdersList() {
                     rowKey={(order: ServiceOrder) => order.id}
                     onRowClick={handleServiceOrderClick}
                     tableClassName="w-full table-fixed min-w-[900px]"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
                     enableSelection
                     selectedIds={selectedIds}
                     onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
@@ -987,6 +1025,7 @@ export default function ServiceOrdersList() {
                     columns={[
                       {
                         key: 'order',
+                        sortable: true,
                         title: t('list.table_order'),
                         width: 'w-[150px]',
                         render: (order: ServiceOrder) => (
@@ -997,11 +1036,13 @@ export default function ServiceOrdersList() {
                       },
                       ...(isViewAllMode() ? [{
                         key: 'company',
+                        sortable: true,
                         title: t('list.table_company', 'Company'),
                         render: (order: ServiceOrder) => <CompanyBadge tenantId={(order as any).tenantId} forceShow />,
                       } as Column<ServiceOrder>] : []),
                       {
                         key: 'customer',
+                        sortable: true,
                         title: t('list.table_customer'),
                         render: (order: ServiceOrder) => (
                           <div>
@@ -1020,6 +1061,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'status',
+                        sortable: true,
                         title: t('list.table_status'),
                         render: (order: ServiceOrder) => (
                           <Badge className={`${getStatusColor(order.status)} text-xs`}>
@@ -1029,6 +1071,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'sale',
+                        sortable: true,
                         title: t('list.table_sale'),
                         render: (order: ServiceOrder) => (
                           order.saleId ? (
@@ -1047,6 +1090,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'created',
+                        sortable: true,
                         title: t('list.table_created'),
                         render: (order: ServiceOrder) => (
                           <div className="flex items-center gap-1 text-sm">
@@ -1144,9 +1188,13 @@ export default function ServiceOrdersList() {
                     rowKey={(order: ServiceOrder) => order.id}
                     onRowClick={handleServiceOrderClick}
                     tableClassName="w-full table-fixed min-w-[900px]"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
                     columns={[
                       {
                         key: 'order',
+                        sortable: true,
                         title: t('list.table_order'),
                         width: 'w-[150px]',
                         render: (order: ServiceOrder) => (
@@ -1165,6 +1213,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'customer',
+                        sortable: true,
                         title: t('list.table_customer'),
                         render: (order: ServiceOrder) => (
                           <div>
@@ -1175,6 +1224,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'location',
+                        sortable: true,
                         title: t('list.table_location'),
                         render: (order: ServiceOrder) => (
                           <div className="flex items-center gap-2 text-sm">
@@ -1185,6 +1235,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'status',
+                        sortable: true,
                         title: t('list.table_status'),
                         render: (order: ServiceOrder) => (
                           <Badge className={`${getStatusColor(order.status)} text-xs`}>
@@ -1194,6 +1245,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'priority',
+                        sortable: true,
                         title: t('list.table_priority'),
                         render: (order: ServiceOrder) => (
                           <Badge className={`${getPriorityColor(order.priority)} text-xs`}>
@@ -1203,6 +1255,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'cost',
+                        sortable: true,
                         title: t('list.table_cost'),
                         render: (order: ServiceOrder) => (
                           <span className="font-medium">{order.financials.estimatedCost.toLocaleString()} TND</span>
@@ -1210,6 +1263,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'technicians',
+                        sortable: true,
                         title: t('list.table_technicians'),
                         render: (order: ServiceOrder) => (
                           <div className="flex items-center gap-1 text-sm">
@@ -1220,6 +1274,7 @@ export default function ServiceOrdersList() {
                       },
                       {
                         key: 'created',
+                        sortable: true,
                         title: t('list.table_created'),
                         render: (order: ServiceOrder) => (
                           <div className="flex items-center gap-1 text-sm">

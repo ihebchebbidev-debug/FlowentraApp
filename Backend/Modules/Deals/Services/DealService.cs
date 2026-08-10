@@ -51,6 +51,23 @@ namespace MyApi.Modules.Deals.Services
         private static readonly string[] UserActivityTypes =
             { "note", "call", "email", "meeting", "task", "updated", "other" };
 
+        /// <summary>
+        /// Normalises a bound query-string date into a UTC instant. Model binding yields
+        /// Kind=Unspecified for "2026-08-10", which Npgsql rejects against timestamptz.
+        /// </summary>
+        private static DateTime? ToUtcInstant(DateTime? value)
+        {
+            if (!value.HasValue) return null;
+            var v = value.Value;
+            return v.Kind switch
+            {
+                DateTimeKind.Utc => v,
+                DateTimeKind.Local => v.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            };
+        }
+
+
         /// <summary>Title is the only human-identifying field on a deal — it must not be blank.</summary>
         private static string ValidateTitle(string? title)
         {
@@ -475,9 +492,16 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<DealStatsDto> GetDealStatsAsync(DateTime? dateFrom = null, DateTime? dateTo = null)
         {
+            // CreatedDate is a timestamptz column: Npgsql refuses DateTime values with
+            // Kind=Unspecified (what model binding produces for "2026-08-10"), which used
+            // to make ?date_from=/?date_to= return a 500 instead of filtered stats.
+            var from = ToUtcInstant(dateFrom);
+            var to = ToUtcInstant(dateTo);
+
             var query = _context.Deals.AsNoTracking().Where(d => !d.IsDeleted);
-            if (dateFrom.HasValue) query = query.Where(d => d.CreatedDate >= dateFrom.Value);
-            if (dateTo.HasValue) query = query.Where(d => d.CreatedDate <= dateTo.Value);
+            if (from.HasValue) query = query.Where(d => d.CreatedDate >= from.Value);
+            if (to.HasValue) query = query.Where(d => d.CreatedDate <= to.Value);
+
 
             var deals = await query.Select(d => new { d.Stage, d.EstimatedValue }).ToListAsync();
 

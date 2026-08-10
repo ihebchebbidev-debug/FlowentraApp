@@ -61,6 +61,8 @@ import { useDispatchDeletion } from "../hooks/useDispatchDeletion";
 import { useToast } from "@/hooks/use-toast";
 import { CreateActionButton } from '@/components/CreateActionButton';
 import TableLayout, { Column } from "@/components/shared/TableLayout";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortMenu } from "@/components/shared/SortMenu";
 import { TableRowActions } from "@/shared/components/TableRowActions";
 
 export default function DispatchesList() {
@@ -238,7 +240,7 @@ export default function DispatchesList() {
     ]
   };
 
-  const filteredDispatches = dispatches.filter(dispatch => {
+  const rawFilteredDispatches = dispatches.filter(dispatch => {
     const matchesSearch = searchTerm === "" || 
       dispatch.jobNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       dispatch.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -248,6 +250,22 @@ export default function DispatchesList() {
     
     return matchesSearch && matchesStatus;
   });
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<DispatchJob>({
+    jobNumber: (d: any) => d.jobNumber || '',
+    company: (d: any) => d.tenantName ?? d.tenantId ?? '',
+    customer: (d: any) => d.customer?.company || '',
+    scheduledDate: (d: any) => (d.scheduledDate ? new Date(d.scheduledDate).getTime() : null),
+    technicians: (d: any) => d.assignedTechnicians?.length ?? 0,
+    status: (d: any) => String(d.status ?? ''),
+    priority: (d: any) => String(d.priority ?? ''),
+  });
+
+  const filteredDispatches = useMemo(
+    () => sortItems(rawFilteredDispatches as DispatchJob[]),
+    [rawFilteredDispatches, sortItems]
+  );
 
   // Status filter tabs: Total, Confirmed, In Progress, Completed (Assigned removed)
   const statusTabs = useMemo(() => [
@@ -496,6 +514,20 @@ export default function DispatchesList() {
             ) : (
               <>
                 {/* Mobile cards — visible below md breakpoint (matches Service Orders list) */}
+                <div className="md:hidden flex justify-end px-3 pb-2">
+                  <SortMenu
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
+                    options={[
+                      { key: 'jobNumber', label: t('dispatches.job_number') },
+                      { key: 'customer', label: t('dispatches.customer') },
+                      { key: 'scheduledDate', label: t('dispatches.scheduled_date') },
+                      { key: 'status', label: t('dispatches.overview.current_status') },
+                      { key: 'priority', label: t('dispatches.job_info.priority') },
+                    ]}
+                  />
+                </div>
                 <div className="md:hidden list-editorial">
                   {filteredDispatches.map((dispatch) => (
                     <div
@@ -570,6 +602,9 @@ export default function DispatchesList() {
                     rowKey={(dispatch) => dispatch.id}
                     onRowClick={handleDispatchClick}
                     tableClassName="w-full min-w-[900px]"
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
                     enableSelection={hasDeleteAccess}
                     selectedIds={selectedIds}
                     onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
@@ -588,6 +623,7 @@ export default function DispatchesList() {
                     columns={[
                       {
                         key: 'jobNumber',
+                        sortable: true,
                         title: t('dispatches.job_number'),
                         render: (dispatch) => (
                           <div>
@@ -600,11 +636,13 @@ export default function DispatchesList() {
                       },
                       ...(isViewAllMode() ? [{
                         key: 'company',
+                        sortable: true,
                         title: t('dispatches.company'),
                         render: (dispatch: DispatchJob) => <CompanyBadge tenantId={(dispatch as any).tenantId} forceShow />,
                       } as Column<DispatchJob>] : []),
                       {
                         key: 'customer',
+                        sortable: true,
                         title: t('dispatches.customer'),
                         render: (dispatch) => (
                           <div className="flex items-center gap-2">
@@ -621,6 +659,7 @@ export default function DispatchesList() {
                       },
                       {
                         key: 'scheduledDate',
+                        sortable: true,
                         title: t('dispatches.scheduled_date'),
                         render: (dispatch) => (
                           <div className="flex items-center gap-2">
@@ -637,6 +676,7 @@ export default function DispatchesList() {
                       },
                       {
                         key: 'technicians',
+                        sortable: true,
                         title: t('dispatches.technicians'),
                         render: (dispatch) => (
                           dispatch.assignedTechnicians.length > 0 ? (
@@ -661,6 +701,7 @@ export default function DispatchesList() {
                       },
                       {
                         key: 'status',
+                        sortable: true,
                         title: t('dispatches.overview.current_status'),
                         render: (dispatch) => (
                           <Badge className={`${getStatusColor(dispatch.status)} text-xs font-medium`}>
@@ -670,6 +711,7 @@ export default function DispatchesList() {
                       },
                       {
                         key: 'priority',
+                        sortable: true,
                         title: t('dispatches.job_info.priority'),
                         render: (dispatch) => (
                           <Badge className={`${getPriorityColor(dispatch.priority)} text-xs font-medium`}>

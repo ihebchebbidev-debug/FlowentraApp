@@ -12,6 +12,8 @@ import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/Purc
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import type { GoodsReceipt } from "../types";
 import { formatPurchaseDate, formatPaymentTerms } from '../utils/format';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 function GoodsReceiptDetailContent() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +35,14 @@ function GoodsReceiptDetailContent() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const { sortKey: itemSortKey, sortDirection: itemSortDirection, toggleSort: toggleItemSort, sortItems: sortGrItems } = useTableSort<GoodsReceipt['items'][number]>({
+    article: (it) => it.articleName,
+    orderedQty: (it) => it.orderedQty,
+    quantityReceived: (it) => it.quantityReceived,
+    quantityRejected: (it) => it.quantityRejected,
+    notes: (it) => it.rejectionReason || it.notes,
+  });
+
   if (loading) return <DetailSkeleton />;
   if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/receipts" />;
   if (!gr) return <PurchaseErrorFallback error={t('receipts.notFound')} backTo="/dashboard/purchases/receipts" />;
@@ -48,6 +58,7 @@ function GoodsReceiptDetailContent() {
   const acceptedQty = (gr.items || []).reduce((sum, it) => sum + (Number(it.quantityReceived) || 0), 0);
   const rejectedQty = (gr.items || []).reduce((sum, it) => sum + (Number(it.quantityRejected) || 0), 0);
   const postedLines = (gr.items || []).filter(it => (Number(it.quantityReceived) || 0) > 0).length;
+  const sortedItems = sortGrItems(gr.items);
 
   return (
     <div className="flex flex-col">
@@ -142,15 +153,15 @@ function GoodsReceiptDetailContent() {
             <Table className="min-w-[480px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">{t('fields.article')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('fields.orderedQty')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('fields.receivedQty')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('fields.rejectedQty')}</TableHead>
-                  <TableHead className="text-xs">{t('fields.notes')}</TableHead>
+                  <SortableHeader columnKey="article" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} className="text-xs">{t('fields.article')}</SortableHeader>
+                  <SortableHeader columnKey="orderedQty" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="center" className="text-xs">{t('fields.orderedQty')}</SortableHeader>
+                  <SortableHeader columnKey="quantityReceived" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="center" className="text-xs">{t('fields.receivedQty')}</SortableHeader>
+                  <SortableHeader columnKey="quantityRejected" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} align="center" className="text-xs">{t('fields.rejectedQty')}</SortableHeader>
+                  <SortableHeader columnKey="notes" sortKey={itemSortKey} sortDirection={itemSortDirection} onSort={toggleItemSort} className="text-xs">{t('fields.notes')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {gr.items.map(item => (
+                {sortedItems.map(item => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="text-xs font-medium">{item.articleName}</div>

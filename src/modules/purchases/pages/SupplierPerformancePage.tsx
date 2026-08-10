@@ -25,6 +25,8 @@ import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/Purc
 import { ChartSkeleton } from "../components/PurchaseSkeletons";
 import type { PurchaseOrder, SupplierInvoice } from "../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
 
 /**
  * Supplier Performance Scorecard
@@ -85,6 +87,19 @@ function SupplierPerformanceContent() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [trendMonths, setTrendMonths] = useState<3 | 6 | 12>(6);
   const [trendSupplierId, setTrendSupplierId] = useState<string>('__all__');
+
+  type EnrichedRow = Row & { onTimePct: number | null; avgLead: number | null; paidPct: number | null; score: number };
+  const { sortKey: colSortKey, sortDirection: colSortDirection, toggleSort: toggleColSort, sortItems: sortByColumn } = useTableSort<EnrichedRow>({
+    supplier: (r) => r.supplierName,
+    score: (r) => r.score,
+    po: (r) => r.poCount,
+    spend: (r) => r.totalSpend,
+    onTime: (r) => r.onTimePct,
+    lead: (r) => r.avgLead,
+    invoices: (r) => r.invoiceCount,
+    paidPct: (r) => r.paidPct,
+    overdue: (r) => r.invoiceOverdueCount,
+  });
 
   const load = () => {
     setError(null);
@@ -193,6 +208,12 @@ function SupplierPerformanceContent() {
     });
     return list;
   }, [enriched, search, sortKey]);
+
+  // Column-header click sorting takes precedence over the dropdown once active.
+  const sortedFiltered = useMemo(
+    () => (colSortKey ? sortByColumn(filtered) : filtered),
+    [filtered, colSortKey, sortByColumn],
+  );
 
   const topSpend = useMemo(() => {
     return [...enriched].sort((a, b) => b.totalSpend - a.totalSpend).slice(0, 8).map(r => ({
@@ -512,23 +533,23 @@ function SupplierPerformanceContent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">{t('reports.supplierPerformance.supplier', 'Supplier')}</TableHead>
+                  <SortableHeader columnKey="supplier" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} className="text-xs">{t('reports.supplierPerformance.supplier', 'Supplier')}</SortableHeader>
                   <TableHead className="text-xs text-center">{t('reports.supplierPerformance.grade', 'Grade')}</TableHead>
-                  <TableHead className="text-xs min-w-[140px]">{t('reports.supplierPerformance.score', 'Score')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.poCount', 'POs')}</TableHead>
-                  <TableHead className="text-xs text-end">{t('reports.supplierPerformance.spend', 'Total spend')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.onTime', 'On-time %')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.avgLead', 'Avg lead (d)')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.invoices', 'Invoices')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.paidPct', 'Paid %')}</TableHead>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.overdue', 'Overdue')}</TableHead>
+                  <SortableHeader columnKey="score" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} className="text-xs min-w-[140px]">{t('reports.supplierPerformance.score', 'Score')}</SortableHeader>
+                  <SortableHeader columnKey="po" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.poCount', 'POs')}</SortableHeader>
+                  <SortableHeader columnKey="spend" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="right" className="text-xs">{t('reports.supplierPerformance.spend', 'Total spend')}</SortableHeader>
+                  <SortableHeader columnKey="onTime" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.onTime', 'On-time %')}</SortableHeader>
+                  <SortableHeader columnKey="lead" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.avgLead', 'Avg lead (d)')}</SortableHeader>
+                  <SortableHeader columnKey="invoices" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.invoices', 'Invoices')}</SortableHeader>
+                  <SortableHeader columnKey="paidPct" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.paidPct', 'Paid %')}</SortableHeader>
+                  <SortableHeader columnKey="overdue" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.overdue', 'Overdue')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {sortedFiltered.length === 0 ? (
                   <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">{t('reports.noData', 'No data available')}</TableCell></TableRow>
                 ) : (
-                  filtered.map(r => {
+                  sortedFiltered.map(r => {
                     const grade = gradeFor(r.score);
                     return (
                       <TableRow key={r.supplierId} onClick={() => setSelectedId(r.supplierId)} className="cursor-pointer hover:bg-muted/50">

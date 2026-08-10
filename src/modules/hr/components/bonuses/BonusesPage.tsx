@@ -21,6 +21,8 @@ import dayjs from 'dayjs';
 import { z } from 'zod';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const BONUS_KINDS = ['bonus', 'allowance', 'reimbursement', 'other_cost'] as const;
 const BONUS_FREQUENCIES = ['monthly', 'one_off'] as const;
@@ -167,6 +169,15 @@ export function BonusesPage() {
     }
     return { bonuses, deductions, reimbursements, net: bonuses + reimbursements - deductions, count: list.length };
   }, [bonusesQuery.data]);
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<BonusCost>({
+    employee: (b) => userById.get(b.userId) ?? `#${b.userId}`,
+    kind: (b) => b.kind,
+    label: (b) => b.label,
+    period: (b) => (b.month && b.year ? `${b.year}-${String(b.month).padStart(2, '0')}` : ''),
+    amount: (b) => Number(b.amount),
+  });
+  const sortedBonuses = useMemo(() => sortItems(bonusesQuery.data ?? []), [bonusesQuery.data, sortItems]);
 
   return (
     <div className="flex flex-col">
@@ -322,16 +333,16 @@ export function BonusesPage() {
               <Table className="min-w-[500px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('bonusesPage.employee')}</TableHead>
-                    <TableHead>{t('bonusesPage.kind')}</TableHead>
-                    <TableHead>{t('bonusesPage.label')}</TableHead>
-                    <TableHead>{t('bonusesPage.period')}</TableHead>
-                    <TableHead>{t('bonusesPage.amount')}</TableHead>
+                    <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('bonusesPage.employee')}</SortableHeader>
+                    <SortableHeader columnKey="kind" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('bonusesPage.kind')}</SortableHeader>
+                    <SortableHeader columnKey="label" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('bonusesPage.label')}</SortableHeader>
+                    <SortableHeader columnKey="period" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('bonusesPage.period')}</SortableHeader>
+                    <SortableHeader columnKey="amount" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('bonusesPage.amount')}</SortableHeader>
                     <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(bonusesQuery.data ?? []).map(b => (
+                  {sortedBonuses.map(b => (
                     <TableRow key={b.id}>
                       <TableCell className="font-medium">{userById.get(b.userId) ?? `#${b.userId}`}</TableCell>
                       <TableCell><Badge variant="outline" className="capitalize">{t(`bonusKind.${b.kind}`)}</Badge></TableCell>

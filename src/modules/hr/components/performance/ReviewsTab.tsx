@@ -15,6 +15,8 @@ import { useReviewCycles, useReviews } from '../../hooks/usePerformance';
 import { useEmployees } from '../../hooks/useEmployees';
 import type { ReviewRating, ReviewStatus, HrPerformanceReview } from '../../types/performance.types';
 import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_VARIANT: Record<ReviewStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   pending: 'outline',
@@ -61,6 +63,16 @@ export function ReviewsTab() {
     setOpen(false);
     setUserId(''); setCycleId(''); setReviewerId('');
   };
+
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<HrPerformanceReview>({
+    employee: (r) => r.userName,
+    cycle: (r) => r.cycleName,
+    reviewer: (r) => r.reviewerName,
+    status: (r) => r.status,
+    score: (r) => r.overallScore,
+    rating: (r) => r.rating,
+  });
+  const sortedReviews = useMemo(() => sortItems(reviewsQuery.data ?? []), [reviewsQuery.data, sortItems]);
 
   const [detail, setDetail] = useState<HrPerformanceReview | null>(null);
   const [draft, setDraft] = useState<Partial<HrPerformanceReview>>({});
@@ -168,12 +180,12 @@ export function ReviewsTab() {
           <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
-                <TableHead>{t('performancePage.reviews.table.employee')}</TableHead>
-                <TableHead>{t('performancePage.reviews.table.cycle')}</TableHead>
-                <TableHead>{t('performancePage.reviews.table.reviewer')}</TableHead>
-                <TableHead>{t('performancePage.reviews.table.status')}</TableHead>
-                <TableHead>{t('performancePage.reviews.table.score')}</TableHead>
-                <TableHead>{t('performancePage.reviews.table.rating')}</TableHead>
+                <SortableHeader columnKey="employee" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.reviews.table.employee')}</SortableHeader>
+                <SortableHeader columnKey="cycle" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.reviews.table.cycle')}</SortableHeader>
+                <SortableHeader columnKey="reviewer" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.reviews.table.reviewer')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.reviews.table.status')}</SortableHeader>
+                <SortableHeader columnKey="score" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.reviews.table.score')}</SortableHeader>
+                <SortableHeader columnKey="rating" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('performancePage.reviews.table.rating')}</SortableHeader>
                 <TableHead className="w-[100px]">{t('performancePage.reviews.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -181,7 +193,7 @@ export function ReviewsTab() {
               {(reviewsQuery.data ?? []).length === 0 && (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('performancePage.reviews.noReviews')}</TableCell></TableRow>
               )}
-              {(reviewsQuery.data ?? []).map(r => (
+              {sortedReviews.map(r => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.userName}</TableCell>
                   <TableCell className="text-xs">{r.cycleName}</TableCell>

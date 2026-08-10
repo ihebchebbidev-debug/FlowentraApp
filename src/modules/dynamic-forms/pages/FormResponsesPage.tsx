@@ -36,6 +36,9 @@ import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { useActionLogger } from '@/hooks/useActionLogger';
+import { useMemo } from 'react';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 export default function FormResponsesPage() {
   const { t, i18n } = useTranslation('dynamic-forms');
@@ -51,6 +54,11 @@ export default function FormResponsesPage() {
   
   const { data: form } = useDynamicForm(formId);
   const { data: responses, isLoading } = useFormResponses(formId);
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<DynamicFormResponse>({
+    submitted_by: (r) => r.submitted_by,
+    submitted_at: (r) => r.submitted_at,
+  });
+  const sortedResponses = useMemo(() => responses ? sortItems(responses) : [], [responses, sortItems]);
   
   const [exportingPdf, setExportingPdf] = useState<number | null>(null);
   // Progress + cancel support for the bulk PDF export
@@ -314,14 +322,14 @@ export default function FormResponsesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">#</TableHead>
-                      <TableHead>{t('responses.submitted_by')}</TableHead>
-                      <TableHead>{t('responses.submitted_at')}</TableHead>
+                      <SortableHeader columnKey="submitted_by" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('responses.submitted_by')}</SortableHeader>
+                      <SortableHeader columnKey="submitted_at" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('responses.submitted_at')}</SortableHeader>
                       <TableHead>{t('responses.entity')}</TableHead>
                       <TableHead className="w-24 text-right">{t('table.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {responses.map((response, index) => (
+                    {sortedResponses.map((response, index) => (
                       <TableRow key={response.id}>
                         <TableCell className="font-medium">{index + 1}</TableCell>
                         <TableCell>{response.submitted_by}</TableCell>

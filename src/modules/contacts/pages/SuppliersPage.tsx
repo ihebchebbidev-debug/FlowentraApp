@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CollapsibleSearch } from '@/components/ui/collapsible-search';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,6 +49,26 @@ export default function SuppliersPage() {
     sortDirection: 'desc',
     type: 'supplier'
   });
+
+  // Server-side column sorting
+  const SORT_FIELDS: Record<string, string> = {
+    contact: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    status: 'Status',
+  };
+  const activeSortKey = Object.keys(SORT_FIELDS).find(k => SORT_FIELDS[k] === searchParams.sortBy) ?? null;
+  const activeSortDirection = (activeSortKey ? (searchParams.sortDirection ?? 'asc') : null) as 'asc' | 'desc' | null;
+  const handleSort = (key: string) => {
+    const field = SORT_FIELDS[key];
+    if (!field) return;
+    setSearchParams(prev => ({
+      ...prev,
+      sortBy: field,
+      sortDirection: prev.sortBy === field && prev.sortDirection === 'asc' ? 'desc' : 'asc',
+      pageNumber: 1,
+    }));
+  };
 
   const {
     contacts,
@@ -606,11 +627,11 @@ export default function SuppliersPage() {
                     className={someSelected ? "data-[state=checked]:bg-primary" : ""}
                   />
                 </TableHead>
-                <TableHead>{t('table_headers.contact')}</TableHead>
+                <SortableHeader columnKey="contact" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.contact')}</SortableHeader>
                 {isViewAllMode() && <TableHead>{t('table_headers.company_col')}</TableHead>}
-                <TableHead>{t('table_headers.email')}</TableHead>
-                <TableHead>{t('table_headers.phone')}</TableHead>
-                <TableHead>{t('table_headers.status')}</TableHead>
+                <SortableHeader columnKey="email" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.email')}</SortableHeader>
+                <SortableHeader columnKey="phone" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.phone')}</SortableHeader>
+                <SortableHeader columnKey="status" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.status')}</SortableHeader>
                 <TableHead className="text-right">{t('table_headers.actions')}</TableHead>
               </TableRow>
             </TableHeader>

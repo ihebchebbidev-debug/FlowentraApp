@@ -55,6 +55,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import TableLayout from '@/components/shared/TableLayout';
+import { SortableHeader } from '@/components/shared/SortableHeader';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortMenu } from '@/components/shared/SortMenu';
 import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
@@ -184,7 +187,19 @@ export function SalesList() {
 
   // Apply the global "Company" filter (header dropdown) on top of local filters.
   const companyScopedSales = useFilteredByCompany(filteredSales);
-  const pagination = usePaginatedData(companyScopedSales, 20);
+
+  // Column sorting (raw values, never rendered text)
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<any>({
+    sale: (s: any) => s.title || s.saleNumber || '',
+    company: (s: any) => s.tenantName ?? s.tenantId ?? '',
+    contact: (s: any) => s.contactName || '',
+    offer: (s: any) => (s.offerId ? (s.offerNumber || offerNumbersMap[s.offerId] || `OFR-${s.offerId}`) : ''),
+    amount: (s: any) => calculateItemsTotal(s),
+    status: (s: any) => t(String(s.status ?? '')),
+  });
+
+  const sortedSales = useMemo(() => sortItems(companyScopedSales as any[]), [companyScopedSales, sortItems]);
+  const pagination = usePaginatedData(sortedSales, 20);
 
   // Check if all items are selected
   const allSelected = useMemo(() => {
@@ -690,6 +705,20 @@ export function SalesList() {
         />
       ) : viewMode === 'list' ? (
         <div className="p-3 sm:p-4 lg:p-6">
+          <div className="flex justify-end pb-2">
+            <SortMenu
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={toggleSort}
+              options={[
+                { key: 'sale', label: t('table.sale', { defaultValue: 'Sale' }) },
+                { key: 'contact', label: t('table.contact', { defaultValue: 'Contact' }) },
+                { key: 'offer', label: t('table.offer', { defaultValue: 'Offer' }) },
+                { key: 'amount', label: t('table.amount', { defaultValue: 'Amount' }) },
+                { key: 'status', label: t('table.status', { defaultValue: 'Status' }) },
+              ]}
+            />
+          </div>
           <Card className="shadow-card border-0 bg-card text-rem-85">
             <MapOverlay 
               items={mapSalesToMapItems(filteredSales as any)}
@@ -854,12 +883,12 @@ export function SalesList() {
                               className={someSelected ? "data-[state=checked]:bg-primary" : ""}
                             />
                           </TableHead>
-                          <TableHead className="w-[250px]">{t('sale')}</TableHead>
-                          {isViewAllMode() && <TableHead>{t('company', 'Company')}</TableHead>}
-                          <TableHead>{t('contact')}</TableHead>
-                          <TableHead>{t('relatedOffer')}</TableHead>
-                          <TableHead>{t('amount')}</TableHead>
-                          <TableHead>{t('status')}</TableHead>
+                          <SortableHeader className="w-[250px]" columnKey="sale" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('sale')}</SortableHeader>
+                          {isViewAllMode() && <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('company', 'Company')}</SortableHeader>}
+                          <SortableHeader columnKey="contact" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('contact')}</SortableHeader>
+                          <SortableHeader columnKey="offer" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('relatedOffer')}</SortableHeader>
+                          <SortableHeader columnKey="amount" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('amount')}</SortableHeader>
+                          <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('status')}</SortableHeader>
                           <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                       </TableHeader>

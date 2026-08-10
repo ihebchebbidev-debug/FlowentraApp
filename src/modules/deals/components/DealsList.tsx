@@ -30,6 +30,8 @@ import { getInitialViewMode, useEnforceListOnMobile } from "../../../hooks/getIn
 import { usePermissions } from "@/hooks/usePermissions";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 type StatFilter = "all" | "open" | "won" | "lost";
 
@@ -78,7 +80,17 @@ export function DealsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deals, searchTerm, selectedStat, filterStage, showAtRiskOnly]);
 
-  const pagination = usePaginatedData(filtered, 20);
+  const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Deal>({
+    title: (d) => d.title,
+    customer: (d) => d.contactName || d.contact?.name,
+    stage: (d) => d.stage,
+    value: (d) => d.estimatedValue,
+    probability: (d) => d.probability,
+    closeDate: (d) => d.expectedCloseDate,
+  });
+  const sortedFiltered = useMemo(() => sortItems(filtered), [filtered, sortItems]);
+
+  const pagination = usePaginatedData(sortedFiltered, 20);
   const paginationBar = (
     <SimplePaginationBar
       startIndex={pagination.info.startIndex}
@@ -338,12 +350,12 @@ export function DealsList() {
               <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("table.deal")}</TableHead>
-                    <TableHead className="hidden sm:table-cell">{t("table.customer")}</TableHead>
-                    <TableHead>{t("table.stage")}</TableHead>
-                    <TableHead className="text-right">{t("table.value")}</TableHead>
-                    <TableHead className="text-center hidden md:table-cell">{t("table.probability")}</TableHead>
-                    <TableHead className="hidden md:table-cell">{t("table.closeDate")}</TableHead>
+                    <SortableHeader columnKey="title" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t("table.deal")}</SortableHeader>
+                    <SortableHeader columnKey="customer" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell">{t("table.customer")}</SortableHeader>
+                    <SortableHeader columnKey="stage" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t("table.stage")}</SortableHeader>
+                    <SortableHeader columnKey="value" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t("table.value")}</SortableHeader>
+                    <SortableHeader columnKey="probability" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="hidden md:table-cell">{t("table.probability")}</SortableHeader>
+                    <SortableHeader columnKey="closeDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell">{t("table.closeDate")}</SortableHeader>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>

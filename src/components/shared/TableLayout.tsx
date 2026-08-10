@@ -5,6 +5,8 @@ import { PaginationControls } from './PaginationControls';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { FileX2, Search } from 'lucide-react';
+import { SortableLabel } from './SortableHeader';
+import type { SortDirection } from '@/hooks/useTableSort';
 
 // ————————————————————————————————————————
 // Types
@@ -21,6 +23,10 @@ export type Column<T = any> = {
   render: (row: T) => React.ReactNode;
   /** If true, column can be resized by dragging its right border */
   resizable?: boolean;
+  /** If true, the header becomes a sortable ^v toggle (requires sort props on TableLayout) */
+  sortable?: boolean;
+  /** Alignment of the sortable header label */
+  headerAlign?: 'left' | 'right' | 'center';
   /** Inline edit config: provide to make cells editable on double-click */
   editable?: {
     type: 'text' | 'number' | 'select';
@@ -31,6 +37,7 @@ export type Column<T = any> = {
     getValue: (row: T) => string;
   };
 };
+
 
 type Props<T = any> = {
   items: T[];
@@ -56,6 +63,11 @@ type Props<T = any> = {
   emptyIcon?: React.ReactNode;
   emptyTitle?: string;
   emptyDescription?: string;
+  // Sorting (controlled — pair with useTableSort)
+  sortKey?: string | null;
+  sortDirection?: SortDirection;
+  onSort?: (key: string) => void;
+
 };
 
 // ————————————————————————————————————————
@@ -249,6 +261,10 @@ export function TableLayout<T = any>({
   emptyIcon,
   emptyTitle,
   emptyDescription,
+  sortKey = null,
+  sortDirection = null,
+  onSort,
+
 }: Props<T>) {
   // Column widths state for resizing
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
@@ -394,7 +410,20 @@ export function TableLayout<T = any>({
                   )}
                   style={widthStyle}
                 >
-                  {col.title}
+                  {col.sortable && onSort ? (
+                    <SortableLabel
+                      columnKey={col.key}
+                      sortKey={sortKey}
+                      sortDirection={sortDirection}
+                      onSort={onSort}
+                      align={col.headerAlign ?? 'left'}
+                    >
+                      {col.title}
+                    </SortableLabel>
+                  ) : (
+                    col.title
+                  )}
+
                   {isResizable && (
                     <ResizeHandle
                       onResize={(delta) => handleResize(col.key, delta, col.minWidth)}

@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import AddTodoModal from "../components/AddTodoModal";
 import { Building2, Mail, Phone, ArrowLeft, MapPin, Calendar, Plus, Upload, FileText, Download, Trash2, User, PlusCircle } from "lucide-react";
 import { TasksService, BackendDailyTaskResponse } from "../../../tasks/services/tasks.service";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/shared/SortableHeader";
 
 interface Todo { id: string; title: string; done: boolean; due?: string | null }
 interface FileAttachment { id: string; name: string; size: string; uploadedAt: string; type: string }
@@ -143,6 +145,21 @@ export default function ClientDetail() {
   const removeFile = (fileId: string) => setFiles((prev) => prev.filter(f => f.id !== fileId));
 
   const _initials = client.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+  const todosSort = useTableSort<BackendDailyTaskResponse>({
+    title: (row) => row.title,
+    status: (row) => row.status,
+    due: (row) => row.dueDate,
+  });
+  const sortedTodos = todosSort.sortItems(todos);
+
+  const filesSort = useTableSort<FileAttachment>({
+    name: (row) => row.name,
+    type: (row) => row.type,
+    size: (row) => row.size,
+    uploaded: (row) => row.uploadedAt,
+  });
+  const sortedFiles = filesSort.sortItems(files);
 
   return (
     <div className="space-y-6">
@@ -307,14 +324,14 @@ export default function ClientDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('field_customers:todos_section.table.title', 'Title')}</TableHead>
-                        <TableHead>{t('field_customers:todos_section.table.status', 'Status')}</TableHead>
-                        <TableHead>{t('field_customers:todos_section.table.due', 'Due')}</TableHead>
+                        <SortableHeader columnKey="title" sortKey={todosSort.sortKey} sortDirection={todosSort.sortDirection} onSort={todosSort.toggleSort}>{t('field_customers:todos_section.table.title', 'Title')}</SortableHeader>
+                        <SortableHeader columnKey="status" sortKey={todosSort.sortKey} sortDirection={todosSort.sortDirection} onSort={todosSort.toggleSort}>{t('field_customers:todos_section.table.status', 'Status')}</SortableHeader>
+                        <SortableHeader columnKey="due" sortKey={todosSort.sortKey} sortDirection={todosSort.sortDirection} onSort={todosSort.toggleSort}>{t('field_customers:todos_section.table.due', 'Due')}</SortableHeader>
                         <TableHead className="text-right">{t('field_customers:todos_section.table.actions', 'Actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {todos.map((todo) => (
+                      {sortedTodos.map((todo) => (
                         <TableRow key={todo.id} className="hover:bg-muted/50">
                           <TableCell>{todo.title}</TableCell>
                           <TableCell>
@@ -376,15 +393,15 @@ export default function ClientDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('field_customers:documents_section.table.file_name', 'File Name')}</TableHead>
-                        <TableHead>{t('field_customers:documents_section.table.type', 'Type')}</TableHead>
-                        <TableHead>{t('field_customers:documents_section.table.size', 'Size')}</TableHead>
-                        <TableHead>{t('field_customers:documents_section.table.uploaded', 'Uploaded')}</TableHead>
+                        <SortableHeader columnKey="name" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>{t('field_customers:documents_section.table.file_name', 'File Name')}</SortableHeader>
+                        <SortableHeader columnKey="type" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>{t('field_customers:documents_section.table.type', 'Type')}</SortableHeader>
+                        <SortableHeader columnKey="size" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>{t('field_customers:documents_section.table.size', 'Size')}</SortableHeader>
+                        <SortableHeader columnKey="uploaded" sortKey={filesSort.sortKey} sortDirection={filesSort.sortDirection} onSort={filesSort.toggleSort}>{t('field_customers:documents_section.table.uploaded', 'Uploaded')}</SortableHeader>
                         <TableHead className="text-right">{t('field_customers:documents_section.table.actions', 'Actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {files.map((file) => (
+                      {sortedFiles.map((file) => (
                         <TableRow key={file.id} className="hover:bg-muted/50">
                           <TableCell className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />

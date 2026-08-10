@@ -927,12 +927,16 @@ export function WorkflowBuilder() {
     setSelectedEdgeId(edgeId);
   }, []);
 
+  // Edge toolbar mutations must flag unsaved changes — otherwise the user can
+  // restyle/reverse connections, navigate away, and lose the edits with no warning.
   const changeEdgeType = useCallback((edgeId: string, type: string) => {
     setEdges(eds => eds.map(e => e.id === edgeId ? { ...e, type } : e));
+    setHasUnsavedChanges(true);
   }, [setEdges]);
 
   const toggleEdgeAnimated = useCallback((edgeId: string) => {
     setEdges(eds => eds.map(e => e.id === edgeId ? { ...e, animated: !e.animated } : e));
+    setHasUnsavedChanges(true);
   }, [setEdges]);
 
   const reverseEdge = useCallback((edgeId: string) => {
@@ -955,7 +959,9 @@ export function WorkflowBuilder() {
       setSelectedEdgeId(newId);
       return updated;
     });
+    setHasUnsavedChanges(true);
   }, [setEdges]);
+
 
   const createBusinessTemplate = useCallback(() => {
     const templateNodes: Node[] = [
