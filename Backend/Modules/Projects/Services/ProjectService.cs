@@ -181,7 +181,11 @@ namespace MyApi.Modules.Projects.Services
             var kind = NormalizeKind(createDto.ProjectKind);
             var priority = NormalizePriority(createDto.Priority);
 
-            await using var tx = await _context.Database.BeginTransactionAsync();
+            // Nesting-safe: when an outer unit of work already owns a transaction
+            // (e.g. Deal → Project conversion), join it instead of opening a second
+            // one — Npgsql rejects nested transactions on the same connection.
+            var ownsTx = _context.Database.CurrentTransaction == null;
+            await using var tx = ownsTx ? await _context.Database.BeginTransactionAsync() : null;
             try
             {
                 if (createDto.ContactId.HasValue)
@@ -222,7 +226,7 @@ namespace MyApi.Modules.Projects.Services
                     await _columnService.CreateDefaultColumnsAsync(project.Id, createdByUser);
                 }
 
-                await tx.CommitAsync();
+                if (tx != null) await tx.CommitAsync();
 
                 // Reload with includes (after commit so the read sees the final state)
                 var createdProject = await GetProjectByIdAsync(project.Id);
@@ -232,7 +236,7 @@ namespace MyApi.Modules.Projects.Services
             }
             catch (Exception ex)
             {
-                await tx.RollbackAsync();
+                if (tx != null) await tx.RollbackAsync();
                 _logger.LogError(ex, "Error creating project");
                 throw;
             }
