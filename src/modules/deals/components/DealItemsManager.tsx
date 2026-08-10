@@ -33,7 +33,7 @@ function lineTotal(it: DealItemDraft): number {
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   const gross = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
   const discount = Number(it.discount) || 0;
-  if (discount <= 0) return round2(gross);
+  if (discount <= 0) return round2(Math.max(gross, 0));
   const net = it.discountType === "fixed" ? gross - discount : gross * (1 - discount / 100);
   return round2(Math.max(net, 0));
 }
