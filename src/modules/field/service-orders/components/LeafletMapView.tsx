@@ -202,7 +202,7 @@ export function LeafletMapView({ serviceOrders, onViewOrder, onEditOrder }: Leaf
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
                   <span>🎯</span>
-                  <span style="color: ${isDark ? '#f9fafb' : '#111827'};">Priority: ${order.priority} | Status: ${order.status.replace('_', ' ')}</span>
+                  <span style="color: ${isDark ? '#f9fafb' : '#111827'};">Priority: ${order.priority} | Status: ${(order.status || '').replace('_', ' ')}</span>
                 </div>
               </div>
               

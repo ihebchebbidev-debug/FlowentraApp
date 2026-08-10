@@ -193,12 +193,13 @@ export function DispatchJobsTab({
         title: mj.title || `Job #${mj.id}`,
         jobNumber: `JOB-${mj.id}`,
         status: mj.status || 'unscheduled',
-        workType: mj.workType || 'service',
+        workType: (mj as any).workType || 'service',
         installationName: mj.installationName || displayInstallationName || undefined,
         installationId: mj.installationId,
         estimatedDuration: mj.estimatedDuration,
       });
     }
+
   } else {
     const jobData = job || (jobId ? {
       id: parseInt(jobId),
@@ -210,17 +211,20 @@ export function DispatchJobsTab({
     } : null);
 
     if (jobData) {
+      // The API can return null for title/status/workType on legacy rows, so fall back
+      // here instead of letting a null reach .toLowerCase()/.replace() during render.
       jobsToRender.push({
         id: jobData.id,
-        title: job?.title || jobData.title,
+        title: job?.title || `Job #${jobData.id}`,
         jobNumber: `JOB-${jobData.id}`,
-        status: job?.status || jobData.status,
-        workType: (job as any)?.workType || jobData.workType,
+        status: job?.status || jobData.status || 'unscheduled',
+        workType: (job as any)?.workType || (jobData as any).workType || 'service',
         installationName: resolvedInstallationName || job?.installationName || undefined,
         installationId: job?.installationId,
         estimatedDuration: (job as any)?.estimatedDuration,
       });
     }
+
   }
 
   if (jobsToRender.length === 0) {
@@ -237,14 +241,15 @@ export function DispatchJobsTab({
 
   // Filter logic
   const filteredJobs = jobsToRender.filter(j => {
-    const matchesSearch = !searchTerm || 
-      j.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.jobNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.workType.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm ||
+      (j.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (j.jobNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (j.workType || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || j.status === filterStatus;
     const matchesWorkType = filterWorkType === 'all' || j.workType === filterWorkType;
     return matchesSearch && matchesStatus && matchesWorkType;
   });
+
 
   // Compute dispatch duration: prop > compute from start/end times > planner-consistent fallback (60min)
   const computedDuration = (() => {
@@ -428,12 +433,13 @@ export function DispatchJobsTab({
                       <Badge variant="secondary" className={getStatusColor(jobItem.status)}>
                         <div className="flex items-center gap-1.5">
                           {getStatusIcon(jobItem.status)}
-                          <span className="capitalize font-medium">{jobItem.status.replace('_', ' ')}</span>
+                          <span className="capitalize font-medium">{(jobItem.status || 'unscheduled').replace('_', ' ')}</span>
                         </div>
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="capitalize text-sm">{jobItem.workType.replace('_', ' ')}</span>
+                      <span className="capitalize text-sm">{(jobItem.workType || 'service').replace('_', ' ')}</span>
+
                     </td>
                     {onSelectCurrentJob && filteredJobs.length > 1 && (
                       <td className="px-4 py-3 text-right">

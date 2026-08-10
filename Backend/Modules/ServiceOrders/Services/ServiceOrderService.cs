@@ -961,10 +961,12 @@ namespace MyApi.Modules.ServiceOrders.Services
             
             // Fetch sale number and backfill estimated cost if needed
             string? saleNumber = null;
-            if (!string.IsNullOrEmpty(serviceOrder.SaleId) && int.TryParse(serviceOrder.SaleId, out int parsedSaleId))
+            var mappedSaleId = await ResolveSaleIdAsync(serviceOrder.SaleId);
+            if (mappedSaleId is not null)
             {
-                var sale = await _context.Sales.FindAsync(parsedSaleId);
+                var sale = await _context.Sales.FindAsync(mappedSaleId.Value);
                 saleNumber = sale?.SaleNumber;
+
                 
                 // Backfill estimated cost from sale if it's 0 (legacy data)
                 if ((serviceOrder.EstimatedCost == null || serviceOrder.EstimatedCost == 0) && sale != null)
@@ -1206,8 +1208,10 @@ namespace MyApi.Modules.ServiceOrders.Services
         {
             try
             {
-                if (string.IsNullOrEmpty(serviceOrder.SaleId)) return;
-                if (!int.TryParse(serviceOrder.SaleId, out int saleId)) return;
+                var resolvedSaleId = await ResolveSaleIdAsync(serviceOrder.SaleId);
+                if (resolvedSaleId is null) return;
+                var saleId = resolvedSaleId.Value;
+
 
                 var sale = await _context.Sales.FindAsync(saleId);
                 if (sale == null) return;
@@ -1430,9 +1434,12 @@ namespace MyApi.Modules.ServiceOrders.Services
             await _context.SaveChangesAsync();
 
             // Reset the sale's serviceOrdersStatus if linked
-            if (!string.IsNullOrEmpty(saleId) && int.TryParse(saleId, out int parsedSaleId))
+            var deleteSaleId = await ResolveSaleIdAsync(saleId);
+            if (deleteSaleId is not null)
             {
+                var parsedSaleId = deleteSaleId.Value;
                 var sale = await _context.Sales.FindAsync(parsedSaleId);
+
                 if (sale != null)
                 {
                     sale.ServiceOrdersStatus = null;
@@ -1933,17 +1940,37 @@ namespace MyApi.Modules.ServiceOrders.Services
         }
 
         /// <summary>
+        /// ServiceOrder.SaleId is a free-text link: legacy/number-based rows store the sale NUMBER
+        /// ("SAL-XL-00006") while newer rows store the numeric id. Resolving both keeps every
+        /// sale-linked feature (materials backfill, invoicing, totals) working for both shapes.
+        /// </summary>
+        private async Task<int?> ResolveSaleIdAsync(string? saleRef)
+        {
+            if (string.IsNullOrWhiteSpace(saleRef)) return null;
+            if (int.TryParse(saleRef, out var numeric)) return numeric;
+
+            var trimmed = saleRef.Trim();
+            var id = await _context.Sales
+                .Where(s => s.SaleNumber == trimmed)
+                .Select(s => (int?)s.Id)
+                .FirstOrDefaultAsync();
+            return id;
+        }
+
+        /// <summary>
         /// Ensures every non-service item of the originating sale exists as a
         /// ServiceOrderMaterial row. Idempotent: matches on SaleItemId, so it only
         /// inserts what is missing and never duplicates manual materials.
         /// </summary>
         private async Task BackfillSaleMaterialsAsync(ServiceOrder serviceOrder)
+
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(serviceOrder.SaleId) ||
-                    !int.TryParse(serviceOrder.SaleId, out var saleId))
-                    return;
+                var resolvedSaleId = await ResolveSaleIdAsync(serviceOrder.SaleId);
+                if (resolvedSaleId is null) return;
+                var saleId = resolvedSaleId.Value;
+
 
                 var saleItems = await _context.Set<Sales.Models.SaleItem>()
                     .Where(i => i.SaleId == saleId)
@@ -2730,12 +2757,48 @@ namespace MyApi.Modules.ServiceOrders.Services
                     $"Service order status '{serviceOrder.Status}' is not eligible for invoice preparation. " +
                     "Expected one of: technically_completed, partially_completed, completed, ready_for_invoice.");
 
-            if (string.IsNullOrEmpty(serviceOrder.SaleId) || !int.TryParse(serviceOrder.SaleId, out int saleId))
-                throw new InvalidOperationException("Service order must be linked to a sale to prepare for invoice");
+            // Standalone service orders (created through /service-orders/direct, i.e. field work
+            // that never came from a sale) have no sale to transfer items onto. Refusing them here
+            // dead-ended every direct order: the field work completed and could never be billed.
+            // There is nothing to transfer, so we simply move the order into the billing queue and
+            // let the user invoice it from there.
+            if (string.IsNullOrWhiteSpace(serviceOrder.SaleId))
+            {
+                if (!string.Equals(serviceOrder.Status, "ready_for_invoice", StringComparison.OrdinalIgnoreCase))
+                {
+                    serviceOrder.Status = "ready_for_invoice";
+                    serviceOrder.ModifiedDate = DateTime.UtcNow;
+                    serviceOrder.ModifiedBy = userId;
+                    await _context.SaveChangesAsync();
+                }
 
-            var sale = await _context.Sales.Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == saleId);
+                _logger.LogInformation(
+                    "PrepareForInvoice: SO {Id} has no linked sale (standalone order) → marked ready_for_invoice without item transfer",
+                    id);
+
+                return (await GetServiceOrderByIdAsync(id))!;
+            }
+
+
+            // SaleId is a free-text link column: some rows store the numeric sale id, others the
+            // human sale number (e.g. "SAL-XL-00006"). Resolve both, otherwise every order created
+            // through the number-based path was permanently un-invoiceable.
+            Sales.Models.Sale? sale;
+            if (int.TryParse(serviceOrder.SaleId, out int saleId))
+            {
+                sale = await _context.Sales.Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == saleId);
+            }
+            else
+            {
+                var saleRef = serviceOrder.SaleId.Trim();
+                sale = await _context.Sales.Include(s => s.Items)
+                    .FirstOrDefaultAsync(s => s.SaleNumber == saleRef);
+                saleId = sale?.Id ?? 0;
+            }
+
             if (sale == null)
-                throw new KeyNotFoundException($"Linked sale with ID {saleId} not found");
+                throw new KeyNotFoundException($"Linked sale '{serviceOrder.SaleId}' not found");
+
 
             // A cancelled sale can never be invoiced (InvoiceService enforces this), so
             // transferring field work onto it silently buried the revenue.

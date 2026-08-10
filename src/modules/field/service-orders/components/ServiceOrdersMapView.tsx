@@ -201,7 +201,7 @@ export function ServiceOrdersMapView({ serviceOrders, onViewOrder, onEditOrder }
                         </div>
                         <div className="flex gap-1">
                           <Badge variant="secondary" className="text-xs">
-                            {order.status.replace('_', ' ')}
+                            {(order.status || '').replace('_', ' ')}
                           </Badge>
                           <Badge 
                             variant="outline" 

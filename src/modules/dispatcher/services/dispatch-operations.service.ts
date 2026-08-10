@@ -270,7 +270,7 @@ export class DispatchOperationsService {
             content: `📋 Job dispatched - Dispatch #${dispatch.dispatchNumber || dispatch.id}\n` +
               `• Dispatched by: ${dispatcherName}\n` +
               `• Assigned to: ${assignedTechName}\n` +
-              `• Priority: ${priority.charAt(0).toUpperCase() + priority.slice(1)}\n` +
+              `• Priority: ${((priority || 'medium') as string).charAt(0).toUpperCase() + (priority || 'medium').slice(1)}\n` +
               `• Scheduled: ${scheduledStart.toLocaleDateString()} at ${scheduledStart.toLocaleTimeString()}`,
             type: 'dispatch_created'
           });

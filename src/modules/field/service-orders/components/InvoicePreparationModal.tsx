@@ -314,7 +314,7 @@ export function InvoicePreparationModal({
           </DialogHeader>
 
           {hasNoSale && (
-            <div className="flex items-center gap-2 mt-3 p-3 rounded-md bg-destructive/10 text-destructive border border-destructive/20">
+            <div className="flex items-center gap-2 mt-3 p-3 rounded-md bg-muted text-muted-foreground border border-border">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span className="text-sm font-medium">{t("invoicePreparation.noSaleLinked")}</span>
             </div>
@@ -595,7 +595,7 @@ export function InvoicePreparationModal({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={submitting || hasNoSale}
+              disabled={submitting}
             >
               {submitting ? (
                 <>

@@ -50,7 +50,7 @@ export function RescheduleConfirmationModal({
   };
 
   const getPriorityLabel = (priority: string) => {
-    return t(`dispatcher.priority_${priority}`, priority.toUpperCase());
+    return t(`dispatcher.priority_${priority}`, (priority || '').toUpperCase());
   };
 
   const duration = Math.round((newScheduledEnd.getTime() - newScheduledStart.getTime()) / (1000 * 60 * 60) * 10) / 10;

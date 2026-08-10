@@ -885,7 +885,7 @@ useEffect(() => {
                                       </div>
                                     </div>
                                     <Badge className={`${getStatusColorClass('dispatch', dispatch.status)} text-px-10 px-2 py-0.5 shrink-0 capitalize`}>
-                                      {t(`dispatcher.statuses.${dispatch.status}`, dispatch.status.replace('_', ' '))}
+                                      {t(`dispatcher.statuses.${dispatch.status}`, (dispatch.status || '').replace('_', ' '))}
                                     </Badge>
                                   </div>
                                   <div className="list-row-subtitle mb-2 flex flex-wrap gap-1">

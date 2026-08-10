@@ -443,7 +443,7 @@
     "confirm": "Confirmer et Transférer",
     "confirming": "Transfert en cours...",
     "noItemsSelected": "Veuillez sélectionner au moins un élément à facturer",
-    "noSaleLinked": "Cet ordre de service n'est pas lié à une vente. Impossible de préparer la facture.",
+    "noSaleLinked": "Cet ordre de service n'est pas lié à une vente. Il sera simplement marqué prêt pour facturation.",
     "noItems": "Aucun élément facturable trouvé pour cet ordre de service.",
     "noItemsDescription": "Aucun matériau, frais ou temps à transférer. Vous pouvez tout de même marquer cet ordre comme prêt pour facturation.",
     "alreadySelected": "Déjà sélectionné",

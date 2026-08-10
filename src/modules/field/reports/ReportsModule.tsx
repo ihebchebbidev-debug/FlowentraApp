@@ -459,7 +459,7 @@ export default function Reports() {
                             </td>
                             <td className="py-3 px-3">
                               <Badge variant="outline" className={`text-xs ${getStatusColor(so.status)}`}>
-                                {t(`reports.status.${so.status.replace(/_/g, '')}`, { defaultValue: so.status.replace(/_/g, ' ') })}
+                                {t(`reports.status.${(so.status || '').replace(/_/g, '')}`, { defaultValue: (so.status || '').replace(/_/g, ' ') })}
                               </Badge>
                             </td>
                             <td className="py-3 px-3">

@@ -106,7 +106,7 @@ export function InstallationRelatedTab({
                       variant="outline" 
                       className={`text-xs capitalize ${statusColors[record.status] || ''}`}
                     >
-                      {record.status.replace(/_/g, ' ')}
+                      {(record.status || '').replace(/_/g, ' ')}
                     </Badge>
                   </div>
                   {record.date && (

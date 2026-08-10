@@ -81,9 +81,14 @@ namespace MyApi.Modules.Dispatches.Services
                 }
                 else if (status == "completed" || status == "technically_completed")
                 {
+                    // Close out the linked jobs first so the service order evaluation and the
+                    // UI both see finished jobs instead of jobs stuck on "dispatched".
+                    await MarkJobsCompletedAfterDispatchCompletionAsync(d);
+
                     if (_businessWorkflowService != null)
                         await _businessWorkflowService.HandleDispatchTechnicallyCompletedAsync(d.Id, userId);
                 }
+
                 else if (status == "rejected")
                 {
                     await HandleDispatchRejectedCascadeAsync(d, userId);
@@ -1920,6 +1925,72 @@ namespace MyApi.Modules.Dispatches.Services
             job.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
+
+        /// <summary>
+        /// A job may be planned across several dispatches. When one dispatch completes, the job
+        /// is only finished once every live (non-cancelled, non-rejected) dispatch covering it is
+        /// completed; otherwise it stays "dispatched" because field work is still outstanding.
+        /// </summary>
+        private async Task MarkJobsCompletedAfterDispatchCompletionAsync(Dispatch d)
+        {
+            var jobIds = await _db.DispatchJobs
+                .Where(dj => dj.DispatchId == d.Id && !dj.IsDeleted)
+                .Select(dj => dj.JobId)
+                .ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(d.JobId))
+            {
+                foreach (var part in d.JobId.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    if (int.TryParse(part, out var parsed)) jobIds.Add(parsed);
+            }
+
+            var ids = jobIds.Distinct().ToList();
+            if (ids.Count == 0) return;
+
+            // Jobs that still have an unfinished live dispatch — join table…
+            var pending = await (from dj in _db.DispatchJobs
+                                 join dp in _db.Dispatches on dj.DispatchId equals dp.Id
+                                 where !dj.IsDeleted && !dp.IsDeleted
+                                       && dp.Status != "cancelled" && dp.Status != "rejected"
+                                       && dp.Status != "completed" && dp.Status != "technically_completed"
+                                       && ids.Contains(dj.JobId)
+                                 select dj.JobId).Distinct().ToListAsync();
+
+            // …and legacy single-job dispatches.
+            var idStrings = ids.Select(i => i.ToString()).ToList();
+            var legacyPending = await _db.Dispatches
+                .Where(dp => !dp.IsDeleted
+                             && dp.Status != "cancelled" && dp.Status != "rejected"
+                             && dp.Status != "completed" && dp.Status != "technically_completed"
+                             && dp.JobId != null && idStrings.Contains(dp.JobId))
+                .Select(dp => dp.JobId!)
+                .ToListAsync();
+            foreach (var s in legacyPending)
+                if (int.TryParse(s, out var parsed)) pending.Add(parsed);
+
+            var pendingSet = pending.ToHashSet();
+
+            var jobs = await _db.ServiceOrderJobs.Where(j => ids.Contains(j.Id)).ToListAsync();
+            var closed = new List<int>();
+            foreach (var job in jobs)
+            {
+                var js = (job.Status ?? string.Empty).ToLowerInvariant();
+                if (js == "completed" || js == "cancelled") continue;
+                if (pendingSet.Contains(job.Id)) continue; // more field work still planned
+                job.Status = "completed";
+                job.CompletionPercentage = 100;
+                closed.Add(job.Id);
+            }
+
+            if (closed.Count > 0)
+            {
+                await _db.SaveChangesAsync();
+                _logger.LogInformation(
+                    "[DISPATCH-COMPLETE] Dispatch {DispatchId} completed → jobs marked completed: [{JobIds}]",
+                    d.Id, string.Join(", ", closed));
+            }
+        }
+
 
         /// <summary>
         /// Multiple concurrent dispatches per job is a supported workflow, so removing ONE

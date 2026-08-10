@@ -561,7 +561,7 @@ export function UnassignedJobsList({
           </div>
           <div className="flex items-center gap-1.5 mt-1 pl-5">
             <Badge variant="outline" className={`text-rem-65 px-1.5 py-0 h-[18px] ${colorClass}`}>
-              {t(`serviceOrders.status.${so.status}`, so.status.replace(/_/g, ' '))}
+              {t(`serviceOrders.status.${so.status}`, (so.status || '').replace(/_/g, ' '))}
             </Badge>
           </div>
           <div className="flex items-center gap-1.5 text-rem-65 text-muted-foreground mt-1 pl-5">

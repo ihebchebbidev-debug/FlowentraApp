@@ -238,7 +238,7 @@ export function DispatcherMapView({ jobs, technicians, onJobClick, onJobAssigned
                   <span>🎯</span>
                   <span style="color: ${isDark ? '#f9fafb' : '#111827'};">
                     ${t('dispatcher.map.priority', 'Priority')}: ${t(`dispatcher.priority_${job.priority}`, job.priority)} | 
-                    ${t('dispatcher.map.status', 'Status')}: ${t(`dispatcher.status_${job.status}`, job.status.replace('_', ' '))}
+                    ${t('dispatcher.map.status', 'Status')}: ${t(`dispatcher.status_${job.status}`, (job.status || '').replace('_', ' '))}
                   </span>
                 </div>
               </div>

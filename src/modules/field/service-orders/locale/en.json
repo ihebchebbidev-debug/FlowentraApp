@@ -443,7 +443,7 @@
     "confirm": "Confirm & Transfer",
     "confirming": "Transferring...",
     "noItemsSelected": "Please select at least one item to invoice",
-    "noSaleLinked": "This service order is not linked to a sale. Cannot prepare invoice.",
+    "noSaleLinked": "This service order is not linked to a sale. It will simply be marked ready for invoicing.",
     "noItems": "No billable items found for this service order.",
     "alreadySelected": "Already selected",
     "itemsSelected": "{{count}} item(s) selected",
