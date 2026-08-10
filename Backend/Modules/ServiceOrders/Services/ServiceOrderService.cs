@@ -2555,7 +2555,13 @@ namespace MyApi.Modules.ServiceOrders.Services
                 ServiceOrderId = serviceOrderId,
                 Title = dto.Title.Trim(),
                 Description = dto.Description,
-                JobDescription = dto.JobDescription,
+                // Older tenant schemas still enforce NOT NULL on JobDescription.
+                // Keep the richer field when supplied, otherwise derive a safe value
+                // from the normal description/title so job creation works across both
+                // legacy and current schemas.
+                JobDescription = !string.IsNullOrWhiteSpace(dto.JobDescription)
+                    ? dto.JobDescription
+                    : (!string.IsNullOrWhiteSpace(dto.Description) ? dto.Description : dto.Title.Trim()),
                 Status = string.IsNullOrWhiteSpace(dto.Status) ? "unscheduled" : dto.Status,
                 Priority = dto.Priority ?? "medium",
                 WorkType = dto.WorkType,
