@@ -12,8 +12,8 @@
     "name": "Ready for Planning"
   },
   {
-    "id": "scheduled",
-    "name": "Scheduled"
+    "id": "planned",
+    "name": "Planned"
   },
   {
     "id": "in_progress",

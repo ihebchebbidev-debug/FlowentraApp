@@ -14,7 +14,7 @@ export type ServiceOrderStatus =
   | "pending"
   | "planned"
   | "ready_for_planning"
-  | "scheduled"
+  
   | "in_progress"
   | "on_hold"
   | "partially_completed"

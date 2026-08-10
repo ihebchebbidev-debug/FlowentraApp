@@ -89,7 +89,7 @@
         "description": "defaultWorkflow.nodes.serviceOrderScheduledDesc",
         "entityType": "service_order",
         "fromStatus": "pending",
-        "toStatus": "scheduled"
+        "toStatus": "planned"
       }
     },
     {

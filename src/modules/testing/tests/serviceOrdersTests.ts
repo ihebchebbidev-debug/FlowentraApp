@@ -565,13 +565,13 @@ export const serviceOrdersTests: TestDefinition[] = [
 
         // Count by status
         const draft = serviceOrders.filter((s: any) => s.status === 'draft').length;
-        const scheduled = serviceOrders.filter((s: any) => s.status === 'scheduled').length;
+        const planned = serviceOrders.filter((s: any) => s.status === 'planned').length;
         const inProgress = serviceOrders.filter((s: any) => s.status === 'in_progress').length;
         const completed = serviceOrders.filter((s: any) => s.status === 'completed').length;
 
         return {
           success: true,
-          details: `✓ Final: ${total} SOs | Created: ${draft} | Scheduled: ${scheduled} | In Progress: ${inProgress} | Completed: ${completed}`,
+          details: `✓ Final: ${total} SOs | Created: ${draft} | Planned: ${planned} | In Progress: ${inProgress} | Completed: ${completed}`,
           httpStatus: status,
           responseSize,
           requestData,

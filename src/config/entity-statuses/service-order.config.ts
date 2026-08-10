@@ -6,7 +6,10 @@ import type { EntityStatusConfig } from './types';
 // Backend: FlowServiceBackendOnlyFinal-main/Modules/ServiceOrders/Models/ServiceOrder.cs
 // StatusFlow: ServiceOrderStatusFlow.tsx
 //
-// WORKFLOW: pending → ready_for_planning → scheduled → in_progress → technically_completed/partially_completed → ready_for_invoice → invoiced → closed
+// WORKFLOW: pending → ready_for_planning → planned → in_progress → technically_completed/partially_completed → ready_for_invoice → invoiced → closed
+//
+// NOTE: the legacy 'scheduled' status was removed — it was a duplicate of 'planned'.
+// Legacy rows are migrated to 'planned' (Backend/Migrations/20260810_service_order_scheduled_to_planned.sql).
 //
 // CASCADE RULES (from dispatch status changes):
 // 1. If at least one dispatch is in_progress → Service Order = in_progress
@@ -25,7 +28,7 @@ export const serviceOrderStatusConfig: EntityStatusConfig = {
     { id: 'pending',                translationKey: 'statuses.pending',                workflowTranslationKey: 'status.serviceOrder.pending',                color: 'warning',     isTerminal: false },
     { id: 'ready_for_planning',     translationKey: 'statuses.ready_for_planning',     workflowTranslationKey: 'status.serviceOrder.ready_for_planning',     color: 'info',        isTerminal: false },
     { id: 'planned',                translationKey: 'statuses.planned',                workflowTranslationKey: 'status.serviceOrder.planned',                color: 'info',        isTerminal: false },
-    { id: 'scheduled',              translationKey: 'statuses.scheduled',              workflowTranslationKey: 'status.serviceOrder.scheduled',              color: 'primary',     isTerminal: false },
+    
     { id: 'in_progress',            translationKey: 'statuses.in_progress',            workflowTranslationKey: 'status.serviceOrder.in_progress',            color: 'primary',     isTerminal: false },
     { id: 'on_hold',                translationKey: 'statuses.on_hold',                workflowTranslationKey: 'status.serviceOrder.on_hold',                color: 'warning',     isTerminal: false },
     { id: 'partially_completed',    translationKey: 'statuses.partially_completed',    workflowTranslationKey: 'status.serviceOrder.partially_completed',    color: 'warning',     isTerminal: false },
@@ -38,8 +41,8 @@ export const serviceOrderStatusConfig: EntityStatusConfig = {
   ],
 
   workflow: {
-    // Happy path: Pending → Ready for Planning → Planned → Scheduled → In Progress → Technically Completed → Ready for Invoice → Invoiced → Closed
-    steps: ['pending', 'ready_for_planning', 'planned', 'scheduled', 'in_progress', 'technically_completed', 'ready_for_invoice', 'invoiced', 'closed'],
+    // Happy path: Pending → Ready for Planning → Planned → In Progress → Technically Completed → Ready for Invoice → Invoiced → Closed
+    steps: ['pending', 'ready_for_planning', 'planned', 'in_progress', 'technically_completed', 'ready_for_invoice', 'invoiced', 'closed'],
     terminalStatuses: ['closed', 'cancelled'],
     branchStatuses: {
       // From in_progress, can branch to on_hold or partially_completed (based on dispatch status)
@@ -48,8 +51,8 @@ export const serviceOrderStatusConfig: EntityStatusConfig = {
       // branch of technically_completed keeps ready_for_invoice reachable from there instead of
       // treating it as an unknown status that can only fall back to 'pending'.
       technically_completed: ['completed'],
-      // From scheduled, step back to planned (system cascades may go further back)
-      scheduled: ['planned'],
+      // From planned, step back to ready_for_planning (system cascades may go further back)
+      planned: ['ready_for_planning'],
     },
   },
 };

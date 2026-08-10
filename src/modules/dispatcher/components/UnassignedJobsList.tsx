@@ -507,7 +507,6 @@ export function UnassignedJobsList({
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'scheduled': return 'text-blue-500 border-blue-300';
       case 'in_progress': return 'text-orange-500 border-orange-300';
       case 'planned': return 'text-purple-500 border-purple-300';
       case 'assigned': return 'text-teal-500 border-teal-300';
@@ -764,7 +763,7 @@ export function UnassignedJobsList({
                   <SelectItem value="all">{t('dispatcher.by_status', 'Status')}</SelectItem>
                   <SelectItem value="ready_for_planning">{t('serviceOrders.status.ready_for_planning', 'Ready for planning')}</SelectItem>
                   <SelectItem value="planned">{t('serviceOrders.status.planned', 'Planned')}</SelectItem>
-                  <SelectItem value="scheduled">{t('serviceOrders.status.scheduled', 'Scheduled')}</SelectItem>
+                  
                   <SelectItem value="in_progress">{t('serviceOrders.status.in_progress', 'In progress')}</SelectItem>
                   <SelectItem value="pending">{t('serviceOrders.status.pending', 'Pending')}</SelectItem>
                 </SelectContent>

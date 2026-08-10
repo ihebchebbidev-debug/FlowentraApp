@@ -21,7 +21,7 @@ const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 0,
 
 const DEMO_ORDERS = [
   { id: 'o1', num: 'SO-2025-044', title: 'AC Overhaul',     customer: 'Médina Resorts',  type: 'Repair',      status: 'in_progress', priority: 'high',   date: 'Mon 16 Jun', amount: 18400 },
-  { id: 'o2', num: 'SO-2025-051', title: 'Leak Repair',     customer: 'Acme Industries',  type: 'Repair',      status: 'scheduled',   priority: 'urgent', date: 'Tue 17 Jun', amount: 7600 },
+  { id: 'o2', num: 'SO-2025-051', title: 'Leak Repair',     customer: 'Acme Industries',  type: 'Repair',      status: 'planned',     priority: 'urgent', date: 'Tue 17 Jun', amount: 7600 },
   { id: 'o3', num: 'SO-2025-058', title: 'Pump Inspection', customer: 'Hydro Parts',      type: 'Inspection',  status: 'pending',     priority: 'medium', date: '—',          amount: 9200 },
   { id: 'o4', num: 'SO-2025-040', title: 'Annual Service',  customer: 'Sahara Foods',     type: 'Maintenance', status: 'completed',   priority: 'low',    date: 'Wed 11 Jun', amount: 4200 },
 ];
@@ -38,7 +38,7 @@ function Pill({ s }: { s: string }) { return <span className={`inline-flex items
 const PRIO_CLS: Record<string, string> = { urgent: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-blue-400', low: 'bg-gray-300' };
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
-const STEPPER = ['pending', 'scheduled', 'in_progress', 'technically_completed', 'invoiced', 'closed'];
+const STEPPER = ['pending', 'planned', 'in_progress', 'technically_completed', 'invoiced', 'closed'];
 
 function StatCard({ id, icon, label, value, active }: { id: string; icon: React.ReactNode; label: string; value: string; active?: boolean }) {
   return (

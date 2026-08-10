@@ -84,11 +84,11 @@
       "type": "service-order-status-trigger",
       "position": { "x": 100, "y": 400 },
       "data": {
-        "label": "Service Order Scheduled",
+        "label": "Service Order Planned",
         "type": "service-order-status-trigger",
         "fromStatus": "ready_for_planning",
-        "toStatus": "scheduled",
-        "description": "Triggers when a service order is scheduled"
+        "toStatus": "planned",
+        "description": "Triggers when a service order is planned"
       }
     },
     {
@@ -353,7 +353,7 @@
       "nodeId": "trigger-service-order-scheduled",
       "entityType": "service_order",
       "fromStatus": "ready_for_planning",
-      "toStatus": "scheduled",
+      "toStatus": "planned",
       "isActive": true
     },
     {

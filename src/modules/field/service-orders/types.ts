@@ -35,7 +35,7 @@ export interface ServiceOrder {
   };
   
   // Service Order Status
-  status: 'draft' | 'pending' | 'planned' | 'ready_for_planning' | 'scheduled' | 'in_progress' | 'on_hold' | 'partially_completed' | 'technically_completed' | 'ready_for_invoice' | 'completed' | 'invoiced' | 'closed' | 'cancelled';
+  status: 'draft' | 'pending' | 'planned' | 'ready_for_planning' | 'in_progress' | 'on_hold' | 'partially_completed' | 'technically_completed' | 'ready_for_invoice' | 'completed' | 'invoiced' | 'closed' | 'cancelled';
   
   // Repair Details
   repair: {

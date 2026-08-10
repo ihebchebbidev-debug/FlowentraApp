@@ -161,9 +161,9 @@ SELECT id, 'trigger-sale-in-progress', 'sale', 'created', 'in_progress', true, N
 FROM "WorkflowDefinitions" WHERE "Name" = '${safeName}'
 ON CONFLICT DO NOTHING;
 
--- Service Order Scheduled → Create Dispatch
+-- Service Order Planned → Create Dispatch
 INSERT INTO "WorkflowTriggers" ("WorkflowId", "NodeId", "EntityType", "FromStatus", "ToStatus", "IsActive", "CreatedAt")
-SELECT id, 'trigger-job-planned', 'service_order', 'pending', 'scheduled', true, NOW()
+SELECT id, 'trigger-job-planned', 'service_order', 'pending', 'planned', true, NOW()
 FROM "WorkflowDefinitions" WHERE "Name" = '${safeName}'
 ON CONFLICT DO NOTHING;
 `;

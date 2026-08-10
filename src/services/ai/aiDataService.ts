@@ -299,12 +299,12 @@ export const aiDataQueries = {
         .join('\n');
 
       const inProgress = orders.filter((o: any) =>
-        o.status === 'in_progress' || o.status === 'scheduled'
+        o.status === 'in_progress' || o.status === 'planned'
       ).length;
 
       return {
         success: true,
-        data: `🛠️ **Service Orders Overview**:\n- Total: **${orders.length}**\n- Active (in progress/scheduled): **${inProgress}**\n\n**By Status:**\n${statusBreakdown}`
+        data: `🛠️ **Service Orders Overview**:\n- Total: **${orders.length}**\n- Active (in progress/planned): **${inProgress}**\n\n**By Status:**\n${statusBreakdown}`
       };
     } catch (error) {
       return { success: false, data: '', error: 'Could not fetch service orders data' };
@@ -1586,7 +1586,7 @@ export const aiDataQueries = {
         });
 
         const pending = techDispatches.filter((d: any) =>
-          d.status === 'pending' || d.status === 'assigned' || d.status === 'scheduled'
+          d.status === 'pending' || d.status === 'assigned' || d.status === 'planned'
         ).length;
         const inProgress = techDispatches.filter((d: any) =>
           d.status === 'in_progress' || d.status === 'on_site' || d.status === 'en_route'
@@ -2553,7 +2553,7 @@ export const aiDataQueries = {
       let result = `🛠️ **Service Order Search Results for "${searchTerm}" (${matched.length} found)**:\n\n`;
 
       matched.slice(0, 5).forEach((o: any) => {
-        const statusIcon = o.status === 'completed' ? '✅' : o.status === 'in_progress' ? '🔄' : o.status === 'scheduled' ? '📅' : '📝';
+        const statusIcon = o.status === 'completed' ? '✅' : o.status === 'in_progress' ? '🔄' : o.status === 'planned' ? '📅' : '📝';
         result += `${statusIcon} **${o.orderNumber || o.title}**\n`;
         result += `   Status: ${o.status?.replace('_', ' ')}\n`;
         if (o.contactName) result += `   Customer: ${o.contactName}\n`;
@@ -2935,7 +2935,7 @@ export const aiDataQueries = {
       const orders = response.data?.serviceOrders || [];
 
       const backlog = orders.filter((o: any) =>
-        o.status === 'pending' || o.status === 'scheduled' || o.status === 'draft'
+        o.status === 'pending' || o.status === 'planned' || o.status === 'draft'
       );
 
       const byPriority = backlog.reduce((acc: Record<string, any[]>, o: any) => {
@@ -4546,7 +4546,7 @@ export const aiDataQueries = {
 
       result += `**By Status:**\n`;
       Object.entries(byStatus).forEach(([s, count]) => {
-        const statusIcon = s === 'completed' ? '✅' : s === 'in_progress' ? '🔄' : s === 'scheduled' ? '📅' : s === 'open' ? '📂' : '📋';
+        const statusIcon = s === 'completed' ? '✅' : s === 'in_progress' ? '🔄' : s === 'planned' ? '📅' : s === 'open' ? '📂' : '📋';
         result += `${statusIcon} ${s.replace(/_/g, ' ')}: ${count}\n`;
       });
 

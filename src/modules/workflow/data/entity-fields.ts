@@ -140,7 +140,7 @@ export const serviceOrderFields: EntityField[] = [
   { path: 'title', label: 'Title', type: 'string', category: 'core' },
   { path: 'description', label: 'Description', type: 'string', category: 'core' },
   { path: 'serviceType', label: 'Service Type', type: 'string', category: 'core' },
-  { path: 'status', label: 'Status', type: 'enum', category: 'status', enumValues: ['draft', 'confirmed', 'scheduled', 'in_progress', 'technically_completed', 'invoiced', 'closed', 'cancelled'] },
+  { path: 'status', label: 'Status', type: 'enum', category: 'status', enumValues: ['draft', 'pending', 'ready_for_planning', 'planned', 'in_progress', 'on_hold', 'partially_completed', 'technically_completed', 'ready_for_invoice', 'invoiced', 'closed', 'cancelled'] },
   { path: 'priority', label: 'Priority', type: 'enum', category: 'status', enumValues: ['low', 'medium', 'high', 'urgent'] },
   // Progress
   { path: 'serviceCount', label: 'Total Service Count', type: 'number', category: 'core' },

@@ -301,7 +301,7 @@ export function WorkflowBuilder() {
     const saleDefault = saleCfg.defaultStatus; // 'created'
     const saleInProgress = saleCfg.workflow.steps[1]; // second step = 'in_progress'
     const soDefault = soCfg.defaultStatus; // 'draft' or 'pending'
-    const soScheduled = soCfg.workflow.steps.find(s => s === 'scheduled') ?? soCfg.workflow.steps[2];
+    const soScheduled = soCfg.workflow.steps.find(s => s === 'planned') ?? soCfg.workflow.steps[2];
     const soInProgress = soCfg.workflow.steps.find(s => s === 'in_progress') ?? soCfg.workflow.steps[3];
     const soTechComplete = soCfg.statuses.find(s => s.id === 'technically_completed')?.id ?? 'technically_completed';
     const soPartial = soCfg.statuses.find(s => s.id === 'partially_completed')?.id ?? 'partially_completed';

@@ -1499,7 +1499,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 ByStatus = new Dictionary<string, int>
                 {
                     { "draft", serviceOrders.Count(s => s.Status == "draft") },
-                    { "scheduled", serviceOrders.Count(s => s.Status == "scheduled") },
+                    { "planned", serviceOrders.Count(s => s.Status == "planned") },
                     { "in_progress", serviceOrders.Count(s => s.Status == "in_progress") },
                     { "on_hold", serviceOrders.Count(s => s.Status == "on_hold") },
                     { "completed", serviceOrders.Count(s => s.Status == "completed") },
@@ -1663,10 +1663,12 @@ namespace MyApi.Modules.ServiceOrders.Services
         {
             return currentStatus switch
             {
-                "draft" => new List<string> { "pending", "planned", "ready_for_planning", "scheduled", "cancelled" },
-                "pending" => new List<string> { "planned", "ready_for_planning", "scheduled", "in_progress", "on_hold", "cancelled" },
-                "planned" => new List<string> { "pending", "scheduled", "in_progress", "on_hold", "cancelled" },
-                "ready_for_planning" => new List<string> { "pending", "planned", "scheduled", "in_progress", "on_hold", "cancelled" },
+                "draft" => new List<string> { "pending", "planned", "ready_for_planning", "cancelled" },
+                "pending" => new List<string> { "planned", "ready_for_planning", "in_progress", "on_hold", "cancelled" },
+                "planned" => new List<string> { "pending", "ready_for_planning", "in_progress", "on_hold", "cancelled" },
+                "ready_for_planning" => new List<string> { "pending", "planned", "in_progress", "on_hold", "cancelled" },
+                // NOTE: legacy 'scheduled' rows are migrated to 'planned'; kept here so any
+                // straggler row is not a dead end.
                 "scheduled" => new List<string> { "pending", "planned", "ready_for_planning", "in_progress", "on_hold", "cancelled" },
                 // Fix #6: 'partially_completed' exists in the frontend SO config and type
                 // union but had no case here, so it was unreachable and, once set, a dead

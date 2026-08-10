@@ -153,16 +153,18 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
             else if (completedCount > 0)
             {
-                // Some dispatches finished, others are still planned/assigned/scheduled.
+                // Some dispatches finished, others are still planned/assigned.
                 candidate = "partially_completed";
             }
             else
             {
-                candidate = "scheduled";
+                // Work is dispatched but nothing started yet. 'planned' is the single
+                // pre-execution status (the duplicate 'scheduled' status was removed).
+                candidate = "planned";
             }
 
             // Rule 4: never downgrade an order a human already pushed past review. New,
-            // unfinished work still reopens it (candidate would be scheduled/in_progress).
+            // unfinished work still reopens it (candidate would be planned/in_progress).
             if (PostReviewStatuses.Contains(current) && candidate == FieldWorkCompleteStatus)
             {
                 candidate = current;

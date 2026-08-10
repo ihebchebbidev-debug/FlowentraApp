@@ -738,7 +738,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 }
 
                 // Only update if not already in progress or beyond
-                if (serviceOrder.Status == "pending" || serviceOrder.Status == "scheduled")
+                if (serviceOrder.Status == "pending" || serviceOrder.Status == "planned" || serviceOrder.Status == "scheduled")
                 {
                     var oldStatus = serviceOrder.Status ?? string.Empty;
                     serviceOrder.Status = "in_progress";

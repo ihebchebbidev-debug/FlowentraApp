@@ -149,17 +149,17 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     }
                 },
 
-                // 3. Service Order Scheduled → Create Dispatches
+                // 3. Service Order Planned → Create Dispatches
                 new {
                     id = "trigger-service-order-scheduled",
                     type = "service-order-status-trigger",
                     position = new { x = 100, y = 400 },
                     data = new {
-                        label = "Service Order Scheduled",
+                        label = "Service Order Planned",
                         type = "service-order-status-trigger",
                         fromStatus = "ready_for_planning",
-                        toStatus = "scheduled",
-                        description = "Triggers when a service order is scheduled"
+                        toStatus = "planned",
+                        description = "Triggers when a service order is planned"
                     }
                 },
                 new {
@@ -350,7 +350,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     NodeId = "trigger-service-order-scheduled",
                     EntityType = "service_order",
                     FromStatus = "ready_for_planning",
-                    ToStatus = "scheduled",
+                    ToStatus = "planned",
                     IsActive = true
                 },
                 new WorkflowTrigger

@@ -67,7 +67,7 @@ export interface ServiceOrder {
   id: string;
   title: string;
   customerName: string;
-  status: 'pending' | 'ready_for_planning' | 'planned' | 'scheduled' | 'in_progress' | 'technically_completed' | 'ready_for_invoice' | 'completed' | 'invoiced' | 'closed' | 'cancelled';
+  status: 'pending' | 'ready_for_planning' | 'planned' | 'in_progress' | 'technically_completed' | 'ready_for_invoice' | 'completed' | 'invoiced' | 'closed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   jobs: Job[];
   totalEstimatedDuration: number;

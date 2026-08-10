@@ -41,7 +41,7 @@ const DEMO_SALES = [
 ];
 const DEMO_SO = [
   { id: 'so1', num: 'SO-2025-077', status: 'completed',  date: '2025-05-28', amount: 0 },
-  { id: 'so2', num: 'SO-2025-090', status: 'scheduled',  date: '2025-06-15', amount: 0 },
+  { id: 'so2', num: 'SO-2025-090', status: 'planned',  date: '2025-06-15', amount: 0 },
 ];
 const DEMO_INST = [
   { id: 'i1', num: 'INST-2024-204', status: 'active', date: '2024-11-03', amount: 0 },

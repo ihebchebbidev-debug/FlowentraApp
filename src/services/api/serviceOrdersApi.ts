@@ -16,7 +16,7 @@ export interface ServiceOrderJob {
   jobDescription: string;
   workType?: string;
   priority?: string;
-  status: 'pending' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'unscheduled' | 'ready' | 'dispatched' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
   installationId?: number;
   installationName?: string;
   saleItemId?: number;
@@ -38,7 +38,7 @@ export interface ServiceOrder {
   offerId?: number;
   contactId: number;
   contactName?: string;
-  status: 'draft' | 'ready_for_planning' | 'scheduled' | 'in_progress' | 'completed' | 'invoiced' | 'closed' | 'cancelled' | 'on_hold';
+  status: 'draft' | 'pending' | 'ready_for_planning' | 'planned' | 'in_progress' | 'on_hold' | 'partially_completed' | 'technically_completed' | 'ready_for_invoice' | 'completed' | 'invoiced' | 'closed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   serviceType?: string;
   notes?: string;

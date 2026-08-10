@@ -77,7 +77,7 @@ export const SYSTEM_EXTRA_GUIDES: ModuleGuideMap = {
     statuses: [
       { name: "pending", meaning: "Created, not yet released for planning." },
       { name: "ready_for_planning", meaning: "Released — visible to the dispatcher." },
-      { name: "scheduled", meaning: "At least one dispatch has a date and a technician." },
+      { name: "planned", meaning: "At least one dispatch has a date and a technician." },
       { name: "in_progress", meaning: "A technician has started work on site." },
       { name: "on_hold", meaning: "Blocked; needs a decision before it can continue." },
       { name: "partially_completed", meaning: "Some jobs done, others still open." },
