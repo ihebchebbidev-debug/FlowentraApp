@@ -72,6 +72,7 @@ import { format } from 'date-fns';
 import i18n from 'i18next';
 import en from '@/modules/payments/locale/en.json';
 import fr from '@/modules/payments/locale/fr.json';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 if (!i18n.hasResourceBundle('en', 'payments')) {
   i18n.addResourceBundle('en', 'payments', en, true, true);
   i18n.addResourceBundle('fr', 'payments', fr, true, true);
@@ -932,7 +933,7 @@ function AddPaymentModal({
                 <div className="space-y-2 pl-2 border-l-2 border-primary/20">
                   {items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-foreground truncate flex-1">{item.itemName}</span>
+                      <span className="text-sm text-foreground truncate flex-1">{formatSaleItemLabel(item.itemName)}</span>
                       <span className="text-xs text-muted-foreground shrink-0">{formatCurrency(item.totalPrice)}</span>
                       <Input
                         type="number"
@@ -1205,7 +1206,7 @@ function StatementModal({
                   const remaining = item.totalPrice - paid;
                   return (
                     <div key={item.id} className="grid grid-cols-4 gap-2 p-2 border-t border-border/50 text-sm min-w-[320px]">
-                      <span className="truncate text-foreground">{item.itemName}</span>
+                      <span className="truncate text-foreground">{formatSaleItemLabel(item.itemName)}</span>
                       <span className="text-right text-foreground">{formatCurrency(item.totalPrice)}</span>
                       <span className="text-right text-success">{formatCurrency(paid)}</span>
                       <span className="text-right text-warning">{formatCurrency(remaining)}</span>

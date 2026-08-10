@@ -22,6 +22,7 @@ import { articlesApi } from "@/services/api/articlesApi";
 import { InstallationSelector } from "@/modules/field/installations/components/InstallationSelector";
 import { CreateInstallationModal } from "@/modules/field/installations/components/CreateInstallationModal";
 import { DeleteConfirmationModal } from "@/shared/components/DeleteConfirmationModal";
+import { useSaleItemLabel } from "../../hooks/useSaleItemLabel";
 import { toast } from "sonner";
 
 interface ArticleItem {
@@ -51,6 +52,7 @@ interface ItemsTabProps {
 export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
   const { t } = useTranslation('sales');
   const { format: formatCurrency } = useCurrency();
+  const saleItemLabel = useSaleItemLabel();
   const [selectedItem, setSelectedItem] = useState<SaleItem | null>(null);
   
   
@@ -353,7 +355,7 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <span className="text-sm text-foreground">{item.itemName}</span>
+                          <span className="text-sm text-foreground">{saleItemLabel(item.itemName, item.description)}</span>
                           {item.itemCode && (
                             <p className="text-sm text-muted-foreground line-clamp-2">{item.itemCode}</p>
                           )}
@@ -455,7 +457,7 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
             <div className="space-y-4">
               {/* Item Name & Type */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">{selectedItem.itemName}</span>
+                <span className="text-sm font-medium text-foreground">{saleItemLabel(selectedItem.itemName, selectedItem.description)}</span>
                 {getItemTypeBadge(selectedItem.type)}
               </div>
 

@@ -26,6 +26,7 @@ import { MoreVertical, ExternalLink } from 'lucide-react';
 import { useCustomerInvoice, useInvoiceMutations } from '../hooks/useCustomerInvoices';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -160,7 +161,7 @@ export function InvoiceDetailDrawer({ invoiceId, open, onOpenChange }: InvoiceDe
                   <TableBody>
                     {invoice.lines.map((line) => (
                       <TableRow key={line.id}>
-                        <TableCell>{line.itemName}</TableCell>
+                        <TableCell>{formatSaleItemLabel(line.itemName)}</TableCell>
                         <TableCell className="text-right">{line.quantity}</TableCell>
                         <TableCell className="text-right">{format(line.unitPrice)}</TableCell>
                         <TableCell className="text-right">{format(line.lineTotal)}</TableCell>

@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { Invoice } from '../types';
 import { buildFooterLines } from '@/shared/pdf/resolveCompany';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 
 // Shared "facture" style — matches SalePDFDocument / OfferPDFDocument
 const styles = StyleSheet.create({
@@ -456,7 +457,7 @@ export function InvoicePDFDocument({
                     <Text style={styles.cellBold}>{index + 1}</Text>
                   </View>
                   <View style={styles.descCol}>
-                    <Text style={styles.cell}>{line.itemName || '-'}</Text>
+                    <Text style={styles.cell}>{formatSaleItemLabel(line.itemName) || '-'}</Text>
                     {line.description ? (
                       <Text style={styles.cellMuted}>{line.description}</Text>
                     ) : null}

@@ -3167,8 +3167,21 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 foreach (var mat in dispatchMats)
                 {
-                    var name = mat.Description ?? $"Material #{mat.Id}";
-                    var desc = mat.Description ?? "Material from dispatch";
+                    // Prefer the material's own description; when the field app stored it
+                    // empty, fall back to the linked article's name so the sale line does
+                    // not surface as an anonymous "Item #<id>".
+                    var articleName = mat.ArticleId.HasValue
+                        ? await _context.Articles
+                            .Where(a => a.Id == mat.ArticleId.Value && !a.IsDeleted)
+                            .Select(a => a.Name)
+                            .FirstOrDefaultAsync()
+                        : null;
+                    var name = !string.IsNullOrWhiteSpace(mat.Description)
+                        ? mat.Description!
+                        : (!string.IsNullOrWhiteSpace(articleName) ? articleName! : $"Material #{mat.Id}");
+                    var desc = !string.IsNullOrWhiteSpace(mat.Description)
+                        ? mat.Description!
+                        : (!string.IsNullOrWhiteSpace(articleName) ? articleName! : "Material from dispatch");
                     // Fix §4.4: propagate ArticleId + InstallationId (from the parent Dispatch)
                     // into the signature so a truly-distinct line does not collide with an
                     // earlier transfer.

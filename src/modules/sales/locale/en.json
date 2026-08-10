@@ -785,5 +785,7 @@
     "description": "Track orders pipeline, opportunities and revenue.",
     "category": "CRM"
   },
-  "entity": "Order"
+  "entity": "Order",
+  "expenseLinePrefix": "Expense",
+  "laborLinePrefix": "Labor"
 }

@@ -483,7 +483,6 @@
     "readyToInvoice": "Prête à facturer",
     "invoiced": "Facturée",
     "partiallyInvoiced": "Partiellement facturée",
-
     "closed": "Clôturée",
     "cancelled": "Annulée",
     "updating": "Mise à jour...",
@@ -786,5 +785,7 @@
     "description": "Suivez le pipeline commercial, les opportunités et le chiffre d'affaires.",
     "category": "CRM"
   },
-  "entity": "Commande"
+  "entity": "Commande",
+  "expenseLinePrefix": "Frais",
+  "laborLinePrefix": "Main-d’œuvre"
 }

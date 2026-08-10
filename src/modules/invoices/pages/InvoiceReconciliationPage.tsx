@@ -14,6 +14,7 @@ import { useCustomerInvoice } from '../hooks/useCustomerInvoices';
 import { useSaleReconciliation } from '../hooks/useSaleReconciliation';
 import { ReconciliationFindingList } from '../components/ReconciliationFindingList';
 import type { ReconItemCoverageRow } from '../utils/reconciliation';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 
 const COVERAGE_TONE: Record<ReconItemCoverageRow['coverage'], string> = {
   none: 'bg-muted text-muted-foreground',
@@ -284,7 +285,7 @@ export function InvoiceReconciliationPage() {
               <TableBody>
                 {result.items.map((it, idx) => (
                   <TableRow key={it.saleItemId ?? idx}>
-                    <TableCell className="text-sm">{it.itemName}</TableCell>
+                    <TableCell className="text-sm">{formatSaleItemLabel(it.itemName)}</TableCell>
                     <TableCell className="text-right text-sm">
                       {it.saleQuantity}
                       {it.invoicedQuantity > 0 && it.invoicedQuantity !== it.saleQuantity && (

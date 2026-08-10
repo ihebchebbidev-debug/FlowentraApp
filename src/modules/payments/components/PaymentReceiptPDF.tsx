@@ -6,6 +6,7 @@ import { getStatusTranslationKey } from '@/config/entity-statuses';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { buildFooterLines } from '@/shared/pdf/resolveCompany';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 
 // Reuse styles from OfferPDFDocument with additions for payment section
 const styles = StyleSheet.create({
@@ -474,7 +475,7 @@ export function PaymentReceiptPDF({
                     <View style={styles.posCol}><Text style={styles.cellBold}>{index + 1}</Text></View>
                   )}
                   <View style={styles.descCol}>
-                    <Text style={styles.cell}>{item.itemName}</Text>
+                    <Text style={styles.cell}>{formatSaleItemLabel(item.itemName)}</Text>
                     {item.itemCode && <Text style={styles.cellMuted}>{item.itemCode}</Text>}
                   </View>
                   {config.table?.showQuantity && (

@@ -27,6 +27,7 @@ import { InvoicePDFPreviewModal } from '../components/InvoicePDFPreviewModal';
 import { PostInvoiceReconciliationDialog } from '../components/PostInvoiceReconciliationDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useQueryClient } from '@tanstack/react-query';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -226,7 +227,7 @@ export function InvoiceDetailPage() {
                   <TableBody>
                     {invoice.lines.map((line) => (
                       <TableRow key={line.id}>
-                        <TableCell>{line.itemName}</TableCell>
+                        <TableCell>{formatSaleItemLabel(line.itemName)}</TableCell>
                         <TableCell className="text-right">{line.quantity}</TableCell>
                         <TableCell className="text-right">{format(line.unitPrice)}</TableCell>
                         <TableCell className="text-right">{format(line.lineTotal)}</TableCell>

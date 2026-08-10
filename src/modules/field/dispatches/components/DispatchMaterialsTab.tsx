@@ -258,8 +258,10 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
       return technicianId;
     }
 
-    // Fallback
-    return material.usedBy || material.createdBy || 'System';
+    // Fallback — never show a bare numeric ID
+    const fallback = material.usedBy || material.createdBy || '';
+    if (!fallback) return 'System';
+    return isLikelyNumericId(fallback) ? '—' : fallback;
   };
 
   // Fetch article details by ID
@@ -325,8 +327,10 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
   // Resolve user names
   useEffect(() => {
     const userIds = new Set<string>(
-      materials
-        .map(m => m.technicianId || m.usedBy || m.createdBy)
+      [
+        ...materials.map(m => m.technicianId || m.usedBy || m.createdBy),
+        ...(serviceOrderMaterials ?? []).map((m: any) => m?.createdBy ? String(m.createdBy) : undefined),
+      ]
         .filter(Boolean)
         .filter(id => isLikelyNumericId(id!))
     );
@@ -346,7 +350,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
         inFlightUserFetches.current.delete(id);
       }
     });
-  }, [materials, userNamesById]);
+  }, [materials, serviceOrderMaterials, userNamesById]);
 
   // Fetch available materials when modal opens
   useEffect(() => {
@@ -613,10 +617,12 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
       unit: (m as any).unit || 'piece',
       unitCost: m.unitPrice,
       totalCost: m.totalPrice,
-      addedBy: m.createdBy || t('materials_tab.from_service_order_short'),
+      addedBy: m.createdBy
+        ? getUserDisplayName({ createdBy: String(m.createdBy) } as MaterialUsage)
+        : t('materials_tab.from_service_order_short'),
     }));
     return [...planned, ...used];
-  }, [materialsWithDetails, installationMaterials, t]);
+  }, [materialsWithDetails, installationMaterials, userNamesById, t]);
 
   const unifiedTotalCost = unifiedRows.reduce((s, r) => s + r.totalCost, 0);
   const unifiedCount = unifiedRows.length;

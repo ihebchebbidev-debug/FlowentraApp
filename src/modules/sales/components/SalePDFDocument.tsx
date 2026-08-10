@@ -3,6 +3,7 @@ import { numberToWords } from '@/lib/numberToWords';
 import { calculateEntityTotal } from '@/lib/calculateTotal';
 import { InstallationDataTable } from '@/shared/components/PDFInstallationTable';
 import { buildFooterLines } from '@/shared/pdf/resolveCompany';
+import { formatSaleItemLabel } from '@/modules/sales/utils/saleItemLabel';
 
 // Professional facture PDF — structured, bordered sections, clean typography
 const styles = StyleSheet.create({
@@ -435,7 +436,7 @@ export function SalePDFDocument({ sale, formatCurrency, settings, translations, 
                         <View style={styles.articleCol}><Text style={styles.cellBold}>{item.articleNumber || item.code || '-'}</Text></View>
                       )}
                       <View style={styles.descCol}>
-                        <Text style={styles.cell}>{item.name || item.itemName || 'Item'}</Text>
+                        <Text style={styles.cell}>{formatSaleItemLabel(item.name || item.itemName) || 'Item'}</Text>
                         {(item.articleNumber || item.code || item.itemCode) && (
                           <Text style={styles.cellMuted}>{item.articleNumber || item.code || item.itemCode}</Text>
                         )}
