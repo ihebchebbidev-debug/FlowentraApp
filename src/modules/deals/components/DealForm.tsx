@@ -170,6 +170,12 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
       toast.error(t("form.required"));
       return;
     }
+    // The backend rejects negative values outright — catch it here so the user sees a
+    // field-level message instead of a raw API error after a full round trip.
+    if (!(v.estimatedValue >= 0) || offerItems.some(it => lineTotalOf(it) < 0)) {
+      toast.error(t("form.negativeValue", { defaultValue: "Values cannot be negative." }));
+      return;
+    }
     const drafts = offerItemsToDrafts(offerItems);
     const payload: CreateDealRequest = {
       title: v.title.trim(),
@@ -177,9 +183,11 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
       contactId: v.contactId,
       projectId: v.projectId ?? undefined,
       stage: v.stage as any,
-      probability: v.probability,
-      estimatedValue: drafts.length > 0 ? Math.round(itemsSubtotal * 100) / 100 : v.estimatedValue,
+      // Terminal stages are certain; keep the payload aligned with the backend rule.
+      probability: v.stage === "won" ? 100 : v.stage === "lost" ? 0 : Math.min(100, Math.max(0, Math.round(v.probability || 0))),
+      estimatedValue: drafts.length > 0 ? Math.round(itemsSubtotal * 100) / 100 : Math.round((v.estimatedValue || 0) * 100) / 100,
       currency: v.currency,
+
       expectedCloseDate: v.expectedCloseDate || undefined,
       nextActionDate: v.nextActionDate || undefined,
       nextAction: v.nextAction.trim() || undefined,
@@ -388,7 +396,16 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>{t("form.stage")}</Label>
-                  <Select value={v.stage} onValueChange={val => set("stage", val)}>
+                  <Select
+                    value={v.stage}
+                    onValueChange={val => {
+                      set("stage", val);
+                      // Terminal stages pin the odds so the form never shows (or sends)
+                      // a stale probability for a closed deal.
+                      if (val === "won") set("probability", 100);
+                      else if (val === "lost") set("probability", 0);
+                    }}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {DEAL_STAGES.map(s => <SelectItem key={s.id} value={s.id}>{t(`stages.${s.id}`)}</SelectItem>)}

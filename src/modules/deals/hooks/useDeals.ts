@@ -63,8 +63,15 @@ export function useDeals(params?: DealSearchParams) {
   }, [fetchDeals, t]);
 
   const updateStage = useCallback(async (id: number, stage: Deal['stage']) => {
-    // optimistic
-    setDeals(prev => prev.map(d => d.id === id ? { ...d, stage } : d));
+    // Dropping a card back onto its own column is a no-op: firing the PATCH anyway
+    // logged a bogus stage-change activity and re-triggered stage workflows.
+    let changed = true;
+    setDeals(prev => {
+      const current = prev.find(d => d.id === id);
+      if (current && current.stage === stage) { changed = false; return prev; }
+      return prev.map(d => d.id === id ? { ...d, stage } : d); // optimistic
+    });
+    if (!changed) return;
     try {
       await dealsApi.update(id, { stage });
       fetchDeals();
@@ -73,6 +80,7 @@ export function useDeals(params?: DealSearchParams) {
       fetchDeals();
     }
   }, [fetchDeals, t]);
+
 
   return { deals, stats, loading, refetch: fetchDeals, deleteDeal, updateStage };
 }

@@ -152,6 +152,30 @@ namespace MyApi.Modules.Deals.Services
                 throw new InvalidOperationException($"INVALID_CONTACT:{contactId}: Contact {contactId} does not exist.");
         }
 
+        /// <summary>A deal may live inside a project container — reject links to projects that don't exist.</summary>
+        private async Task EnsureProjectExistsAsync(int projectId)
+        {
+            if (projectId <= 0)
+                throw new InvalidOperationException("INVALID_PROJECT: A valid project is required.");
+
+            var exists = await _context.Projects.AsNoTracking().AnyAsync(p => p.Id == projectId);
+            if (!exists)
+                throw new InvalidOperationException($"INVALID_PROJECT:{projectId}: Project {projectId} does not exist.");
+        }
+
+        /// <summary>
+        /// EstimatedValue feeds the pipeline forecast, the project budget and the synthesized
+        /// conversion line — a negative number would poison all three (and render as a negative
+        /// offer total), so reject it at the edge instead of storing it.
+        /// </summary>
+        private static decimal ValidateEstimatedValue(decimal value)
+        {
+            if (value < 0)
+                throw new InvalidOperationException("INVALID_VALUE: Estimated value cannot be negative.");
+            return Math.Round(value, 2);
+        }
+
+
 
         public DealService(
             ApplicationDbContext context,
@@ -214,23 +238,40 @@ namespace MyApi.Modules.Deals.Services
 
             var query = _context.Deals.AsNoTracking().Where(d => !d.IsDeleted).AsQueryable();
 
-            if (!string.IsNullOrEmpty(stage))
-                query = query.Where(d => d.Stage == stage);
-            if (!string.IsNullOrEmpty(category))
-                query = query.Where(d => d.Category == category);
-            if (!string.IsNullOrEmpty(source))
-                query = query.Where(d => d.Source == source);
+            // Filters arrive from query strings, so they carry whatever casing/spacing the
+            // caller used ("Won", " won "). Stored stages are canonical lower-case, so a
+            // raw equality test silently returned an empty pipeline. Normalise first.
+            if (!string.IsNullOrWhiteSpace(stage))
+            {
+                var s = NormalizeStage(stage);
+                query = query.Where(d => d.Stage == s);
+            }
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                var c = category.Trim();
+                query = query.Where(d => d.Category == c);
+            }
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                var src = source.Trim();
+                query = query.Where(d => d.Source == src);
+            }
             if (!string.IsNullOrEmpty(contactId) && int.TryParse(contactId, out int cId))
                 query = query.Where(d => d.ContactId == cId);
             if (!string.IsNullOrEmpty(projectId) && int.TryParse(projectId, out int pId))
                 query = query.Where(d => d.ProjectId == pId);
-            if (!string.IsNullOrEmpty(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                var s = search.ToLower();
+                // Users search by the number printed on the card ("DEAL-00074") and by
+                // the customer name just as often as by title, so cover all of them.
+                var s = search.Trim().ToLower();
                 query = query.Where(d =>
                     (d.Title != null && d.Title.ToLower().Contains(s)) ||
-                    (d.Description != null && d.Description.ToLower().Contains(s)));
+                    (d.Description != null && d.Description.ToLower().Contains(s)) ||
+                    (d.DealNumber != null && d.DealNumber.ToLower().Contains(s)) ||
+                    (d.NextAction != null && d.NextAction.ToLower().Contains(s)));
             }
+
 
             var total = await query.CountAsync();
 
@@ -287,8 +328,11 @@ namespace MyApi.Modules.Deals.Services
             var title = ValidateTitle(dto.Title);
             var currency = ValidateCurrency(dto.Currency);
             await EnsureContactExistsAsync(dto.ContactId);
+            if (dto.ProjectId.HasValue) await EnsureProjectExistsAsync(dto.ProjectId.Value);
+            var estimatedValue = ValidateEstimatedValue(dto.EstimatedValue);
             if (dto.Items != null)
                 for (var i = 0; i < dto.Items.Count; i++) ValidateItem(dto.Items[i], i);
+
 
             // Resolve the document number from the configurable numbering service
             // (admin can customise the Deal template in Settings → Numbering). Falls
@@ -328,11 +372,16 @@ namespace MyApi.Modules.Deals.Services
                     ProjectId = dto.ProjectId,
                     Stage = stage,
                     // Probability is a percentage — clamp so charts/forecasts can trust it.
-                    Probability = Math.Clamp(dto.Probability, 0, 100),
+                    // Terminal stages are certain by definition, so a deal created straight
+                    // into won/lost is pinned the same way UpdateDealAsync pins it.
+                    Probability = stage == "won" ? 100
+                        : stage == "lost" ? 0
+                        : Math.Clamp(dto.Probability, 0, 100),
+
                     // A deal created straight into a terminal stage still needs a close date.
                     ActualCloseDate = (stage == "won" || stage == "lost") ? DateTime.UtcNow : null,
 
-                    EstimatedValue = dto.EstimatedValue,
+                    EstimatedValue = estimatedValue,
                     Currency = currency,
                     ExpectedCloseDate = ToUtc(dto.ExpectedCloseDate),
                     NextActionDate = ToUtc(dto.NextActionDate),
@@ -376,13 +425,17 @@ namespace MyApi.Modules.Deals.Services
             if (deal == null) return null;
 
             var oldStage = deal.Stage;
+            var oldProbability = deal.Probability;
             // Validate before mutating anything so a bad stage can't partially apply.
             var newStage = dto.Stage != null ? NormalizeStage(dto.Stage) : null;
             var newTitle = dto.Title != null ? ValidateTitle(dto.Title) : null;
             var newCurrency = dto.Currency != null ? ValidateCurrency(dto.Currency) : null;
             if (dto.ContactId.HasValue) await EnsureContactExistsAsync(dto.ContactId.Value);
+            if (dto.ProjectId.HasValue) await EnsureProjectExistsAsync(dto.ProjectId.Value);
+            if (dto.EstimatedValue.HasValue) ValidateEstimatedValue(dto.EstimatedValue.Value);
             if (dto.Items != null)
                 for (var i = 0; i < dto.Items.Count; i++) ValidateItem(dto.Items[i], i);
+
 
             if (newTitle != null) deal.Title = newTitle;
             if (dto.Description != null) deal.Description = dto.Description;
@@ -390,7 +443,14 @@ namespace MyApi.Modules.Deals.Services
             if (dto.ProjectId.HasValue) deal.ProjectId = dto.ProjectId.Value;
             if (newStage != null) deal.Stage = newStage;
             if (dto.Probability.HasValue) deal.Probability = Math.Clamp(dto.Probability.Value, 0, 100);
-            if (dto.EstimatedValue.HasValue) deal.EstimatedValue = dto.EstimatedValue.Value;
+            // Line items are the source of truth for the value whenever the deal has any.
+            // A header-only PATCH (kanban drag, inline stage change) used to overwrite the
+            // item-derived total with a stale number, leaving the deal's value out of sync
+            // with the lines it converts into. Only honour the header value for itemless
+            // deals; the items branch below owns the rest.
+            if (dto.EstimatedValue.HasValue && dto.Items == null && (deal.Items == null || !deal.Items.Any()))
+                deal.EstimatedValue = ValidateEstimatedValue(dto.EstimatedValue.Value);
+
             if (newCurrency != null) deal.Currency = newCurrency;
             if (dto.ExpectedCloseDate.HasValue) deal.ExpectedCloseDate = ToUtc(dto.ExpectedCloseDate);
             if (dto.ActualCloseDate.HasValue) deal.ActualCloseDate = ToUtc(dto.ActualCloseDate);
@@ -425,8 +485,15 @@ namespace MyApi.Modules.Deals.Services
                 if (newStage == "won" && dto.LostReason == null) deal.LostReason = null;
 
                 // Terminal stages pin the probability so forecasts stop counting a
-                // closed deal at its old odds. An explicit value from the caller wins.
-                if (!dto.Probability.HasValue)
+                // closed deal at its old odds. Clients (the edit form) echo back the
+                // current probability untouched, so a value equal to the stored one is
+                // treated as "not explicitly changed" — only a genuinely different
+                // number from the caller wins over the terminal normalisation.
+                var probabilityExplicitlyChanged =
+                    dto.Probability.HasValue &&
+                    Math.Clamp(dto.Probability.Value, 0, 100) != oldProbability;
+
+                if (!probabilityExplicitlyChanged)
                 {
                     if (newStage == "won") deal.Probability = 100;
                     else if (newStage == "lost") deal.Probability = 0;
@@ -490,7 +557,13 @@ namespace MyApi.Modules.Deals.Services
             deal.IsDeleted = true;
             deal.DeletedAt = DateTime.UtcNow;
             deal.DeletedBy = userId;
+            // Keep the audit trail coherent: a soft delete is still a mutation, so the
+            // modified stamps must move with it (lists sort on ModifiedDate).
+            deal.ModifiedDate = DateTime.UtcNow;
+            deal.ModifiedBy = userId;
+            deal.LastActivity = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
 
             await LogActivityAsync("delete", "Deal", id.ToString(), id,
                 $"Deal deleted: {deal.Title}", userId);
@@ -575,10 +648,16 @@ namespace MyApi.Modules.Deals.Services
                     .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
                 if (deal == null) throw new KeyNotFoundException($"Deal {id} not found");
 
+                // A lost deal must be reopened before it can spawn commercial documents:
+                // converting it silently flipped the stage to won and resurrected a deal
+                // the team had already written off (and its lost reason with it).
+                if (deal.Stage == "lost")
+                    throw new InvalidOperationException($"CANNOT_CONVERT_LOST: Deal {id} is marked lost — reopen it before converting.");
 
                 // ── Deal → Project (FIRST, so a Sale/Offer in the same call links to it) ──
                 if (dto.ConvertToProject)
                 {
+
                     if (!string.IsNullOrEmpty(deal.ConvertedToProjectId))
                         throw new InvalidOperationException($"ALREADY_CONVERTED_PROJECT:{deal.ConvertedToProjectId}: Deal {id} has already been converted to Project {deal.ConvertedToProjectId}");
 
@@ -634,7 +713,25 @@ namespace MyApi.Modules.Deals.Services
                             RelatedEntityId = project.Id,
                         }, userId);
                     }
+
+                    // An itemless deal produced a project with a budget but an empty board,
+                    // so the work had no visible entry point. Seed one task from the deal
+                    // header, mirroring the synthetic line the Sale/Offer paths create.
+                    if ((deal.Items == null || !deal.Items.Any()))
+                    {
+                        await _taskService.CreateProjectTaskAsync(new CreateProjectTaskRequestDto
+                        {
+                            Title = string.IsNullOrWhiteSpace(deal.Title) ? $"Deliver deal #{deal.Id}" : deal.Title,
+                            Description = $"Converted from deal {deal.DealNumber ?? $"#{deal.Id}"}"
+                                + (deal.EstimatedValue > 0 ? $" · {deal.EstimatedValue:0.00} {deal.Currency}" : ""),
+                            TaskType = "follow-up",
+                            Status = "open",
+                            RelatedEntityType = "project",
+                            RelatedEntityId = project.Id,
+                        }, userId);
+                    }
                 }
+
 
                 // New project (if just created) wins; otherwise keep any existing link.
                 var effectiveProjectId = deal.ProjectId;

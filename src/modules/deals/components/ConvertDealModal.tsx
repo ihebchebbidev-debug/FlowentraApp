@@ -43,15 +43,21 @@ export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
     target.key === "sale" ? "PL0002SALES" : target.key === "project" ? "PL0004PROJECTS" : "PL0005OFFERS"
   ));
 
+  // Every enabled target is already converted → nothing left to do. Without this the
+  // dialog offered a live "Convert" button that could only ever fail with "pick one".
+  const nothingLeft = targets.length > 0 && targets.every(tg => tg.disabled);
+
   const handleConvert = async () => {
     if (viewAll) {
       toast.error(t("tenant.selectCompany", { defaultValue: "Select a company from the top bar first." }));
       return;
     }
+    if (nothingLeft) return;
     if (!toSale && !toProject && !toOffer) {
       toast.error(t("convert.pickOne"));
       return;
     }
+
     setBusy(true);
     try {
       await dealsApi.convert(deal.id, { convertToSale: toSale, convertToProject: toProject, convertToOffer: toOffer });
@@ -109,7 +115,7 @@ export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>{t("actions.cancel")}</Button>
-          <Button onClick={handleConvert} disabled={busy || viewAll} className="gap-1.5">
+          <Button onClick={handleConvert} disabled={busy || viewAll || nothingLeft} className="gap-1.5">
             {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("convert.converting")}</> : t("convert.confirm")}
           </Button>
         </DialogFooter>
