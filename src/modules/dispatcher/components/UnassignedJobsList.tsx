@@ -17,6 +17,7 @@ import {
   GripVertical,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Package,
   Search,
   MapPin,
@@ -76,6 +77,7 @@ export function UnassignedJobsList({
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<'so' | 'priority' | 'newest' | 'oldest' | 'customer' | 'duration'>("so");
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>("asc");
   const [groupBy, setGroupBy] = useState<'none' | 'contact' | 'status' | 'priority' | 'created'>("none");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
@@ -83,6 +85,7 @@ export function UnassignedJobsList({
     (priorityFilter !== 'all' ? 1 : 0) +
     (statusFilter !== 'all' ? 1 : 0) +
     (sortBy !== 'so' ? 1 : 0) +
+    (sortDir !== 'asc' ? 1 : 0) +
     (groupBy !== 'none' ? 1 : 0);
   const [_isDragging, setIsDragging] = useState(false);
   // Default the planned-orders section from the profile's "Load planned service orders" setting.
@@ -155,17 +158,21 @@ export function UnassignedJobsList({
       .sort((a, b) => {
         const prioRank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
         const ms = (d: any) => { const t = new Date(d).getTime(); return isNaN(t) ? 0 : t; };
-        switch (sortBy) {
-          case 'priority': return (prioRank[a.priority] ?? 2) - (prioRank[b.priority] ?? 2);
-          case 'newest':   return ms(b.createdAt) - ms(a.createdAt);
-          case 'oldest':   return ms(a.createdAt) - ms(b.createdAt);
-          case 'customer': return (a.customerName || '').localeCompare(b.customerName || '');
-          case 'duration': return (b.totalEstimatedDuration || 0) - (a.totalEstimatedDuration || 0);
-          default:         return (a.title || '').localeCompare(b.title || '');
-        }
+        const factor = sortDir === 'asc' ? 1 : -1;
+        const base = (() => {
+          switch (sortBy) {
+            case 'priority': return (prioRank[a.priority] ?? 2) - (prioRank[b.priority] ?? 2);
+            case 'newest':   return ms(b.createdAt) - ms(a.createdAt);
+            case 'oldest':   return ms(a.createdAt) - ms(b.createdAt);
+            case 'customer': return (a.customerName || '').localeCompare(b.customerName || '');
+            case 'duration': return (b.totalEstimatedDuration || 0) - (a.totalEstimatedDuration || 0);
+            default:         return (a.title || '').localeCompare(b.title || '');
+          }
+        })();
+        return base * factor;
       });
     // jobs reference changes whenever the parent reloads unassigned jobs (= SO cache version).
-  }, [jobs, debouncedSearchTerm, priorityFilter, statusFilter, sortBy]);
+  }, [jobs, debouncedSearchTerm, priorityFilter, statusFilter, sortBy, sortDir]);
 
   // ── Section grouping (collapsible headers above the service-order cards) ──
   type SOGroup = (typeof groupedData)[number];
@@ -768,6 +775,7 @@ export function UnassignedJobsList({
                   <SelectItem value="pending">{t('serviceOrders.status.pending', 'Pending')}</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-1.5">
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
                 <SelectTrigger className="h-8 w-full bg-background text-xs"><SelectValue placeholder={t('dispatcher.sort_by', 'Sort by')} /></SelectTrigger>
                 <SelectContent className="bg-popover border shadow-md z-50">
@@ -779,6 +787,17 @@ export function UnassignedJobsList({
                   <SelectItem value="duration">{t('dispatcher.sort_duration', 'Duration')}</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0 bg-background"
+                aria-label={sortDir === 'asc' ? t('dispatcher.sort_asc', 'Ascending') : t('dispatcher.sort_desc', 'Descending')}
+                title={sortDir === 'asc' ? t('dispatcher.sort_asc', 'Ascending') : t('dispatcher.sort_desc', 'Descending')}
+                onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+              >
+                {sortDir === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </Button>
+              </div>
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as typeof groupBy)}>
                 <SelectTrigger className="h-8 w-full bg-background text-xs"><SelectValue placeholder={t('dispatcher.group_by', 'Group by')} /></SelectTrigger>
                 <SelectContent className="bg-popover border shadow-md z-50">
@@ -792,7 +811,7 @@ export function UnassignedJobsList({
               {activeFilterCount > 0 && (
                 <button
                   className="text-rem-70 text-muted-foreground hover:text-foreground underline self-end"
-                  onClick={() => { setPriorityFilter('all'); setStatusFilter('all'); setSortBy('so'); setGroupBy('none'); }}
+                  onClick={() => { setPriorityFilter('all'); setStatusFilter('all'); setSortBy('so'); setSortDir('asc'); setGroupBy('none'); }}
                 >
                   {t('dispatcher.clear_filters', 'Clear all')}
                 </button>

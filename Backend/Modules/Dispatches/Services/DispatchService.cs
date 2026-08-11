@@ -162,13 +162,23 @@ namespace MyApi.Modules.Dispatches.Services
 
                 foreach (var m in materials)
                 {
+                    // A rejected line already handed its goods back — restoring again
+                    // on cancellation would inflate stock.
+                    if (string.Equals(m.ApprovalStatus, "rejected", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    // Reject/re-approve round trips move the ledger reference to a
+                    // suffixed key; restore against the reference of the current cycle.
+                    var cycle = await GetMaterialStockCycleAsync(m.Id);
+                    var deductRef = MaterialStockRef(m.Id, "deduct", cycle);
+                    var returnRef = MaterialStockRef(m.Id, "return", cycle);
+
                     // Only restore what was actually deducted by this dispatch. If the
                     // parent sale covered the goods, no dispatch-level deduction was
                     // written and there is nothing to give back here.
                     var wasDeducted = await _db.StockTransactions.AnyAsync(t =>
                         t.ArticleId == m.ArticleId!.Value
                         && t.ReferenceType == "dispatch_material"
-                        && t.ReferenceId == m.Id.ToString()
+                        && t.ReferenceId == deductRef
                         && t.TransactionType == "remove");
                     if (!wasDeducted) continue;
 
@@ -181,10 +191,11 @@ namespace MyApi.Modules.Dispatches.Services
                             Quantity = m.Quantity,
                             Reason = "Dispatch cancelled - material returned to stock",
                             ReferenceType = "dispatch_material",
-                            ReferenceId = m.Id.ToString(),
+                            ReferenceId = returnRef,
                             ReferenceNumber = d.DispatchNumber,
                             Notes = m.Description,
                         }, userId);
+
 
                         _logger.LogInformation(
                             "[DISPATCH-CANCEL] Restored {Qty} of article {ArticleId} from material {MaterialId} (dispatch {DispatchId})",
@@ -2622,10 +2633,97 @@ namespace MyApi.Modules.Dispatches.Services
             }).ToList();
         }
 
+        /// <summary>
+        /// Number of completed deduct/restore cycles already written for a material line.
+        /// Cycle 0 uses the bare material id as reference (what AddMaterialUsageAsync wrote);
+        /// every later reject → re-approve round trip gets its own suffixed reference so the
+        /// ledger's idempotency guard does not swallow a legitimate second movement.
+        /// </summary>
+        private async Task<int> GetMaterialStockCycleAsync(int materialId)
+        {
+            var prefix = materialId.ToString();
+            return await _db.StockTransactions.CountAsync(t =>
+                t.ReferenceType == "dispatch_material"
+                && t.TransactionType == "return"
+                && (t.ReferenceId == prefix || t.ReferenceId!.StartsWith(prefix + "#return")));
+        }
+
+        private static string MaterialStockRef(int materialId, string kind, int cycle)
+            => cycle == 0 ? materialId.ToString() : $"{materialId}#{kind}{cycle}";
+
+        /// <summary>
+        /// Puts a rejected material line's goods back on the shelf (and takes them out
+        /// again when the same line is later approved). Without this, rejecting a
+        /// material silently kept the stock deducted forever.
+        /// </summary>
+        private async Task SyncMaterialStockForApprovalAsync(MaterialUsage m, string dispatchNumber, bool approved, string userId)
+        {
+            if (_stockTransactionService == null || m.ArticleId == null || m.Quantity <= 0) return;
+
+            try
+            {
+                var cycle = await GetMaterialStockCycleAsync(m.Id);
+
+                if (!approved)
+                {
+                    // Only give back what this dispatch actually took out.
+                    var deductRef = MaterialStockRef(m.Id, "deduct", cycle);
+                    var wasDeducted = await _db.StockTransactions.AnyAsync(t =>
+                        t.ArticleId == m.ArticleId!.Value
+                        && t.ReferenceType == "dispatch_material"
+                        && t.ReferenceId == deductRef
+                        && t.TransactionType == "remove");
+                    if (!wasDeducted) return;
+
+                    await _stockTransactionService.CreateTransactionAsync(new CreateStockTransactionDto
+                    {
+                        ArticleId = m.ArticleId!.Value,
+                        TransactionType = "return",
+                        Quantity = m.Quantity,
+                        Reason = "Dispatch material rejected - returned to stock",
+                        ReferenceType = "dispatch_material",
+                        ReferenceId = MaterialStockRef(m.Id, "return", cycle),
+                        ReferenceNumber = dispatchNumber,
+                        Notes = m.Description,
+                    }, userId);
+                }
+                else
+                {
+                    // Re-approval after a rejection: take the goods out again.
+                    if (cycle == 0) return; // never restored → still deducted, nothing to do
+                    var deductRef = MaterialStockRef(m.Id, "deduct", cycle);
+                    var alreadyDeducted = await _db.StockTransactions.AnyAsync(t =>
+                        t.ArticleId == m.ArticleId!.Value
+                        && t.ReferenceType == "dispatch_material"
+                        && t.ReferenceId == deductRef
+                        && t.TransactionType == "remove");
+                    if (alreadyDeducted) return;
+
+                    await _stockTransactionService.CreateTransactionAsync(new CreateStockTransactionDto
+                    {
+                        ArticleId = m.ArticleId!.Value,
+                        TransactionType = "remove",
+                        Quantity = m.Quantity,
+                        Reason = "Dispatch material re-approved - deducted from stock",
+                        ReferenceType = "dispatch_material",
+                        ReferenceId = deductRef,
+                        ReferenceNumber = dispatchNumber,
+                        Notes = m.Description,
+                    }, userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "[DISPATCH-MATERIAL] Stock sync failed for material {MaterialId} (approved={Approved})", m.Id, approved);
+            }
+        }
+
         public async Task ApproveMaterialAsync(int dispatchId, int materialId, ApproveMaterialDto dto, string userId)
         {
             var m = await _db.DispatchMaterials.FirstOrDefaultAsync(x => x.Id == materialId && x.DispatchId == dispatchId);
             if (m == null) throw new KeyNotFoundException("Material not found");
+            var previousStatus = m.ApprovalStatus;
 
             if (dto.Approved)
             {
@@ -2646,9 +2744,19 @@ namespace MyApi.Modules.Dispatches.Services
             }
 
             await _db.SaveChangesAsync();
+
+            // Keep inventory in step with the decision (only on an actual transition).
+            if (!string.Equals(previousStatus, m.ApprovalStatus, StringComparison.OrdinalIgnoreCase))
+            {
+                var dispatchNumber = await _db.Dispatches
+                    .Where(x => x.Id == dispatchId).Select(x => x.DispatchNumber).FirstOrDefaultAsync() ?? string.Empty;
+                await SyncMaterialStockForApprovalAsync(m, dispatchNumber, dto.Approved, userId);
+            }
+
             _logger.LogInformation(
                 "Material {MaterialId} on Dispatch {DispatchId} set to {Status} by {UserId}",
                 materialId, dispatchId, m.ApprovalStatus, userId);
+
 
             if (_activityLogger != null)
             {

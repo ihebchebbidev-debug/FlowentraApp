@@ -332,8 +332,33 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     }
                 }
 
+                // Everything below writes the service order, its jobs, its materials and the
+                // activity trail. It used to run as a series of independent SaveChanges calls:
+                // a failure half-way left a header with no jobs behind, and the next retry
+                // (workflow re-trigger) created a SECOND service order for the same sale.
+                // One transaction + a re-check inside it makes the whole conversion atomic
+                // and safe to retry.
+                int createdServiceOrderId = 0;
+                var soStrategy = _db.Database.CreateExecutionStrategy();
+                await soStrategy.ExecuteAsync(async () =>
+                {
+                createdServiceOrderId = 0;
+                var ownsTx = _db.Database.CurrentTransaction == null;
+                var soTx = ownsTx ? await _db.Database.BeginTransactionAsync() : null;
+                try
+                {
+                // Re-check inside the transaction: a concurrent trigger may have created it.
+                var raceServiceOrder = await _db.ServiceOrders.FirstOrDefaultAsync(so => so.SaleId == saleId.ToString());
+                if (raceServiceOrder != null)
+                {
+                    createdServiceOrderId = raceServiceOrder.Id;
+                    if (soTx != null) await soTx.CommitAsync();
+                    return;
+                }
+
                 // Get contact for geolocation data
                 var contact = await _db.Contacts.FindAsync(sale.ContactId);
+
 
                 // Determine ServiceType from service items
                 var serviceType = string.Join(", ", serviceItems
@@ -587,10 +612,24 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 await LogWorkflowNoteAsync("service_order", serviceOrder.Id, null, "pending", userId,
                     $"Auto-created from sale #{saleId} with {serviceItems.Count} service(s)");
 
+                if (soTx != null) await soTx.CommitAsync();
+                createdServiceOrderId = serviceOrder.Id;
+
                 _logger.LogInformation("HandleSaleInProgress: Created service order {ServiceOrderId} from sale {SaleId}", 
                     serviceOrder.Id, saleId);
+                }
+                catch
+                {
+                    if (soTx != null) await soTx.RollbackAsync();
+                    throw;
+                }
+                finally
+                {
+                    if (soTx != null) await soTx.DisposeAsync();
+                }
+                });
 
-                return serviceOrder.Id;
+                return createdServiceOrderId;
             }
             catch (Exception ex)
             {

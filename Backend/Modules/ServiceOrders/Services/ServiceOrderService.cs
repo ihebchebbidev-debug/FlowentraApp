@@ -2972,12 +2972,18 @@ namespace MyApi.Modules.ServiceOrders.Services
             // re-running "Prepare for invoice" any number of times safe.
             static string BuildSourceKey(string sourceType, int sourceId) => $"{sourceType}:{sourceId}";
 
+            // Lines that end up on the sale without a usable price are still transferred
+            // (so the work stays visible) but are now reported back to the caller instead
+            // of only being written to the server log, where nobody saw them.
+            var pricingWarnings = new List<string>();
+
             // Price resolution for transferred materials. Technicians frequently log a material by
             // article/SKU without a price, which used to land on the sale as a 0.00 line and got
             // invoiced for free. Fall back to the article's current SalesPrice, and always recompute
             // the line total from the resolved unit price so a stale/zero TotalPrice can't win.
             async Task<(decimal UnitPrice, decimal LineTotal)> ResolveMaterialPriceAsync(
                 int? articleId, decimal unitPrice, decimal quantity, decimal storedTotal, string label)
+
             {
                 var resolved = unitPrice;
 
@@ -3005,7 +3011,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                     _logger.LogWarning(
                         "PrepareForInvoice: {Label} is being transferred with a zero unit price — no price on the line and none on its article",
                         label);
+                    pricingWarnings.Add($"{label} was transferred with a zero price — set a price on the sale line before invoicing.");
                 }
+
 
                 return (resolved, Math.Round(resolved * quantity, 2));
             }
@@ -3160,7 +3168,11 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (dto.DispatchMaterialIds != null && dto.DispatchMaterialIds.Any())
             {
                 var dispatchMats = await _context.DispatchMaterials
-                    .Where(m => dto.DispatchMaterialIds.Contains(m.Id) && linkedDispatchIds.Contains(m.DispatchId))
+                    .Where(m => dto.DispatchMaterialIds.Contains(m.Id) && linkedDispatchIds.Contains(m.DispatchId)
+                        // A rejected material line was refused (and its stock returned):
+                        // it must never reach the customer's invoice.
+                        && m.ApprovalStatus != "rejected")
+
                     .ToListAsync();
 
                 _logger.LogInformation("PrepareForInvoice: Found {Count} dispatch materials (requested: {Requested})", dispatchMats.Count, dto.DispatchMaterialIds.Count);
@@ -3389,7 +3401,10 @@ namespace MyApi.Modules.ServiceOrders.Services
                         _logger.LogWarning(
                             "PrepareForInvoice: Dispatch time entry {TeId} for technician {Tech} has no available hourly rate; line added at 0.",
                             te.Id, te.TechnicianId);
+                        pricingWarnings.Add(
+                            $"Labor from dispatch time entry #{te.Id} has no hourly rate — the sale line is 0 until you set a price.");
                     }
+
 
                     var name = $"Labor: {te.WorkType ?? "work"}";
                     // Include TechnicianId + InstallationId so identical labor rates
@@ -3588,7 +3603,20 @@ namespace MyApi.Modules.ServiceOrders.Services
                 }
             }
 
-            return (await GetServiceOrderByIdAsync(id))!;
+            var prepared = (await GetServiceOrderByIdAsync(id))!;
+            if (pricingWarnings.Count > 0)
+            {
+                prepared.Warnings ??= new List<ServiceOrderCompletionWarningDto>();
+                foreach (var w in pricingWarnings)
+                {
+                    prepared.Warnings.Add(new ServiceOrderCompletionWarningDto
+                    {
+                        Code = "zero_price_line",
+                        Message = w
+                    });
+                }
+            }
+            return prepared;
 
         }
 
