@@ -60,6 +60,8 @@ export function EndpointLogsTable({ endpointId }: Props) {
   const filteredLogs = companyFilter ? logs.filter(l => l.companyId === companyFilter) : logs;
   const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ExternalEndpointLog>({
     method: (l) => l.method,
+    format: (l) => formatContentType(l.contentType)?.label ?? '',
+    company: (l) => l.companyId ?? '',
     statusCode: (l) => l.statusCode,
     receivedAt: (l) => l.receivedAt,
   });
@@ -192,8 +194,8 @@ export function EndpointLogsTable({ endpointId }: Props) {
           <TableHeader>
             <TableRow>
               <SortableHeader columnKey="method" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.logs.method')}</SortableHeader>
-              <TableHead className="hidden sm:table-cell">{t('external.logs.format', 'Format')}</TableHead>
-              <TableHead className="hidden md:table-cell">{t('external.logs.company', 'Company')}</TableHead>
+              <SortableHeader columnKey="format" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell">{t('external.logs.format', 'Format')}</SortableHeader>
+              <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell">{t('external.logs.company', 'Company')}</SortableHeader>
               <SortableHeader columnKey="statusCode" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.logs.statusCode')}</SortableHeader>
               <SortableHeader columnKey="receivedAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.logs.receivedAt')}</SortableHeader>
               <TableHead className="w-[80px]">{t('external.table.actions')}</TableHead>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Edit, Trash2, Copy, Eye, CheckCircle, Archive, RotateCcw, FileText, Share2, Globe, GlobeLock } from 'lucide-react';
@@ -256,8 +257,21 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
   return (
     <>
       {/* Mobile Cards */}
+      <div className="md:hidden flex justify-end px-4 pt-3">
+        <SortMenu
+          options={[
+            { key: 'name', label: t('table.name') },
+            { key: 'status', label: t('table.status') },
+            { key: 'fields', label: t('table.fields') },
+            { key: 'updated', label: t('table.updated') },
+          ]}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={toggleSort}
+        />
+      </div>
       <div className="md:hidden divide-y divide-border/50">
-        {forms.map((form) => {
+        {sortedForms.map((form) => {
           const name = isEnglish ? form.name_en : form.name_fr;
           const description = isEnglish ? form.description_en : form.description_fr;
           const updatedDate = form.updated_at

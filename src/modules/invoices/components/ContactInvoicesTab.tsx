@@ -11,7 +11,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarIcon, FileText, PlusCircle, Receipt, Search, X } from 'lucide-react';
+import { CalendarIcon, FileText, PlusCircle, Receipt, Search, X } from 'lucide-react';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 import { useCustomerInvoicesList } from '../hooks/useCustomerInvoices';
 import type { InvoiceStatus } from '../types';
 import { useCurrency } from '@/shared/hooks/useCurrency';
@@ -87,13 +88,6 @@ export function ContactInvoicesTab({ contactId }: ContactInvoicesTabProps) {
       setSortOrder('desc');
     }
     setPage(1);
-  };
-
-  const SortIcon = ({ col }: { col: SortableColumn }) => {
-    if (sortBy !== col) return <ArrowUpDown className="ml-1 h-3.5 w-3.5 opacity-50" />;
-    return sortOrder === 'asc'
-      ? <ArrowUp className="ml-1 h-3.5 w-3.5" />
-      : <ArrowDown className="ml-1 h-3.5 w-3.5" />;
   };
 
   const hasFilters = search || dateFrom || dateTo || status !== 'all';
@@ -204,36 +198,12 @@ export function ContactInvoicesTab({ contactId }: ContactInvoicesTabProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>
-                      <button className="inline-flex items-center hover:text-foreground" onClick={() => toggleSort('invoiceNumber')}>
-                        {t('columns.number')} <SortIcon col="invoiceNumber" />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button className="inline-flex items-center hover:text-foreground" onClick={() => toggleSort('issueDate')}>
-                        {t('columns.issue_date')} <SortIcon col="issueDate" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button className="inline-flex items-center hover:text-foreground" onClick={() => toggleSort('grandTotal')}>
-                        {t('columns.total')} <SortIcon col="grandTotal" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button className="inline-flex items-center hover:text-foreground" onClick={() => toggleSort('amountPaid')}>
-                        {t('columns.paid')} <SortIcon col="amountPaid" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <button className="inline-flex items-center hover:text-foreground" onClick={() => toggleSort('amountDue')}>
-                        {t('columns.due')} <SortIcon col="amountDue" />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button className="inline-flex items-center hover:text-foreground" onClick={() => toggleSort('status')}>
-                        {t('columns.status')} <SortIcon col="status" />
-                      </button>
-                    </TableHead>
+                    <SortableHeader columnKey="invoiceNumber" sortKey={sortBy} sortDirection={sortOrder} onSort={(k) => toggleSort(k as SortableColumn)}>{t('columns.number')}</SortableHeader>
+                    <SortableHeader columnKey="issueDate" sortKey={sortBy} sortDirection={sortOrder} onSort={(k) => toggleSort(k as SortableColumn)}>{t('columns.issue_date')}</SortableHeader>
+                    <SortableHeader columnKey="grandTotal" sortKey={sortBy} sortDirection={sortOrder} onSort={(k) => toggleSort(k as SortableColumn)} align="right">{t('columns.total')}</SortableHeader>
+                    <SortableHeader columnKey="amountPaid" sortKey={sortBy} sortDirection={sortOrder} onSort={(k) => toggleSort(k as SortableColumn)} align="right">{t('columns.paid')}</SortableHeader>
+                    <SortableHeader columnKey="amountDue" sortKey={sortBy} sortDirection={sortOrder} onSort={(k) => toggleSort(k as SortableColumn)} align="right">{t('columns.due')}</SortableHeader>
+                    <SortableHeader columnKey="status" sortKey={sortBy} sortDirection={sortOrder} onSort={(k) => toggleSort(k as SortableColumn)}>{t('columns.status')}</SortableHeader>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -20,6 +20,8 @@ import dayjs from 'dayjs';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 import { EditHolidayDialog } from './EditHolidayDialog';
+import { useTableSort } from '@/hooks/useTableSort';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 
 
@@ -109,6 +111,29 @@ export function HrSettingsPage() {
     patch({ workDays: Array.from(set).sort((a, b) => a - b) });
   };
 
+  // Unified table sorting
+  const rateSort = useTableSort<any>({
+    effectiveFrom: (r) => r.effectiveFrom,
+    employeeRate: (r) => r.employeeRate,
+    employerRate: (r) => r.employerRate,
+    ceiling: (r) => (r.salaryCeiling && r.salaryCeiling > 0 ? r.salaryCeiling : r.ceiling),
+    isActive: (r) => !!r.isActive,
+  });
+  const sortedRates = useMemo(
+    () => rateSort.sortItems(ratesQuery.data ?? []),
+    [ratesQuery.data, rateSort]
+  );
+
+  const holidaySort = useTableSort<any>({
+    date: (h) => h.date,
+    name: (h) => h.name,
+    isRecurring: (h) => !!h.isRecurring,
+  });
+  const sortedHolidays = useMemo(
+    () => holidaySort.sortItems(holidaysQuery.data ?? []),
+    [holidaysQuery.data, holidaySort]
+  );
+
 
   return (
     <div className="flex flex-col">
@@ -165,15 +190,15 @@ export function HrSettingsPage() {
                 <Table className="min-w-[500px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('cnssPage.effectiveFrom')}</TableHead>
-                      <TableHead>{t('cnssPage.employeeRate')}</TableHead>
-                      <TableHead>{t('cnssPage.employerRate')}</TableHead>
-                      <TableHead>{t('cnssPage.ceiling')}</TableHead>
-                      <TableHead>{t('settingsPage.cnss.active')}</TableHead>
+                      <SortableHeader columnKey="effectiveFrom" sortKey={rateSort.sortKey} sortDirection={rateSort.sortDirection} onSort={rateSort.toggleSort}>{t('cnssPage.effectiveFrom')}</SortableHeader>
+                      <SortableHeader columnKey="employeeRate" sortKey={rateSort.sortKey} sortDirection={rateSort.sortDirection} onSort={rateSort.toggleSort}>{t('cnssPage.employeeRate')}</SortableHeader>
+                      <SortableHeader columnKey="employerRate" sortKey={rateSort.sortKey} sortDirection={rateSort.sortDirection} onSort={rateSort.toggleSort}>{t('cnssPage.employerRate')}</SortableHeader>
+                      <SortableHeader columnKey="ceiling" sortKey={rateSort.sortKey} sortDirection={rateSort.sortDirection} onSort={rateSort.toggleSort}>{t('cnssPage.ceiling')}</SortableHeader>
+                      <SortableHeader columnKey="isActive" sortKey={rateSort.sortKey} sortDirection={rateSort.sortDirection} onSort={rateSort.toggleSort}>{t('settingsPage.cnss.active')}</SortableHeader>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(ratesQuery.data ?? []).map(r => (
+                    {sortedRates.map(r => (
                       <TableRow key={r.id}>
                         <TableCell>{r.effectiveFrom}</TableCell>
                         <TableCell>{(r.employeeRate * 100).toFixed(2)}%</TableCell>
@@ -224,19 +249,19 @@ export function HrSettingsPage() {
                 <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('settingsPage.holidays.date')}</TableHead>
-                      <TableHead>{t('settingsPage.holidays.name')}</TableHead>
-                      <TableHead>{t('settingsPage.holidays.recurring')}</TableHead>
+                      <SortableHeader columnKey="date" sortKey={holidaySort.sortKey} sortDirection={holidaySort.sortDirection} onSort={holidaySort.toggleSort}>{t('settingsPage.holidays.date')}</SortableHeader>
+                      <SortableHeader columnKey="name" sortKey={holidaySort.sortKey} sortDirection={holidaySort.sortDirection} onSort={holidaySort.toggleSort}>{t('settingsPage.holidays.name')}</SortableHeader>
+                      <SortableHeader columnKey="isRecurring" sortKey={holidaySort.sortKey} sortDirection={holidaySort.sortDirection} onSort={holidaySort.toggleSort}>{t('settingsPage.holidays.recurring')}</SortableHeader>
                       <TableHead className="w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(holidaysQuery.data ?? []).length === 0 && (
+                    {sortedHolidays.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center text-muted-foreground py-8">{t('settingsPage.holidays.empty')}</TableCell>
                       </TableRow>
                     )}
-                    {(holidaysQuery.data ?? []).map(h => (
+                    {sortedHolidays.map(h => (
                       <TableRow key={h.id}>
                         <TableCell>{h.date}</TableCell>
                         <TableCell>{h.name}</TableCell>

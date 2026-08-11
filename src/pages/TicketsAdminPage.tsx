@@ -50,7 +50,6 @@ import {
   FileText,
   Image as ImageIcon,
   Download,
-  ArrowUpDown,
   TicketCheck,
   CalendarDays,
   Tag,
@@ -61,6 +60,7 @@ import {
   X,
   LayoutDashboard,
 } from 'lucide-react';
+import { SortableHeader } from '@/components/shared/SortableHeader';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; dotColor: string }> = {
   open: { label: 'Open', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', icon: AlertTriangle, dotColor: 'bg-blue-500' },
@@ -90,7 +90,7 @@ export default function TicketsAdminPage() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketResponse | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [sortField, setSortField] = useState<'createdAt' | 'urgency' | 'userEmail' | 'category'>('createdAt');
+  const [sortField, setSortField] = useState<'createdAt' | 'urgency' | 'userEmail' | 'category' | 'status'>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -159,13 +159,20 @@ export default function TicketsAdminPage() {
       return true;
     })
     .sort((a, b) => {
+      if (sortField === 'status') {
+        const statusA = statusOrder[a.status] ?? 4;
+        const statusB = statusOrder[b.status] ?? 4;
+        const diff = statusA - statusB;
+        return sortDir === 'asc' ? diff : -diff;
+      }
+
       const statusA = statusOrder[a.status] ?? 4;
       const statusB = statusOrder[b.status] ?? 4;
-      
+
       if (statusA !== statusB) {
         return statusA - statusB;
       }
-      
+
       if (sortField === 'urgency') {
         const diff = (urgencyOrder[a.urgency || 'medium'] ?? 2) - (urgencyOrder[b.urgency || 'medium'] ?? 2);
         return sortDir === 'asc' ? diff : -diff;
@@ -238,18 +245,13 @@ export default function TicketsAdminPage() {
 
   const [previewAttachment, setPreviewAttachment] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
 
-  const toggleSort = (field: 'createdAt' | 'urgency' | 'userEmail' | 'category') => {
+  const toggleSort = (field: 'createdAt' | 'urgency' | 'userEmail' | 'category' | 'status') => {
     if (sortField === field) {
       setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
     } else {
       setSortField(field);
       setSortDir('desc');
     }
-  };
-
-  const SortIcon = ({ field }: { field: 'createdAt' | 'urgency' | 'userEmail' | 'category' }) => {
-    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
-    return sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />;
   };
 
   const formatDate = (dateStr: string) => {
@@ -476,39 +478,11 @@ export default function TicketsAdminPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b border-border/40">
                   <TableHead className="w-[50px] text-center">#</TableHead>
-                  <TableHead>
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
-                      onClick={() => toggleSort('createdAt')}
-                    >
-                      {t('admin.colTicket', 'Ticket')} <SortIcon field="createdAt" />
-                    </button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
-                      onClick={() => toggleSort('userEmail')}
-                    >
-                      {t('admin.colEmail', 'Email')} <SortIcon field="userEmail" />
-                    </button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
-                      onClick={() => toggleSort('category')}
-                    >
-                      {t('admin.colCategory', 'Category')} <SortIcon field="category" />
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
-                      onClick={() => toggleSort('urgency')}
-                    >
-                      {t('admin.colUrgency', 'Urgency')} <SortIcon field="urgency" />
-                    </button>
-                  </TableHead>
-                  <TableHead>{t('admin.colStatus', 'Status')}</TableHead>
+                  <SortableHeader columnKey="createdAt" sortKey={sortField} sortDirection={sortDir} onSort={(f) => toggleSort(f as any)}>{t('admin.colTicket', 'Ticket')}</SortableHeader>
+                  <SortableHeader columnKey="userEmail" sortKey={sortField} sortDirection={sortDir} onSort={(f) => toggleSort(f as any)} className="hidden md:table-cell">{t('admin.colEmail', 'Email')}</SortableHeader>
+                  <SortableHeader columnKey="category" sortKey={sortField} sortDirection={sortDir} onSort={(f) => toggleSort(f as any)} className="hidden lg:table-cell">{t('admin.colCategory', 'Category')}</SortableHeader>
+                  <SortableHeader columnKey="urgency" sortKey={sortField} sortDirection={sortDir} onSort={(f) => toggleSort(f as any)}>{t('admin.colUrgency', 'Urgency')}</SortableHeader>
+                  <SortableHeader columnKey="status" sortKey={sortField} sortDirection={sortDir} onSort={(f) => toggleSort(f as any)}>{t('admin.colStatus', 'Status')}</SortableHeader>
                 </TableRow>
               </TableHeader>
               <TableBody>

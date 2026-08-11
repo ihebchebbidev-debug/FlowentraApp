@@ -53,6 +53,7 @@ export default function SuppliersPage() {
   // Server-side column sorting
   const SORT_FIELDS: Record<string, string> = {
     contact: 'Name',
+    company: 'TenantName',
     email: 'Email',
     phone: 'Phone',
     status: 'Status',
@@ -628,7 +629,7 @@ export default function SuppliersPage() {
                   />
                 </TableHead>
                 <SortableHeader columnKey="contact" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.contact')}</SortableHeader>
-                {isViewAllMode() && <TableHead>{t('table_headers.company_col')}</TableHead>}
+                {isViewAllMode() && <SortableHeader columnKey="company" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.company_col')}</SortableHeader>}
                 <SortableHeader columnKey="email" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.email')}</SortableHeader>
                 <SortableHeader columnKey="phone" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.phone')}</SortableHeader>
                 <SortableHeader columnKey="status" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('table_headers.status')}</SortableHeader>

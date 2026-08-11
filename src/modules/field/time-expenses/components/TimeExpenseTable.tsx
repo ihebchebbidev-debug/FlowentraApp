@@ -44,6 +44,8 @@ export function TimeExpenseTable({ entries, users, className }: TimeExpenseTable
     expenses: (e) => e.expenses,
     earnings: (e) => (e.timeBooked / 60) * e.hourlyRate,
     status: (e) => e.status,
+    description: (e) => e.description,
+    company: (e) => (e as any).tenantId,
   });
   const sortedEntries = useMemo(() => sortItems(entries), [entries, sortItems]);
 
@@ -115,9 +117,9 @@ export function TimeExpenseTable({ entries, users, className }: TimeExpenseTable
               <SortableHeader columnKey="expenses" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('time-expenses:table.expenses')}</SortableHeader>
               <SortableHeader columnKey="earnings" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right">{t('time-expenses:table.earnings')}</SortableHeader>
               <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('time-expenses:table.status')}</SortableHeader>
-              <TableHead className="hidden md:table-cell">{t('time-expenses:table.description')}</TableHead>
+              <SortableHeader columnKey="description" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell">{t('time-expenses:table.description')}</SortableHeader>
               {isViewAllMode() && (
-                <TableHead className="w-[160px]">{t('time-expenses:table.company', 'Company')}</TableHead>
+                <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[160px]">{t('time-expenses:table.company', 'Company')}</SortableHeader>
               )}
             </TableRow>
           </TableHeader>

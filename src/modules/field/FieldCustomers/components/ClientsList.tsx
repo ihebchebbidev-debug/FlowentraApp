@@ -26,6 +26,7 @@ import { useContacts } from "@/modules/contacts/hooks/useContacts";
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../../hooks/getInitialViewMode';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 
 interface Client {
   id: number;
@@ -86,6 +87,8 @@ export default function ClientsList() {
   const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<Client>({
     name: (c) => c.name,
     company: (c) => c.company,
+    email: (c) => c.email,
+    tags: (c) => c.tags?.[0] || '',
     status: (c) => c.status,
     lastContact: (c) => c.lastContact,
   });
@@ -196,10 +199,24 @@ export default function ClientsList() {
       {viewMode === 'list' ? (
         <section className="p-3 sm:p-4 lg:p-6">
           <Card className="shadow-card border-0 bg-card">
-            
+            <div className="flex justify-end p-3">
+              <SortMenu
+                options={[
+                  { key: 'name', label: 'Client' },
+                  { key: 'company', label: 'Company' },
+                  { key: 'email', label: 'Contact Info' },
+                  { key: 'tags', label: 'Tags' },
+                  { key: 'status', label: 'Status' },
+                  { key: 'lastContact', label: 'Last Contact' },
+                ]}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={toggleSort}
+              />
+            </div>
             <CardContent className="p-0">
               <div className="divide-y divide-border">
-                {filtered.map((client) => (
+                {sortedFiltered.map((client) => (
                   <div 
                     key={client.id} 
                     className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer"
@@ -310,9 +327,9 @@ export default function ClientsList() {
                     <TableRow>
                       <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[200px]">Client</SortableHeader>
                       <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Company</SortableHeader>
-                      <TableHead>Contact Info</TableHead>
+                      <SortableHeader columnKey="email" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Contact Info</SortableHeader>
                       <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Status</SortableHeader>
-                      <TableHead>Tags</TableHead>
+                      <SortableHeader columnKey="tags" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Tags</SortableHeader>
                       <SortableHeader columnKey="lastContact" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>Last Contact</SortableHeader>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>

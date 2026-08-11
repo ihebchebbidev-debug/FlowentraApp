@@ -57,6 +57,7 @@ export default function FormResponsesPage() {
   const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<DynamicFormResponse>({
     submitted_by: (r) => r.submitted_by,
     submitted_at: (r) => r.submitted_at,
+    entity: (r) => r.entity_type && r.entity_id ? `${r.entity_type}: ${r.entity_id}` : '',
   });
   const sortedResponses = useMemo(() => responses ? sortItems(responses) : [], [responses, sortItems]);
   
@@ -324,7 +325,7 @@ export default function FormResponsesPage() {
                       <TableHead className="w-12">#</TableHead>
                       <SortableHeader columnKey="submitted_by" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('responses.submitted_by')}</SortableHeader>
                       <SortableHeader columnKey="submitted_at" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('responses.submitted_at')}</SortableHeader>
-                      <TableHead>{t('responses.entity')}</TableHead>
+                      <SortableHeader columnKey="entity" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('responses.entity')}</SortableHeader>
                       <TableHead className="w-24 text-right">{t('table.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>

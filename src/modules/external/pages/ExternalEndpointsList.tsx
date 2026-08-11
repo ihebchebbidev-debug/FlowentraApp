@@ -16,6 +16,7 @@ import { API_URL } from '@/config/api';
 import { useMemo } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 
 export function ExternalEndpointsList() {
   useExternalTranslations();
@@ -27,6 +28,7 @@ export function ExternalEndpointsList() {
     name: (ep) => ep.name,
     slug: (ep) => ep.slug,
     isActive: (ep) => ep.isActive ? 1 : 0,
+    flow: (ep) => ep.webhookForwardUrl ? 1 : 0,
     totalReceived: (ep) => ep.totalReceived,
     totalSent: (ep) => ep.totalSent,
     createdAt: (ep) => ep.createdAt,
@@ -110,6 +112,21 @@ export function ExternalEndpointsList() {
               {f.label}
             </Button>
           ))}
+          <SortMenu
+            className="md:hidden"
+            options={[
+              { key: 'name', label: t('external.table.name') },
+              { key: 'slug', label: t('external.table.slug') },
+              { key: 'isActive', label: t('external.table.status') },
+              { key: 'flow', label: t('external.table.direction', 'Flow') },
+              { key: 'totalReceived', label: t('external.table.received') },
+              { key: 'totalSent', label: t('external.table.sent', 'Sent') },
+              { key: 'createdAt', label: t('external.table.created') },
+            ]}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={toggleSort}
+          />
         </div>
       </div>
 
@@ -127,7 +144,7 @@ export function ExternalEndpointsList() {
         <Card className="overflow-hidden">
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-border/50">
-            {endpoints.map((ep) => {
+            {sortedEndpoints.map((ep) => {
               const isBidirectional = !!ep.webhookForwardUrl;
               return (
                 <div
@@ -227,7 +244,7 @@ export function ExternalEndpointsList() {
                   <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.name')}</SortableHeader>
                   <SortableHeader columnKey="slug" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.slug')}</SortableHeader>
                   <SortableHeader columnKey="isActive" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.status')}</SortableHeader>
-                  <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
+                  <SortableHeader columnKey="flow" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</SortableHeader>
                   <SortableHeader columnKey="totalReceived" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t('external.table.received')}</SortableHeader>
                   <SortableHeader columnKey="totalSent" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="hidden md:table-cell">{t('external.table.sent', 'Sent')}</SortableHeader>
                   <SortableHeader columnKey="createdAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.created')}</SortableHeader>

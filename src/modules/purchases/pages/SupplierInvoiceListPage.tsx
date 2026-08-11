@@ -190,6 +190,7 @@ function SupplierInvoiceListContent() {
     dueDate: (i) => i.dueDate,
     status: (i) => i.status,
     total: (i) => i.grandTotal,
+    rs: (i) => i.rsApplicable ? (rsRateForCode(i.rsTypeCode) ?? 0) : -1,
   });
   const sortedInvoices = useMemo(() => sortItems(companyScopedInvoices), [companyScopedInvoices, sortItems]);
 
@@ -595,7 +596,7 @@ function SupplierInvoiceListContent() {
                         <SortableHeader columnKey="date" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.date", "Date")}</SortableHeader>
                         <SortableHeader columnKey="dueDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.dueDate", "Due Date")}</SortableHeader>
                         <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.status", "Status")}</SortableHeader>
-                        <TableHead className="text-xs">{t("fields.rs", "RS")}</TableHead>
+                        <SortableHeader columnKey="rs" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t("fields.rs", "RS")}</SortableHeader>
                         <SortableHeader columnKey="total" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="right" className="text-xs">{t("fields.total", "Total")}</SortableHeader>
                         <TableHead className="text-xs w-32 text-end">{t("fields.actions", "Actions")}</TableHead>
                       </TableRow>

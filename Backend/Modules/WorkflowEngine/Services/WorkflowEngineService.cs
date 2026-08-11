@@ -71,27 +71,48 @@ namespace MyApi.Modules.WorkflowEngine.Services
             }
         }
 
+        /// <summary>
+        /// PERF: never Include(w => w.Executions) here — the execution history grows
+        /// unbounded and the DTO only needs a count. Load the counts with a single
+        /// grouped query instead.
+        /// </summary>
+        private async Task<Dictionary<int, int>> GetExecutionCountsAsync(IEnumerable<int> workflowIds)
+        {
+            var ids = workflowIds.Distinct().ToList();
+            if (ids.Count == 0) return new Dictionary<int, int>();
+
+            return await _db.WorkflowExecutions
+                .Where(e => ids.Contains(e.WorkflowId))
+                .GroupBy(e => e.WorkflowId)
+                .Select(g => new { WorkflowId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.WorkflowId, x => x.Count);
+        }
+
+        private async Task<int> GetExecutionCountAsync(int workflowId)
+            => await _db.WorkflowExecutions.CountAsync(e => e.WorkflowId == workflowId);
+
         public async Task<IEnumerable<WorkflowDefinitionDto>> GetAllWorkflowsAsync()
         {
             var workflows = await _db.WorkflowDefinitions
                 .Where(w => !w.IsDeleted)
                 .Include(w => w.Triggers)
-                .Include(w => w.Executions)
                 .OrderByDescending(w => w.CreatedAt)
                 .ToListAsync();
 
-            return workflows.Select(MapToDto);
+            var counts = await GetExecutionCountsAsync(workflows.Select(w => w.Id));
+
+            return workflows.Select(w => MapToDto(w, counts.TryGetValue(w.Id, out var c) ? c : 0));
         }
 
         public async Task<WorkflowDefinitionDto?> GetWorkflowByIdAsync(int id)
         {
             var workflow = await _db.WorkflowDefinitions
                 .Include(w => w.Triggers)
-                .Include(w => w.Executions)
                 .FirstOrDefaultAsync(w => w.Id == id && !w.IsDeleted);
 
-            return workflow == null ? null : MapToDto(workflow);
+            return workflow == null ? null : MapToDto(workflow, await GetExecutionCountAsync(workflow.Id));
         }
+
 
         /// <summary>
         /// Gets the default workflow (Name = 'Default Business Workflow', IsActive = true)
@@ -101,13 +122,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
         {
             var workflow = await _db.WorkflowDefinitions
                 .Include(w => w.Triggers)
-                .Include(w => w.Executions)
                 .FirstOrDefaultAsync(w => 
                     w.Name == "Default Business Workflow" 
                     && w.IsActive 
                     && !w.IsDeleted);
 
-            return workflow == null ? null : MapToDto(workflow);
+            return workflow == null ? null : MapToDto(workflow, await GetExecutionCountAsync(workflow.Id));
         }
 
         public async Task<WorkflowDefinitionDto> CreateWorkflowAsync(CreateWorkflowDto dto, string createdBy)
@@ -285,10 +305,9 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // Reload with navigation properties
             var result = await _db.WorkflowDefinitions
                 .Include(w => w.Triggers)
-                .Include(w => w.Executions)
                 .FirstAsync(w => w.Id == draft.Id);
 
-            return MapToDto(result);
+            return MapToDto(result, await GetExecutionCountAsync(result.Id));
         }
 
         /// <summary>
@@ -306,7 +325,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // Already active? Nothing to do
             if (workflow.IsActive)
             {
-                return MapToDto(workflow);
+                return MapToDto(workflow, await GetExecutionCountAsync(workflow.Id));
             }
 
             // Determine the base name (strip " (Draft vN)" suffix)
@@ -368,10 +387,9 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // Reload
             var result = await _db.WorkflowDefinitions
                 .Include(w => w.Triggers)
-                .Include(w => w.Executions)
                 .FirstAsync(w => w.Id == id);
 
-            return MapToDto(result);
+            return MapToDto(result, await GetExecutionCountAsync(result.Id));
         }
 
         /// <summary>
@@ -382,7 +400,6 @@ namespace MyApi.Modules.WorkflowEngine.Services
         {
             var workflow = await _db.WorkflowDefinitions
                 .Include(w => w.Triggers)
-                .Include(w => w.Executions)
                 .FirstOrDefaultAsync(w => w.Id == id && !w.IsDeleted);
 
             if (workflow == null) return false;
@@ -390,10 +407,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // Safety: don't archive if there are running executions.
             // BUG FIX (BUG-6): also block when executions are parked on a delay node
             // (waiting_delay); archiving them silently abandons in-flight work.
-            var hasRunning = workflow.Executions?.Any(e =>
-                e.Status == "running" ||
-                e.Status == "waiting_approval" ||
-                e.Status == "waiting_delay") ?? false;
+            // PERF: ask the database instead of materialising the whole history.
+            var hasRunning = await _db.WorkflowExecutions.AnyAsync(e =>
+                e.WorkflowId == workflow.Id && (
+                    e.Status == "running" ||
+                    e.Status == "waiting_approval" ||
+                    e.Status == "waiting_delay"));
             if (hasRunning)
                 throw new InvalidOperationException("Cannot archive a workflow with running, waiting-for-approval, or delayed executions. Cancel them first.");
 
@@ -834,7 +853,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             }
         }
 
-        private static WorkflowDefinitionDto MapToDto(WorkflowDefinition workflow)
+        private static WorkflowDefinitionDto MapToDto(WorkflowDefinition workflow, int? executionsCount = null)
         {
             return new WorkflowDefinitionDto
             {
@@ -849,7 +868,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 CreatedAt = workflow.CreatedAt,
                 UpdatedAt = workflow.UpdatedAt,
                 TriggersCount = workflow.Triggers?.Count ?? 0,
-                ExecutionsCount = workflow.Executions?.Count ?? 0,
+                ExecutionsCount = executionsCount ?? workflow.Executions?.Count ?? 0,
                 Triggers = workflow.Triggers?.Select(t => new WorkflowTriggerDto
                 {
                     Id = t.Id,

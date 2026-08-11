@@ -252,15 +252,29 @@ export default function DispatchesList() {
   });
 
   // Column sorting (raw values, never rendered text)
+  const STATUS_RANK: Record<string, number> = {
+    pending: 0, assigned: 1, acknowledged: 2, en_route: 3, on_site: 4,
+    in_progress: 5, technically_completed: 6, completed: 7, cancelled: 8,
+  };
+  const PRIORITY_RANK: Record<string, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
+
   const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<DispatchJob>({
     jobNumber: (d: any) => d.jobNumber || '',
     company: (d: any) => d.tenantName ?? d.tenantId ?? '',
     customer: (d: any) => d.customer?.company || '',
-    scheduledDate: (d: any) => (d.scheduledDate ? new Date(d.scheduledDate).getTime() : null),
-    technicians: (d: any) => d.assignedTechnicians?.length ?? 0,
-    status: (d: any) => String(d.status ?? ''),
-    priority: (d: any) => String(d.priority ?? ''),
+    scheduledDate: (d: any) => {
+      if (!d.scheduledDate) return null;
+      const time = new Date(d.scheduledDate).getTime();
+      if (Number.isNaN(time)) return null;
+      // Include the start time so same-day dispatches order by time of day
+      const [h, m] = String(d.scheduledStartTime || '').split(':').map(Number);
+      return time + (Number.isFinite(h) ? h * 3600000 : 0) + (Number.isFinite(m) ? m * 60000 : 0);
+    },
+    technicians: (d: any) => d.assignedTechnicians?.[0]?.name ?? '',
+    status: (d: any) => STATUS_RANK[String(d.status ?? '')] ?? 99,
+    priority: (d: any) => PRIORITY_RANK[String(d.priority ?? '')] ?? 99,
   });
+
 
   const filteredDispatches = useMemo(
     () => sortItems(rawFilteredDispatches as DispatchJob[]),
@@ -521,11 +535,14 @@ export default function DispatchesList() {
                     onSort={toggleSort}
                     options={[
                       { key: 'jobNumber', label: t('dispatches.job_number') },
+                      ...(isViewAllMode() ? [{ key: 'company', label: t('dispatches.company') }] : []),
                       { key: 'customer', label: t('dispatches.customer') },
                       { key: 'scheduledDate', label: t('dispatches.scheduled_date') },
+                      { key: 'technicians', label: t('dispatches.technicians') },
                       { key: 'status', label: t('dispatches.overview.current_status') },
                       { key: 'priority', label: t('dispatches.job_info.priority') },
                     ]}
+
                   />
                 </div>
                 <div className="md:hidden list-editorial">

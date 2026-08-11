@@ -58,6 +58,7 @@ export default function ContactsPage() {
   // Server-side column sorting (the contacts API paginates, so sorting must round-trip)
   const SORT_FIELDS: Record<string, string> = {
     contact: 'Name',
+    company: 'TenantName',
     email: 'Email',
     phone: 'Phone',
     type: 'Type',
@@ -796,7 +797,7 @@ export default function ContactsPage() {
                       />
                     </TableHead>
                     <SortableHeader columnKey="contact" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('contacts.table_headers.contact')}</SortableHeader>
-                    {isViewAllMode() && <TableHead>Company</TableHead>}
+                    {isViewAllMode() && <SortableHeader columnKey="company" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>Company</SortableHeader>}
                     <SortableHeader columnKey="email" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('contacts.table_headers.email')}</SortableHeader>
                     <SortableHeader columnKey="phone" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('contacts.table_headers.phone')}</SortableHeader>
                     <SortableHeader columnKey="type" sortKey={activeSortKey} sortDirection={activeSortDirection} onSort={handleSort}>{t('contacts.table_headers.type')}</SortableHeader>

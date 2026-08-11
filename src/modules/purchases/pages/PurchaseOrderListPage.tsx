@@ -43,6 +43,7 @@ import { isViewAllMode } from "@/utils/tenant";
 import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal";
 import { TableRowActions } from "@/shared/components/TableRowActions";
 import { SortableHeader } from "@/components/shared/SortableHeader";
+import { SortMenu } from "@/components/shared/SortMenu";
 import { useTableSort } from "@/hooks/useTableSort";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -540,6 +541,21 @@ function PurchaseOrderListContent() {
             {viewMode === "table" ? (
               <>
                 {/* Mobile cards — visible below md breakpoint */}
+                <div className="md:hidden flex justify-end mb-2">
+                  <SortMenu
+                    options={[
+                      { key: 'orderNumber', label: t('fields.orderNumber', 'Order #') },
+                      { key: 'supplier', label: t('fields.supplier', 'Supplier') },
+                      { key: 'date', label: t('fields.date', 'Date') },
+                      { key: 'status', label: t('fields.status', 'Status') },
+                      { key: 'paymentStatus', label: t('fields.paymentStatus', 'Payment') },
+                      { key: 'total', label: t('fields.total', 'Total') },
+                    ]}
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
+                  />
+                </div>
                 <div className="md:hidden list-editorial rounded-lg border border-border overflow-hidden">
                   {companyScopedOrders.length === 0 ? (
                     <div className="p-12 text-center text-muted-foreground">

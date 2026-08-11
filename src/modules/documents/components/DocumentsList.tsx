@@ -58,6 +58,7 @@ import { toast } from 'sonner';
 import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 
 export function DocumentsList() {
   const { t } = useTranslation();
@@ -140,6 +141,8 @@ export function DocumentsList() {
     fileSize: (d) => d.fileSize,
     uploadedAt: (d) => d.uploadedAt,
     uploadedByName: (d) => d.uploadedByName,
+    linkedTo: (d) => d.moduleName ?? '',
+    company: (d) => (d as any).tenantId ?? '',
   });
   const sortedDocuments = useMemo(() => sortItems(documents), [documents, sortItems]);
 
@@ -524,6 +527,24 @@ export function DocumentsList() {
               </Button>
             </div>
             )}
+            {viewMode === 'list' && (
+              <div className="md:hidden">
+                <SortMenu
+                  options={[
+                    { key: 'fileName', label: t('documents.fileName') },
+                    { key: 'moduleType', label: t('documents.module') },
+                    { key: 'fileType', label: t('documents.fileType') },
+                    { key: 'fileSize', label: t('documents.fileSize') },
+                    { key: 'uploadedAt', label: t('documents.uploadDate') },
+                    { key: 'uploadedByName', label: t('documents.uploadedBy') },
+                    { key: 'linkedTo', label: t('documents.linkedTo', 'Linked To') },
+                  ]}
+                  sortKey={sortKey}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              </div>
+            )}
 
           </div>
           <div className="flex gap-1 sm:gap-2">
@@ -825,13 +846,13 @@ export function DocumentsList() {
                             </TableHead>
                             <SortableHeader columnKey="fileName" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.fileName')}</SortableHeader>
                             <SortableHeader columnKey="moduleType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.module')}</SortableHeader>
-                            <TableHead>{t('documents.linkedTo', 'Linked To')}</TableHead>
+                            <SortableHeader columnKey="linkedTo" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.linkedTo', 'Linked To')}</SortableHeader>
                             <SortableHeader columnKey="fileType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.fileType')}</SortableHeader>
                             <SortableHeader columnKey="fileSize" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.fileSize')}</SortableHeader>
                             <SortableHeader columnKey="uploadedAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.uploadDate')}</SortableHeader>
                             <SortableHeader columnKey="uploadedByName" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('documents.uploadedBy')}</SortableHeader>
                             {isViewAllMode() && (
-                              <TableHead className="w-[160px]">{t('documents.company', 'Company')}</TableHead>
+                              <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[160px]">{t('documents.company', 'Company')}</SortableHeader>
                             )}
                               <TableHead className="w-[116px] text-right">{t('common.actions', 'Actions')}</TableHead>
                           </TableRow>

@@ -99,6 +99,7 @@ function SupplierPerformanceContent() {
     invoices: (r) => r.invoiceCount,
     paidPct: (r) => r.paidPct,
     overdue: (r) => r.invoiceOverdueCount,
+    grade: (r) => gradeFor(r.score).letter,
   });
 
   const load = () => {
@@ -534,7 +535,7 @@ function SupplierPerformanceContent() {
               <TableHeader>
                 <TableRow>
                   <SortableHeader columnKey="supplier" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} className="text-xs">{t('reports.supplierPerformance.supplier', 'Supplier')}</SortableHeader>
-                  <TableHead className="text-xs text-center">{t('reports.supplierPerformance.grade', 'Grade')}</TableHead>
+                  <SortableHeader columnKey="grade" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.grade', 'Grade')}</SortableHeader>
                   <SortableHeader columnKey="score" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} className="text-xs min-w-[140px]">{t('reports.supplierPerformance.score', 'Score')}</SortableHeader>
                   <SortableHeader columnKey="po" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="center" className="text-xs">{t('reports.supplierPerformance.poCount', 'POs')}</SortableHeader>
                   <SortableHeader columnKey="spend" sortKey={colSortKey} sortDirection={colSortDirection} onSort={toggleColSort} align="right" className="text-xs">{t('reports.supplierPerformance.spend', 'Total spend')}</SortableHeader>

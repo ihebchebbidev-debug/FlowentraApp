@@ -73,6 +73,7 @@ function PurchaseAuditLogContent() {
     user: (a) => a.performedByName,
     entityType: (a) => a.entityType,
     action: (a) => a.activityType,
+    description: (a) => a.description,
   });
   const filtered = useMemo(() => sortItems(activities), [activities, sortItems]);
 
@@ -109,7 +110,7 @@ function PurchaseAuditLogContent() {
                     <SortableHeader columnKey="user" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.user')}</SortableHeader>
                     <SortableHeader columnKey="entityType" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.entityType')}</SortableHeader>
                     <SortableHeader columnKey="action" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.action')}</SortableHeader>
-                    <TableHead className="text-xs">{t('auditLog.description')}</TableHead>
+                    <SortableHeader columnKey="description" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="text-xs">{t('auditLog.description')}</SortableHeader>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

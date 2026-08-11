@@ -251,6 +251,7 @@ export function IntegrationHub() {
     name: (ep) => ep.name,
     slug: (ep) => ep.slug,
     status: (ep) => ep.isActive,
+    flow: (ep) => ep.webhookForwardUrl ? 1 : 0,
     received: (ep) => ep.totalReceived,
     sent: (ep) => ep.totalSent,
     createdAt: (ep) => ep.createdAt,
@@ -439,7 +440,7 @@ export function IntegrationHub() {
                     <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.name')}</SortableHeader>
                     <SortableHeader columnKey="slug" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell">{t('external.table.slug')}</SortableHeader>
                     <SortableHeader columnKey="status" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('external.table.status')}</SortableHeader>
-                    <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
+                    <SortableHeader columnKey="flow" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</SortableHeader>
                     <SortableHeader columnKey="received" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center">{t('external.table.received')}</SortableHeader>
                     <SortableHeader columnKey="sent" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} align="center" className="hidden lg:table-cell">{t('external.table.sent', 'Sent')}</SortableHeader>
                     <SortableHeader columnKey="createdAt" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell">{t('external.table.created')}</SortableHeader>

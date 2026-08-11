@@ -113,6 +113,7 @@ export function CategoryTable({
   const Icon = getCategoryIcon(category);
   const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<LookupItem>({
     name: (i) => i.name,
+    code: (i) => (i as any).code,
     isDefault: (i) => i.isDefault ? 1 : 0,
   });
   const sortedItems = useMemo(() => sortItems(items), [items, sortItems]);
@@ -132,7 +133,7 @@ export function CategoryTable({
             <TableHeader>
               <TableRow>
                 <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('name', 'Name')}</SortableHeader>
-                {category === 'currencies' && <TableHead>{t('code', 'Code')}</TableHead>}
+                {category === 'currencies' && <SortableHeader columnKey="code" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('code', 'Code')}</SortableHeader>}
                 <SortableHeader columnKey="isDefault" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('default')}</SortableHeader>
                 <TableHead className="text-right">{t('actions', 'Actions')}</TableHead>
               </TableRow>

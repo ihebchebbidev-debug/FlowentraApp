@@ -54,6 +54,7 @@ import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../../hooks/getInitialViewMode';
+import { SortMenu } from '@/components/shared/SortMenu';
 
 export default function InstallationsList() {
   const { t, i18n } = useTranslation('installations');
@@ -1116,6 +1117,21 @@ export default function InstallationsList() {
                   onPreviousPage={pagination.actions.previousPage}
                   onNextPage={pagination.actions.nextPage}
                 />
+
+                <div className="flex justify-end p-3">
+                  <SortMenu
+                    options={[
+                      { key: 'installation', label: t('list.table_installation') },
+                      { key: 'type', label: t('list.table_type') },
+                      { key: 'manufacturer', label: t('manufacturer') },
+                      { key: 'customer', label: t('list.table_customer') },
+                      { key: 'warranty', label: t('list.table_warranty') },
+                    ]}
+                    sortKey={sortKey}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
+                  />
+                </div>
 
                 {pagination.data.map((installation) => {
                   const warrantyStatus = getWarrantyStatus(installation.warranty);

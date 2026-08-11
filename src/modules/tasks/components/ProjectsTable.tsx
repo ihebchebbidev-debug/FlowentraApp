@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { useMemo } from "react";
 import { useTableSort } from "@/hooks/useTableSort";
 import { SortableHeader } from "@/components/shared/SortableHeader";
+import { SortMenu } from "@/components/shared/SortMenu";
 
 interface ProjectsTableProps {
   projects: Project[];
@@ -85,6 +86,7 @@ export function ProjectsTable({
     progress: (p) => (projectStats[p.id] || { completionPercentage: 0 }).completionPercentage,
     team: (p) => p.teamMembers.length,
     startDate: (p) => p.startDate,
+    company: (p) => (p as any).tenantId,
   });
   const sortedProjects = useMemo(() => sortItems(projects), [projects, sortItems]);
 
@@ -99,8 +101,23 @@ export function ProjectsTable({
   return (
     <div className="w-full">
       {/* Mobile cards */}
+      <div className="md:hidden flex justify-end p-2 border-b border-border/50">
+        <SortMenu
+          options={[
+            { key: 'name', label: t('projects.list.table.project') },
+            { key: 'type', label: t('projects.list.table.type') },
+            { key: 'status', label: t('projects.list.table.status') },
+            { key: 'progress', label: t('projects.list.table.progress') },
+            { key: 'team', label: t('projects.list.table.team') },
+            { key: 'startDate', label: t('projects.list.table.startDate') },
+          ]}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={toggleSort}
+        />
+      </div>
       <div className="md:hidden divide-y divide-border/50">
-        {projects.map(project => {
+        {sortedProjects.map(project => {
           const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, completionPercentage: 0 };
           return (
             <div
@@ -252,7 +269,7 @@ export function ProjectsTable({
               <SortableHeader columnKey="team" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.team')}</SortableHeader>
               <SortableHeader columnKey="startDate" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('projects.list.table.startDate')}</SortableHeader>
               {isViewAllMode() && (
-                <TableHead className="w-[160px]">{t('projects.list.table.company', 'Company')}</TableHead>
+                <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-[160px]">{t('projects.list.table.company', 'Company')}</SortableHeader>
               )}
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>

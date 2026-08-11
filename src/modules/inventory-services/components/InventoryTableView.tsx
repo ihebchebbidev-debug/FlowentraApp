@@ -14,6 +14,7 @@ import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { TableRowActions } from "@/shared/components/TableRowActions";
 import { SortableHeader } from "@/components/shared/SortableHeader";
+import { useTableSort } from "@/hooks/useTableSort";
 import type { SortDirection } from "@/hooks/useTableSort";
 
 interface InventoryTableViewProps {
@@ -26,8 +27,21 @@ interface InventoryTableViewProps {
   onSort?: (key: string) => void;
 }
 
-export function InventoryTableView({ items, onClick, selectedIds, onSelectionChange, sortKey = null, sortDirection = null, onSort }: InventoryTableViewProps) {
+export function InventoryTableView({ items, onClick, selectedIds, onSelectionChange, sortKey: externalSortKey = null, sortDirection: externalSortDirection = null, onSort: externalOnSort }: InventoryTableViewProps) {
   const navigate = useNavigate();
+  // Fall back to an internal sort instance when the caller doesn't manage sorting
+  // itself, so headers are always sortable regardless of the calling context.
+  const internalSort = useTableSort<any>({
+    item: (i) => i.name,
+    company: (i) => (i as any).tenantId,
+    category: (i) => i.category,
+    location: (i) => i.type === 'material' ? (i as any).location : (i as any).duration,
+    price: (i) => i.type === 'material' ? (i as any).sellPrice : (i as any).basePrice,
+  });
+  const sortKey = externalOnSort ? externalSortKey : internalSort.sortKey;
+  const sortDirection = externalOnSort ? externalSortDirection : internalSort.sortDirection;
+  const onSort = externalOnSort ?? internalSort.toggleSort;
+  const sortedItems = externalOnSort ? items : internalSort.sortItems(items);
   const { t } = useTranslation('inventory-services');
   const { current: currency } = useCurrency();
   const { deleteArticle, isDeleting } = useArticles();
@@ -113,28 +127,16 @@ export function InventoryTableView({ items, onClick, selectedIds, onSelectionCha
                     className={someSelected ? "data-[state=checked]:bg-primary" : ""}
                   />
                 </TableHead>
-                {onSort ? (
-                  <>
-                    <SortableHeader columnKey="item" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.item_service')}</SortableHeader>
-                    {isViewAllMode() && <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>Company</SortableHeader>}
-                    <SortableHeader columnKey="category" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.category')}</SortableHeader>
-                    <SortableHeader columnKey="location" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.location_duration')}</SortableHeader>
-                    <SortableHeader columnKey="price" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.price')}</SortableHeader>
-                  </>
-                ) : (
-                  <>
-                    <TableHead>{t('table.item_service')}</TableHead>
-                    {isViewAllMode() && <TableHead>Company</TableHead>}
-                    <TableHead>{t('table.category')}</TableHead>
-                    <TableHead>{t('table.location_duration')}</TableHead>
-                    <TableHead>{t('table.price')}</TableHead>
-                  </>
-                )}
+                <SortableHeader columnKey="item" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.item_service')}</SortableHeader>
+                {isViewAllMode() && <SortableHeader columnKey="company" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>Company</SortableHeader>}
+                <SortableHeader columnKey="category" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.category')}</SortableHeader>
+                <SortableHeader columnKey="location" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.location_duration')}</SortableHeader>
+                <SortableHeader columnKey="price" sortKey={sortKey} sortDirection={sortDirection} onSort={onSort}>{t('table.price')}</SortableHeader>
                 <TableHead>{t('table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map(item => {
+              {sortedItems.map(item => {
                 const TypeIcon = getTypeIcon(item.type);
                 const isSelected = selectedIds.has(String(item.id));
                 return (

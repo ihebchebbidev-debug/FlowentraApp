@@ -27,6 +27,7 @@ import { LookupItem, CreateLookupRequest, UpdateLookupRequest } from '@/services
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 
 interface LookupTableProps {
   title?: string;
@@ -71,6 +72,7 @@ export function LookupTable({
     isPaid: (i) => i.isPaid ? 1 : 0,
     category: (i) => i.category,
     isActive: (i) => i.isActive ? 1 : 0,
+    isDefault: (i) => i.isDefault ? 1 : 0,
   });
   const sortedItems = useMemo(() => sortItems(items), [items, sortItems]);
   const [isSettingDefault, setIsSettingDefault] = useState<string | null>(null);
@@ -296,8 +298,24 @@ export function LookupTable({
       ) : (
         <>
           {/* Mobile cards */}
+          <div className="md:hidden flex justify-end mb-2">
+            <SortMenu
+              options={[
+                { key: 'name', label: t('name') },
+                ...(showTypeFields.isCompleted ? [{ key: 'isCompleted', label: t('completed') }] : []),
+                ...(showTypeFields.defaultDuration ? [{ key: 'defaultDuration', label: t('duration') }] : []),
+                ...(showTypeFields.isPaid ? [{ key: 'isPaid', label: t('paid') }] : []),
+                ...(showTypeFields.category ? [{ key: 'category', label: t('category') }] : []),
+                { key: 'isActive', label: t('status') },
+                { key: 'isDefault', label: t('default') },
+              ]}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={toggleSort}
+            />
+          </div>
           <div className="md:hidden divide-y divide-border/50 border rounded-xl overflow-hidden">
-            {items.map((item) => (
+            {sortedItems.map((item) => (
               <div key={item.id} className="p-4 bg-card hover:bg-muted/30 transition-colors">
                 {/* Header: color dot + name + status badge */}
                 <div className="flex items-start gap-3">
@@ -387,7 +405,7 @@ export function LookupTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">{t('default')}</TableHead>
+                  <SortableHeader columnKey="isDefault" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort} className="w-12">{t('default')}</SortableHeader>
                   <SortableHeader columnKey="name" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('name')}</SortableHeader>
                   {showTypeFields.isCompleted && <SortableHeader columnKey="isCompleted" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('completed')}</SortableHeader>}
                   {showTypeFields.defaultDuration && <SortableHeader columnKey="defaultDuration" sortKey={sortKey} sortDirection={sortDirection} onSort={toggleSort}>{t('duration')}</SortableHeader>}

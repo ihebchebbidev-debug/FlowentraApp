@@ -32,6 +32,7 @@ import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import { useTableSort } from "@/hooks/useTableSort";
 import { SortableHeader } from "@/components/shared/SortableHeader";
+import { SortMenu } from "@/components/shared/SortMenu";
 
 type StatFilter = "all" | "open" | "won" | "lost";
 
@@ -277,6 +278,21 @@ export function DealsList() {
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-0">
               {paginationBar}
+              <div className="flex justify-end p-3">
+                <SortMenu
+                  options={[
+                    { key: 'title', label: t('table.deal') },
+                    { key: 'customer', label: t('table.customer') },
+                    { key: 'stage', label: t('table.stage') },
+                    { key: 'value', label: t('table.value') },
+                    { key: 'probability', label: t('table.probability') },
+                    { key: 'closeDate', label: t('table.closeDate') },
+                  ]}
+                  sortKey={sortKey}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              </div>
               <div className="list-editorial">
                 {pagination.data.map(d => (
                   <div

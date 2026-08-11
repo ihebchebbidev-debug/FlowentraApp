@@ -14,6 +14,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly IWorkflowNotificationService _notificationService;
         private readonly IServiceScopeFactory _scopeFactory;
 
+        /// <summary>Hard ceiling on node executions per run — catches infinite loops and graph cycles.</summary>
+        private const int MaxExecutionSteps = 10_000;
+
+        /// <summary>Hard ceiling on iterations for a single loop node, regardless of its config.</summary>
+        private const int MaxLoopIterations = 1_000;
+
+
+
         public WorkflowGraphExecutor(
             ApplicationDbContext db,
             ILogger<WorkflowGraphExecutor> logger,
@@ -112,6 +120,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 var executed = new HashSet<string>();
                 var queue = new Queue<string>();
 
+                // Runaway guards. The timeout alone is not enough: a tight loop over
+                // cheap nodes burns CPU and floods the log table for the full window,
+                // and a misconfigured maxIterations (or a cycle in the saved graph)
+                // can queue work faster than the deadline is checked.
+                var steps = 0;
+
                 // Start from the trigger node
                 queue.Enqueue(startNodeId);
 
@@ -129,7 +143,19 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         break;
                     }
 
+                    if (++steps > MaxExecutionSteps)
+                    {
+                        result.FinalStatus = "failed";
+                        result.Error = $"Workflow exceeded the maximum of {MaxExecutionSteps} node executions (possible infinite loop)";
+                        result.Success = false;
+                        _logger.LogWarning(
+                            "[WORKFLOW-GRAPH] Execution {ExecutionId} hit the step budget of {Max} — aborting (runaway loop?)",
+                            executionId, MaxExecutionSteps);
+                        break;
+                    }
+
                     var currentNodeId = queue.Dequeue();
+
 
                     if (executed.Contains(currentNodeId))
                     {
@@ -360,6 +386,18 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             currentIter = iterVal is int i ? i : (int)(iterVal is double d ? d : 0);
                         if (context.Variables.TryGetValue(maxKey, out var maxVal))
                             maxIter = maxVal is int mi ? mi : (int)(maxVal is double md ? md : 1);
+
+                        // Clamp: maxIterations comes straight from user-editable node config,
+                        // so a typo (or a hostile value) must not be able to spin forever.
+                        if (maxIter > MaxLoopIterations)
+                        {
+                            _logger.LogWarning(
+                                "[WORKFLOW-GRAPH] Loop node {NodeId} requested {Requested} iterations — clamped to {Max}",
+                                node.Id, maxIter, MaxLoopIterations);
+                            maxIter = MaxLoopIterations;
+                        }
+                        if (maxIter < 1) maxIter = 1;
+
                         
                         currentIter++;
                         context.Variables[iterKey] = currentIter;

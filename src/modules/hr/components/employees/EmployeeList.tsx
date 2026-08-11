@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { selectEmployeeRows } from '../../utils/employeeRows';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 
 export function EmployeeList() {
   const { t } = useTranslation('hr');
@@ -117,6 +118,22 @@ export function EmployeeList() {
           ) : (
             <>
               {/* Mobile cards */}
+              <div className="md:hidden flex justify-end p-2 border-b border-border/50">
+                <SortMenu
+                  options={[
+                    { key: 'name', label: t('employee.name') },
+                    { key: 'cin', label: t('employeesPage.cin') },
+                    { key: 'position', label: t('employee.position') },
+                    { key: 'department', label: t('employee.department') },
+                    { key: 'status', label: t('employeesPage.status') },
+                    { key: 'cnssNumber', label: t('employee.cnssNumber') },
+                    { key: 'grossSalary', label: t('employee.grossSalary') },
+                  ]}
+                  sortKey={sortKey}
+                  sortDirection={sortDirection}
+                  onSort={toggleSort}
+                />
+              </div>
               <div className="md:hidden divide-y divide-border/50">
                 {sortedRows.map((r: any) => {
                   const user = r.user ?? {};

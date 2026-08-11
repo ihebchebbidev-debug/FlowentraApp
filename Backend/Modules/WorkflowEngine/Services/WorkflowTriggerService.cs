@@ -234,23 +234,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     var executionId = execution?.Id ?? 0;
                     if (execution != null)
                     {
-                        try
-                        {
-                            _db.ChangeTracker.Clear();
-                            var fresh = await _db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == execution.Id);
-                            if (fresh != null)
-                            {
-                                fresh.Status = "failed";
-                                fresh.Error = ex.Message.Length > 1000 ? ex.Message.Substring(0, 1000) : ex.Message;
-                                fresh.CompletedAt = DateTime.UtcNow;
-                                await _db.SaveChangesAsync();
-                            }
-                        }
-                        catch (Exception saveEx)
-                        {
-                            _logger.LogError(saveEx, "Failed to mark execution {ExecutionId} as failed after trigger error", execution.Id);
-                        }
+                        // BUG FIX: this used to call _db.ChangeTracker.Clear() on the
+                        // *caller's* request-scoped context (this service runs inline
+                        // inside DealService/OfferService/... SaveChanges flows), which
+                        // detached every pending entity the caller still meant to save.
+                        // Write the failure through an isolated scope instead.
+                        await MarkExecutionFailedAsync(execution.Id, ex.Message);
                     }
+
 
                     await _notificationService.NotifyExecutionErrorAsync(
                         trigger.WorkflowId,
@@ -395,23 +386,40 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 _logger.LogError(ex, "[WORKFLOW-WEBHOOK] Error executing webhook workflow {WorkflowId}", trigger.WorkflowId);
                 if (execution != null)
                 {
-                    try
-                    {
-                        _db.ChangeTracker.Clear();
-                        var fresh = await _db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == execution.Id);
-                        if (fresh != null)
-                        {
-                            fresh.Status = "failed";
-                            fresh.Error = ex.Message.Length > 1000 ? ex.Message.Substring(0, 1000) : ex.Message;
-                            fresh.CompletedAt = DateTime.UtcNow;
-                            await _db.SaveChangesAsync();
-                        }
-                    }
-                    catch { /* swallow */ }
+                    // Same fix as TriggerStatusChangeAsync: never clear the caller's
+                    // change tracker — use an isolated scope for the failure write.
+                    await MarkExecutionFailedAsync(execution.Id, ex.Message);
                 }
                 return execution?.Id;
             }
         }
+
+        /// <summary>
+        /// Marks an execution row as failed using a dedicated DI scope + DbContext.
+        /// Runs in isolation so it can never disturb the change tracker of the request
+        /// that happens to be hosting this trigger call.
+        /// </summary>
+        private async Task MarkExecutionFailedAsync(int executionId, string error)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var fresh = await db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == executionId);
+                if (fresh != null)
+                {
+                    fresh.Status = "failed";
+                    fresh.Error = error.Length > 1000 ? error.Substring(0, 1000) : error;
+                    fresh.CompletedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync();
+                }
+            }
+            catch (Exception saveEx)
+            {
+                _logger.LogError(saveEx, "Failed to mark execution {ExecutionId} as failed after trigger error", executionId);
+            }
+        }
+
 
 
         public async Task<int> GetPendingExecutionsCountAsync(string entityType, int entityId)

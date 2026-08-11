@@ -13,6 +13,7 @@ import { CollapsibleSearch } from '@/components/ui/collapsible-search';
 import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { TableRowActions } from '@/shared/components/TableRowActions';
 import { SortableHeader } from '@/components/shared/SortableHeader';
+import { SortMenu } from '@/components/shared/SortMenu';
 import { useTableSort } from '@/hooks/useTableSort';
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { cn } from '@/lib/utils';
@@ -350,6 +351,23 @@ export function InvoicesPage() {
                     onPreviousPage={() => setPage(p => Math.max(1, p - 1))}
                     onNextPage={() => setPage(p => Math.min(totalPages, p + 1))}
                   />
+                  <div className="flex justify-end p-2">
+                    <SortMenu
+                      options={[
+                        { key: 'invoiceNumber', label: t('columns.invoice_number', 'Invoice #') },
+                        { key: 'contactName', label: t('columns.contact', 'Contact') },
+                        { key: 'saleNumber', label: t('columns.sale', 'Sale') },
+                        { key: 'issueDate', label: t('columns.issue_date', 'Issue Date') },
+                        { key: 'dueDate', label: t('columns.due_date', 'Due Date') },
+                        { key: 'grandTotal', label: t('columns.total', 'Total') },
+                        { key: 'amountDue', label: t('columns.amount_due', 'Amount Due') },
+                        { key: 'status', label: t('columns.status', 'Status') },
+                      ]}
+                      sortKey={sortKey}
+                      sortDirection={sortDirection}
+                      onSort={toggleSort}
+                    />
+                  </div>
                   <div className="list-editorial">
                     {invoices.map((inv) => (
                       <div key={inv.id} className="list-row-editorial" onClick={() => navigate(`/dashboard/invoices/${inv.id}`)}>

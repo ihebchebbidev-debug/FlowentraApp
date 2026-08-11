@@ -1520,7 +1520,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     execution = await CreateExecutionAsync(db, trigger, entity, notificationService);
                     executionId = execution.Id;
 
-                    // Mark as processed BEFORE executing to prevent race conditions
+                    // Mark as processed BEFORE executing to prevent race conditions.
+                    // The AnyAsync check above is a TOCTOU read: two concurrent polling
+                    // passes (or a poll racing a webhook) can both see "not processed".
+                    // The unique index on (TenantId, TriggerId, EntityType, EntityId,
+                    // ProcessedStatus) is the real guard — if the insert conflicts,
+                    // another worker already claimed this entity, so skip it.
                     var processedRecord = new WorkflowProcessedEntity
                     {
                         TriggerId = trigger.Id,
@@ -1531,7 +1536,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         ExecutionId = execution.Id
                     };
                     db.Set<WorkflowProcessedEntity>().Add(processedRecord);
-                    await db.SaveChangesAsync(cancellationToken);
+
+                    try
+                    {
+                        await db.SaveChangesAsync(cancellationToken);
+                    }
+                    catch (DbUpdateException dupEx) when (IsUniqueViolation(dupEx))
+                    {
+                        db.Entry(processedRecord).State = EntityState.Detached;
+                        _logger.LogInformation(
+                            "[WORKFLOW-POLLING] {EntityType} #{EntityId} was claimed concurrently for status '{Status}' — skipping duplicate execution",
+                            trigger.EntityType, entity.Id, entity.Status);
+
+                        // Roll the just-created execution back so it doesn't linger as "running".
+                        var orphan = await db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == execution.Id, cancellationToken);
+                        if (orphan != null)
+                        {
+                            db.WorkflowExecutions.Remove(orphan);
+                            await db.SaveChangesAsync(cancellationToken);
+                        }
+                        continue;
+                    }
+
 
                     // Execute the workflow graph
                     var context = new WorkflowExecutionContext
@@ -1944,6 +1970,19 @@ namespace MyApi.Modules.WorkflowEngine.Services
         }
 
         /// <summary>
+        /// True when a save failed because of a unique-constraint violation
+        /// (Postgres SQLSTATE 23505 / SQL Server 2601-2627). Used to turn the
+        /// dedupe index into the authoritative "already claimed" signal.
+        /// </summary>
+        private static bool IsUniqueViolation(DbUpdateException ex)
+        {
+            var message = (ex.InnerException?.Message ?? ex.Message);
+            return message.Contains("23505", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Internal class to hold entity status information
         /// </summary>
         private class EntityStatusInfo
@@ -1954,3 +1993,4 @@ namespace MyApi.Modules.WorkflowEngine.Services
         }
     }
 }
+

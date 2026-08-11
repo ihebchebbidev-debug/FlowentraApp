@@ -1102,34 +1102,15 @@ export default function ServiceOrdersList() {
                       {
                         key: 'actions',
                         title: '',
-                        width: 'w-[50px]',
+                        width: 'w-[130px]',
                         resizable: false,
                         render: (order: ServiceOrder) => (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Open menu</span>
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>{t('list.actions')}</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleServiceOrderClick(order)}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  {t('list.view_details')}
-                                </DropdownMenuItem>
-                                {hasDeleteAccess && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive" onClick={(e) => handleDeleteClick(order, e as any)}>
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      {t('list.delete_order')}
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                            <TableRowActions actions={[
+                              { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); handleServiceOrderClick(order); } },
+                              { icon: FileText, label: t('list.report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/field/service-orders/${order.id}/report`, '_blank'); } },
+                              { icon: Trash2, label: t('list.delete_order'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(order, e as any); }, variant: 'destructive', show: hasDeleteAccess },
+                            ]} />
                           </div>
                         )
                       }
