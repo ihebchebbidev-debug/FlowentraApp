@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
+import useUserNameResolver from "@/hooks/useUserNameResolver";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -55,9 +58,31 @@ export function ProjectOverviewTab({
   const { t } = useTranslation("tasks");
   const navigate = useNavigate();
 
+  // Projects spawned by a deal conversion store the raw user id in ownerName, and
+  // the owner is often not in the technicians list — that leaked ids like "1" into
+  // the UI. Resolve the id to a real name (cached globally by the hook).
+  const { resolveUserName } = useUserNameResolver();
+  const ownerFromTechnicians = technicians.find((tech) => tech.id === project?.ownerId)?.name;
+  const rawOwner = project?.ownerName?.trim() || project?.ownerId?.toString().trim() || "";
+  const ownerIsId = /^\d+$/.test(rawOwner);
+  const [resolvedOwner, setResolvedOwner] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!ownerFromTechnicians && ownerIsId && rawOwner) {
+      resolveUserName(rawOwner).then((name) => {
+        if (!cancelled) setResolvedOwner(name);
+      });
+    } else {
+      setResolvedOwner(null);
+    }
+    return () => { cancelled = true; };
+  }, [ownerFromTechnicians, ownerIsId, rawOwner, resolveUserName]);
+
   if (!project) return null;
 
   const getStatusColor = getProjectStatusColor;
+
   const getTypeColor = getProjectTypeColor;
 
 
@@ -76,7 +101,11 @@ export function ProjectOverviewTab({
     }
   };
 
-  const ownerName = technicians.find((t) => t.id === project.ownerId)?.name || project.ownerName || "Unknown";
+  const ownerName =
+    ownerFromTechnicians ||
+    (ownerIsId ? resolvedOwner : rawOwner) ||
+    (ownerIsId ? `User #${rawOwner}` : "Unknown");
+
   const completionPercentage = projectStats.completionPercentage || 0;
 
   return (

@@ -646,9 +646,17 @@ function ActivityTab({ dealId }: { dealId: number }) {
   const [activities, setActivities] = useState<DealActivity[]>([]);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  // A silently swallowed fetch error used to render as "no activity", which is
+  // indistinguishable from an empty timeline. Surface it instead.
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(() => {
-    dealsApi.getActivities(dealId).then(r => setActivities(r.activities)).catch(() => {});
+    setLoading(true);
+    dealsApi.getActivities(dealId)
+      .then(r => { setActivities(r.activities); setLoadError(false); })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, [dealId]);
   useEffect(() => { load(); }, [load]);
 
@@ -671,9 +679,17 @@ function ActivityTab({ dealId }: { dealId: number }) {
           <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder={t("activity.placeholder")} rows={2} />
           <Button onClick={add} disabled={busy || !note.trim()}>{t("activity.add")}</Button>
         </div>
-        {activities.length === 0 ? (
+        {loading ? (
+          <p className="text-sm text-muted-foreground">…</p>
+        ) : loadError ? (
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-destructive">{t("activity.loadFailed", "Could not load activity.")}</p>
+            <Button variant="outline" size="sm" onClick={load}>{t("common.retry", "Retry")}</Button>
+          </div>
+        ) : activities.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("activity.none")}</p>
         ) : (
+
           <div className="space-y-2">
             {activities.map(a => (
               <div key={a.id} className="flex items-start gap-2 border-l-2 border-muted pl-3 py-1">

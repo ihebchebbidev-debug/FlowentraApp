@@ -423,7 +423,16 @@ namespace MyApi.Modules.Deals.Services
 
                 // A won deal never keeps a lost reason (and vice-versa).
                 if (newStage == "won" && dto.LostReason == null) deal.LostReason = null;
+
+                // Terminal stages pin the probability so forecasts stop counting a
+                // closed deal at its old odds. An explicit value from the caller wins.
+                if (!dto.Probability.HasValue)
+                {
+                    if (newStage == "won") deal.Probability = 100;
+                    else if (newStage == "lost") deal.Probability = 0;
+                }
             }
+
 
 
             // Replace line items atomically when the caller manages them. Doing it here
@@ -630,11 +639,53 @@ namespace MyApi.Modules.Deals.Services
                 // New project (if just created) wins; otherwise keep any existing link.
                 var effectiveProjectId = deal.ProjectId;
 
+                // An itemless deal still carries a forecast in EstimatedValue. Sale and
+                // Offer totals are derived exclusively from line items, so converting
+                // without seeding a line silently dropped the value (offer showed only
+                // the fiscal stamp). Synthesize one line from the deal header so the
+                // Sale/Offer/Project paths all agree on the same number.
+                var sourceItems = (deal.Items ?? new List<DealItem>())
+                    .OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                var needsSyntheticLine = sourceItems.Count == 0 && deal.EstimatedValue > 0;
+                var syntheticLineName = string.IsNullOrWhiteSpace(deal.Title)
+                    ? $"Deal #{deal.Id}"
+                    : deal.Title;
+
                 // ── Deal → Sale ──
                 if (dto.ConvertToSale)
                 {
                     if (!string.IsNullOrEmpty(deal.ConvertedToSaleId))
                         throw new InvalidOperationException($"ALREADY_CONVERTED_SALE:{deal.ConvertedToSaleId}: Deal {id} has already been converted to Sale {deal.ConvertedToSaleId}");
+
+                    var saleItemDtos = sourceItems.Select(it => new CreateSaleItemDto
+                    {
+                        Type = it.Type,
+                        ArticleId = it.ArticleId,
+                        ItemName = it.ItemName,
+                        ItemCode = it.ItemCode,
+                        Description = it.Description,
+                        Quantity = it.Quantity,
+                        UnitPrice = it.UnitPrice,
+                        Discount = it.Discount,
+                        DiscountType = it.DiscountType,
+                        InstallationId = it.InstallationId,
+                        InstallationName = it.InstallationName,
+                    }).ToList();
+
+                    if (needsSyntheticLine)
+                    {
+                        saleItemDtos.Add(new CreateSaleItemDto
+                        {
+                            Type = "article",
+                            ItemName = syntheticLineName,
+                            Description = deal.Description,
+                            Quantity = 1,
+                            UnitPrice = deal.EstimatedValue,
+                            Discount = 0,
+                            DiscountType = "percentage",
+                            DisplayOrder = 0,
+                        });
+                    }
 
                     var saleDto = new CreateSaleDto
                     {
@@ -646,21 +697,9 @@ namespace MyApi.Modules.Deals.Services
                         Currency = deal.Currency,
                         Category = deal.Category,
                         Source = deal.Source,
-                        Items = (deal.Items ?? new List<DealItem>()).Select(it => new CreateSaleItemDto
-                        {
-                            Type = it.Type,
-                            ArticleId = it.ArticleId,
-                            ItemName = it.ItemName,
-                            ItemCode = it.ItemCode,
-                            Description = it.Description,
-                            Quantity = it.Quantity,
-                            UnitPrice = it.UnitPrice,
-                            Discount = it.Discount,
-                            DiscountType = it.DiscountType,
-                            InstallationId = it.InstallationId,
-                            InstallationName = it.InstallationName,
-                        }).ToList()
+                        Items = saleItemDtos
                     };
+
                     var sale = await _saleService.CreateSaleAsync(saleDto, userId);
                     result.SaleId = sale.Id;
                     saleBackId = sale.Id;
@@ -689,6 +728,36 @@ namespace MyApi.Modules.Deals.Services
                     if (!string.IsNullOrEmpty(deal.ConvertedToOfferId))
                         throw new InvalidOperationException($"ALREADY_CONVERTED_OFFER:{deal.ConvertedToOfferId}: Deal {id} has already been converted to Offer {deal.ConvertedToOfferId}");
 
+                    var offerItemDtos = sourceItems.Select(it => new CreateOfferItemDto
+                    {
+                        Type = it.Type,
+                        ArticleId = it.ArticleId,
+                        ItemName = it.ItemName,
+                        ItemCode = it.ItemCode,
+                        Description = it.Description,
+                        Quantity = it.Quantity,
+                        UnitPrice = it.UnitPrice,
+                        Discount = it.Discount,
+                        DiscountType = it.DiscountType,
+                        InstallationId = it.InstallationId,
+                        InstallationName = it.InstallationName,
+                    }).ToList();
+
+                    if (needsSyntheticLine)
+                    {
+                        offerItemDtos.Add(new CreateOfferItemDto
+                        {
+                            Type = "article",
+                            ItemName = syntheticLineName,
+                            Description = deal.Description,
+                            Quantity = 1,
+                            UnitPrice = deal.EstimatedValue,
+                            Discount = 0,
+                            DiscountType = "percentage",
+                            DisplayOrder = 0,
+                        });
+                    }
+
                     var offerDto = new CreateOfferDto
                     {
                         Title = deal.Title,
@@ -700,25 +769,35 @@ namespace MyApi.Modules.Deals.Services
                         Category = deal.Category,
                         Source = deal.Source,
                         Notes = deal.Notes,
-                        Items = (deal.Items ?? new List<DealItem>()).Select(it => new CreateOfferItemDto
-                        {
-                            Type = it.Type,
-                            ArticleId = it.ArticleId,
-                            ItemName = it.ItemName,
-                            ItemCode = it.ItemCode,
-                            Description = it.Description,
-                            Quantity = it.Quantity,
-                            UnitPrice = it.UnitPrice,
-                            Discount = it.Discount,
-                            DiscountType = it.DiscountType,
-                            InstallationId = it.InstallationId,
-                            InstallationName = it.InstallationName,
-                        }).ToList()
+                        Items = offerItemDtos
                     };
                     var offer = await _offerService.CreateOfferAsync(offerDto, userId);
                     result.OfferId = offer.Id;
                     offerBackId = offer.Id;
                     deal.ConvertedToOfferId = offer.Id.ToString();
+
+                    // OfferService.CreateOfferAsync persists the header with TotalAmount = 0
+                    // and never recomputes it from the items it just inserted (the UI normally
+                    // PATCHes totals afterwards). A converted offer has no such follow-up call,
+                    // so stamp the totals here — otherwise the offer renders as the fiscal
+                    // stamp alone (the "1 TND" bug).
+                    var offerEntity = await _context.Offers.FirstOrDefaultAsync(o => o.Id == offer.Id);
+                    if (offerEntity != null)
+                    {
+                        var subtotal = offerItemDtos.Sum(i =>
+                        {
+                            var gross = i.Quantity * i.UnitPrice;
+                            var off = string.Equals(i.DiscountType, "fixed", StringComparison.OrdinalIgnoreCase)
+                                ? i.Discount
+                                : gross * i.Discount / 100m;
+                            return Math.Max(0, gross - off);
+                        });
+                        subtotal = Math.Round(subtotal, 2);
+                        offerEntity.TotalAmount = subtotal;
+                        offerEntity.TaxAmount = 0;
+                        offerEntity.GrandTotal = Math.Round(subtotal + (offerEntity.FiscalStamp ?? 0), 2);
+                    }
+
 
                     // Phase A (A5): copy planned entries from deal items → new offer items.
                     if (_plannedEntries != null && offer.Items != null)
@@ -743,7 +822,12 @@ namespace MyApi.Modules.Deals.Services
                 {
                     deal.Stage = "won";
                     deal.ActualCloseDate ??= DateTime.UtcNow;
+                    // A won deal is 100% certain — leaving the old forecast probability
+                    // skews weighted-pipeline and win-rate analytics.
+                    deal.Probability = 100;
+                    deal.LostReason = null;
                 }
+
                 deal.ModifiedDate = DateTime.UtcNow;
                 deal.ModifiedBy = userId;
                 deal.LastActivity = DateTime.UtcNow;

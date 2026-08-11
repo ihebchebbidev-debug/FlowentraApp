@@ -254,9 +254,18 @@ namespace MyApi.Modules.Offers.Services
                     DiscountType = itemDto.DiscountType ?? "percentage",
                     InstallationId = itemDto.InstallationId,
                     InstallationName = itemDto.InstallationName,
+                    // Persist the line total at insert time. It used to stay 0 until the
+                    // UI PATCHed the offer, so server-side creators (deal conversion,
+                    // imports, workflows) produced offers whose lines totalled nothing.
+                    LineTotal = Math.Max(0, Math.Round(
+                        (itemDto.Quantity * itemDto.UnitPrice)
+                        - (string.Equals(itemDto.DiscountType, "fixed", StringComparison.OrdinalIgnoreCase)
+                            ? itemDto.Discount
+                            : (itemDto.Quantity * itemDto.UnitPrice) * itemDto.Discount / 100m), 2)),
                     // Preserve the exact order items were selected/sent in.
                     DisplayOrder = itemDto.DisplayOrder ?? index
                 }).ToList();
+
 
                 _context.OfferItems.AddRange(items);
                 await _context.SaveChangesAsync();
