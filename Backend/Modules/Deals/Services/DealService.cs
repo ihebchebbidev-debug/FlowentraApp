@@ -425,7 +425,7 @@ namespace MyApi.Modules.Deals.Services
             if (deal == null) return null;
 
             var oldStage = deal.Stage;
-            var oldProbability = deal.Probability;
+            
             // Validate before mutating anything so a bad stage can't partially apply.
             var newStage = dto.Stage != null ? NormalizeStage(dto.Stage) : null;
             var newTitle = dto.Title != null ? ValidateTitle(dto.Title) : null;
@@ -484,20 +484,13 @@ namespace MyApi.Modules.Deals.Services
                 // A won deal never keeps a lost reason (and vice-versa).
                 if (newStage == "won" && dto.LostReason == null) deal.LostReason = null;
 
-                // Terminal stages pin the probability so forecasts stop counting a
-                // closed deal at its old odds. Clients (the edit form) echo back the
-                // current probability untouched, so a value equal to the stored one is
-                // treated as "not explicitly changed" — only a genuinely different
-                // number from the caller wins over the terminal normalisation.
-                var probabilityExplicitlyChanged =
-                    dto.Probability.HasValue &&
-                    Math.Clamp(dto.Probability.Value, 0, 100) != oldProbability;
-
-                if (!probabilityExplicitlyChanged)
-                {
-                    if (newStage == "won") deal.Probability = 100;
-                    else if (newStage == "lost") deal.Probability = 0;
-                }
+                // Terminal stages pin the probability unconditionally: a won deal is 100%
+                // certain and a lost deal 0%, whatever the caller sent. Previously a client
+                // that changed the stage AND the probability in the same request could store
+                // e.g. "won @ 20%", which silently corrupted weighted-pipeline and win-rate
+                // analytics.
+                if (newStage == "won") deal.Probability = 100;
+                else if (newStage == "lost") deal.Probability = 0;
             }
 
 
@@ -955,14 +948,10 @@ namespace MyApi.Modules.Deals.Services
             await TrySetBackLinkAsync("Offers", "DealId", id, offerBackId);
             await TrySetBackLinkAsync("Projects", "ConvertedFromDealId", id, projectBackId);
 
-            // Timeline entry so the deal's Activity tab shows the conversion.
-            var targets = new List<string>();
-            if (saleBackId.HasValue) targets.Add($"Sale #{saleBackId}");
-            if (offerBackId.HasValue) targets.Add($"Offer #{offerBackId}");
-            if (projectBackId.HasValue) targets.Add($"Project #{projectBackId}");
-            await LogActivityAsync("converted", "Deal", id.ToString(), id,
-                $"Deal converted to {string.Join(", ", targets)}", userId, userName,
-                details: System.Text.Json.JsonSerializer.Serialize(new { saleBackId, offerBackId, projectBackId }));
+            // NOTE: the conversion timeline entry is written inside the transaction above
+            // (DealActivities "converted"). Logging it a second time here duplicated every
+            // conversion in the Activity tab, so this path only handles the back-links.
+
 
             return result;
         }

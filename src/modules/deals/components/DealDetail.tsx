@@ -50,6 +50,7 @@ export function DealDetail() {
   const { format: formatCurrency } = useCurrency();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [convertOpen, setConvertOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -58,8 +59,12 @@ export function DealDetail() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
+      setNotFound(false);
       setDeal(await dealsApi.getById(dealId));
     } catch {
+      // A deleted (or foreign-tenant) deal must not spin forever — show a real
+      // "not found" state instead of an endless loader.
+      setNotFound(true);
       toast.error(t("toast.loadError"));
     } finally {
       setLoading(false);
@@ -79,6 +84,18 @@ export function DealDetail() {
   };
 
   const contactAccess = useContactAccessGuard((deal as any)?.contactId);
+
+  if (!loading && notFound) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 h-60 text-center">
+        <p className="text-lg font-semibold">{t("detail.notFound", { defaultValue: "Deal not found" })}</p>
+        <p className="text-sm text-muted-foreground">{t("detail.notFoundHint", { defaultValue: "It may have been deleted or you no longer have access to it." })}</p>
+        <Button variant="outline" onClick={() => navigate("/dashboard/deals")} className="gap-2">
+          <ArrowLeft className="h-4 w-4" /> {t("backToDeals", { defaultValue: "Deals" })}
+        </Button>
+      </div>
+    );
+  }
 
   if (loading || !deal) {
     return <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin" /></div>;
@@ -248,7 +265,8 @@ export function DealDetail() {
               { value: 'items',      icon: Package,         label: t('detail.tabs.items') },
               { value: 'documents',  icon: FolderOpen,      label: t('detail.tabs.documents') },
               { value: 'checklists', icon: CheckSquare,     label: t('detail.tabs.checklists') },
-              { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.activity') },
+              { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.notes') },
+              { value: 'activity',   icon: Activity,        label: t('detail.tabs.activity') },
             ];
             const current = TABS.find(tab => tab.value === activeTab);
             return (
@@ -287,7 +305,8 @@ export function DealDetail() {
               <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
               <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
               <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
-              <TabsTrigger value="notes">{t("detail.tabs.activity")}</TabsTrigger>
+              <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
+              <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
             </TabsList>
 
           </div>
@@ -298,6 +317,7 @@ export function DealDetail() {
             <TabsContent value="documents"><DocumentsTab deal={deal} /></TabsContent>
             <TabsContent value="checklists"><ChecklistsTab deal={deal} /></TabsContent>
             <TabsContent value="notes"><NotesTab deal={deal} onSaved={load} /></TabsContent>
+            <TabsContent value="activity"><ActivityTab dealId={deal.id} /></TabsContent>
           </div>
         </Tabs>
       </div>
