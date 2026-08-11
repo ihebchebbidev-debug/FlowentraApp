@@ -487,6 +487,18 @@ namespace MyApi.Modules.Dispatches.Services
             var hasTechnicians = dto.AssignedTechnicianIds != null && dto.AssignedTechnicianIds.Count > 0;
             var status = "assigned";
 
+            // Fast path for accidental double-submits: an identical dispatch created seconds ago is
+            // returned as-is, before the availability check would flag it as a conflict with itself.
+            if (!insideTransaction)
+            {
+                var recent = await FindRecentIdenticalDispatchAsync(dto, serviceOrderId, userId);
+                if (recent != null)
+                {
+                    var recentNames = await GetTechnicianNameMapForDispatchAsync(recent.Id);
+                    return DispatchMapping.ToDto(recent, recentNames);
+                }
+            }
+
             // Reject double-booking before we burn a dispatch number.
             await EnsureTechnicianAvailabilityAsync(
                 dto.AssignedTechnicianIds, dto.ScheduledDate, dto.ScheduledStartTime, dto.ScheduledEndTime);
@@ -533,6 +545,7 @@ namespace MyApi.Modules.Dispatches.Services
             };
 
             // Local write function — used by both branches so the SQL is identical.
+            Dispatch? duplicateOf = null;
             async Task WriteAsync()
             {
                 _db.Dispatches.Add(dispatch);
@@ -588,7 +601,21 @@ namespace MyApi.Modules.Dispatches.Services
                     using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                     try
                     {
-                        await WriteAsync();
+                        // Accidental double-submit guard. Planning the same job / service order
+                        // several times on purpose stays fully allowed — we only collapse
+                        // byte-identical requests that arrive within a few seconds of each other
+                        // (double-click, retried POST). Serialize concurrent callers on an
+                        // advisory lock keyed on (installation|service order, day).
+                        var scopeKey = dto.InstallationId > 0
+                            ? (long)dto.InstallationId
+                            : -(long)(serviceOrderId ?? 0);
+                        long lockKey = (scopeKey << 32)
+                                     | (uint)(dto.ScheduledDate.Date - new DateTime(1970, 1, 1)).Days;
+                        await _db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0})", lockKey);
+
+                        duplicateOf = await FindRecentIdenticalDispatchAsync(dto, serviceOrderId, userId);
+                        if (duplicateOf == null)
+                            await WriteAsync();
                         await tx.CommitAsync();
                     }
                     catch
@@ -597,6 +624,15 @@ namespace MyApi.Modules.Dispatches.Services
                         throw;
                     }
                 });
+            }
+
+            if (duplicateOf != null)
+            {
+                _logger.LogInformation(
+                    "Duplicate submit detected — returning existing dispatch {DispatchId} instead of creating a new one",
+                    duplicateOf.Id);
+                var dupNameMap = await GetTechnicianNameMapForDispatchAsync(duplicateOf.Id);
+                return DispatchMapping.ToDto(duplicateOf, dupNameMap);
             }
 
             _logger.LogInformation(
@@ -622,6 +658,42 @@ namespace MyApi.Modules.Dispatches.Services
 
             var nameMap = await GetTechnicianNameMapForDispatchAsync(createdDispatch.Id);
             return DispatchMapping.ToDto(createdDispatch, nameMap);
+        }
+
+        /// <summary>
+        /// Returns a dispatch created moments ago (within the idempotency window) by the same user
+        /// with exactly the same scope, schedule and job set — i.e. an accidental duplicate submit.
+        /// Deliberate re-planning of the same job or service order later is unaffected.
+        /// </summary>
+        private static readonly TimeSpan DuplicateSubmitWindow = TimeSpan.FromSeconds(20);
+
+        private async Task<Dispatch?> FindRecentIdenticalDispatchAsync(
+            CreateDispatchFromInstallationDto dto, int? serviceOrderId, string userId)
+        {
+            var since = DateTime.UtcNow - DuplicateSubmitWindow;
+            var installationId = dto.InstallationId > 0 ? (int?)dto.InstallationId : null;
+            var day = dto.ScheduledDate.Date;
+            var nextDay = day.AddDays(1);
+
+            var candidates = await _db.Dispatches
+                .Include(d => d.AssignedTechnicians)
+                .Include(d => d.DispatchJobs)
+                .Where(d => !d.IsDeleted
+                    && d.CreatedBy == userId
+                    && d.CreatedDate >= since
+                    && d.InstallationId == installationId
+                    && d.ServiceOrderId == serviceOrderId
+                    && d.ScheduledDate >= day && d.ScheduledDate < nextDay
+                    && d.ScheduledStartTime == dto.ScheduledStartTime
+                    && d.ScheduledEndTime == dto.ScheduledEndTime)
+                .ToListAsync();
+
+            var wantedJobs = dto.JobIds.ToHashSet();
+            return candidates.FirstOrDefault(d =>
+            {
+                var jobs = d.DispatchJobs.Where(dj => !dj.IsDeleted).Select(dj => dj.JobId).ToHashSet();
+                return jobs.SetEquals(wantedJobs);
+            });
         }
 
         /// <summary>

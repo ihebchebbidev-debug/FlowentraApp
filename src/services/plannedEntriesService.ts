@@ -64,6 +64,8 @@ export interface PlanVsActual {
   actualMinutes: number;
   plannedExpenseTotal: number;
   actualExpenseTotal: number;
+  plannedMaterialTotal: number;
+  actualMaterialTotal: number;
   expenseBuckets: PlanVsActualBucket[];
 }
 

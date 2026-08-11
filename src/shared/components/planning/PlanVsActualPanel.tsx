@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, Wallet, TrendingUp } from 'lucide-react';
+import { Clock, Wallet, TrendingUp, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -32,12 +32,16 @@ export function PlanVsActualPanel({ serviceOrderJobId, currency }: Props) {
   }, [serviceOrderJobId]);
 
   if (loading) return <Card><CardContent className="p-4 text-sm text-muted-foreground">{t('loading', 'Loading…')}</CardContent></Card>;
-  if (!data || (data.plannedMinutes === 0 && data.plannedExpenseTotal === 0 && data.actualMinutes === 0 && data.actualExpenseTotal === 0)) {
+  const plannedMaterialTotal = data?.plannedMaterialTotal ?? 0;
+  const actualMaterialTotal = data?.actualMaterialTotal ?? 0;
+  if (!data || (data.plannedMinutes === 0 && data.plannedExpenseTotal === 0 && data.actualMinutes === 0
+    && data.actualExpenseTotal === 0 && plannedMaterialTotal === 0 && actualMaterialTotal === 0)) {
     return null;
   }
 
   const timePct = data.plannedMinutes > 0 ? (data.actualMinutes / data.plannedMinutes) * 100 : 0;
   const expPct = data.plannedExpenseTotal > 0 ? (data.actualExpenseTotal / data.plannedExpenseTotal) * 100 : 0;
+  const matPct = plannedMaterialTotal > 0 ? (actualMaterialTotal / plannedMaterialTotal) * 100 : 0;
 
   return (
     <Card>
@@ -89,6 +93,29 @@ export function PlanVsActualPanel({ serviceOrderJobId, currency }: Props) {
             <div className={`h-full ${colorFor(expPct)}`} style={{ width: `${Math.min(expPct, 100)}%` }} />
           </div>
         </div>
+
+        {/* Materials total — kept separate from expenses so it matches the materials badge */}
+        {(plannedMaterialTotal > 0 || actualMaterialTotal > 0) && (
+          <div>
+            <div className="flex items-center justify-between mb-1.5 text-sm">
+              <div className="flex items-center gap-2">
+                <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{t('planning.materials', 'Materials')}</span>
+              </div>
+              <span className="font-medium tabular-nums">
+                {actualMaterialTotal.toFixed(2)} / {plannedMaterialTotal.toFixed(2)} {currencyCode}
+                {plannedMaterialTotal > 0 && (
+                  <Badge variant={matPct > 100 ? 'destructive' : 'secondary'} className="ml-2">
+                    {matPct.toFixed(0)}%
+                  </Badge>
+                )}
+              </span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div className={`h-full ${colorFor(matPct)}`} style={{ width: `${Math.min(matPct, 100)}%` }} />
+            </div>
+          </div>
+        )}
 
         {/* Per-bucket breakdown */}
         {data.expenseBuckets.length > 0 && (

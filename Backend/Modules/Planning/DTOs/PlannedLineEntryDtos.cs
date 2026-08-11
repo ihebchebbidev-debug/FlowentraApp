@@ -56,6 +56,10 @@ namespace MyApi.Modules.Planning.DTOs
         public int ActualMinutes { get; set; }
         public decimal PlannedExpenseTotal { get; set; }
         public decimal ActualExpenseTotal { get; set; }
+        // Materials are reported separately from expenses so the "Expenses" figure here
+        // matches the materials-exclusive expense badge rendered on the same screen.
+        public decimal PlannedMaterialTotal { get; set; }
+        public decimal ActualMaterialTotal { get; set; }
         public System.Collections.Generic.List<PlanVsActualExpenseBucket> ExpenseBuckets { get; set; } = new();
     }
 

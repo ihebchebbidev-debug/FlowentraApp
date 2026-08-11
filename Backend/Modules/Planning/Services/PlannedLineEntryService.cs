@@ -639,16 +639,13 @@ namespace MyApi.Modules.Planning.Services
                 .GroupBy(p => p.ExpenseType!)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.PlannedAmount ?? 0));
 
-            // Planned materials (kind='material') roll into the "materials" bucket for
-            // backwards-compat totals so overrun gating stays consistent.
+            // Planned materials (kind='material') are reported on their own total — NOT folded
+            // into the expense buckets — so this panel agrees with the materials-exclusive
+            // expense badge and the separate materials badge rendered on the same screen.
             var plannedMaterialTotal = planned
                 .Where(p => p.Kind == "material")
                 .Sum(p => (p.Quantity ?? 0) * (p.UnitPrice ?? 0));
-            if (plannedMaterialTotal > 0)
-            {
-                plannedExpenseByType.TryGetValue("materials", out var curPlannedMat);
-                plannedExpenseByType["materials"] = curPlannedMat + plannedMaterialTotal;
-            }
+            decimal actualMaterialTotal = 0m;
 
             // Actuals come from dispatch TimeEntries/Expenses on dispatches linked to this job.
             // Best-effort: aggregate via DispatchJobs that reference this ServiceOrderJob.
@@ -707,12 +704,7 @@ namespace MyApi.Modules.Planning.Services
                         && (m.ServiceOrderJobId == serviceOrderJobId || m.ServiceOrderJobId == null))
                     .Select(m => new { m.DispatchId, m.ServiceOrderJobId, m.TotalPrice })
                     .ToListAsync();
-                var materialTotal = materials.Sum(m => ShareFor(m.DispatchId, m.ServiceOrderJobId, m.TotalPrice));
-                if (materialTotal > 0)
-                {
-                    actualExpenseByType.TryGetValue("materials", out var curMat);
-                    actualExpenseByType["materials"] = curMat + materialTotal;
-                }
+                actualMaterialTotal += materials.Sum(m => ShareFor(m.DispatchId, m.ServiceOrderJobId, m.TotalPrice));
 
                 // Round once, at the end — never truncate (that under-reports every partial minute).
                 actualMinutes = (int)Math.Round(actualMinutesDecimal, MidpointRounding.AwayFromZero);
@@ -751,10 +743,7 @@ namespace MyApi.Modules.Planning.Services
                     .Where(m => m.ServiceOrderId == serviceOrderId.Value)
                     .SumAsync(m => (decimal?)m.TotalPrice ?? 0m);
                 if (soMaterialTotal > 0)
-                {
-                    actualExpenseByType.TryGetValue("materials", out var curMat);
-                    actualExpenseByType["materials"] = curMat + (soMaterialTotal / jobCount);
-                }
+                    actualMaterialTotal += soMaterialTotal / jobCount;
             }
 
 
@@ -773,6 +762,8 @@ namespace MyApi.Modules.Planning.Services
                 ActualMinutes = actualMinutes,
                 PlannedExpenseTotal = buckets.Sum(b => b.Planned),
                 ActualExpenseTotal = buckets.Sum(b => b.Actual),
+                PlannedMaterialTotal = plannedMaterialTotal,
+                ActualMaterialTotal = actualMaterialTotal,
                 ExpenseBuckets = buckets,
             };
         }
