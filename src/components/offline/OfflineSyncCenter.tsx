@@ -20,6 +20,12 @@ import {
 } from "lucide-react";
 import { useOffline } from "@/contexts/OfflineContext";
 import { useTranslation } from "react-i18next";
+import {
+  discardFailedOperations,
+  getFailedOperations,
+  retryFailedOperation,
+} from "@/services/offline/syncEngine";
+import type { OfflineFailedOperation } from "@/services/offline/types";
 
 const OFFLINE_SYNC_CENTER_DISMISSED_KEY = "offline-sync-center-dismissed-v1";
 
@@ -52,6 +58,37 @@ export const OfflineSyncCenter: React.FC = () => {
     hydrateNow,
   } = useOffline();
   const [expanded, setExpanded] = React.useState(false);
+  const [archived, setArchived] = React.useState<OfflineFailedOperation[]>([]);
+
+  const refreshArchived = React.useCallback(() => {
+    void getFailedOperations()
+      .then(setArchived)
+      .catch(() => setArchived([]));
+  }, []);
+
+  React.useEffect(() => {
+    refreshArchived();
+  }, [refreshArchived, syncing, pendingCount]);
+
+  const retryOne = React.useCallback(
+    async (opId: string) => {
+      await retryFailedOperation(opId);
+      refreshArchived();
+    },
+    [refreshArchived],
+  );
+  const discardOne = React.useCallback(
+    async (opId: string) => {
+      await discardFailedOperations([opId]);
+      refreshArchived();
+    },
+    [refreshArchived],
+  );
+  const discardAll = React.useCallback(async () => {
+    await discardFailedOperations(archived.map((row) => row.opId));
+    refreshArchived();
+  }, [archived, refreshArchived]);
+
   const [showSyncDetail, setShowSyncDetail] = React.useState(false);
   const [visible, setVisible] = React.useState(() => {
     if (typeof window === "undefined") return true;
@@ -251,8 +288,59 @@ export const OfflineSyncCenter: React.FC = () => {
               </>
             )}
 
+            {/* Rejected changes kept for manual recovery */}
+            {archived.length > 0 && (
+              <>
+                <Separator />
+                <div className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-px-11 font-medium text-foreground">
+                      {t("syncDashboard.rejectedTitle", "Changes needing attention")}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-px-10"
+                      onClick={() => void discardAll()}
+                    >
+                      {t("syncDashboard.discardAll", "Discard all")}
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-auto">
+                    {archived.map((row) => (
+                      <div key={row.opId} className="border-t border-border pt-2 space-y-1">
+                        <p className="font-mono text-px-10 break-all text-muted-foreground">
+                          {row.operation.method} {row.operation.endpoint}
+                        </p>
+                        <p className="text-destructive text-px-10">{row.error || row.status}</p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-px-10"
+                            onClick={() => void retryOne(row.opId)}
+                          >
+                            {t("syncDashboard.retry", "Retry")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-px-10"
+                            onClick={() => void discardOne(row.opId)}
+                          >
+                            {t("syncDashboard.discard", "Discard")}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Actions */}
             <Separator />
+
             <div className="px-4 py-3 flex items-center gap-2">
               <Button
                 onClick={() => void syncNow()}

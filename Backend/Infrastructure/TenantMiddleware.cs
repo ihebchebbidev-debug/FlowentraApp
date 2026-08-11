@@ -93,6 +93,9 @@ public class TenantMiddleware
             || path.Contains("/api/me", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/module-scope", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/health", StringComparison.OrdinalIgnoreCase)
+            // Per-user offline hydration module toggles: a UI preference the app
+            // reads right after login, before a company has been selected.
+            || path.Contains("/api/offlinehydrationpreferences", StringComparison.OrdinalIgnoreCase)
             // Onboarding uploads: profile picture + company logo hit
             // /api/Documents/upload and /api/Upload BEFORE the first tenant is
             // created, so they must be reachable without an active company.

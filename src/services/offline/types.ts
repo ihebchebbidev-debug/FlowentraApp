@@ -35,6 +35,20 @@ export interface OfflineOperation {
   capturedTargetTenant?: number | null;
 }
 
+/**
+ * An operation the server permanently refused (rejected / unresolvable conflict).
+ * Archived instead of discarded so the user can inspect, retry or dismiss it.
+ */
+export interface OfflineFailedOperation {
+  opId: string;
+  operation: OfflineOperation;
+  status: string;
+  error?: string;
+  failedAt: string;
+  userScope?: string;
+}
+
+
 export interface SyncPushRequest {
   deviceId: string;
   sessionId?: string;

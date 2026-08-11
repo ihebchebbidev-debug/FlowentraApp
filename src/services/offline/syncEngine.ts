@@ -3,9 +3,20 @@ import { getAuthHeaders } from "@/utils/apiHeaders";
 import { getCurrentTenant, TENANT_HEADER, TARGET_TENANT_HEADER } from "@/utils/tenant";
 import { getSelectedTargetTenantId } from "@/utils/targetTenant";
 import { authService } from "@/services/authService";
-import { enqueueOperation, listOperationBlobs, listOperations, putOperationBlob, removeOperations } from "./offlineStore";
+import {
+  archiveFailedOperations,
+  enqueueOperation,
+  listFailedOperations,
+  listOperationBlobs,
+  listOperations,
+  putOperationBlob,
+  removeFailedOperations,
+  removeOperations,
+  updateOperations,
+} from "./offlineStore";
 import type {
   OfflineConflictStrategy,
+  OfflineFailedOperation,
   OfflineOperation,
   OfflineBlobRef,
   OfflineSyncFailureItem,
@@ -503,11 +514,19 @@ export async function queueHttpOperation(input: {
   const capturedTenant = getCurrentTenant();
   const capturedTargetTenant = getSelectedTargetTenantId();
 
+  // Offline creates get a temporary id so later mutations in the same offline
+  // session can reference the not-yet-existing record; `remapTempIdsInOperations`
+  // rewrites those references with the real server id after the create syncs.
+  const isCreate = input.method.toUpperCase() === "POST" && entityId == null;
+  const clientTempId = isCreate ? `tmp_${opId}` : undefined;
+
   const op: OfflineOperation = {
     opId,
     entityType,
     ...(entityId != null ? { entityId } : {}),
+    ...(clientTempId ? { clientTempId } : {}),
     operation: input.method === "DELETE" ? "delete" : "upsert",
+
     payload,
     clientTimestamp: new Date().toISOString(),
     method: input.method.toUpperCase(),
@@ -675,7 +694,123 @@ export function getLastSyncDetail(): OfflineSyncLastDetail | null {
   return sanitizeOfflineSyncLastDetailForUi(readLastSyncDetailFromStorage());
 }
 
+/** Deep-replace every occurrence of a temp id with the real server id. */
+function replaceTempIdsDeep(value: unknown, map: Map<string, number>): unknown {
+  if (typeof value === "string") {
+    let out = value;
+    for (const [tempId, serverId] of map) {
+      if (out.includes(tempId)) out = out.split(tempId).join(String(serverId));
+    }
+    return out;
+  }
+  if (Array.isArray(value)) return value.map((v) => replaceTempIdsDeep(v, map));
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = replaceTempIdsDeep(v, map);
+    }
+    return out;
+  }
+  return value;
+}
+
+/** True when `op` still references a temp id that has not been created server-side yet. */
+function referencesUnresolvedTempId(op: OfflineOperation, unresolved: Set<string>): boolean {
+  const haystacks = [op.endpoint, op.payload != null ? JSON.stringify(op.payload) : ""];
+  for (const tempId of unresolved) {
+    if (tempId === op.clientTempId) continue;
+    if (haystacks.some((h) => h.includes(tempId))) return true;
+  }
+  return false;
+}
+
+/**
+ * Rewrite queued operations that point at a record created earlier in the same
+ * offline session, now that the server has assigned it a real id.
+ */
+async function remapTempIdsInOperations(
+  ops: OfflineOperation[],
+  map: Map<string, number>,
+): Promise<OfflineOperation[]> {
+  if (!map.size || !ops.length) return ops;
+  const rewritten: OfflineOperation[] = [];
+  const next = ops.map((op) => {
+    const endpoint = replaceTempIdsDeep(op.endpoint, map) as string;
+    const payload = replaceTempIdsDeep(op.payload, map);
+    const changed = endpoint !== op.endpoint || JSON.stringify(payload) !== JSON.stringify(op.payload);
+    if (!changed) return op;
+    const entityType = op.entityType;
+    const updated: OfflineOperation = {
+      ...op,
+      endpoint,
+      payload,
+      entityId: op.entityId ?? inferEntityIdFromEndpoint(endpoint, entityType),
+    };
+    rewritten.push(updated);
+    return updated;
+  });
+  if (rewritten.length) await updateOperations(rewritten);
+  return next;
+}
+
+/**
+ * Next batch that can safely be pushed: everything whose parent records already
+ * exist server-side. Falls back to the full remainder so a cyclic reference can
+ * never deadlock the queue (the server rejects it with a clear error instead).
+ */
+function selectSyncWave(remaining: OfflineOperation[]): OfflineOperation[] {
+  const unresolved = new Set(
+    remaining.map((op) => op.clientTempId).filter((id): id is string => !!id),
+  );
+  const wave = remaining.filter((op) => !referencesUnresolvedTempId(op, unresolved));
+  return wave.length ? wave : remaining;
+}
+
+function groupOpsByCapturedTenant(
+  ops: OfflineOperation[],
+): Map<string, { headers: Record<string, string>; ops: OfflineOperation[] }> {
+  const groups = new Map<string, { headers: Record<string, string>; ops: OfflineOperation[] }>();
+  const currentTenant = getCurrentTenant();
+  const currentTarget = getSelectedTargetTenantId();
+  for (const op of ops) {
+    const tenant = op.capturedTenant ?? currentTenant ?? "";
+    const target = op.capturedTargetTenant ?? currentTarget ?? null;
+    const key = `${tenant}::${target ?? ""}`;
+    const headers: Record<string, string> = {};
+    if (tenant) headers[TENANT_HEADER] = tenant;
+    if (target != null) headers[TARGET_TENANT_HEADER] = String(target);
+    const existing = groups.get(key);
+    if (existing) existing.ops.push(op);
+    else groups.set(key, { headers, ops: [op] });
+  }
+  return groups;
+}
+
+/** Operations the server permanently refused, kept for review / manual retry. */
+export async function getFailedOperations(): Promise<OfflineFailedOperation[]> {
+  const scope = getOfflineScope();
+  const rows = await listFailedOperations();
+  return rows.filter((row) => !row.userScope || areOfflineScopesEquivalent(row.userScope, scope));
+}
+
+/** Put an archived failure back into the outbox so the next sync retries it. */
+export async function retryFailedOperation(opId: string): Promise<void> {
+  const rows = await listFailedOperations();
+  const row = rows.find((r) => r.opId === opId);
+  if (!row) return;
+  await enqueueOperation(row.operation);
+  await removeFailedOperations([opId]);
+  notifyOfflineQueueUpdated();
+}
+
+/** Permanently discard archived failures the user acknowledged. */
+export async function discardFailedOperations(opIds: string[]): Promise<void> {
+  await removeFailedOperations(opIds);
+  notifyOfflineQueueUpdated();
+}
+
 function buildOpLookup(ops: OfflineOperation[]): Map<string, OfflineOperation> {
+
   const m = new Map<string, OfflineOperation>();
   for (const op of ops) m.set(op.opId, op);
   return m;
@@ -790,9 +925,10 @@ async function fetchSyncPushWithRetry(bodyJson: string, tenantHeaders?: Record<s
         body: bodyJson,
       });
 
-      // ✅ If we get 401/403 on first attempt, try refreshing once
-      if ((response.status === 401 || response.status === 403) && attempt === 1 && !refreshAttempted) {
-        console.warn(`[OFFLINE SYNC] Got ${response.status} on first attempt, trying token refresh...`);
+      // Refresh once per push, on whichever attempt first sees 401/403.
+      if ((response.status === 401 || response.status === 403) && !refreshAttempted) {
+        console.warn(`[OFFLINE SYNC] Got ${response.status}, trying token refresh...`);
+
         refreshAttempted = true;
         try {
           const refreshed = await authService.refreshToken?.();
@@ -821,8 +957,24 @@ async function fetchSyncPushWithRetry(bodyJson: string, tenantHeaders?: Record<s
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
+/**
+ * Engine-level mutex: UI callers go through OfflineContext (which has its own
+ * in-flight ref), but any direct caller must not start a second cycle — two
+ * overlapping cycles read/remove the same queue rows and double-push ops.
+ */
+let syncInFlight: Promise<{ synced: number; failed: number }> | null = null;
+
 export async function syncNow(): Promise<{ synced: number; failed: number }> {
+  if (syncInFlight) return syncInFlight;
+  syncInFlight = runSyncCycle().finally(() => {
+    syncInFlight = null;
+  });
+  return syncInFlight;
+}
+
+async function runSyncCycle(): Promise<{ synced: number; failed: number }> {
   try {
+
   // Early guard: sync requires authentication
   const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("access_token");
   const hasRefreshToken = typeof localStorage !== "undefined" && !!localStorage.getItem("refresh_token");
@@ -921,27 +1073,19 @@ export async function syncNow(): Promise<{ synced: number; failed: number }> {
 
   const opLookup = buildOpLookup(queued);
 
-  // Group queued ops by the tenant captured at write time so each batch is
-  // pushed under the ORIGINAL tenant the mutation was made under. This
-  // prevents cross-tenant leaks if the user switched company/tenant between
-  // queuing and syncing.
-  const groups = new Map<string, { headers: Record<string, string>; ops: OfflineOperation[] }>();
-  const currentTenant = getCurrentTenant();
-  const currentTarget = getSelectedTargetTenantId();
-  for (const op of queued) {
-    const tenant = op.capturedTenant ?? currentTenant ?? "";
-    const target = op.capturedTargetTenant ?? currentTarget ?? null;
-    const key = `${tenant}::${target ?? ""}`;
-    const headers: Record<string, string> = {};
-    if (tenant) headers[TENANT_HEADER] = tenant;
-    if (target != null) headers[TARGET_TENANT_HEADER] = String(target);
-    const existing = groups.get(key);
-    if (existing) existing.ops.push(op);
-    else groups.set(key, { headers, ops: [op] });
-  }
-
   const aggregatedResults: SyncPushResultItem[] = [];
-  for (const [, group] of groups) {
+  // Push in dependency waves: records created offline must reach the server (and
+  // get a real id) before the operations that reference them are pushed. Each
+  // wave is grouped by the tenant captured at write time so a batch is always
+  // pushed under the ORIGINAL tenant the mutation was made under.
+  let remaining: OfflineOperation[] = [...queued];
+  let waveGuard = 0;
+  while (remaining.length && waveGuard++ < 12) {
+    const wave = selectSyncWave(remaining);
+    const waveIds = new Set(wave.map((op) => op.opId));
+    const groups = groupOpsByCapturedTenant(wave);
+    for (const [, group] of groups) {
+
     const pushBody = JSON.stringify({
       deviceId: getDeviceId(),
       operations: group.ops,
@@ -1046,11 +1190,23 @@ export async function syncNow(): Promise<{ synced: number; failed: number }> {
       localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
       throw new Error(summary);
     }
-    if (Array.isArray(data.results)) aggregatedResults.push(...data.results);
+      if (Array.isArray(data.results)) aggregatedResults.push(...data.results);
+    }
+
+    // Real ids for records created in this wave → rewrite the still-queued
+    // operations that reference their temporary ids.
+    const tempIdMap = new Map<string, number>();
+    for (const r of aggregatedResults) {
+      const op = opLookup.get(r.opId);
+      if (op?.clientTempId && r.serverEntityId != null) tempIdMap.set(op.clientTempId, r.serverEntityId);
+    }
+    remaining = remaining.filter((op) => !waveIds.has(op.opId));
+    remaining = await remapTempIdsInOperations(remaining, tempIdMap);
   }
 
-  // Fake a unified `data`/`results` shape for the downstream aggregation logic.
   const data: SyncPushResponse = { results: aggregatedResults };
+
+
 
 
   const results = Array.isArray(data.results) ? data.results : [];
@@ -1065,12 +1221,30 @@ export async function syncNow(): Promise<{ synced: number; failed: number }> {
   }
   const succeeded = results.filter((r) => r.status === "applied" || r.status === "duplicate").map((r) => r.opId);
   const failed = results.filter((r) => r.status !== "applied" && r.status !== "duplicate");
-  // Permanently failed ops (validation rejected, unresolvable conflict) will never succeed on retry — dequeue them now.
+  // Permanently failed ops (validation rejected, unresolvable conflict) will never
+  // succeed on a blind retry — dequeue them, but archive them first so the user can
+  // review, retry or discard them from the Sync Center instead of losing the data.
   const permanentlyFailed = failed
     .filter((r) => r.status === "rejected" || r.status === "conflict")
     .map((r) => r.opId);
+  const archive: OfflineFailedOperation[] = [];
+  for (const r of failed) {
+    if (r.status !== "rejected" && r.status !== "conflict") continue;
+    const op = opLookup.get(r.opId);
+    if (!op) continue;
+    archive.push({
+      opId: r.opId,
+      operation: op,
+      status: String(r.status),
+      error: r.error,
+      failedAt: new Date().toISOString(),
+      userScope: op.userScope,
+    });
+  }
+  await archiveFailedOperations(archive);
 
   await removeOperations([...succeeded, ...permanentlyFailed]);
+
   localStorage.setItem(scopedKey(LAST_SYNC_AT_KEY), new Date().toISOString());
 
   const failedOperations: OfflineSyncFailureItem[] = failed.map((r) => {

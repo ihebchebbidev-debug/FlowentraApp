@@ -207,9 +207,19 @@ async function evictOldestIdbEntries(fraction: number): Promise<void> {
   });
   db.close();
   if (rows.length === 0) return;
-  rows.sort((a, b) => a.savedAt.localeCompare(b.savedAt));
+  // Evict low-value entries first: bulky binaries, then regular data. Lookup/reference
+  // data (currencies, taxes, units…) is small and needed by every offline form, so it
+  // is only dropped when nothing else is left to reclaim.
+  const priority = (r: CachedHttpEntry): number => {
+    const key = r.key.toLowerCase();
+    if (/lookup|currenc|tax|unit|categor|setting|permission|role/.test(key)) return 2;
+    if (r.bodyBytes !== undefined) return 0;
+    return 1;
+  };
+  rows.sort((a, b) => priority(a) - priority(b) || a.savedAt.localeCompare(b.savedAt));
   const toRemove = Math.max(1, Math.ceil(rows.length * fraction));
   const keys = rows.slice(0, toRemove).map((r) => r.key);
+
   const db2 = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db2.transaction(STORE, "readwrite");

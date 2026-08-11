@@ -463,11 +463,27 @@ namespace MyApi.Modules.Sync.Services
                 var strategy = (op.ConflictStrategy ?? "reject").Trim().ToLowerInvariant();
                 if (strategy == "last_write_wins")
                 {
-                    if (ex is KeyNotFoundException || ex is DbUpdateConcurrencyException)
+                    var isDelete = string.Equals(op.Operation, "delete", StringComparison.OrdinalIgnoreCase);
+
+                    // Deleting a row that is already gone is idempotent — report success.
+                    if (isDelete && ex is KeyNotFoundException)
                     {
                         return op.EntityId;
                     }
+
+                    // Concurrent server-side change: reload and re-apply the client payload
+                    // so the last write actually wins instead of being silently dropped.
+                    if (ex is DbUpdateConcurrencyException)
+                    {
+                        _context.ChangeTracker.Clear();
+                        return await ApplyOperationAsync(op, currentUser);
+                    }
+
+                    // KeyNotFound on an upsert means the target row no longer exists.
+                    // Swallowing it here would report "applied" while losing the user's
+                    // edit — surface it as a rejection instead (rethrow below).
                 }
+
                 if (strategy == "merge" && !string.Equals(op.Operation, "delete", StringComparison.OrdinalIgnoreCase))
                 {
                     var retry = new SyncOperationDto

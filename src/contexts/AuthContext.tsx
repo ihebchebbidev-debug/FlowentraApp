@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getAuthClaims } from '@/utils/authClaims';
 import { authService, UserData } from '@/services/authService';
+import { getActiveCompanyId, onTargetTenantChanged } from '@/utils/targetTenant';
+
 
 interface SignupUserData {
   firstName?: string;
@@ -174,24 +176,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, []);
 
-  // Sync offline hydration module preferences from API (per user / tenant)
+  // Sync offline hydration module preferences from API (per user / tenant).
+  // The endpoint is tenant-scoped: calling it before an active company is
+  // selected returns 428 (Precondition Required), so wait for the selection.
   useEffect(() => {
     if (!isAuthenticated) return;
     let cancelled = false;
-    import("@/services/offline/offlineHydrationPreferences")
-      .then((m) => m.syncHydrationPreferencesFromServer())
-      .catch(() => {
-        /* keep local cache */
-      })
-      .finally(() => {
-        if (!cancelled) {
-          window.dispatchEvent(new CustomEvent("offline:hydration-prefs-updated"));
-        }
-      });
+
+    const run = () => {
+      if (cancelled) return;
+      if (getActiveCompanyId() == null) return;
+      import("@/services/offline/offlineHydrationPreferences")
+        .then((m) => m.syncHydrationPreferencesFromServer())
+        .catch(() => {
+          /* keep local cache */
+        })
+        .finally(() => {
+          if (!cancelled) {
+            window.dispatchEvent(new CustomEvent("offline:hydration-prefs-updated"));
+          }
+        });
+    };
+
+    run();
+    const unsubscribe = onTargetTenantChanged(run);
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [isAuthenticated]);
+
 
   // Auto refresh token before expiry
   useEffect(() => {

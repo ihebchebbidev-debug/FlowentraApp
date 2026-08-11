@@ -1,9 +1,10 @@
-import type { OfflineOperation } from "./types";
+import type { OfflineFailedOperation, OfflineOperation } from "./types";
 
 const DB_NAME = "flowentra-offline-db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = "operations";
 const BLOBS_STORE_NAME = "operation_blobs";
+const FAILED_STORE_NAME = "failed_operations";
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -18,11 +19,17 @@ function openDb(): Promise<IDBDatabase> {
         const blobs = db.createObjectStore(BLOBS_STORE_NAME, { keyPath: "blobId" });
         blobs.createIndex("opId", "opId", { unique: false });
       }
+      // v3: rejected/conflicted ops are archived here instead of being discarded,
+      // so the user can inspect, retry or dismiss them from the Sync Center.
+      if (!db.objectStoreNames.contains(FAILED_STORE_NAME)) {
+        db.createObjectStore(FAILED_STORE_NAME, { keyPath: "opId" });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
+
 
 const MAX_QUEUE_SIZE = 500;
 
@@ -62,6 +69,60 @@ export async function listOperations(): Promise<OfflineOperation[]> {
   db.close();
   return rows.sort((a, b) => a.clientTimestamp.localeCompare(b.clientTimestamp));
 }
+
+/** Persist in-place rewrites of queued ops (e.g. temp id → server id remapping). */
+export async function updateOperations(ops: OfflineOperation[]): Promise<void> {
+  if (!ops.length) return;
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    for (const op of ops) store.put(op);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function archiveFailedOperations(rows: OfflineFailedOperation[]): Promise<void> {
+  if (!rows.length) return;
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(FAILED_STORE_NAME, "readwrite");
+    const store = tx.objectStore(FAILED_STORE_NAME);
+    for (const row of rows) store.put(row);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function listFailedOperations(): Promise<OfflineFailedOperation[]> {
+  const db = await openDb();
+  const rows = await new Promise<OfflineFailedOperation[]>((resolve, reject) => {
+    const tx = db.transaction(FAILED_STORE_NAME, "readonly");
+    const req = tx.objectStore(FAILED_STORE_NAME).getAll();
+    req.onsuccess = () => resolve((req.result || []) as OfflineFailedOperation[]);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return rows.sort((a, b) => b.failedAt.localeCompare(a.failedAt));
+}
+
+export async function removeFailedOperations(opIds: string[]): Promise<void> {
+  if (!opIds.length) return;
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(FAILED_STORE_NAME, "readwrite");
+    const store = tx.objectStore(FAILED_STORE_NAME);
+    for (const id of opIds) store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+
 
 export async function removeOperations(opIds: string[]): Promise<void> {
   if (!opIds.length) return;
