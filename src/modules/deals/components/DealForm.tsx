@@ -399,12 +399,20 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
                   <Select
                     value={v.stage}
                     onValueChange={val => {
+                      const prev = v.stage;
                       set("stage", val);
                       // Terminal stages pin the odds so the form never shows (or sends)
                       // a stale probability for a closed deal.
                       if (val === "won") set("probability", 100);
                       else if (val === "lost") set("probability", 0);
+                      else if (prev === "won" || prev === "lost") {
+                        // Re-opening a closed deal used to keep the pinned 0% / 100%,
+                        // which skews the weighted pipeline. Restore the stage default.
+                        const defaults: Record<string, number> = { lead: 20, qualified: 40, proposal: 60, negotiation: 80 };
+                        if (defaults[val] !== undefined) set("probability", defaults[val]);
+                      }
                     }}
+
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>

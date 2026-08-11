@@ -491,6 +491,22 @@ namespace MyApi.Modules.Deals.Services
                 // analytics.
                 if (newStage == "won") deal.Probability = 100;
                 else if (newStage == "lost") deal.Probability = 0;
+                // Re-opening a closed deal restored no forecast: the deal stayed pinned at
+                // 0% (from "lost") or 100% (from "won"), which skewed the weighted pipeline
+                // until someone retyped a value. When the caller does not send an explicit
+                // probability, fall back to the stage default.
+                else if (leavingTerminal && !dto.Probability.HasValue)
+                {
+                    deal.Probability = newStage switch
+                    {
+                        "lead" => 20,
+                        "qualified" => 40,
+                        "proposal" => 60,
+                        "negotiation" => 80,
+                        _ => deal.Probability,
+                    };
+                }
+
             }
 
 
