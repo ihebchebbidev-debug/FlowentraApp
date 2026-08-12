@@ -227,7 +227,7 @@ export function CreateConnection() {
 
     setSaving(true);
     try {
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         toCreate.map((entity: ConnectorEntityConfig) =>
           createEndpoint({
             name: `${connector.name} — ${entity.label}`,
@@ -243,9 +243,25 @@ export function CreateConnection() {
           }),
         ),
       );
-      setCreatedEndpoints(results.filter(Boolean) as ExternalEndpoint[]);
+      const created = results
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => (r as PromiseFulfilledResult<ExternalEndpoint>).value);
+      const failed = results.length - created.length;
+      if (failed > 0) {
+        toast.error(
+          t('external.toast.partialCreated', 'Some endpoints could not be created'),
+          {
+            description: t('external.toast.partialCreatedDesc', {
+              created: created.length,
+              total: results.length,
+              defaultValue: `${created.length} of ${results.length} endpoints were created. Retry the remaining ones.`,
+            }),
+          },
+        );
+      }
+      if (created.length > 0) setCreatedEndpoints(created);
     } catch (e: any) {
-      // Individual errors already shown by createEndpoint hook
+      toast.error(t('external.toast.error', 'Something went wrong'), { description: e?.message });
     } finally {
       setSaving(false);
     }

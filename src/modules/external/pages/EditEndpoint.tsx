@@ -35,7 +35,9 @@ export function EditEndpoint() {
   // View-all mode requires picking a target tenant before update mutations.
   const { targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
   const [saving, setSaving] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState<ExternalEndpoint | null>(null);
   const [form, setForm] = useState({
     name: '', description: '', isActive: true,
@@ -46,6 +48,8 @@ export function EditEndpoint() {
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
+    setLoadError(null);
     externalEndpointsApi.getById(Number(id)).then(ep => {
       setEndpoint(ep);
       setForm({
@@ -61,8 +65,13 @@ export function EditEndpoint() {
       const tid = (ep as any)?.tenantId;
       if (typeof tid === 'number') handleTenantChange(tid);
       setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [id]);
+    }).catch((err) => {
+      // Never fall through to an empty form — saving it would wipe the record.
+      setEndpoint(null);
+      setLoadError(err instanceof Error && err.message ? err.message : 'unknown');
+      setLoading(false);
+    });
+  }, [id, reloadKey]);
 
   const selectedMethods = form.allowedMethods.split(',').filter(Boolean);
   const toggleMethod = (method: string) => {
@@ -93,7 +102,7 @@ export function EditEndpoint() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !form.name.trim()) return;
+    if (!id || !endpoint || !form.name.trim()) return;
     if (isTenantRequired) {
       toast.error(t('external.toast.error'), { description: 'Please select a target company before saving changes.' });
       return;
@@ -113,6 +122,21 @@ export function EditEndpoint() {
   };
 
   if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+
+  if (loadError || !endpoint) {
+    return (
+      <div className="p-6 max-w-md mx-auto text-center space-y-4">
+        <p className="text-lg font-semibold text-foreground">{t('external.loadFailed', 'Failed to load endpoint')}</p>
+        <p className="text-sm text-muted-foreground">{t('external.loadFailedDesc', 'This endpoint could not be loaded. It may have been deleted or you may not have access.')}</p>
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/dashboard/external')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />{t('external.back')}
+          </Button>
+          <Button onClick={() => setReloadKey(k => k + 1)}>{t('external.retry', 'Retry')}</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-3xl mx-auto">

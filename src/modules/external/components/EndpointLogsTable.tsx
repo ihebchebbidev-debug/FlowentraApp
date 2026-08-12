@@ -58,6 +58,12 @@ export function EndpointLogsTable({ endpointId }: Props) {
   // Unique company IDs seen in current page — used for the filter dropdown.
   const companyIds = Array.from(new Set(logs.map(l => l.companyId).filter(Boolean) as string[])).sort();
   const filteredLogs = companyFilter ? logs.filter(l => l.companyId === companyFilter) : logs;
+  // Filtering is applied to the current page — reset to page 1 so the user
+  // never lands on a page with zero matching rows.
+  const changeCompanyFilter = (value: string) => {
+    setCompanyFilter(value);
+    setPage(1);
+  };
   const { sortKey, sortDirection, toggleSort, sortItems } = useTableSort<ExternalEndpointLog>({
     method: (l) => l.method,
     format: (l) => formatContentType(l.contentType)?.label ?? '',
@@ -176,7 +182,7 @@ export function EndpointLogsTable({ endpointId }: Props) {
               <select
                 className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground"
                 value={companyFilter}
-                onChange={e => setCompanyFilter(e.target.value)}
+                onChange={e => changeCompanyFilter(e.target.value)}
               >
                 <option value="">{t('external.logs.allCompanies', 'All companies')}</option>
                 {companyIds.map(id => <option key={id} value={id}>{id}</option>)}

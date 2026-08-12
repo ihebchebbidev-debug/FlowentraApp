@@ -12,7 +12,9 @@ export function ExternalModule() {
     <PluginGate code="PL0030EXTERNAL">
       <Routes>
         {/* Integration Hub — new entry point */}
-        <Route index element={<IntegrationHub />} />
+        <Route index element={
+          <PermissionRoute module="external_endpoints" action="read"><IntegrationHub /></PermissionRoute>
+        } />
 
         {/* ERP / connector setup wizard — must be before :id to avoid conflict */}
         <Route path="connect/:connectorId" element={
@@ -23,7 +25,9 @@ export function ExternalModule() {
         <Route path="create" element={
           <PermissionRoute module="external_endpoints" action="create"><CreateEndpoint /></PermissionRoute>
         } />
-        <Route path=":id" element={<EndpointDetail />} />
+        <Route path=":id" element={
+          <PermissionRoute module="external_endpoints" action="read"><EndpointDetail /></PermissionRoute>
+        } />
         <Route path=":id/edit" element={
           <PermissionRoute module="external_endpoints" action="update"><EditEndpoint /></PermissionRoute>
         } />

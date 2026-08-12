@@ -1,7 +1,8 @@
 {
   "plugin": {
-    "name": "APIs Externes",
-    "description": "Créez et gérez des points d'accès API pour recevoir des données de sources externes."
+    "name": "Hub d'intégration",
+    "description": "Connecteurs ERP, CRM, e-commerce et webhooks personnalisés.",
+    "category": "Système"
   },
   "external": {
     "title": "APIs Externes",
@@ -157,7 +158,11 @@
       "error": "Erreur",
       "createFailed": "Échec de la création du point d'accès",
       "updateFailed": "Échec de la mise à jour du point d'accès",
-      "deleteFailed": "Échec de la suppression du point d'accès"
+      "deleteFailed": "Échec de la suppression du point d'accès",
+      "keyRegenerateFailed": "Échec de la régénération de la clé API",
+      "partialCreated": "Certains points de terminaison n'ont pas pu être créés",
+      "keyRevealFailed": "Échec de l'affichage de la clé API",
+      "partialCreatedDesc": "{{created}} points de terminaison sur {{total}} ont été créés. Réessayez pour les autres."
     },
     "confirm": {
       "delete": "Supprimer le point d'accès",
@@ -196,7 +201,16 @@
     "cancel": "Annuler",
     "back": "Retour",
     "creating": "Création...",
-    "updating": "Mise à jour..."
+    "updating": "Mise à jour...",
+    "templates": {
+      "title": "Modèles de démarrage rapide",
+      "hint": "Cliquez sur un modèle pour pré-remplir le formulaire. Vous pouvez tout modifier ensuite.",
+      "applied": "Modèle appliqué : {{name}}",
+      "appliedDesc": "Vérifiez les champs ci-dessous et ajustez si nécessaire."
+    },
+    "loadFailed": "Échec du chargement du point de terminaison",
+    "loadFailedDesc": "Ce point de terminaison n'a pas pu être chargé. Il a peut-être été supprimé ou vous n'y avez pas accès.",
+    "retry": "Réessayer"
   },
   "hub": {
     "title": "Hub d'intégration",
@@ -243,10 +257,5 @@
     "endpointsCreated": "{{count}} point(s) d'accès créé(s)",
     "apiKeyHint": "Révélez et copiez la clé API depuis la page de détail du point d'accès, puis ajoutez-la comme en-tête X-API-Key dans votre système externe.",
     "viewEndpoint": "Voir le point d'accès"
-  },
-  "plugin": {
-    "name": "Hub d'intégration",
-    "description": "Connecteurs ERP, CRM, e-commerce et webhooks personnalisés.",
-    "category": "Système"
   }
 }

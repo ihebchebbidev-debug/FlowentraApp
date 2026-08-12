@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 import { ENDPOINT_TEMPLATES, type EndpointTemplate } from '../utils/endpointTemplates';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   /** Called with the chosen template's preset values. */
@@ -15,15 +16,16 @@ interface Props {
  * ExpectedSchema, ResponseTemplate, description).
  */
 export function TemplatesPicker({ onApply }: Props) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          Quick start templates
+          {t('external.templates.title', 'Quick start templates')}
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Click a template to pre-fill the form. You can edit anything after.
+          {t('external.templates.hint', 'Click a template to pre-fill the form. You can edit anything after.')}
         </p>
       </CardHeader>
       <CardContent>
@@ -34,9 +36,10 @@ export function TemplatesPicker({ onApply }: Props) {
               type="button"
               onClick={() => {
                 onApply(tpl.preset);
-                toast.success(`Template applied: ${tpl.label}`, {
-                  description: 'Review the fields below and adjust as needed.',
-                });
+                toast.success(
+                  t('external.templates.applied', { name: tpl.label, defaultValue: `Template applied: ${tpl.label}` }),
+                  { description: t('external.templates.appliedDesc', 'Review the fields below and adjust as needed.') },
+                );
               }}
               className="group text-left rounded-lg border border-border bg-card hover:bg-accent hover:border-primary/50 transition-colors p-3 focus:outline-none focus:ring-2 focus:ring-ring"
             >

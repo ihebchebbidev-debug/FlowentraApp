@@ -105,8 +105,13 @@ export function EndpointDetail() {
     try {
       const data = await externalEndpointsApi.getById(Number(id));
       setEndpoint(data);
-    } catch {} finally { setLoading(false); }
-  }, [id]);
+    } catch (err) {
+      setEndpoint(null);
+      toast.error(t('external.loadFailed', 'Failed to load endpoint'), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally { setLoading(false); }
+  }, [id, t]);
 
   useEffect(() => { fetchEndpoint(); }, [fetchEndpoint]);
 
@@ -138,10 +143,14 @@ export function EndpointDetail() {
         setKeyVisible(false);
       }
       toast.success(t('external.toast.keyRegenerated'), { description: t('external.toast.keyRegeneratedDesc') });
-    } catch {} finally {
+    } catch (err) {
+      toast.error(t('external.toast.keyRegenerateFailed', 'Failed to regenerate API key'), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
       clearTargetTenant();
+      setShowRegenDialog(false);
     }
-    setShowRegenDialog(false);
   };
 
   if (loading) return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;

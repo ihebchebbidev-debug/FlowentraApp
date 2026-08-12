@@ -1,7 +1,8 @@
 {
   "plugin": {
-    "name": "External APIs",
-    "description": "Create and manage custom API endpoints to receive data from external sources."
+    "name": "Integration Hub",
+    "description": "ERP, CRM, e-commerce connectors and custom webhooks.",
+    "category": "System"
   },
   "external": {
     "title": "External APIs",
@@ -157,7 +158,11 @@
       "error": "Error",
       "createFailed": "Failed to create endpoint",
       "updateFailed": "Failed to update endpoint",
-      "deleteFailed": "Failed to delete endpoint"
+      "deleteFailed": "Failed to delete endpoint",
+      "keyRegenerateFailed": "Failed to regenerate API key",
+      "partialCreated": "Some endpoints could not be created",
+      "keyRevealFailed": "Failed to reveal API key",
+      "partialCreatedDesc": "{{created}} of {{total}} endpoints were created. Retry the remaining ones."
     },
     "confirm": {
       "delete": "Delete Endpoint",
@@ -196,7 +201,16 @@
     "cancel": "Cancel",
     "back": "Back",
     "creating": "Creating...",
-    "updating": "Updating..."
+    "updating": "Updating...",
+    "templates": {
+      "title": "Quick start templates",
+      "hint": "Click a template to pre-fill the form. You can edit anything after.",
+      "applied": "Template applied: {{name}}",
+      "appliedDesc": "Review the fields below and adjust as needed."
+    },
+    "loadFailed": "Failed to load endpoint",
+    "loadFailedDesc": "This endpoint could not be loaded. It may have been deleted or you may not have access.",
+    "retry": "Retry"
   },
   "hub": {
     "title": "Integration Hub",
@@ -243,10 +257,5 @@
     "endpointsCreated": "{{count}} endpoint(s) created",
     "apiKeyHint": "Reveal and copy the API key from the endpoint detail page, then add it as the X-API-Key header in your external system.",
     "viewEndpoint": "View Endpoint"
-  },
-  "plugin": {
-    "name": "Integration Hub",
-    "description": "ERP, CRM, e-commerce connectors and custom webhooks.",
-    "category": "System"
   }
 }
