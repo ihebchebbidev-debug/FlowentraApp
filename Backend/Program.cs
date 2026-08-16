@@ -31,6 +31,7 @@ using MyApi.Modules.OfflineHydration.Services;
 using MyApi.Modules.WebsiteBuilder.Services;
 using MyApi.Modules.Sync.Services;
 using MyApi.Modules.Plugins.Services;
+using MyApi.Modules.OAS.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
@@ -290,6 +291,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// OAS module (isolated — see Backend/Modules/OAS/, public/OAS-BACKEND-BUILD-PROMPT.md §3.1).
+// This is 1 of the 3 lines touching Program.cs outside Backend/Modules/OAS/;
+// removing Backend/Modules/OAS/ plus these 3 lines (and this using
+// directive) restores the host app exactly as it was before.
+builder.Services.AddOasModule(builder.Configuration);
 
 // Data Protection (used to encrypt custom account passwords at rest)
 builder.Services.AddDataProtection();
@@ -1461,6 +1468,9 @@ app.UseAuthorization();
 // Multi-tenant middleware: reads X-Tenant header and stores tenant in HttpContext
 app.UseMiddleware<TenantMiddleware>();
 
+// OAS module — 2 of 3 lines (see AddOasModule above).
+app.UseOasTenantMiddleware();
+
 // Hidden DB console endpoint. Keep this as an explicit minimal endpoint in
 // Program.cs so it is always registered even if controller discovery/publish
 // misses the module controller on the live host.
@@ -1595,6 +1605,9 @@ app.MapGet("/api/sqlconsole/ping", () => Results.Ok(new { ok = true, route = "/a
    .WithName("SqlConsolePing");
 
 app.MapControllers();
+
+// OAS module — 3 of 3 lines (see AddOasModule above).
+app.MapOasEndpoints();
 
 // SignalR Hub for real-time workflow updates
 // SignalR Hub for real-time workflow updates (uses SignalRPolicy for CORS with credentials)

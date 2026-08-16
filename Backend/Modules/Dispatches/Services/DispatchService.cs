@@ -608,7 +608,7 @@ namespace MyApi.Modules.Dispatches.Services
                         // advisory lock keyed on (installation|service order, day).
                         var scopeKey = dto.InstallationId > 0
                             ? (long)dto.InstallationId
-                            : -(long)(serviceOrderId ?? 0);
+                            : -(long)serviceOrderId;
                         long lockKey = (scopeKey << 32)
                                      | (uint)(dto.ScheduledDate.Date - new DateTime(1970, 1, 1)).Days;
                         await _db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0})", lockKey);
