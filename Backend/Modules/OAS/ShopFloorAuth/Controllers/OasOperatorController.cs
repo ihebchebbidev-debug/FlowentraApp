@@ -19,7 +19,9 @@ public class OasOperatorController : OasControllerBase
         _shopFloorAuth = shopFloorAuth;
     }
 
+    /// <summary>Directory read — every other action here is admin/supervisor-only (spec §8.0's console-role model); this GET carried no restriction at all and let any authenticated OAS user, including a plain shop-floor operator token, enumerate every user's email/role/scope in the tenant.</summary>
     [HttpGet]
+    [OasAuthorize(Roles = "admin,supervisor")]
     public async Task<ActionResult<IReadOnlyList<OasOperatorDto>>> Search([FromQuery] string? q, [FromQuery] Guid? scopeSiteId, [FromQuery] Guid? scopeZoneId, [FromQuery] Guid? scopeLineId)
     {
         var rows = await _operators.SearchAsync(CurrentTenantId, q, scopeSiteId, scopeZoneId, scopeLineId);
@@ -30,8 +32,13 @@ public class OasOperatorController : OasControllerBase
     [OasAuthorize(Roles = "admin,supervisor")]
     public async Task<ActionResult<OasOperatorDto>> Create([FromBody] OasCreateOperatorRequestDto request)
     {
-        var (success, error, dto) = await _operators.CreateAsync(CurrentTenantId, request);
-        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        var (success, error, dto) = await _operators.CreateAsync(CurrentTenantId, request, CurrentOasRole);
+        if (!success)
+        {
+            return error == "admin_role_requires_admin_caller"
+                ? Problem(statusCode: 403, title: error)
+                : Problem(statusCode: 409, title: error ?? "conflict");
+        }
         return Ok(dto);
     }
 
