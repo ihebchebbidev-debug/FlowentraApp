@@ -44,18 +44,31 @@ public class OasAuthService : IOasAuthService
     }
 
     /// <summary>
-    /// Maintenance escape hatch (secret-gated in the controller): removes the
+    /// Maintenance escape hatch (secret-gated in the controller): retires the
     /// tenant's admin account(s) so the one-time /oas/setup bootstrap can be
-    /// replayed when the original credentials are lost. Tenant + soft-delete
-    /// scoping comes from OasDbContext's query filter.
+    /// replayed when the original credentials are lost. Soft-delete rather
+    /// than a hard DELETE — other OAS tables (declarations, audit, events)
+    /// reference the user id, so removing the row raises an FK violation.
+    /// The email is rewritten too, otherwise the unique (tenant, email)
+    /// index would reject re-creating the same address. Tenant +
+    /// soft-delete scoping comes from OasDbContext's query filter.
     /// </summary>
     public async Task<int> ResetAdminsAsync()
     {
         var admins = await _db.Users.Where(u => u.Role == OasAppRole.admin).ToListAsync();
         if (admins.Count == 0) return 0;
-        _db.Users.RemoveRange(admins);
+        var stamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        foreach (var admin in admins)
+        {
+            admin.IsDeleted = true;
+            admin.IsActive = false;
+            admin.RefreshToken = null;
+            admin.RefreshTokenExpiresAt = null;
+            admin.Email = $"retired+{stamp}+{admin.Email}";
+            admin.UpdatedAt = DateTimeOffset.UtcNow;
+        }
         await _db.SaveChangesAsync();
-        _logger.LogWarning("🏭 [OAS/AUTH] ⚠️ ResetAdmins removed {Count} admin account(s) for oas tenant '{Slug}'", admins.Count, _oasSlug);
+        _logger.LogWarning("🏭 [OAS/AUTH] ⚠️ ResetAdmins retired {Count} admin account(s) for oas tenant '{Slug}'", admins.Count, _oasSlug);
         return admins.Count;
     }
 
