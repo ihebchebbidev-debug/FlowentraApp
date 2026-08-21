@@ -29,5 +29,12 @@ public class OasChangeoverConfiguration : IEntityTypeConfiguration<OasChangeover
         b.Property(x => x.CreatedAt).HasColumnName("received_at");
         b.Ignore(x => x.UpdatedAt);
         b.HasIndex(x => x.ClientEventId).IsUnique();
+        // Backs the race guard in OasChangeoverService.CreateOrUpdateAsync:
+        // only one open (unfinished) changeover per post at a time. Declared
+        // here so the EF model matches reality, but since this module has no
+        // migrations (see OasDbContext's class doc), the physical index
+        // still has to be created by hand — see
+        // Database/20260820_open_changeover_index.sql.
+        b.HasIndex(x => x.PostId).IsUnique().HasFilter("ended_at IS NULL");
     }
 }

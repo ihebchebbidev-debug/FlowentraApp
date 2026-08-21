@@ -18,6 +18,8 @@ public class OasSyncReceiptDto
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset ReceivedAt { get; set; }
     public int Attempts { get; set; }
+    /// <summary>Set only when <see cref="Status"/> is "rejected" — the per-item failure reason, so a partial-batch failure is diagnosable instead of silently dropped.</summary>
+    public string? Error { get; set; }
 }
 public class OasSyncPushResponseDto { public List<OasSyncReceiptDto> Receipts { get; set; } = new(); }
 

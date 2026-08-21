@@ -24,7 +24,10 @@ public class OasShiftTemplateRequestDto
     [Required] public TimeOnly StartTime { get; set; }
     [Required] public TimeOnly EndTime { get; set; }
     public int BreakMinutes { get; set; }
+    public bool IsActive { get; set; } = true;
 }
+
+public class OasSetActiveRequestDto { public bool IsActive { get; set; } }
 
 public class OasShiftCalendarEntryDto
 {

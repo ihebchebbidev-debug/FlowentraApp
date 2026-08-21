@@ -27,12 +27,19 @@ public class OasIntegrationsController : OasControllerBase
     public async Task<ActionResult<IReadOnlyList<OasIntegrationEndpointDto>>> GetEndpoints() => Ok(await _service.GetEndpointsAsync(CurrentTenantId));
 
     [HttpPost("endpoints")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasIntegrationEndpointDto>> CreateEndpoint([FromBody] OasIntegrationEndpointCreateRequest request)
-        => Ok(await _service.CreateEndpointAsync(CurrentTenantId, request));
+    public async Task<IActionResult> CreateEndpoint([FromBody] OasIntegrationEndpointCreateRequest request)
+    {
+        var (success, error, dto) = await _service.CreateEndpointAsync(CurrentTenantId, request);
+        return success ? Ok(dto) : Problem(statusCode: 400, title: error);
+    }
 
     [HttpPut("endpoints/{id}")] [OasWorkspace("web")]
     public async Task<IActionResult> UpdateEndpoint(Guid id, [FromBody] OasIntegrationEndpointUpdateRequest request)
-        => await _service.UpdateEndpointAsync(CurrentTenantId, id, request) ? Ok(new { success = true }) : NotFound();
+    {
+        var (success, error) = await _service.UpdateEndpointAsync(CurrentTenantId, id, request);
+        if (success) return Ok(new { success = true });
+        return error == "not_found" ? NotFound() : Problem(statusCode: 400, title: error);
+    }
 
     [HttpDelete("endpoints/{id}")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
     public async Task<IActionResult> DeleteEndpoint(Guid id)

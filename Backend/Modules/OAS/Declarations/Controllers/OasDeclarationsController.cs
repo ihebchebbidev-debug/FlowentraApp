@@ -21,12 +21,28 @@ public class OasDeclarationsController : OasControllerBase
     }
 
     [HttpPost("production")]
-    public async Task<ActionResult<OasDeclarationDto>> CreateProduction([FromBody] OasProductionDeclarationRequestDto request)
-        => Ok(await _service.CreateProductionAsync(CurrentTenantId, CurrentOasUserId, request));
+    public async Task<IActionResult> CreateProduction([FromBody] OasProductionDeclarationRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateProductionAsync(CurrentTenantId, CurrentOasUserId, request);
+        return success ? Ok(dto) : RespondCreateError(error);
+    }
 
     [HttpPost("scrap")]
-    public async Task<ActionResult<OasDeclarationDto>> CreateScrap([FromBody] OasScrapDeclarationRequestDto request)
-        => Ok(await _service.CreateScrapAsync(CurrentTenantId, CurrentOasUserId, request));
+    public async Task<IActionResult> CreateScrap([FromBody] OasScrapDeclarationRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateScrapAsync(CurrentTenantId, CurrentOasUserId, request);
+        return success ? Ok(dto) : RespondCreateError(error);
+    }
+
+    /// <summary>Shared error mapping for the two create endpoints (BL gap fixes: server-side quantity/scrap-cause validation and the session-must-be-open check).</summary>
+    private IActionResult RespondCreateError(string? error) => error switch
+    {
+        "invalid_quantity" => BadRequest(new { error }),
+        "scrap_cause_required" => BadRequest(new { error }),
+        "post_session_required" => BadRequest(new { error }),
+        "session_already_closed" => Problem(statusCode: 409, title: error),
+        _ => BadRequest(new { error }),
+    };
 
     [HttpPut("{id}/correct")]
     public async Task<IActionResult> Correct(Guid id, [FromBody] OasCorrectDeclarationRequestDto request)
@@ -68,7 +84,7 @@ public class OasDeclarationsController : OasControllerBase
     public async Task<IActionResult> DeclareStop([FromBody] OasCreateEventRequestDto request)
     {
         var (success, error, dto) = await _events.CreateAsync(CurrentTenantId, CurrentOasUserId, request);
-        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        if (!success) return error == "post_out_of_scope" ? Problem(statusCode: 403, title: error) : Problem(statusCode: 409, title: error ?? "conflict");
         return Ok(dto);
     }
 

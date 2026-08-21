@@ -17,6 +17,9 @@ namespace MyApi.Modules.OAS.Common;
 /// </summary>
 public static class OasModuleRegistration
 {
+    /// <summary>The checked-in appsettings.json placeholder for Jwt:Key — deliberately not a usable secret, so a deployment that still has it must fail startup rather than sign tokens with a value visible in source control.</summary>
+    internal const string OasJwtKeyPlaceholder = "REPLACE_ME_IN_ENVIRONMENT";
+
     public static IServiceCollection AddOasModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
@@ -24,7 +27,18 @@ public static class OasModuleRegistration
         // Second, independent JWT Bearer scheme (spec §3.3, §8.0) — added
         // alongside the socle's default scheme via AddAuthentication()
         // (no default-scheme argument), never reconfiguring it.
-        var jwtKey = configuration["Jwt:Key"] ?? "YourSuperSecretKeyHere12345";
+        //
+        // No hardcoded fallback: a missing/placeholder key used to sign every
+        // OAS token with the same publicly-known literal in appsettings.json.
+        // Fail loudly at startup instead — a misconfigured deployment must
+        // not silently issue forgeable tokens.
+        var jwtKey = configuration["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == OasJwtKeyPlaceholder)
+        {
+            throw new InvalidOperationException(
+                "OAS JWT signing key is not configured. Set the 'Jwt:Key' configuration value " +
+                "(e.g. via the Jwt__Key environment variable) to a real secret before starting the application.");
+        }
         var jwtIssuer = configuration["Jwt:Issuer"] ?? "MyApi";
         services.AddAuthentication().AddJwtBearer(OasAuthSchemes.SchemeName, options =>
         {
@@ -117,6 +131,14 @@ public static class OasModuleRegistration
             var factory = sp.GetRequiredService<IOasDbContextFactory>();
             var ctx = factory.CreateDbContext(slug);
             ctx.SetTenantId(tenantId);
+
+            // "Who" for trg_oas_audit_* (set via Postgres session GUC in
+            // OasDbContext.SaveChanges*, never trusted as an authz claim).
+            // Absent for the two anonymous auth endpoints, which is fine —
+            // there's no authenticated actor to attribute those to yet.
+            var userIdClaim = httpContext.User.FindFirst("oas_user_id")?.Value;
+            if (Guid.TryParse(userIdClaim, out var userId)) ctx.SetCurrentUserId(userId);
+
             return ctx;
         });
 

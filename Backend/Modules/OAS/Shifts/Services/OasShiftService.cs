@@ -10,6 +10,7 @@ public interface IOasShiftService
     Task<IReadOnlyList<OasShiftTemplateDto>> GetTemplatesAsync(int tenantId);
     Task<(bool success, string? error, OasShiftTemplateDto? dto)> CreateTemplateAsync(int tenantId, OasShiftTemplateRequestDto request);
     Task<(bool success, string? error)> UpdateTemplateAsync(int tenantId, Guid id, OasShiftTemplateRequestDto request);
+    Task<(bool success, string? error)> SetTemplateActiveAsync(int tenantId, Guid id, bool isActive);
     Task<bool> DeleteTemplateAsync(int tenantId, Guid id);
 
     Task<IReadOnlyList<OasShiftCalendarEntryDto>> GetCalendarAsync(int tenantId, DateOnly from, DateOnly to);
@@ -43,7 +44,7 @@ public class OasShiftService : IOasShiftService
             TenantId = tenantId, SiteId = request.SiteId, Code = code, Name = request.Name,
             StartTime = request.StartTime, EndTime = request.EndTime,
             CrossesMidnight = request.EndTime < request.StartTime,
-            BreakMinutes = request.BreakMinutes,
+            BreakMinutes = request.BreakMinutes, IsActive = request.IsActive,
         };
         _db.Set<OasShiftTemplate>().Add(template);
         await _db.SaveChangesAsync();
@@ -59,7 +60,16 @@ public class OasShiftService : IOasShiftService
         template.SiteId = request.SiteId; template.Name = request.Name;
         template.StartTime = request.StartTime; template.EndTime = request.EndTime;
         template.CrossesMidnight = request.EndTime < request.StartTime;
-        template.BreakMinutes = request.BreakMinutes;
+        template.BreakMinutes = request.BreakMinutes; template.IsActive = request.IsActive;
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
+    public async Task<(bool success, string? error)> SetTemplateActiveAsync(int tenantId, Guid id, bool isActive)
+    {
+        var template = await _db.Set<OasShiftTemplate>().FindAsync(id);
+        if (template is null) return (false, "not_found");
+        template.IsActive = isActive;
         await _db.SaveChangesAsync();
         return (true, null);
     }

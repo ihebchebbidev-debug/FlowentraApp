@@ -25,7 +25,7 @@ public class OasDeclarationDto
 public class OasProductionDeclarationRequestDto
 {
     [Required] public Guid ClientEventId { get; set; }
-    public Guid? PostSessionId { get; set; }
+    [Required] public Guid? PostSessionId { get; set; }
     [Required] public Guid PostId { get; set; }
     public Guid? ProductionOrderId { get; set; }
     public Guid? ProductId { get; set; }
@@ -38,7 +38,7 @@ public class OasProductionDeclarationRequestDto
 public class OasScrapDeclarationRequestDto
 {
     [Required] public Guid ClientEventId { get; set; }
-    public Guid? PostSessionId { get; set; }
+    [Required] public Guid? PostSessionId { get; set; }
     [Required] public Guid PostId { get; set; }
     public Guid? ProductionOrderId { get; set; }
     public Guid? ProductId { get; set; }

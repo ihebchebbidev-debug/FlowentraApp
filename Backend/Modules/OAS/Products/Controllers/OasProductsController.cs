@@ -15,7 +15,12 @@ public class OasProductsController : OasControllerBase
     [HttpGet] public async Task<ActionResult<IReadOnlyList<OasProductDto>>> GetAll() => Ok(await _service.GetProductsAsync(CurrentTenantId));
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasProductDto>> Create([FromBody] OasProductRequestDto request) => Ok(await _service.CreateProductAsync(CurrentTenantId, request));
+    public async Task<IActionResult> Create([FromBody] OasProductRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateProductAsync(CurrentTenantId, request);
+        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        return Ok(dto);
+    }
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasProductRequestDto request)

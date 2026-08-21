@@ -27,12 +27,52 @@ public interface IOasPostSessionService
 public class OasPostSessionService : IOasPostSessionService
 {
     private readonly OasDbContext _db;
-    public OasPostSessionService(OasDbContext db) => _db = db;
+    private readonly System.Security.Claims.ClaimsPrincipal? _user;
+
+    public OasPostSessionService(OasDbContext db, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
+    {
+        _db = db;
+        _user = httpContextAccessor.HttpContext?.User;
+    }
+
+    private Guid? CallerScopeClaim(string type)
+    {
+        var claim = _user?.FindFirst(type)?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
+    }
+
+    /// <summary>Same BL-012 site/zone/line perimeter as OasDeclarationService.ScopedPostIdsAsync — mirrored here rather than shared because OasDbContext-scoped services don't share a common base for this helper.</summary>
+    private async Task<Guid[]?> ScopedPostIdsAsync()
+    {
+        var siteId = CallerScopeClaim("oas_scope_site_id");
+        var zoneId = CallerScopeClaim("oas_scope_zone_id");
+        var lineId = CallerScopeClaim("oas_scope_line_id");
+        if (siteId is null && zoneId is null && lineId is null) return null; // unrestricted
+
+        if (lineId is not null)
+            return await _db.Set<OasPost>().Where(p => p.LineId == lineId).Select(p => p.Id).ToArrayAsync();
+
+        var lines = _db.Set<OasLine>().AsQueryable();
+        if (zoneId is not null) lines = lines.Where(l => l.ZoneId == zoneId);
+        else if (siteId is not null)
+        {
+            var zoneIds = await _db.Set<OasZone>().Where(z => z.SiteId == siteId).Select(z => z.Id).ToArrayAsync();
+            lines = lines.Where(l => zoneIds.Contains(l.ZoneId));
+        }
+        var lineIds = await lines.Select(l => l.Id).ToArrayAsync();
+        return await _db.Set<OasPost>().Where(p => lineIds.Contains(p.LineId)).Select(p => p.Id).ToArrayAsync();
+    }
 
     public async Task<(bool success, string? error, OasPostSessionDto? dto)> OpenAsync(int tenantId, Guid userId, OasOpenSessionRequestDto request)
     {
         var existingByClientId = await _db.Set<OasPostSession>().FirstOrDefaultAsync(s => s.ClientEventId == request.ClientEventId);
         if (existingByClientId is not null) return (true, null, ToDto(existingByClientId)); // idempotent replay
+
+        var scopedPostIds = await ScopedPostIdsAsync();
+        if (scopedPostIds is not null && !scopedPostIds.Contains(request.PostId))
+        {
+            return (false, "post_out_of_scope", null);
+        }
 
         var activeForUser = await _db.Set<OasPostSession>().FirstOrDefaultAsync(s => s.UserId == userId && s.EndedAt == null);
         var activeForPost = await _db.Set<OasPostSession>().FirstOrDefaultAsync(s => s.PostId == request.PostId && s.EndedAt == null && s.UserId != userId);
@@ -60,10 +100,30 @@ public class OasPostSessionService : IOasPostSessionService
             StartedAt = DateTimeOffset.UtcNow, StartedVia = request.StartedVia,
         };
         _db.Set<OasPostSession>().Add(session);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // ux_oas_post_sessions_active_post (partial unique index on
+            // post_id where ended_at IS NULL, OasPostSessionConfiguration):
+            // the pre-check above is only optimistic — two near-simultaneous
+            // opens for the same post can both pass it. The DB is the real
+            // guard; on conflict, detach our losing insert and hand back
+            // whichever session actually won the race instead of a raw 500
+            // or a silent duplicate.
+            _db.Entry(session).State = EntityState.Detached;
+            var winner = await _db.Set<OasPostSession>().FirstOrDefaultAsync(s => s.PostId == request.PostId && s.EndedAt == null);
+            if (winner is not null) return (true, null, ToDto(winner));
+            return (false, "post_already_has_active_session", null);
+        }
 
         return (true, null, ToDto(session));
     }
+
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is Npgsql.PostgresException { SqlState: "23505" };
 
     public async Task<(bool success, string? error, OasPostSessionDto? dto)> RelayAsync(int tenantId, Guid sessionId, OasRelaySessionRequestDto request)
     {
@@ -100,16 +160,23 @@ public class OasPostSessionService : IOasPostSessionService
 
     public async Task<OasScanResultDto> ScanAsync(int tenantId, OasScanRequestDto request)
     {
-        var code = ExtractPostCode(request.Code);
-        if (code is null) return new OasScanResultDto { Resolved = false };
+        var extracted = ExtractPostCode(request.Code);
+        if (extracted is null) return new OasScanResultDto { Resolved = false };
 
-        var post = await _db.Set<OasPost>().FirstOrDefaultAsync(p => p.Code == code);
+        // The printed/mobile-scanned QR badge encodes the post's rotating
+        // QrToken (oas://post/<QrToken> — see Admin.tsx's QR generation),
+        // never the human-typed Code. Try QrToken first; fall back to Code
+        // so manual code entry (the app's own documented fallback) still
+        // works. Matching only Code — the previous behavior — meant a
+        // scanned QR badge could never resolve.
+        var post = await _db.Set<OasPost>().FirstOrDefaultAsync(p => p.QrToken == extracted)
+            ?? await _db.Set<OasPost>().FirstOrDefaultAsync(p => p.Code == extracted);
         return post is null
             ? new OasScanResultDto { Resolved = false }
             : new OasScanResultDto { Resolved = true, PostId = post.Id, PostCode = post.Code };
     }
 
-    /// <summary>Mirrors the 4 formats `parsePostCode` (session.ts:141) accepts: raw code, `oas://post/&lt;code&gt;`, a URL with `?post=`/`?code=`, or the code embedded as the last path segment.</summary>
+    /// <summary>Mirrors the 4 formats `parsePostCode` (session.ts:141) accepts: raw value, `oas://post/&lt;value&gt;`, a URL with `?post=`/`?code=`, or the value embedded as the last path segment. The extracted value may be either a QrToken (scanned badge) or a Code (manual entry) — the caller tries both.</summary>
     private static string? ExtractPostCode(string raw)
     {
         var trimmed = raw.Trim();

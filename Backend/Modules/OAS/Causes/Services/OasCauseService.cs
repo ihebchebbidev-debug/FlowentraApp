@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Modules.OAS.Causes.DTOs;
 using MyApi.Modules.OAS.Causes.Models;
 using MyApi.Modules.OAS.Common;
+using MyApi.Modules.OAS.Declarations.Models;
 using MyApi.Modules.OAS.Equipments.Models;
+using MyApi.Modules.OAS.Events.Models;
 
 namespace MyApi.Modules.OAS.Causes.Services;
 
@@ -15,8 +17,8 @@ public interface IOasCauseService
     Task<bool> SetCriticalityAsync(int tenantId, Guid id, string criticality);
     Task<bool> SetActiveAsync(int tenantId, Guid id, bool isActive);
     Task<(bool success, string? error, OasCauseDto? child)> AddChildAsync(int tenantId, Guid parentId, OasCauseRequestDto request);
-    Task<bool> RemoveChildAsync(int tenantId, Guid parentId, Guid childId);
-    Task<bool> DeleteAsync(int tenantId, Guid id);
+    Task<(bool success, string? error)> RemoveChildAsync(int tenantId, Guid parentId, Guid childId);
+    Task<(bool success, string? error)> DeleteAsync(int tenantId, Guid id);
     Task<IReadOnlyList<OasCauseUsageDto>> GetUsageAsync(int tenantId);
 
     Task<IReadOnlyList<OasCauseProposalDto>> GetProposalsAsync(int tenantId);
@@ -103,24 +105,38 @@ public class OasCauseService : IOasCauseService
         return (true, null, ToDto(child!));
     }
 
-    public async Task<bool> RemoveChildAsync(int tenantId, Guid parentId, Guid childId)
+    public async Task<(bool success, string? error)> RemoveChildAsync(int tenantId, Guid parentId, Guid childId)
     {
         var child = await _db.Set<OasCause>().FirstOrDefaultAsync(c => c.Id == childId && c.ParentId == parentId);
-        if (child is null) return false;
+        if (child is null) return (false, "not_found");
+        if (await IsCauseInUseAsync(childId)) return (false, "cause_in_use");
         _db.Set<OasCause>().Remove(child);
         await _db.SaveChangesAsync();
-        return true;
+        return (true, null);
     }
 
-    public async Task<bool> DeleteAsync(int tenantId, Guid id)
+    public async Task<(bool success, string? error)> DeleteAsync(int tenantId, Guid id)
     {
         var cause = await _db.Set<OasCause>().FindAsync(id);
-        if (cause is null) return false;
+        if (cause is null) return (false, "not_found");
+        if (await IsCauseInUseAsync(id)) return (false, "cause_in_use");
         // Orphan children rather than cascade-delete a whole branch silently.
         await _db.Set<OasCause>().Where(c => c.ParentId == id).ExecuteUpdateAsync(s => s.SetProperty(c => c.ParentId, (Guid?)null));
         _db.Set<OasCause>().Remove(cause);
         await _db.SaveChangesAsync();
-        return true;
+        return (true, null);
+    }
+
+    /// <summary>
+    /// Guards delete/remove-child against orphaning references: a cause is
+    /// "in use" if any declaration recorded it as ScrapCauseId, or any
+    /// event recorded it as CauseId (spec §6.1 "Usage des causes" — the
+    /// same two source tables GetUsageAsync's raw SQL counts).
+    /// </summary>
+    private async Task<bool> IsCauseInUseAsync(Guid id)
+    {
+        if (await _db.Set<OasDeclaration>().AnyAsync(d => d.ScrapCauseId == id)) return true;
+        return await _db.Set<OasEvent>().AnyAsync(e => e.CauseId == id);
     }
 
     public async Task<IReadOnlyList<OasCauseUsageDto>> GetUsageAsync(int tenantId)

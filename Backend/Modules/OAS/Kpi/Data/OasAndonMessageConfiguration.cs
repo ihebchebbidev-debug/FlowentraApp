@@ -11,6 +11,12 @@ public class OasAndonMessageConfiguration : IEntityTypeConfiguration<OasAndonMes
         b.ToTable("oas_andon_messages");
         b.HasKey(x => x.Id);
         b.Property(x => x.Id).HasColumnName("id");
+        // Column was already mapped and already carried real tenant_id
+        // values — the cross-tenant leak was that OasAndonMessage didn't
+        // implement IOasTenantEntity, so OasDbContext's reflection-based
+        // OnModelCreating never attached the per-tenant HasQueryFilter to
+        // this entity at all (this column mapping alone does nothing to
+        // scope queries). No mapping change needed here; see OasAndonMessage.cs.
         b.Property(x => x.TenantId).HasColumnName("tenant_id");
         b.Property(x => x.LineId).HasColumnName("line_id");
         b.Property(x => x.Message).HasColumnName("message");

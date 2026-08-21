@@ -68,6 +68,7 @@ public class OasEventsController : OasControllerBase
             "event_closed" => Problem(statusCode: 409, title: "event_closed"),
             "event_already_resolved" => Problem(statusCode: 409, title: "event_already_resolved"),
             "open_blocking_event_exists" => Problem(statusCode: 409, title: "open_blocking_event_exists"),
+            "post_out_of_scope" => Problem(statusCode: 403, title: "post_out_of_scope"),
             _ => BadRequest(new { error = result.error }),
         };
     }

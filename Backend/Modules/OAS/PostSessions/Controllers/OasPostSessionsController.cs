@@ -18,7 +18,7 @@ public class OasPostSessionsController : OasControllerBase
     public async Task<IActionResult> Open([FromBody] OasOpenSessionRequestDto request)
     {
         var (success, error, dto) = await _service.OpenAsync(CurrentTenantId, CurrentOasUserId, request);
-        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        if (!success) return error == "post_out_of_scope" ? Problem(statusCode: 403, title: error) : Problem(statusCode: 409, title: error ?? "conflict");
         return Ok(dto);
     }
 

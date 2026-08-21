@@ -27,7 +27,41 @@ public interface IOasAssignmentService
 public class OasAssignmentService : IOasAssignmentService
 {
     private readonly OasDbContext _db;
-    public OasAssignmentService(OasDbContext db) => _db = db;
+    private readonly System.Security.Claims.ClaimsPrincipal? _user;
+
+    public OasAssignmentService(OasDbContext db, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
+    {
+        _db = db;
+        _user = httpContextAccessor.HttpContext?.User;
+    }
+
+    private Guid? CallerScopeClaim(string type)
+    {
+        var claim = _user?.FindFirst(type)?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
+    }
+
+    /// <summary>Same BL-012 perimeter pattern as OasDeclarationService.ScopedPostIdsAsync: null means unrestricted, otherwise the post ids the caller may touch.</summary>
+    private async Task<Guid[]?> ScopedPostIdsAsync()
+    {
+        var siteId = CallerScopeClaim("oas_scope_site_id");
+        var zoneId = CallerScopeClaim("oas_scope_zone_id");
+        var lineId = CallerScopeClaim("oas_scope_line_id");
+        if (siteId is null && zoneId is null && lineId is null) return null; // unrestricted
+
+        if (lineId is not null)
+            return await _db.Set<OasPost>().Where(p => p.LineId == lineId).Select(p => p.Id).ToArrayAsync();
+
+        var lines = _db.Set<OasLine>().AsQueryable();
+        if (zoneId is not null) lines = lines.Where(l => l.ZoneId == zoneId);
+        else if (siteId is not null)
+        {
+            var zoneIds = await _db.Set<OasZone>().Where(z => z.SiteId == siteId).Select(z => z.Id).ToArrayAsync();
+            lines = lines.Where(l => zoneIds.Contains(l.ZoneId));
+        }
+        var lineIds = await lines.Select(l => l.Id).ToArrayAsync();
+        return await _db.Set<OasPost>().Where(p => lineIds.Contains(p.LineId)).Select(p => p.Id).ToArrayAsync();
+    }
 
     public async Task<IReadOnlyList<OasAssignmentDto>> GetAsync(int tenantId, Guid shiftTemplateId, DateOnly workDate, bool onlyPublished)
     {
@@ -81,17 +115,38 @@ public class OasAssignmentService : IOasAssignmentService
 
     public async Task<int> AutoFillAsync(int tenantId, Guid actorId, Guid shiftTemplateId, DateOnly workDate)
     {
+        var scopedPostIds = await ScopedPostIdsAsync();
+
         var assignedPostIds = await _db.Set<OasAssignment>()
             .Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate)
             .Select(a => a.PostId).ToListAsync();
-        var emptyPosts = await _db.Set<OasPost>().Where(p => p.IsActive && !assignedPostIds.Contains(p.Id)).OrderBy(p => p.SortOrder).ToListAsync();
+        var emptyPostsQuery = _db.Set<OasPost>().Where(p => p.IsActive && !assignedPostIds.Contains(p.Id));
+        if (scopedPostIds is not null) emptyPostsQuery = emptyPostsQuery.Where(p => scopedPostIds.Contains(p.Id));
+        var emptyPosts = await emptyPostsQuery.OrderBy(p => p.SortOrder).ToListAsync();
 
         var alreadyAssignedUserIds = await _db.Set<OasAssignment>()
             .Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate)
             .Select(a => a.UserId).ToListAsync();
-        var availableOperators = await _db.Set<OasUser>()
-            .Where(u => u.IsActive && u.Role == OasAppRole.@operator && !alreadyAssignedUserIds.Contains(u.Id))
-            .OrderBy(u => u.DisplayName).ToListAsync();
+        var operatorsQuery = _db.Set<OasUser>()
+            .Where(u => u.IsActive && u.Role == OasAppRole.@operator && !alreadyAssignedUserIds.Contains(u.Id));
+
+        // Same perimeter as the caller's own scope claims, applied to the
+        // OPERATOR's own Scope*Id fields — an operator scoped to a
+        // different site/zone/line than the caller is not eligible for
+        // auto-fill by this caller. An operator with no scope set at all
+        // remains eligible everywhere, matching how ScopedPostIdsAsync
+        // treats an unscoped caller as unrestricted.
+        var siteId = CallerScopeClaim("oas_scope_site_id");
+        var zoneId = CallerScopeClaim("oas_scope_zone_id");
+        var lineId = CallerScopeClaim("oas_scope_line_id");
+        if (lineId is not null)
+            operatorsQuery = operatorsQuery.Where(u => u.ScopeLineId == lineId || (u.ScopeSiteId == null && u.ScopeZoneId == null && u.ScopeLineId == null));
+        else if (zoneId is not null)
+            operatorsQuery = operatorsQuery.Where(u => u.ScopeZoneId == zoneId || (u.ScopeSiteId == null && u.ScopeZoneId == null && u.ScopeLineId == null));
+        else if (siteId is not null)
+            operatorsQuery = operatorsQuery.Where(u => u.ScopeSiteId == siteId || (u.ScopeSiteId == null && u.ScopeZoneId == null && u.ScopeLineId == null));
+
+        var availableOperators = await operatorsQuery.OrderBy(u => u.DisplayName).ToListAsync();
 
         var filled = 0;
         foreach (var (post, operatorUser) in emptyPosts.Zip(availableOperators))
@@ -109,7 +164,10 @@ public class OasAssignmentService : IOasAssignmentService
 
     public async Task<int> ClearAllAsync(int tenantId, Guid shiftTemplateId, DateOnly workDate)
     {
-        var rows = await _db.Set<OasAssignment>().Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate).ToListAsync();
+        var scopedPostIds = await ScopedPostIdsAsync();
+        var q = _db.Set<OasAssignment>().Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate);
+        if (scopedPostIds is not null) q = q.Where(a => scopedPostIds.Contains(a.PostId));
+        var rows = await q.ToListAsync();
         _db.Set<OasAssignment>().RemoveRange(rows);
         await _db.SaveChangesAsync();
         return rows.Count;
@@ -117,7 +175,9 @@ public class OasAssignmentService : IOasAssignmentService
 
     public async Task<int> PublishAsync(int tenantId, Guid shiftTemplateId, DateOnly workDate, Guid? postId)
     {
+        var scopedPostIds = await ScopedPostIdsAsync();
         var q = _db.Set<OasAssignment>().Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate);
+        if (scopedPostIds is not null) q = q.Where(a => scopedPostIds.Contains(a.PostId));
         if (postId is not null) q = q.Where(a => a.PostId == postId);
         var rows = await q.ToListAsync();
         var now = DateTimeOffset.UtcNow;
@@ -128,8 +188,16 @@ public class OasAssignmentService : IOasAssignmentService
 
     public async Task<OasAssignmentCountsDto> GetCountsAsync(int tenantId, Guid shiftTemplateId, DateOnly workDate)
     {
-        var totalPosts = await _db.Set<OasPost>().CountAsync(p => p.IsActive);
-        var rows = await _db.Set<OasAssignment>().Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate).ToListAsync();
+        var scopedPostIds = await ScopedPostIdsAsync();
+
+        var postsQuery = _db.Set<OasPost>().Where(p => p.IsActive);
+        if (scopedPostIds is not null) postsQuery = postsQuery.Where(p => scopedPostIds.Contains(p.Id));
+        var totalPosts = await postsQuery.CountAsync();
+
+        var rowsQuery = _db.Set<OasAssignment>().Where(a => a.ShiftTemplateId == shiftTemplateId && a.WorkDate == workDate);
+        if (scopedPostIds is not null) rowsQuery = rowsQuery.Where(a => scopedPostIds.Contains(a.PostId));
+        var rows = await rowsQuery.ToListAsync();
+
         return new OasAssignmentCountsDto { TotalPosts = totalPosts, Assigned = rows.Count, Published = rows.Count(r => r.PublishedAt != null) };
     }
 

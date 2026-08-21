@@ -17,7 +17,14 @@ public class OasUserConfiguration : IEntityTypeConfiguration<OasUser>
         b.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
         b.Property(x => x.EmployeeCode).HasColumnName("employee_code").HasMaxLength(50);
         b.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
-        b.Property(x => x.Pin).HasColumnName("pin").HasMaxLength(20);
+        // Widened from 20: a PBKDF2-hashed PIN (OasPinHasher, format
+        // "{iterations}.{base64 salt}.{base64 hash}") runs ~76 chars, well
+        // past the old plaintext-4-6-digit column width. NOTE: this only
+        // changes the EF model — the physical Postgres column (created by
+        // hand per the OAS module's schema scripts, not by an EF migration)
+        // must also be widened before deploying, e.g.:
+        //   ALTER TABLE oas_users ALTER COLUMN pin TYPE varchar(200);
+        b.Property(x => x.Pin).HasColumnName("pin").HasMaxLength(200);
         b.Property(x => x.QrToken).HasColumnName("qr_token").HasMaxLength(255);
         // Native Postgres enums (oas_app_role, oas_workspace) — mapped via
         // NpgsqlDataSourceBuilder in OasNpgsqlEnums, NOT HasConversion<string>:

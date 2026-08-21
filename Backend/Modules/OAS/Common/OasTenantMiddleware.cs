@@ -5,12 +5,19 @@ namespace MyApi.Modules.OAS.Common;
 /// Reuses the socle's X-Tenant resolution as-is — never modifies
 /// TenantMiddleware — and only acts on OAS routes:
 ///
-///   • X-Tenant does not end in "oas" on an api/oas/* route  → 400 oas_tenant_required
+///   • X-Tenant does not end in "oas" on an api/oas/* route  → default to the
+///     "testoas" tenant (see DefaultOasSlug) so hosts without a proper *oas
+///     slug (localhost, a raw IP, a preview deploy, a client that forgot the
+///     header) still work against the test database instead of hard-failing.
 ///   • X-Tenant ends in "oas" but has no dedicated database   → 503 oas_tenant_not_provisioned
+///     — this still fails closed: a real, named tenant that just isn't
+///     provisioned yet is never silently redirected to another tenant's data.
 ///   • Otherwise                                              → stash the slug for
 ///     the scoped OasDbContext factory (see OasModuleRegistration) and continue.
 ///
-/// api/oas/health and api/oas/setup are exempt from the 400 (point 5).
+/// api/oas/health and api/oas/setup are exempt from the *oas requirement
+/// (point 5) — they report/bootstrap explicitly by slug and must not be
+/// silently redirected to the default tenant.
 /// Non-OAS routes are untouched — this middleware is a no-op for them.
 ///
 /// api/oas/stream is a browser EventSource connection — it cannot set any
@@ -26,6 +33,9 @@ public class OasTenantMiddleware
 
     private static readonly string[] CrossSlugExemptPaths = { "/api/oas/health", "/api/oas/setup" };
     private const string StreamPath = "/api/oas/stream";
+
+    /// <summary>Tenant used for any request whose host/X-Tenant doesn't resolve to a real *oas slug — must itself be a provisioned *oas tenant (TENANT_TESTOAS_DATABASE_URL).</summary>
+    public const string DefaultOasSlug = "testoas";
 
     public OasTenantMiddleware(RequestDelegate next, ILogger<OasTenantMiddleware> logger)
     {
@@ -61,10 +71,8 @@ public class OasTenantMiddleware
                 return;
             }
 
-            _logger.LogWarning("🏭 OAS-TENANT: rejected {Path} — X-Tenant '{Slug}' does not end in 'oas'", path, slug ?? "(none)");
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsJsonAsync(new { error = "oas_tenant_required" });
-            return;
+            _logger.LogWarning("🏭 OAS-TENANT: {Path} — X-Tenant '{Slug}' does not end in 'oas', defaulting to '{Default}'", path, slug ?? "(none)", DefaultOasSlug);
+            slug = DefaultOasSlug;
         }
 
         try

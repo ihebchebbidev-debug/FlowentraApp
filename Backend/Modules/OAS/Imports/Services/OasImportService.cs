@@ -28,6 +28,9 @@ public class OasImportService : IOasImportService
 {
     private static readonly HashSet<string> SupportedKinds = new(StringComparer.OrdinalIgnoreCase) { "products", "causes", "equipment" };
 
+    /// <summary>Hard cap on rows accepted per import — <see cref="OasImportCreateRequestDto.Rows"/> had no size limit, so an unbounded payload could be posted straight into <c>oas_import_lines</c> (one row per line) before any processing even begins.</summary>
+    private const int MaxRows = 5_000;
+
     private readonly OasDbContext _db;
     public OasImportService(OasDbContext db) => _db = db;
 
@@ -54,6 +57,11 @@ public class OasImportService : IOasImportService
         if (!SupportedKinds.Contains(request.Kind))
         {
             return (false, $"unsupported_dataset_type: {request.Kind}", null);
+        }
+
+        if (request.Rows.Count > MaxRows)
+        {
+            return (false, "too_many_rows", null);
         }
 
         var import = new OasImport { TenantId = tenantId, Kind = request.Kind, Status = OasImportStatus.pending, RowsTotal = request.Rows.Count, ImportedBy = importedBy };

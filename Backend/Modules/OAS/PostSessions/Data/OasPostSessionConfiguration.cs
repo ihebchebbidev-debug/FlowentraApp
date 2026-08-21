@@ -25,5 +25,11 @@ public class OasPostSessionConfiguration : IEntityTypeConfiguration<OasPostSessi
         b.Property(x => x.CreatedAt).HasColumnName("created_at");
         b.Ignore(x => x.UpdatedAt);
         b.HasIndex(x => x.ClientEventId).IsUnique();
+        // Backs the race guard in OasPostSessionService.OpenAsync: only one
+        // active (unended) session per post at a time. Declared here so the
+        // EF model matches reality, but since this module has no migrations
+        // (see OasDbContext's class doc), the physical index still has to be
+        // created by hand — see Database/20260820_active_session_index.sql.
+        b.HasIndex(x => x.PostId).IsUnique().HasFilter("ended_at IS NULL");
     }
 }

@@ -9,7 +9,7 @@ public interface IOasCadenceService
 {
     Task<IReadOnlyList<OasCadenceDto>> GetAllAsync(int tenantId);
     Task<OasCadenceDto> UpsertNewVersionAsync(int tenantId, Guid? actorId, OasCadenceRequestDto request);
-    Task<bool> UpdateAsync(int tenantId, Guid id, OasCadenceRequestDto request);
+    Task<bool> UpdateAsync(int tenantId, Guid? actorId, Guid id, OasCadenceRequestDto request);
     Task<bool> DeleteAsync(int tenantId, Guid id);
     Task<IReadOnlyList<OasCadenceVersionDto>> GetHistoryAsync(int tenantId, Guid id);
     Task<OasCadenceDto?> GetCurrentAsync(int tenantId, Guid postId, Guid productId);
@@ -55,14 +55,22 @@ public class OasCadenceService : IOasCadenceService
         return ToDto(current);
     }
 
-    public async Task<bool> UpdateAsync(int tenantId, Guid id, OasCadenceRequestDto request)
+    /// <summary>
+    /// PUT /{id} historically mutated OasRouting in place, silently
+    /// overwriting the "current" row without ever appending to
+    /// OasRoutingVersion — defeating the append-only history design that
+    /// UpsertNewVersionAsync (the POST path) already implements correctly.
+    /// Now delegates to that same path so every write, PUT or POST, leaves
+    /// the old rate/version visible in history. Response shape for the PUT
+    /// route (200 + {success:true}, or 404) is unchanged; only the id route
+    /// param decides existence — the actual version row is created from
+    /// request.ProductId/PostId, same as the POST path.
+    /// </summary>
+    public async Task<bool> UpdateAsync(int tenantId, Guid? actorId, Guid id, OasCadenceRequestDto request)
     {
-        var routing = await _db.Set<OasRouting>().FindAsync(id);
-        if (routing is null) return false;
-        routing.Rate = request.Rate;
-        routing.OperatorsRequired = request.OperatorsRequired;
-        routing.ChangeoverTargetMin = request.ChangeoverTargetMin;
-        await _db.SaveChangesAsync();
+        var exists = await _db.Set<OasRouting>().AnyAsync(r => r.Id == id);
+        if (!exists) return false;
+        await UpsertNewVersionAsync(tenantId, actorId, request);
         return true;
     }
 

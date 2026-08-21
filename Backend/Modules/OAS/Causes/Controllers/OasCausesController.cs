@@ -49,11 +49,19 @@ public class OasCausesController : OasControllerBase
 
     [HttpDelete("{id}/children/{childId}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> RemoveChild(Guid id, Guid childId)
-        => await _service.RemoveChildAsync(CurrentTenantId, id, childId) ? Ok(new { success = true }) : NotFound();
+    {
+        var (success, error) = await _service.RemoveChildAsync(CurrentTenantId, id, childId);
+        if (success) return Ok(new { success = true });
+        return error == "not_found" ? NotFound() : BadRequest(new { error });
+    }
 
     [HttpDelete("{id}")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
     public async Task<IActionResult> Delete(Guid id)
-        => await _service.DeleteAsync(CurrentTenantId, id) ? Ok(new { success = true }) : NotFound();
+    {
+        var (success, error) = await _service.DeleteAsync(CurrentTenantId, id);
+        if (success) return Ok(new { success = true });
+        return error == "not_found" ? NotFound() : BadRequest(new { error });
+    }
 }
 
 [Route("api/oas/cause-proposals")]

@@ -12,7 +12,7 @@ public class OasPostsController : OasControllerBase
     private readonly IOasHierarchyService _service;
     public OasPostsController(IOasHierarchyService service) => _service = service;
 
-    [HttpGet] public async Task<ActionResult<IReadOnlyList<OasPostDto>>> GetAll([FromQuery] Guid? lineId) => Ok(await _service.GetPostsAsync(CurrentTenantId, lineId));
+    [HttpGet] public async Task<ActionResult<IReadOnlyList<OasPostDto>>> GetAll([FromQuery] Guid? lineId, [FromQuery] bool includeArchived = false) => Ok(await _service.GetPostsAsync(CurrentTenantId, lineId, includeArchived));
 
     [HttpGet("{id}")]
     public async Task<ActionResult<OasPostDto>> GetOne(Guid id)
@@ -44,8 +44,17 @@ public class OasPostsController : OasControllerBase
         => await _service.SetPostCriticalAsync(CurrentTenantId, id, request.IsCritical) ? Ok(new { success = true }) : NotFound();
 
     [HttpPost("{id}/archive")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
-    public async Task<IActionResult> Archive(Guid id)
-        => await _service.ArchivePostAsync(CurrentTenantId, id) ? Ok(new { success = true }) : NotFound();
+    public async Task<IActionResult> Archive(Guid id) => RespondScoped(await _service.ArchivePostAsync(CurrentTenantId, id));
+
+    [HttpPost("{id}/restore")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
+    public async Task<IActionResult> Restore(Guid id) => RespondScoped(await _service.RestorePostAsync(CurrentTenantId, id));
+
+    private IActionResult RespondScoped((bool success, string? error) result) => result switch
+    {
+        (true, _) => Ok(new { success = true }),
+        (false, "out_of_scope") => Problem(statusCode: 403, title: "out_of_scope"),
+        _ => NotFound(),
+    };
 
     [HttpGet("{id}/capacity")]
     public async Task<ActionResult<int>> Capacity(Guid id) => Ok(new { operatorsRequired = await _service.GetPostCapacityAsync(CurrentTenantId, id) });

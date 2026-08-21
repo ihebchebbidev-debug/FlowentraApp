@@ -29,6 +29,14 @@ public class OasShiftsController : OasControllerBase
         return Ok(new { success = true });
     }
 
+    [HttpPut("{id}/active")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
+    public async Task<IActionResult> SetActive(Guid id, [FromBody] OasSetActiveRequestDto request)
+    {
+        var (success, error) = await _service.SetTemplateActiveAsync(CurrentTenantId, id, request.IsActive);
+        if (!success) return error == "not_found" ? NotFound() : BadRequest(new { error });
+        return Ok(new { success = true });
+    }
+
     [HttpDelete("{id}")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
     public async Task<IActionResult> Delete(Guid id)
         => await _service.DeleteTemplateAsync(CurrentTenantId, id) ? Ok(new { success = true }) : NotFound();

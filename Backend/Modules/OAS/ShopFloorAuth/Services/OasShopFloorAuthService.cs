@@ -69,10 +69,28 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
             return new OasAuthResponseDto { Success = false, Message = "Account is temporarily locked. Try again later." };
         }
 
-        // Plaintext comparison — pin is intentionally stored as text (spec
-        // §8.1: an operator can't self-reset it, a supervisor re-reads or
-        // regenerates it), never hashed.
-        if (string.IsNullOrEmpty(user.Pin) || user.Pin != request.Pin)
+        // PBKDF2-hashed comparison (OasPinHasher) — pin used to be stored and
+        // compared as plaintext. Existing rows may still hold a legacy
+        // plaintext 4-6 digit PIN (LooksLikeHash returns false for those);
+        // a matching plaintext PIN is accepted for this one login and the
+        // row is immediately upgraded to a hash, so every account is
+        // transparently migrated on its next successful login with no
+        // separate migration script and no forced PIN reset.
+        var pinValid = false;
+        if (!string.IsNullOrEmpty(user.Pin))
+        {
+            if (OasPinHasher.LooksLikeHash(user.Pin))
+            {
+                pinValid = OasPinHasher.Verify(request.Pin, user.Pin);
+            }
+            else if (user.Pin == request.Pin)
+            {
+                pinValid = true;
+                user.Pin = OasPinHasher.Hash(request.Pin);
+            }
+        }
+
+        if (!pinValid)
         {
             user.FailedLoginAttempts++;
             if (user.FailedLoginAttempts >= MaxFailedAttempts)
@@ -166,11 +184,14 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
         if (user is null) return new OasPinRegenerateResponseDto { Success = false, Message = "Operator not found." };
 
         var newPin = RandomNumberGenerator.GetInt32(0, 10_000).ToString("D4");
-        user.Pin = newPin;
+        user.Pin = OasPinHasher.Hash(newPin);
         user.FailedLoginAttempts = 0;
         user.LockedUntil = null;
         await _db.SaveChangesAsync();
 
+        // The raw PIN is returned once here (spec §8.1: only the
+        // regenerate-pin endpoint ever exposes it, never a GET) so it can be
+        // communicated to the operator — only the hash is persisted.
         return new OasPinRegenerateResponseDto { Success = true, Pin = newPin };
     }
 }

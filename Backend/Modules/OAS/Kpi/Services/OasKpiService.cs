@@ -200,13 +200,18 @@ public class OasKpiService : IOasKpiService
 
     public async Task<OasAndonMessageDto?> GetAndonMessageAsync(int tenantId, Guid? lineId)
     {
-        var msg = await _db.Set<OasAndonMessage>().FirstOrDefaultAsync(m => m.LineId == lineId);
+        // Explicit tenant filter in addition to the global query filter
+        // (OasAndonMessage now implements IOasTenantEntity, so OasDbContext
+        // already scopes this — belt-and-suspenders so this query stays
+        // correct even if it's ever run with the filter bypassed, e.g.
+        // IgnoreQueryFilters or _currentTenantId == -1 admin tooling).
+        var msg = await _db.Set<OasAndonMessage>().FirstOrDefaultAsync(m => m.TenantId == tenantId && m.LineId == lineId);
         return msg is null ? null : new OasAndonMessageDto { LineId = msg.LineId, Message = msg.Message };
     }
 
     public async Task<OasAndonMessageDto> SetAndonMessageAsync(int tenantId, Guid? actorId, OasAndonMessageRequestDto request)
     {
-        var msg = await _db.Set<OasAndonMessage>().FirstOrDefaultAsync(m => m.LineId == request.LineId);
+        var msg = await _db.Set<OasAndonMessage>().FirstOrDefaultAsync(m => m.TenantId == tenantId && m.LineId == request.LineId);
         if (msg is null)
         {
             msg = new OasAndonMessage { TenantId = tenantId, LineId = request.LineId };

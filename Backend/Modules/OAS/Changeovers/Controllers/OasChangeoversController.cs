@@ -16,7 +16,7 @@ public class OasChangeoversController : OasControllerBase
     public async Task<IActionResult> CreateOrUpdate([FromBody] OasChangeoverRequestDto request)
     {
         var (success, error, dto) = await _service.CreateOrUpdateAsync(CurrentTenantId, CurrentOasUserId, request);
-        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        if (!success) return error == "post_out_of_scope" ? Problem(statusCode: 403, title: error) : Problem(statusCode: 409, title: error ?? "conflict");
         return Ok(dto);
     }
 
@@ -26,7 +26,9 @@ public class OasChangeoversController : OasControllerBase
         var (success, error, dto) = await _service.FinishAsync(CurrentTenantId, CurrentOasUserId, id);
         if (!success)
         {
-            return error == "not_found" ? NotFound() : Problem(statusCode: 409, title: error);
+            if (error == "not_found") return NotFound();
+            if (error == "post_out_of_scope") return Problem(statusCode: 403, title: error);
+            return Problem(statusCode: 409, title: error);
         }
         return Ok(dto);
     }

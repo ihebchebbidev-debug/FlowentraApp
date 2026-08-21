@@ -24,12 +24,23 @@ namespace MyApi.Modules.OAS.Common;
 public class OasDbContext : DbContext
 {
     private int _currentTenantId = 0;
+    private Guid? _currentUserId;
 
     public OasDbContext(DbContextOptions<OasDbContext> options) : base(options) { }
 
     /// <summary>-1 = view all tenants within this OAS database (reserved for future admin tooling; not used in the initial phase).</summary>
     public void SetTenantId(int tenantId) => _currentTenantId = tenantId;
     public int GetTenantId() => _currentTenantId;
+
+    /// <summary>
+    /// The authenticated OAS caller for this request (from the `oas_user_id`
+    /// JWT claim — see OasModuleRegistration's DbContext factory). Null for
+    /// the two anonymous auth endpoints. Used only to stamp `trg_oas_audit_*`
+    /// rows with who made the change (see SaveChanges below) — never used
+    /// for authorization, which stays on the controller/service claims.
+    /// </summary>
+    public void SetCurrentUserId(Guid? userId) => _currentUserId = userId;
+    public Guid? GetCurrentUserId() => _currentUserId;
 
     public DbSet<OasPluginActivation> PluginActivations => Set<OasPluginActivation>();
     public DbSet<OasUser> Users => Set<OasUser>();
@@ -97,13 +108,54 @@ public class OasDbContext : DbContext
     public override int SaveChanges()
     {
         StampAudit();
-        return base.SaveChanges();
+        if (_currentUserId is null) return base.SaveChanges();
+
+        var ownsTransaction = Database.CurrentTransaction is null;
+        var tx = ownsTransaction ? Database.BeginTransaction() : null;
+        try
+        {
+            // is_local=true (SET LOCAL semantics): visible to trg_oas_audit_*
+            // for the rest of this transaction only, then reset automatically
+            // — never leaks onto a pooled connection's next, unrelated use.
+            Database.ExecuteSqlInterpolated($"SELECT set_config('oas.current_user_id', {_currentUserId.Value.ToString()}, true)");
+            var result = base.SaveChanges();
+            tx?.Commit();
+            return result;
+        }
+        catch
+        {
+            tx?.Rollback();
+            throw;
+        }
+        finally
+        {
+            tx?.Dispose();
+        }
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         StampAudit();
-        return base.SaveChangesAsync(cancellationToken);
+        if (_currentUserId is null) return await base.SaveChangesAsync(cancellationToken);
+
+        var ownsTransaction = Database.CurrentTransaction is null;
+        var tx = ownsTransaction ? await Database.BeginTransactionAsync(cancellationToken) : null;
+        try
+        {
+            await Database.ExecuteSqlInterpolatedAsync($"SELECT set_config('oas.current_user_id', {_currentUserId.Value.ToString()}, true)", cancellationToken);
+            var result = await base.SaveChangesAsync(cancellationToken);
+            if (tx is not null) await tx.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            if (tx is not null) await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+        finally
+        {
+            if (tx is not null) await tx.DisposeAsync();
+        }
     }
 
     private void StampAudit()

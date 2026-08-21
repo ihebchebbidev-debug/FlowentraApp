@@ -1,0 +1,77 @@
+using System.Security.Cryptography;
+
+namespace MyApi.Modules.OAS.ShopFloorAuth.Services;
+
+/// <summary>
+/// PBKDF2-based hashing for shop-floor PINs (spec §8.1). Replaces the
+/// previous plaintext storage/comparison (user.Pin was compared with a
+/// plain `!=`, and set directly on RegeneratePinAsync) without adding a
+/// NuGet dependency — everything here is .NET's built-in
+/// <see cref="Rfc2898DeriveBytes"/>.
+///
+/// Stored format is a single self-describing string:
+///   "{iterations}.{base64 salt}.{base64 hash}"
+/// so the work factor can be raised later without invalidating PINs hashed
+/// under a previous iteration count, and so <see cref="LooksLikeHash"/> can
+/// tell a hashed value apart from a still-plaintext legacy PIN (4-6 plain
+/// digits, no dots) for the lazy migration in OasShopFloorAuthService.
+/// </summary>
+public static class OasPinHasher
+{
+    private const int Iterations = 100_000;
+    private const int SaltSizeBytes = 16;
+    private const int HashSizeBytes = 32;
+    private static readonly HashAlgorithmName Algorithm = HashAlgorithmName.SHA256;
+
+    /// <summary>Hashes a plaintext PIN into the self-describing stored format. Call this everywhere a PIN is set (initial creation, regenerate) — never assign a raw PIN to user.Pin.</summary>
+    public static string Hash(string pin)
+    {
+        if (string.IsNullOrEmpty(pin))
+        {
+            throw new ArgumentException("PIN must not be empty.", nameof(pin));
+        }
+
+        var salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, Iterations, Algorithm, HashSizeBytes);
+        return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
+    }
+
+    /// <summary>
+    /// True if <paramref name="stored"/> has this class's "{iterations}.{salt}.{hash}"
+    /// shape. A legacy plaintext PIN (short, all-digit, no dots) returns false —
+    /// callers use that to fall back to a one-time plaintext comparison and then
+    /// upgrade the row to a hash (see OasShopFloorAuthService.LoginByPinAsync).
+    /// </summary>
+    public static bool LooksLikeHash(string? stored)
+    {
+        if (string.IsNullOrEmpty(stored)) return false;
+        var parts = stored.Split('.');
+        return parts.Length == 3
+            && int.TryParse(parts[0], out var iterations) && iterations > 0
+            && parts[1].Length > 0 && parts[2].Length > 0;
+    }
+
+    /// <summary>Verifies a plaintext PIN against a value already in this class's hashed format. Returns false (never throws) for a malformed/foreign stored value.</summary>
+    public static bool Verify(string pin, string stored)
+    {
+        if (string.IsNullOrEmpty(pin) || string.IsNullOrEmpty(stored)) return false;
+
+        var parts = stored.Split('.');
+        if (parts.Length != 3) return false;
+        if (!int.TryParse(parts[0], out var iterations) || iterations <= 0) return false;
+
+        byte[] salt, expectedHash;
+        try
+        {
+            salt = Convert.FromBase64String(parts[1]);
+            expectedHash = Convert.FromBase64String(parts[2]);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        var actualHash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, iterations, Algorithm, expectedHash.Length);
+        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+    }
+}

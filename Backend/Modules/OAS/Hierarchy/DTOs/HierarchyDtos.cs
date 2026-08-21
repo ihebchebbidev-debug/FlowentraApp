@@ -33,7 +33,10 @@ public class OasZoneRequestDto
     [Required] public Guid SiteId { get; set; }
     [Required] public string Code { get; set; } = string.Empty;
     [Required] public string Name { get; set; } = string.Empty;
-    public int SortOrder { get; set; }
+    // Nullable so a PUT that omits it (e.g. a rename that only knows code/name)
+    // preserves the existing value instead of resetting it to 0 — see the
+    // matching guard in OasHierarchyService.UpdateZoneAsync.
+    public int? SortOrder { get; set; }
 }
 
 public class OasLineDto
@@ -51,7 +54,10 @@ public class OasLineRequestDto
     [Required] public Guid ZoneId { get; set; }
     [Required] public string Code { get; set; } = string.Empty;
     [Required] public string Name { get; set; } = string.Empty;
-    public int SortOrder { get; set; }
+    // Nullable so a PUT that omits it (e.g. a rename that only knows code/name)
+    // preserves the existing value instead of resetting it to 0 — see the
+    // matching guard in OasHierarchyService.UpdateLineAsync.
+    public int? SortOrder { get; set; }
     public decimal? TargetOee { get; set; }
 }
 
@@ -72,7 +78,10 @@ public class OasPostRequestDto
     [Required] public Guid LineId { get; set; }
     [Required] public string Code { get; set; } = string.Empty;
     [Required] public string Name { get; set; } = string.Empty;
-    public int SortOrder { get; set; }
+    // Nullable so a PUT that omits it (e.g. a rename that only knows code/name/postType)
+    // preserves the existing value instead of resetting it to 0 — see the
+    // matching guard in OasHierarchyService.UpdatePostAsync.
+    public int? SortOrder { get; set; }
     public string? PostType { get; set; }
 }
 public class OasPostAttributesRequestDto { public string? PostType { get; set; } public int? SortOrder { get; set; } }

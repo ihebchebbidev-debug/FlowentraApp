@@ -84,6 +84,27 @@ public class OasEventService : IOasEventService
         return Guid.TryParse(claim, out var id) ? id : null;
     }
 
+    /// <summary>
+    /// Single-entity/pre-resolved counterpart to <see cref="ApplyScope"/>:
+    /// used wherever scope can't be pushed into a SQL WHERE — an event
+    /// already loaded via FindAsync (which bypasses IQueryable filters
+    /// entirely, unlike GetAsync's ApplyScope(query)), or ids resolved
+    /// during CreateAsync before the row exists. Same most-specific-wins
+    /// precedence as ApplyScope.
+    /// </summary>
+    private bool InScope(Guid? siteId, Guid? zoneId, Guid? lineId)
+    {
+        var scopeSiteId = TryParseGuidClaim("oas_scope_site_id");
+        var scopeZoneId = TryParseGuidClaim("oas_scope_zone_id");
+        var scopeLineId = TryParseGuidClaim("oas_scope_line_id");
+        if (scopeSiteId is null && scopeZoneId is null && scopeLineId is null) return true; // unrestricted
+        if (scopeLineId is not null) return lineId == scopeLineId;
+        if (scopeZoneId is not null) return zoneId == scopeZoneId;
+        return siteId == scopeSiteId;
+    }
+
+    private bool InScope(OasEvent ev) => InScope(ev.SiteId, ev.ZoneId, ev.LineId);
+
     private void Broadcast(int tenantId, string eventType, OasEventDto dto)
     {
         if (_oasSlug is not null) _broadcaster.Publish(_oasSlug, tenantId, eventType, dto);
@@ -97,6 +118,14 @@ public class OasEventService : IOasEventService
         var post = await _db.Set<OasPost>().FindAsync(request.PostId);
         var line = post is null ? null : await _db.Set<OasLine>().FindAsync(post.LineId);
         var zone = line is null ? null : await _db.Set<OasZone>().FindAsync(line.ZoneId);
+
+        // BL-012 perimeter on write, not just read: a scoped caller (e.g. a
+        // line-scoped operator) must not be able to declare an event on a
+        // post belonging to another site/zone/line just by knowing its id.
+        if (!InScope(zone?.SiteId, zone?.Id, line?.Id))
+        {
+            return (false, "post_out_of_scope", null);
+        }
 
         var ev = new OasEvent
         {
@@ -161,7 +190,8 @@ public class OasEventService : IOasEventService
     public async Task<OasEventDto?> GetOneAsync(int tenantId, Guid id)
     {
         var ev = await _db.Set<OasEvent>().FindAsync(id);
-        return ev is null ? null : ToDto(ev);
+        if (ev is null || !InScope(ev)) return null; // out-of-scope reads as not-found, same as GetAsync's ApplyScope
+        return ToDto(ev);
     }
 
     public async Task<OasEventDto?> GetByClientEventIdAsync(int tenantId, Guid clientEventId)
@@ -296,7 +326,7 @@ public class OasEventService : IOasEventService
     public async Task<(bool success, string? error, OasEventDto? dto)> CloseAsync(int tenantId, Guid actorId, Guid id, OasCloseEventRequestDto request)
     {
         var ev = await _db.Set<OasEvent>().FindAsync(id);
-        if (ev is null) return (false, "not_found", null);
+        if (ev is null || !InScope(ev)) return (false, "not_found", null);
         if (ev.Status == OasEventStatus.closed) return (true, null, ToDto(ev)); // idempotent
 
         ev.Status = OasEventStatus.closed;
@@ -314,7 +344,7 @@ public class OasEventService : IOasEventService
     private async Task<(OasEvent? ev, string? error)> LoadForMutationAsync(Guid id, bool allowFromResolved)
     {
         var ev = await _db.Set<OasEvent>().FindAsync(id);
-        if (ev is null) return (null, "not_found");
+        if (ev is null || !InScope(ev)) return (null, "not_found"); // out-of-scope reads as not-found, same as GetOneAsync
         if (Terminal.Contains(ev.Status)) return (null, "event_closed");
         if (!allowFromResolved && ev.Status == OasEventStatus.resolved) return (null, "event_already_resolved");
         return (ev, null);

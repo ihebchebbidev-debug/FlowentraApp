@@ -3,13 +3,14 @@ using MyApi.Modules.OAS.Common;
 using MyApi.Modules.OAS.Declarations.DTOs;
 using MyApi.Modules.OAS.Declarations.Models;
 using MyApi.Modules.OAS.Hierarchy.Models;
+using MyApi.Modules.OAS.PostSessions.Models;
 
 namespace MyApi.Modules.OAS.Declarations.Services;
 
 public interface IOasDeclarationService
 {
-    Task<OasDeclarationDto> CreateProductionAsync(int tenantId, Guid userId, OasProductionDeclarationRequestDto request);
-    Task<OasDeclarationDto> CreateScrapAsync(int tenantId, Guid userId, OasScrapDeclarationRequestDto request);
+    Task<(bool success, string? error, OasDeclarationDto? dto)> CreateProductionAsync(int tenantId, Guid userId, OasProductionDeclarationRequestDto request);
+    Task<(bool success, string? error, OasDeclarationDto? dto)> CreateScrapAsync(int tenantId, Guid userId, OasScrapDeclarationRequestDto request);
     Task<(bool success, string? error, OasDeclarationDto? dto)> CorrectAsync(int tenantId, Guid actorId, string actorRole, Guid id, OasCorrectDeclarationRequestDto request);
     Task<IReadOnlyList<OasDeclarationDto>> GetAsync(int tenantId, Guid? postId, Guid? sessionId, DateTimeOffset? from, DateTimeOffset? to);
     Task<OasDeclarationDto?> GetOneAsync(int tenantId, Guid id);
@@ -71,10 +72,15 @@ public class OasDeclarationService : IOasDeclarationService
         return await _db.Set<OasPost>().Where(p => lineIds.Contains(p.LineId)).Select(p => p.Id).ToArrayAsync();
     }
 
-    public async Task<OasDeclarationDto> CreateProductionAsync(int tenantId, Guid userId, OasProductionDeclarationRequestDto request)
+    public async Task<(bool success, string? error, OasDeclarationDto? dto)> CreateProductionAsync(int tenantId, Guid userId, OasProductionDeclarationRequestDto request)
     {
         var existing = await _db.Set<OasDeclaration>().FirstOrDefaultAsync(d => d.ClientEventId == request.ClientEventId);
-        if (existing is not null) return ToDto(existing);
+        if (existing is not null) return (true, null, ToDto(existing));
+
+        if (request.QuantityOk < 0 || request.QuantityNok < 0) return (false, "invalid_quantity", null);
+
+        var sessionError = await ValidateSessionAsync(request.PostSessionId);
+        if (sessionError is not null) return (false, sessionError, null);
 
         var declaration = new OasDeclaration
         {
@@ -86,13 +92,22 @@ public class OasDeclarationService : IOasDeclarationService
         };
         _db.Set<OasDeclaration>().Add(declaration);
         await _db.SaveChangesAsync();
-        return ToDto(declaration);
+        return (true, null, ToDto(declaration));
     }
 
-    public async Task<OasDeclarationDto> CreateScrapAsync(int tenantId, Guid userId, OasScrapDeclarationRequestDto request)
+    public async Task<(bool success, string? error, OasDeclarationDto? dto)> CreateScrapAsync(int tenantId, Guid userId, OasScrapDeclarationRequestDto request)
     {
         var existing = await _db.Set<OasDeclaration>().FirstOrDefaultAsync(d => d.ClientEventId == request.ClientEventId);
-        if (existing is not null) return ToDto(existing);
+        if (existing is not null) return (true, null, ToDto(existing));
+
+        if (request.QuantityNok < 0) return (false, "invalid_quantity", null);
+        // Server-side enforcement of what was previously a client-only rule
+        // (OasScrapDeclarationRequestDto.ScrapCauseId is nullable): a scrap
+        // quantity posted with no cause used to be silently accepted.
+        if (request.QuantityNok > 0 && request.ScrapCauseId is null) return (false, "scrap_cause_required", null);
+
+        var sessionError = await ValidateSessionAsync(request.PostSessionId);
+        if (sessionError is not null) return (false, sessionError, null);
 
         var declaration = new OasDeclaration
         {
@@ -104,7 +119,23 @@ public class OasDeclarationService : IOasDeclarationService
         };
         _db.Set<OasDeclaration>().Add(declaration);
         await _db.SaveChangesAsync();
-        return ToDto(declaration);
+        return (true, null, ToDto(declaration));
+    }
+
+    /// <summary>
+    /// Closing-lock check (BL gap fix): a declaration must land in a still-open
+    /// session. PostSessionId is required going forward (DTO-level [Required]
+    /// backs this up too, but this check stays as a defensive backstop for any
+    /// caller that bypasses model validation). If the referenced session row
+    /// doesn't exist at all, that's left to the FK — this only blocks the
+    /// specific case of a session that exists and is already closed.
+    /// </summary>
+    private async Task<string?> ValidateSessionAsync(Guid? postSessionId)
+    {
+        if (postSessionId is null) return "post_session_required";
+        var session = await _db.Set<OasPostSession>().FindAsync(postSessionId.Value);
+        if (session is not null && session.EndedAt is not null) return "session_already_closed";
+        return null;
     }
 
     public async Task<(bool success, string? error, OasDeclarationDto? dto)> CorrectAsync(int tenantId, Guid actorId, string actorRole, Guid id, OasCorrectDeclarationRequestDto request)
@@ -161,7 +192,15 @@ public class OasDeclarationService : IOasDeclarationService
     public async Task<OasDeclarationDto?> GetOneAsync(int tenantId, Guid id)
     {
         var d = await _db.Set<OasDeclaration>().FindAsync(id);
-        return d is null ? null : ToDto(d);
+        if (d is null) return null;
+
+        // BL-012 perimeter: FindAsync bypasses the IQueryable filtering
+        // GetAsync applies via ScopedPostIdsAsync — a scoped caller must not
+        // be able to fetch another site/zone/line's declaration by id.
+        var scopedPostIds = await ScopedPostIdsAsync();
+        if (scopedPostIds is not null && !scopedPostIds.Contains(d.PostId)) return null;
+
+        return ToDto(d);
     }
 
     private static OasDeclarationDto ToDto(OasDeclaration d) => new()

@@ -8,7 +8,7 @@ namespace MyApi.Modules.OAS.Products.Services;
 public interface IOasProductService
 {
     Task<IReadOnlyList<OasProductDto>> GetProductsAsync(int tenantId);
-    Task<OasProductDto> CreateProductAsync(int tenantId, OasProductRequestDto request);
+    Task<(bool success, string? error, OasProductDto? dto)> CreateProductAsync(int tenantId, OasProductRequestDto request);
     Task<bool> UpdateProductAsync(int tenantId, Guid id, OasProductRequestDto request);
     Task<bool> DeleteProductAsync(int tenantId, Guid id);
 
@@ -28,12 +28,18 @@ public class OasProductService : IOasProductService
         return rows.Select(p => new OasProductDto { Id = p.Id, Reference = p.Reference, Name = p.Name, Customer = p.Customer, Unit = p.Unit }).ToList();
     }
 
-    public async Task<OasProductDto> CreateProductAsync(int tenantId, OasProductRequestDto request)
+    public async Task<(bool success, string? error, OasProductDto? dto)> CreateProductAsync(int tenantId, OasProductRequestDto request)
     {
+        // oas_products has a real unique (tenant_id, reference) index (ProductConfigurations.cs) —
+        // without this pre-check a duplicate reference fell through to the DB, threw a raw
+        // DbUpdateException, and surfaced as an unhelpful 500 via the generic exception middleware.
+        var duplicate = await _db.Set<OasProduct>().AnyAsync(p => p.Reference == request.Reference);
+        if (duplicate) return (false, "duplicate_code", null);
+
         var product = new OasProduct { TenantId = tenantId, Reference = request.Reference, Name = request.Name, Customer = request.Customer, Unit = request.Unit };
         _db.Set<OasProduct>().Add(product);
         await _db.SaveChangesAsync();
-        return new OasProductDto { Id = product.Id, Reference = product.Reference, Name = product.Name, Customer = product.Customer, Unit = product.Unit };
+        return (true, null, new OasProductDto { Id = product.Id, Reference = product.Reference, Name = product.Name, Customer = product.Customer, Unit = product.Unit });
     }
 
     public async Task<bool> UpdateProductAsync(int tenantId, Guid id, OasProductRequestDto request)

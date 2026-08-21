@@ -30,7 +30,7 @@ public class OasCadencesController : OasControllerBase
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasCadenceRequestDto request)
-        => await _service.UpdateAsync(CurrentTenantId, id, request) ? Ok(new { success = true }) : NotFound();
+        => await _service.UpdateAsync(CurrentTenantId, CurrentOasUserIdOrNull, id, request) ? Ok(new { success = true }) : NotFound();
 
     [HttpDelete("{id}")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
     public async Task<IActionResult> Delete(Guid id)

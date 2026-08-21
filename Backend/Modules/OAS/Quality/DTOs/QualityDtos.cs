@@ -43,6 +43,7 @@ public class OasQualityCheckTemplateRequestDto
     [Required] public string Name { get; set; } = string.Empty;
     [Required] public string CheckType { get; set; } = string.Empty;
 }
+public class OasSetActiveRequestDto { public bool IsActive { get; set; } }
 
 public class OasQualityCheckTemplateItemDto
 {

@@ -41,6 +41,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.Text;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using MyApi.Infrastructure.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -72,6 +73,13 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 // Logging setup (must be before any logger usage)
 var startupLoggerFactory = LoggerFactory.Create(lb => lb.AddConsole());
 var startupLogger = startupLoggerFactory.CreateLogger("Startup");
+
+// Local, in-process IMemoryCache — registered unconditionally (independent
+// of the Redis/in-memory ICacheService choice below) so short-lived,
+// per-instance caches (e.g. OasAuthorizeAttribute's ~60s active-user check)
+// always have IMemoryCache available via DI, even when REDIS_URL is set and
+// the ICacheService branch below never calls AddMemoryCache itself.
+builder.Services.AddMemoryCache();
 
 // ✅ PERFORMANCE: Distributed Cache — Redis when available, in-memory fallback
 var redisUrl = Environment.GetEnvironmentVariable("REDIS_URL");
@@ -1481,15 +1489,32 @@ async Task<IResult> ExecuteSqlConsoleAsync(
     SqlConsoleExecuteRequest req,
     CancellationToken ct)
 {
-    var consolePassword = Environment.GetEnvironmentVariable("DB_CONSOLE_PASSWORD")
-        ?? throw new InvalidOperationException("DB_CONSOLE_PASSWORD environment variable must be set to use the SQL console");
+    var consolePassword = Environment.GetEnvironmentVariable("DB_CONSOLE_PASSWORD");
     const int maxRows = 1000;
     const int statementTimeoutSeconds = 5;
     var logger = loggerFactory.CreateLogger("SqlConsole");
     var readVerbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "SELECT", "WITH", "EXPLAIN", "SHOW" };
     var writeVerbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "SELECT", "WITH", "EXPLAIN", "SHOW", "INSERT", "UPDATE", "DELETE" };
 
-    if (!context.Request.Headers.TryGetValue("X-DB-Console-Pass", out var pw) || pw != consolePassword)
+    // Fail closed: an unset/empty DB_CONSOLE_PASSWORD must reject every
+    // request outright, never fall through to a comparison an empty
+    // client-supplied header could satisfy.
+    if (string.IsNullOrEmpty(consolePassword))
+    {
+        logger.LogWarning("[SqlConsole] request rejected: DB_CONSOLE_PASSWORD is not configured");
+        return Results.Json(new { success = false, error = "SQL console is disabled" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    // Constant-time comparison so response timing can't be used to learn how
+    // many leading characters of the password an attacker has guessed.
+    static bool ConstantTimeEquals(string a, string b)
+    {
+        var aBytes = Encoding.UTF8.GetBytes(a);
+        var bBytes = Encoding.UTF8.GetBytes(b);
+        return aBytes.Length == bBytes.Length && CryptographicOperations.FixedTimeEquals(aBytes, bBytes);
+    }
+
+    if (!context.Request.Headers.TryGetValue("X-DB-Console-Pass", out var pw) || !ConstantTimeEquals(pw.ToString(), consolePassword))
         return Results.Json(new { success = false, error = "Invalid console password" }, statusCode: StatusCodes.Status401Unauthorized);
 
     if (string.IsNullOrWhiteSpace(req.Sql))

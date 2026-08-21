@@ -42,6 +42,18 @@ public static class OasEndpoints
             return Results.Json(new { status = "no_tenant", message = "Send X-Tenant: <slug>oas to check a specific database." });
         }
 
+        // Anonymous by design (spec §1.2 bis point 5 — must be probeable
+        // before a client even knows its slug) but that must not become a
+        // way to enumerate which *oas slugs are real: only a slug that
+        // already has a dedicated TENANT_<SLUG>_DATABASE_URL configured is
+        // allowed to get provisioning detail. Anything else — a guessed or
+        // made-up slug — gets the same generic 404 a nonexistent route would,
+        // instead of a status/tables payload that reveals it isn't real.
+        if (!Infrastructure.TenantConnectionResolver.HasDedicatedConnectionString(slug))
+        {
+            return Results.NotFound();
+        }
+
         try
         {
             await using var db = dbFactory.CreateDbContext(slug);

@@ -34,24 +34,55 @@ public class OasOfflineSyncService : IOasOfflineSyncService
 
         foreach (var item in request.Items)
         {
-            var existing = await _db.Set<OasSyncReceipt>().FirstOrDefaultAsync(r => r.ClientEventId == item.ClientEventId);
-            if (existing is not null)
+            // Per-item try/catch (not one big all-or-nothing transaction): a
+            // device batch can mix a stale duplicate with a genuinely bad
+            // item, and one bad item must not silently roll back — or
+            // silently drop the outcome of — everything already committed
+            // earlier in the same push. Every item gets a reported result.
+            try
             {
-                existing.Attempts++;
-                existing.Status = "duplicate";
-                await _db.SaveChangesAsync();
-                response.Receipts.Add(ToDto(existing));
-                continue;
-            }
+                var existing = await _db.Set<OasSyncReceipt>().FirstOrDefaultAsync(r => r.ClientEventId == item.ClientEventId);
+                if (existing is not null)
+                {
+                    existing.Attempts++;
+                    existing.Status = "duplicate";
+                    await _db.SaveChangesAsync();
+                    response.Receipts.Add(ToDto(existing));
+                    continue;
+                }
 
-            var receipt = new OasSyncReceipt
+                var receipt = new OasSyncReceipt
+                {
+                    TenantId = tenantId, ClientEventId = item.ClientEventId, DeviceId = item.DeviceId,
+                    Entity = item.Entity, OccurredAt = item.OccurredAt, Status = "ok",
+                };
+                _db.Set<OasSyncReceipt>().Add(receipt);
+                await _db.SaveChangesAsync();
+                response.Receipts.Add(ToDto(receipt));
+            }
+            catch (Exception ex)
             {
-                TenantId = tenantId, ClientEventId = item.ClientEventId, DeviceId = item.DeviceId,
-                Entity = item.Entity, OccurredAt = item.OccurredAt, Status = "ok",
-            };
-            _db.Set<OasSyncReceipt>().Add(receipt);
-            await _db.SaveChangesAsync();
-            response.Receipts.Add(ToDto(receipt));
+                // A failed SaveChangesAsync leaves its entity tracked by EF
+                // Core (Added/Modified) — left alone, the NEXT item's
+                // SaveChangesAsync would resubmit this same bad write and
+                // fail too, cascading one bad item into the whole rest of
+                // the batch. Detach everything this iteration touched so
+                // later items get a clean shot.
+                foreach (var entry in _db.ChangeTracker.Entries().Where(e => e.State != EntityState.Unchanged).ToList())
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                response.Receipts.Add(new OasSyncReceiptDto
+                {
+                    ClientEventId = item.ClientEventId,
+                    Entity = item.Entity,
+                    Status = "rejected",
+                    ReceivedAt = DateTimeOffset.UtcNow,
+                    Attempts = 1,
+                    Error = ex.Message,
+                });
+            }
         }
 
         return response;
@@ -107,7 +138,7 @@ public class OasOfflineSyncService : IOasOfflineSyncService
 
     private static OasSyncReceiptDto ToDto(OasSyncReceipt r) => new()
     {
-        ClientEventId = r.ClientEventId, Entity = r.Entity, Status = r.Status, ReceivedAt = r.ReceivedAt, Attempts = r.Attempts,
+        ClientEventId = r.ClientEventId, Entity = r.Entity, Status = r.Status, ReceivedAt = r.ReceivedAt, Attempts = r.Attempts, Error = r.Error,
     };
 
     private sealed class PullRow

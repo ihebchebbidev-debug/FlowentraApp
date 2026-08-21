@@ -13,8 +13,11 @@ public class OasQualityChecksController : OasControllerBase
     public OasQualityChecksController(IOasQualityService service) => _service = service;
 
     [HttpPost]
-    public async Task<ActionResult<OasQualityCheckDto>> Create([FromBody] OasQualityCheckRequestDto request)
-        => Ok(await _service.CreateCheckAsync(CurrentTenantId, CurrentOasUserId, request));
+    public async Task<IActionResult> Create([FromBody] OasQualityCheckRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateCheckAsync(CurrentTenantId, CurrentOasUserId, request);
+        return success ? Ok(dto) : BadRequest(new { error });
+    }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<OasQualityCheckDto>>> GetAll([FromQuery] Guid? postId) => Ok(await _service.GetChecksAsync(CurrentTenantId, postId));
@@ -27,7 +30,8 @@ public class OasQualityCheckTemplatesController : OasControllerBase
     private readonly IOasQualityService _service;
     public OasQualityCheckTemplatesController(IOasQualityService service) => _service = service;
 
-    [HttpGet] public async Task<ActionResult<IReadOnlyList<OasQualityCheckTemplateDto>>> GetAll() => Ok(await _service.GetTemplatesAsync(CurrentTenantId));
+    [HttpGet] public async Task<ActionResult<IReadOnlyList<OasQualityCheckTemplateDto>>> GetAll([FromQuery] bool includeInactive = false)
+        => Ok(await _service.GetTemplatesAsync(CurrentTenantId, includeInactive));
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")]
     public async Task<IActionResult> Create([FromBody] OasQualityCheckTemplateRequestDto request)
@@ -42,6 +46,14 @@ public class OasQualityCheckTemplatesController : OasControllerBase
     {
         var (success, error) = await _service.UpdateTemplateAsync(CurrentTenantId, id, request);
         if (!success) return error == "not_found" ? NotFound() : Problem(statusCode: 409, title: error);
+        return Ok(new { success = true });
+    }
+
+    [HttpPut("{id}/active")] [OasAuthorize(Roles = "admin,supervisor")]
+    public async Task<IActionResult> SetActive(Guid id, [FromBody] OasSetActiveRequestDto request)
+    {
+        var (success, error) = await _service.SetTemplateActiveAsync(CurrentTenantId, id, request.IsActive);
+        if (!success) return error == "not_found" ? NotFound() : BadRequest(new { error });
         return Ok(new { success = true });
     }
 
