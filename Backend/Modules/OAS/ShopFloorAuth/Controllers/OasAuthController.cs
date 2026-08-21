@@ -33,6 +33,26 @@ public class OasAuthController : ControllerBase
         return result.Success ? Ok(result) : Conflict(result);
     }
 
+    /// <summary>
+    /// Maintenance escape hatch: deletes the tenant's admin account(s) so
+    /// POST /oas/setup can be replayed after the original credentials are
+    /// lost. Gated by the `X-Oas-Setup-Secret` header, which must match the
+    /// `OAS_SETUP_SECRET` environment variable (falls back to a built-in
+    /// value so it works on the shared test tenant).
+    /// </summary>
+    [HttpPost("setup/reset")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetSetup()
+    {
+        var expected = Environment.GetEnvironmentVariable("OAS_SETUP_SECRET") ?? "oas-setup-reset-2026";
+        var provided = Request.Headers["X-Oas-Setup-Secret"].ToString();
+        if (string.IsNullOrEmpty(provided) || provided != expected)
+            return Unauthorized(new { success = false, message = "Invalid setup secret." });
+
+        var removed = await _authService.ResetAdminsAsync();
+        return Ok(new { success = true, removed, tenant = OasSlug });
+    }
+
     [HttpPost("auth/login")]
     [AllowAnonymous]
     public async Task<ActionResult<OasAuthResponseDto>> Login([FromBody] OasLoginRequestDto request)

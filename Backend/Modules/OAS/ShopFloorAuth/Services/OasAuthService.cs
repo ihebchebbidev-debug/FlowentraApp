@@ -43,6 +43,22 @@ public class OasAuthService : IOasAuthService
             ?? throw new InvalidOperationException("OasSlug not resolved on HttpContext — OasTenantMiddleware must run before this service is used.");
     }
 
+    /// <summary>
+    /// Maintenance escape hatch (secret-gated in the controller): removes the
+    /// tenant's admin account(s) so the one-time /oas/setup bootstrap can be
+    /// replayed when the original credentials are lost. Tenant + soft-delete
+    /// scoping comes from OasDbContext's query filter.
+    /// </summary>
+    public async Task<int> ResetAdminsAsync()
+    {
+        var admins = await _db.Users.Where(u => u.Role == OasAppRole.admin).ToListAsync();
+        if (admins.Count == 0) return 0;
+        _db.Users.RemoveRange(admins);
+        await _db.SaveChangesAsync();
+        _logger.LogWarning("🏭 [OAS/AUTH] ⚠️ ResetAdmins removed {Count} admin account(s) for oas tenant '{Slug}'", admins.Count, _oasSlug);
+        return admins.Count;
+    }
+
     public async Task<OasAuthResponseDto> SetupAsync(string oasSlug, int tenantId, OasSetupRequestDto request)
     {
         // Tenant + soft-delete scoping already applied by OasDbContext's
