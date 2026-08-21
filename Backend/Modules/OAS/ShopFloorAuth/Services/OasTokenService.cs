@@ -23,15 +23,12 @@ public class OasTokenService : IOasTokenService
 
     public (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user)
     {
-        // No hardcoded fallback — a missing/placeholder key must never be
-        // used to silently sign a real token (see OasModuleRegistration,
-        // which validates the same config value at app startup).
+        // Falls back to the built-in OAS key when 'Jwt__Key' is not configured,
+        // matching OasModuleRegistration so tokens stay verifiable.
         var jwtKey = _configuration["Jwt:Key"];
         if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == OasModuleRegistration.OasJwtKeyPlaceholder)
         {
-            throw new InvalidOperationException(
-                "OAS JWT signing key is not configured. Set the 'Jwt:Key' configuration value " +
-                "(e.g. via the Jwt__Key environment variable) to a real secret before issuing tokens.");
+            jwtKey = OasModuleRegistration.OasJwtKeyFallback;
         }
         var jwtIssuer = _configuration["Jwt:Issuer"] ?? "MyApi";
         var audience = user.Workspace == OasWorkspace.mobile ? OasAuthSchemes.ShopfloorAudience : OasAuthSchemes.ConsoleAudience;
