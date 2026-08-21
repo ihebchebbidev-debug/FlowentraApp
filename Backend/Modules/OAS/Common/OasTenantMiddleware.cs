@@ -65,14 +65,31 @@ public class OasTenantMiddleware
 
         if (!OasTenant.IsOasSlug(slug))
         {
-            if (isExempt)
+            // "No tenant detected at all" — no X-Tenant header (and no ?tenant=
+            // on the stream route). This is the localhost / raw-IP / file://
+            // (Electron) / capacitor://localhost (APK) case, where the bundle
+            // has no deployed subdomain to derive a slug from. Those clients
+            // must land on the test tenant, INCLUDING on the exempt routes:
+            // otherwise /health answers "no_tenant" and /setup 500s on a
+            // missing OasSlug, which is exactly what made the packaged mobile
+            // and desktop builds look broken.
+            if (string.IsNullOrEmpty(slug))
             {
+                _logger.LogWarning("🏭 OAS-TENANT: {Path} — no X-Tenant sent, defaulting to '{Default}'", path, DefaultOasSlug);
+                slug = DefaultOasSlug;
+            }
+            else if (isExempt)
+            {
+                // An explicit but non-*oas slug on /health or /setup is a
+                // deliberate probe by slug — never silently redirect it.
                 await _next(context);
                 return;
             }
-
-            _logger.LogWarning("🏭 OAS-TENANT: {Path} — X-Tenant '{Slug}' does not end in 'oas', defaulting to '{Default}'", path, slug ?? "(none)", DefaultOasSlug);
-            slug = DefaultOasSlug;
+            else
+            {
+                _logger.LogWarning("🏭 OAS-TENANT: {Path} — X-Tenant '{Slug}' does not end in 'oas', defaulting to '{Default}'", path, slug, DefaultOasSlug);
+                slug = DefaultOasSlug;
+            }
         }
 
         try

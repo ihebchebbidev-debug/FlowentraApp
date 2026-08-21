@@ -12,9 +12,11 @@ public enum OasWorkspace { web, mobile, both }
 /// Autonomous OAS identity (spec §3.3, §8.1). No physical FK to the socle's
 /// Users/profiles — source_user_id/source_tenant_id are informational
 /// mapping columns only, populated by OasUserJitSyncService (spec §8.3).
-/// password_hash is BCrypt and never serialized out; pin is intentionally
-/// plaintext (spec §8.1 rationale) but — per plan decision v12 — is only
-/// ever returned by the regenerate-pin endpoint, never by a GET.
+/// password_hash is BCrypt and never serialized out. Pin is NO LONGER
+/// plaintext (that was the original spec §8.1 rationale): it is PBKDF2-hashed
+/// by OasPinHasher, with legacy plaintext rows upgraded in place on the next
+/// successful shopfloor login. The clear PIN is only ever returned by the
+/// regenerate-pin endpoint, never by a GET.
 /// </summary>
 public class OasUser : IOasTenantEntity, IOasSoftDeletable
 {

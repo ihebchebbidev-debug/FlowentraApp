@@ -37,9 +37,32 @@ public static class OasEndpoints
     {
         var slug = context.Request.Headers[Infrastructure.TenantMiddleware.TenantHeaderName].FirstOrDefault()?.Trim().ToLowerInvariant();
 
-        if (string.IsNullOrEmpty(slug) || !OasTenant.IsOasSlug(slug))
+        // OasTenantMiddleware already substituted the default tenant when the
+        // caller sent no X-Tenant at all (localhost / raw IP / Electron
+        // file:// / Capacitor). Honour that instead of reporting "no_tenant",
+        // so the frontend's DbStatusBanner shows the real state of the test
+        // database rather than an unhelpful "no tenant" on every local build.
+        if (string.IsNullOrEmpty(slug) && context.Items.TryGetValue("OasSlug", out var resolved) && resolved is string s)
+        {
+            slug = s;
+        }
+
+        if (string.IsNullOrEmpty(slug))
+        {
+            slug = OasTenantMiddleware.DefaultOasSlug;
+        }
+
+        if (!OasTenant.IsOasSlug(slug))
         {
             return Results.Json(new { status = "no_tenant", message = "Send X-Tenant: <slug>oas to check a specific database." });
+        }
+
+        // The default tenant is ours, not a caller-guessed slug — report that
+        // it is unprovisioned rather than hiding behind the anti-enumeration 404.
+        if (slug == OasTenantMiddleware.DefaultOasSlug
+            && !Infrastructure.TenantConnectionResolver.HasDedicatedConnectionString(slug))
+        {
+            return Results.Json(new { status = "not_provisioned", tenant = slug }, statusCode: 503);
         }
 
         // Anonymous by design (spec §1.2 bis point 5 — must be probeable

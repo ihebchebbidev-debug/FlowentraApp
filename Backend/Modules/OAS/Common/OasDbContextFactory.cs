@@ -61,14 +61,21 @@ public class OasDbContextFactory : IOasDbContextFactory
                 if (_environment.IsDevelopment())
                 {
                     // Development-only fallback chain (spec §1.2 bis point 4):
+                    // TENANT_TESTOAS_DATABASE_URL (the default tenant every
+                    // header-less client is routed to — see
+                    // OasTenantMiddleware.DefaultOasSlug), then
                     // TENANT_DEVOAS_DATABASE_URL, then DATABASE_URL — never in
                     // Production, where an unprovisioned slug must 503, not
                     // silently share another tenant's database.
-                    var devOas = TenantConnectionResolver.GetConnectionString("devoas");
-                    if (!string.IsNullOrWhiteSpace(devOas))
+                    foreach (var fallbackSlug in new[] { OasTenantMiddleware.DefaultOasSlug, "devoas" })
                     {
-                        _logger.LogWarning("🏭 OAS tenant '{Slug}' has no dedicated DB; Development fallback to TENANT_DEVOAS_DATABASE_URL", slug);
-                        return NormalizePgUrl(devOas);
+                        if (string.Equals(fallbackSlug, slug, StringComparison.OrdinalIgnoreCase)) continue;
+                        var candidate = TenantConnectionResolver.GetConnectionString(fallbackSlug);
+                        if (!string.IsNullOrWhiteSpace(candidate))
+                        {
+                            _logger.LogWarning("🏭 OAS tenant '{Slug}' has no dedicated DB; Development fallback to TENANT_{Fallback}_DATABASE_URL", slug, fallbackSlug.ToUpperInvariant());
+                            return NormalizePgUrl(candidate);
+                        }
                     }
 
                     var fallback = Environment.GetEnvironmentVariable("DATABASE_URL");
