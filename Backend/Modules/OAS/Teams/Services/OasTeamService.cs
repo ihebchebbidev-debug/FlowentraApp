@@ -29,6 +29,10 @@ public class OasTeamService : IOasTeamService
         // (tenant_id, site_id, code) is unique in oas_teams; without this
         // pre-check a duplicate code surfaced as a raw 500 instead of a
         // conflict the console can show ("code already used on this site").
+        // site_id is NOT NULL in oas_teams; an omitted siteId used to reach the
+        // database and surface as a raw 500 instead of a readable validation error.
+        if (request.SiteId == Guid.Empty) throw new ArgumentException("site_required");
+
         var duplicate = await _db.Set<OasTeam>().AnyAsync(t => t.SiteId == request.SiteId && t.Code == request.Code);
         if (duplicate) throw new InvalidOperationException("team_code_already_exists");
 

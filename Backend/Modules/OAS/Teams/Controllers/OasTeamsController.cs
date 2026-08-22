@@ -18,6 +18,7 @@ public class OasTeamsController : OasControllerBase
     public async Task<ActionResult<OasTeamDto>> Create([FromBody] OasTeamRequestDto request)
     {
         try { return Ok(await _service.CreateAsync(CurrentTenantId, request)); }
+        catch (ArgumentException ex) { return Problem(statusCode: 400, title: ex.Message); }
         catch (InvalidOperationException ex) { return Problem(statusCode: 409, title: ex.Message); }
     }
 
