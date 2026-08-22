@@ -52,7 +52,9 @@ public class OasCausesController : OasControllerBase
     {
         var (success, error) = await _service.RemoveChildAsync(CurrentTenantId, id, childId);
         if (success) return Ok(new { success = true });
-        return error == "not_found" ? NotFound() : BadRequest(new { error });
+        if (error == "not_found") return NotFound();
+        if (error == "cause_in_use") return Problem(409, "cause_in_use", "This cause is still referenced and cannot be deleted.");
+        return BadRequest(new { error });
     }
 
     [HttpDelete("{id}")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
@@ -60,7 +62,9 @@ public class OasCausesController : OasControllerBase
     {
         var (success, error) = await _service.DeleteAsync(CurrentTenantId, id);
         if (success) return Ok(new { success = true });
-        return error == "not_found" ? NotFound() : BadRequest(new { error });
+        if (error == "not_found") return NotFound();
+        if (error == "cause_in_use") return Problem(409, "cause_in_use", "This cause is still referenced and cannot be deleted.");
+        return BadRequest(new { error });
     }
 }
 

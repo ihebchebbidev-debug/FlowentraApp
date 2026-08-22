@@ -111,7 +111,17 @@ public class OasCauseService : IOasCauseService
         if (child is null) return (false, "not_found");
         if (await IsCauseInUseAsync(childId)) return (false, "cause_in_use");
         _db.Set<OasCause>().Remove(child);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // A foreign key IsCauseInUseAsync doesn't know about (quality
+            // checks, interventions, proposals…) still references this cause.
+            _db.Entry(child).State = EntityState.Unchanged;
+            return (false, "cause_in_use");
+        }
         return (true, null);
     }
 
@@ -123,9 +133,18 @@ public class OasCauseService : IOasCauseService
         // Orphan children rather than cascade-delete a whole branch silently.
         await _db.Set<OasCause>().Where(c => c.ParentId == id).ExecuteUpdateAsync(s => s.SetProperty(c => c.ParentId, (Guid?)null));
         _db.Set<OasCause>().Remove(cause);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            _db.Entry(cause).State = EntityState.Unchanged;
+            return (false, "cause_in_use");
+        }
         return (true, null);
     }
+
 
     /// <summary>
     /// Guards delete/remove-child against orphaning references: a cause is
