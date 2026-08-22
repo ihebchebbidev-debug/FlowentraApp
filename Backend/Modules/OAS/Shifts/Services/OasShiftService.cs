@@ -128,8 +128,28 @@ public class OasShiftService : IOasShiftService
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Idempotent by design: the unique index (tenant, template, work_date,
+    /// signed_by) means the same supervisor signing off the same shift/day
+    /// twice used to blow up as a DbUpdateException → HTTP 500. Re-signing is
+    /// a normal user action (double click, offline retry, second visit to the
+    /// shift report), so the existing sign-off is returned instead — with the
+    /// note refreshed when a new one is supplied.
+    /// </summary>
     public async Task<OasShiftSignoffDto> CreateSignoffAsync(int tenantId, Guid signedBy, OasShiftSignoffRequestDto request)
     {
+        var existing = await _db.Set<OasShiftSignoff>().FirstOrDefaultAsync(s =>
+            s.ShiftTemplateId == request.ShiftTemplateId && s.WorkDate == request.WorkDate && s.SignedBy == signedBy);
+        if (existing is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(request.Note) && request.Note != existing.Note)
+            {
+                existing.Note = request.Note;
+                await _db.SaveChangesAsync();
+            }
+            return ToSignoffDto(existing);
+        }
+
         var signoff = new OasShiftSignoff
         {
             TenantId = tenantId, ShiftTemplateId = request.ShiftTemplateId, WorkDate = request.WorkDate,
@@ -139,6 +159,7 @@ public class OasShiftService : IOasShiftService
         await _db.SaveChangesAsync();
         return ToSignoffDto(signoff);
     }
+
 
     public async Task<IReadOnlyList<OasShiftSignoffDto>> GetSignoffsAsync(int tenantId, Guid? shiftTemplateId, DateOnly? date)
     {
