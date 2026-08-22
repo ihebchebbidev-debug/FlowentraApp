@@ -72,7 +72,14 @@ public class OasAuthorizeAttribute : Attribute, IAsyncAuthorizationFilter
                 .Select(u => (bool?)u.IsActive)
                 .FirstOrDefaultAsync() ?? false;
 
-            cache.Set(cacheKey, isActive, ActiveStatusCacheTtl);
+            // The socle's shared MemoryCache is configured with a SizeLimit
+            // (Program.cs), so every entry MUST declare a Size or Set() throws
+            // and the request fails with 400.
+            cache.Set(cacheKey, isActive, new MemoryCacheEntryOptions
+            {
+                Size = 1,
+                AbsoluteExpirationRelativeToNow = ActiveStatusCacheTtl,
+            });
         }
 
         if (!isActive)
