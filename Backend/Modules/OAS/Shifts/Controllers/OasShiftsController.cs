@@ -39,7 +39,12 @@ public class OasShiftsController : OasControllerBase
 
     [HttpDelete("{id}")] [OasAuthorize(Roles = "admin")] [OasWorkspace("web")]
     public async Task<IActionResult> Delete(Guid id)
-        => await _service.DeleteTemplateAsync(CurrentTenantId, id) ? Ok(new { success = true }) : NotFound();
+    {
+        var (ok, error) = await _service.DeleteTemplateAsync(CurrentTenantId, id);
+        if (ok) return Ok(new { success = true });
+        if (error == "not_found") return NotFound();
+        return Problem(409, "shift_template_in_use", "This shift template is still referenced and cannot be deleted.");
+    }
 
     [HttpGet("calendar")]
     public async Task<ActionResult<IReadOnlyList<OasShiftCalendarEntryDto>>> GetCalendar([FromQuery] DateOnly from, [FromQuery] DateOnly to)

@@ -11,7 +11,7 @@ public interface IOasShiftService
     Task<(bool success, string? error, OasShiftTemplateDto? dto)> CreateTemplateAsync(int tenantId, OasShiftTemplateRequestDto request);
     Task<(bool success, string? error)> UpdateTemplateAsync(int tenantId, Guid id, OasShiftTemplateRequestDto request);
     Task<(bool success, string? error)> SetTemplateActiveAsync(int tenantId, Guid id, bool isActive);
-    Task<bool> DeleteTemplateAsync(int tenantId, Guid id);
+    Task<(bool Ok, string? Error)> DeleteTemplateAsync(int tenantId, Guid id);
 
     Task<IReadOnlyList<OasShiftCalendarEntryDto>> GetCalendarAsync(int tenantId, DateOnly from, DateOnly to);
     Task PutCalendarAsync(int tenantId, Guid siteId, IReadOnlyList<OasShiftCalendarEntryDto> entries);
@@ -74,13 +74,27 @@ public class OasShiftService : IOasShiftService
         return (true, null);
     }
 
-    public async Task<bool> DeleteTemplateAsync(int tenantId, Guid id)
+    /// <summary>
+    /// Deleting a template that is still referenced (assignments, calendar
+    /// entries, sessions…) used to bubble the raw Postgres FK violation up
+    /// as a 500. It is a legitimate user-facing conflict, so translate it
+    /// into "in_use" and let the controller answer 409.
+    /// </summary>
+    public async Task<(bool Ok, string? Error)> DeleteTemplateAsync(int tenantId, Guid id)
     {
         var template = await _db.Set<OasShiftTemplate>().FindAsync(id);
-        if (template is null) return false;
+        if (template is null) return (false, "not_found");
         _db.Set<OasShiftTemplate>().Remove(template);
-        await _db.SaveChangesAsync();
-        return true;
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            _db.Entry(template).State = EntityState.Unchanged;
+            return (false, "in_use");
+        }
+        return (true, null);
     }
 
     public async Task<IReadOnlyList<OasShiftCalendarEntryDto>> GetCalendarAsync(int tenantId, DateOnly from, DateOnly to)
