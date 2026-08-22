@@ -15,7 +15,12 @@ public class OasTeamsController : OasControllerBase
     [HttpGet] public async Task<ActionResult<IReadOnlyList<OasTeamDto>>> GetAll() => Ok(await _service.GetAllAsync(CurrentTenantId));
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasTeamDto>> Create([FromBody] OasTeamRequestDto request) => Ok(await _service.CreateAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasTeamDto>> Create([FromBody] OasTeamRequestDto request)
+    {
+        try { return Ok(await _service.CreateAsync(CurrentTenantId, request)); }
+        catch (InvalidOperationException ex) { return Problem(statusCode: 409, title: ex.Message); }
+    }
+
 
     [HttpPut("{id}/members")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> SetMembers(Guid id, [FromBody] OasTeamMembersRequestDto request)

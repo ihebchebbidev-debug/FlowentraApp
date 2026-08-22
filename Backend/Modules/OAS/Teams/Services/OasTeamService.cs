@@ -26,11 +26,18 @@ public class OasTeamService : IOasTeamService
 
     public async Task<OasTeamDto> CreateAsync(int tenantId, OasTeamRequestDto request)
     {
+        // (tenant_id, site_id, code) is unique in oas_teams; without this
+        // pre-check a duplicate code surfaced as a raw 500 instead of a
+        // conflict the console can show ("code already used on this site").
+        var duplicate = await _db.Set<OasTeam>().AnyAsync(t => t.SiteId == request.SiteId && t.Code == request.Code);
+        if (duplicate) throw new InvalidOperationException("team_code_already_exists");
+
         var team = new OasTeam { TenantId = tenantId, SiteId = request.SiteId, Code = request.Code, Name = request.Name, LeadUserId = request.LeadUserId };
         _db.Set<OasTeam>().Add(team);
         await _db.SaveChangesAsync();
         return ToDto(team, new List<Guid>());
     }
+
 
     public async Task<bool> SetMembersAsync(int tenantId, Guid teamId, OasTeamMembersRequestDto request)
     {

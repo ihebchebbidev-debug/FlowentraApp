@@ -187,6 +187,14 @@ public class OasCauseService : IOasCauseService
                 Code = request.Code, LabelFr = proposal.LabelFr, LabelAr = proposal.LabelAr ?? proposal.LabelFr,
             };
             _db.Set<OasCause>().Add(cause);
+            // oas_cause_proposals.resulting_cause_id is a real FK to
+            // oas_causes(id), but ResultingCauseId is a bare Guid? with no
+            // navigation property, so EF cannot order the proposal UPDATE
+            // after the cause INSERT — it emitted the UPDATE first and the
+            // FK rejected it (every accept returned 500). Persist the cause
+            // in its own round-trip before pointing the proposal at it.
+            await _db.SaveChangesAsync();
+
             proposal.ResultingCauseId = cause.Id;
             proposal.Status = "accepted";
         }
@@ -199,6 +207,7 @@ public class OasCauseService : IOasCauseService
         proposal.ReviewedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync();
         return (true, null);
+
     }
 
     private bool TryBuildCause(int tenantId, OasCauseRequestDto request, out OasCause? cause, out string? error)
