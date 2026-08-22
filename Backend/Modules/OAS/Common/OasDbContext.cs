@@ -110,27 +110,36 @@ public class OasDbContext : DbContext
         StampAudit();
         if (_currentUserId is null) return base.SaveChanges();
 
-        var ownsTransaction = Database.CurrentTransaction is null;
-        var tx = ownsTransaction ? Database.BeginTransaction() : null;
-        try
+        // The socle configures Npgsql with EnableRetryOnFailure, which forbids
+        // user-initiated transactions unless they run inside the provider's
+        // execution strategy as one retriable unit. Without this wrapper every
+        // authenticated write threw "NpgsqlRetryingExecutionStrategy does not
+        // support user-initiated transactions" (seen on POST /oas/operators).
+        var strategy = Database.CreateExecutionStrategy();
+        return strategy.Execute(() =>
         {
-            // is_local=true (SET LOCAL semantics): visible to trg_oas_audit_*
-            // for the rest of this transaction only, then reset automatically
-            // — never leaks onto a pooled connection's next, unrelated use.
-            Database.ExecuteSqlInterpolated($"SELECT set_config('oas.current_user_id', {_currentUserId.Value.ToString()}, true)");
-            var result = base.SaveChanges();
-            tx?.Commit();
-            return result;
-        }
-        catch
-        {
-            tx?.Rollback();
-            throw;
-        }
-        finally
-        {
-            tx?.Dispose();
-        }
+            var ownsTransaction = Database.CurrentTransaction is null;
+            var tx = ownsTransaction ? Database.BeginTransaction() : null;
+            try
+            {
+                // is_local=true (SET LOCAL semantics): visible to trg_oas_audit_*
+                // for the rest of this transaction only, then reset automatically
+                // — never leaks onto a pooled connection's next, unrelated use.
+                Database.ExecuteSqlInterpolated($"SELECT set_config('oas.current_user_id', {_currentUserId!.Value.ToString()}, true)");
+                var result = base.SaveChanges();
+                tx?.Commit();
+                return result;
+            }
+            catch
+            {
+                tx?.Rollback();
+                throw;
+            }
+            finally
+            {
+                tx?.Dispose();
+            }
+        });
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -138,25 +147,30 @@ public class OasDbContext : DbContext
         StampAudit();
         if (_currentUserId is null) return await base.SaveChangesAsync(cancellationToken);
 
-        var ownsTransaction = Database.CurrentTransaction is null;
-        var tx = ownsTransaction ? await Database.BeginTransactionAsync(cancellationToken) : null;
-        try
+        var strategy = Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async ct =>
         {
-            await Database.ExecuteSqlInterpolatedAsync($"SELECT set_config('oas.current_user_id', {_currentUserId.Value.ToString()}, true)", cancellationToken);
-            var result = await base.SaveChangesAsync(cancellationToken);
-            if (tx is not null) await tx.CommitAsync(cancellationToken);
-            return result;
-        }
-        catch
-        {
-            if (tx is not null) await tx.RollbackAsync(cancellationToken);
-            throw;
-        }
-        finally
-        {
-            if (tx is not null) await tx.DisposeAsync();
-        }
+            var ownsTransaction = Database.CurrentTransaction is null;
+            var tx = ownsTransaction ? await Database.BeginTransactionAsync(ct) : null;
+            try
+            {
+                await Database.ExecuteSqlInterpolatedAsync($"SELECT set_config('oas.current_user_id', {_currentUserId!.Value.ToString()}, true)", ct);
+                var result = await base.SaveChangesAsync(ct);
+                if (tx is not null) await tx.CommitAsync(ct);
+                return result;
+            }
+            catch
+            {
+                if (tx is not null) await tx.RollbackAsync(ct);
+                throw;
+            }
+            finally
+            {
+                if (tx is not null) await tx.DisposeAsync();
+            }
+        }, cancellationToken);
     }
+
 
     private void StampAudit()
     {
