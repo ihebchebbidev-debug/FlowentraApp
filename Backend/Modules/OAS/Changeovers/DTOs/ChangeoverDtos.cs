@@ -7,6 +7,8 @@ public class OasChangeoverStepDto { public string Id { get; set; } = string.Empt
 public class OasChangeoverDto
 {
     public Guid Id { get; set; }
+    /// <summary>Echoed back so a device that lost its local pointer (reinstall, cleared storage, second tablet) can resume ticking the same record instead of hitting `post_already_has_open_changeover` with no way in.</summary>
+    public Guid ClientEventId { get; set; }
     public Guid PostId { get; set; }
     public Guid? FromProductId { get; set; }
     public Guid ToProductId { get; set; }

@@ -207,8 +207,15 @@ public class OasAssignmentService : IOasAssignmentService
         return rows.Select(u => new OasRosterEntryDto { UserId = u.Id, DisplayName = u.DisplayName, IsActive = u.IsActive }).ToList();
     }
 
+    /// <summary>`oas_presence_entries.status` has a check constraint — an unknown value used to surface as a 500 from the DB instead of a 400 from validation.</summary>
+    private static readonly string[] AllowedPresenceStatuses = { "expected", "confirmed", "absent" };
+
     public async Task<bool> SetPresenceAsync(int tenantId, Guid userId, OasPresenceRequestDto request)
     {
+        if (!AllowedPresenceStatuses.Contains(request.Status))
+        {
+            throw new ArgumentException($"invalid_presence_status:{request.Status}", nameof(request));
+        }
         var entry = await _db.Set<OasPresenceEntry>().FirstOrDefaultAsync(p => p.UserId == userId && p.WorkDate == request.WorkDate && p.ShiftTemplateId == request.ShiftTemplateId);
         if (entry is null)
         {

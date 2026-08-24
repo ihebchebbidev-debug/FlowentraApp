@@ -60,7 +60,18 @@ public class OasPresenceController : OasControllerBase
 
     [HttpPut("{operatorId}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Set(Guid operatorId, [FromBody] OasPresenceRequestDto request)
-        => await _service.SetPresenceAsync(CurrentTenantId, operatorId, request) ? Ok(new { success = true }) : NotFound();
+    {
+        try
+        {
+            return await _service.SetPresenceAsync(CurrentTenantId, operatorId, request) ? Ok(new { success = true }) : NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            // Unknown status values are caller errors, not server faults.
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
 
     /// <summary>v10: mobile self-confirm only — a non-privileged caller may confirm their OWN presence, never a coworker's (same guard as OasResponderAvailabilityController.Set; this had none and let any authenticated user mark anyone "present").</summary>
     [HttpPost("{operatorId}/confirm")] [OasWorkspace("mobile")]

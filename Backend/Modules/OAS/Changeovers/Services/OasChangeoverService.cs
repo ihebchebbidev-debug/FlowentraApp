@@ -160,7 +160,7 @@ public class OasChangeoverService : IOasChangeoverService
 
     private static OasChangeoverDto ToDto(OasChangeover c) => new()
     {
-        Id = c.Id, PostId = c.PostId, FromProductId = c.FromProductId, ToProductId = c.ToProductId,
+        Id = c.Id, ClientEventId = c.ClientEventId, PostId = c.PostId, FromProductId = c.FromProductId, ToProductId = c.ToProductId,
         StartedAt = c.StartedAt, EndedAt = c.EndedAt,
         Steps = JsonSerializer.Deserialize<List<OasChangeoverStepDto>>(c.Steps) ?? new(),
     };
