@@ -31,45 +31,42 @@ public class OasDeclarationService : IOasDeclarationService
     private static readonly TimeSpan CorrectionWindow = TimeSpan.FromMinutes(10);
 
     private readonly OasDbContext _db;
-    private readonly System.Security.Claims.ClaimsPrincipal? _user;
-    public OasDeclarationService(OasDbContext db, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
+    private readonly MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver _scope;
+    public OasDeclarationService(OasDbContext db, MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver scope)
     {
         _db = db;
-        _user = httpContextAccessor.HttpContext?.User;
-    }
-
-    private Guid? CallerScopeClaim(string type)
-    {
-        var claim = _user?.FindFirst(type)?.Value;
-        return Guid.TryParse(claim, out var id) ? id : null;
+        _scope = scope;
     }
 
     /// <summary>
     /// BL-012 perimeter, resolved via Post→Line→Zone since OasDeclaration
-    /// only carries PostId directly (unlike OasEvent, which denormalizes
-    /// Site/Zone/Line onto the row itself). Two queries (posts in scope,
-    /// then declarations on those posts) rather than one EF-untranslatable
-    /// join through C# scope-check logic.
+    /// only carries PostId directly. Shared implementation now lives in
+    /// Common/Scope/OasPostScopeResolver so every sub-module enforces the
+    /// exact same perimeter (it used to be copy-pasted per service, and
+    /// missing entirely in Quality/Interventions).
     /// </summary>
-    private async Task<Guid[]?> ScopedPostIdsAsync()
+    private Task<Guid[]?> ScopedPostIdsAsync() => _scope.ScopedPostIdsAsync();
+
+    private Task<bool> IsPostInScopeAsync(Guid postId) => _scope.IsPostInScopeAsync(postId);
+
+
+    /// <summary>
+    /// Clock-drift / tampering guard on the client-asserted OccurredAt: the
+    /// correction window and every KPI bucket are keyed off it, so a
+    /// backdated (or future-dated) timestamp could widen the operator's own
+    /// correction window and misattribute production to another shift/day.
+    /// A tablet that was genuinely offline may legitimately be hours late,
+    /// hence the generous past bound; the future bound is tight.
+    /// </summary>
+    private static readonly TimeSpan MaxOccurredAtPast = TimeSpan.FromHours(24);
+    private static readonly TimeSpan MaxOccurredAtFuture = TimeSpan.FromMinutes(5);
+
+    private static string? ValidateOccurredAt(DateTimeOffset occurredAt)
     {
-        var siteId = CallerScopeClaim("oas_scope_site_id");
-        var zoneId = CallerScopeClaim("oas_scope_zone_id");
-        var lineId = CallerScopeClaim("oas_scope_line_id");
-        if (siteId is null && zoneId is null && lineId is null) return null; // unrestricted
-
-        if (lineId is not null)
-            return await _db.Set<OasPost>().Where(p => p.LineId == lineId).Select(p => p.Id).ToArrayAsync();
-
-        var lines = _db.Set<OasLine>().AsQueryable();
-        if (zoneId is not null) lines = lines.Where(l => l.ZoneId == zoneId);
-        else if (siteId is not null)
-        {
-            var zoneIds = await _db.Set<OasZone>().Where(z => z.SiteId == siteId).Select(z => z.Id).ToArrayAsync();
-            lines = lines.Where(l => zoneIds.Contains(l.ZoneId));
-        }
-        var lineIds = await lines.Select(l => l.Id).ToArrayAsync();
-        return await _db.Set<OasPost>().Where(p => lineIds.Contains(p.LineId)).Select(p => p.Id).ToArrayAsync();
+        var now = DateTimeOffset.UtcNow;
+        if (occurredAt > now.Add(MaxOccurredAtFuture)) return "occurred_at_in_future";
+        if (occurredAt < now.Subtract(MaxOccurredAtPast)) return "occurred_at_too_old";
+        return null;
     }
 
     public async Task<(bool success, string? error, OasDeclarationDto? dto)> CreateProductionAsync(int tenantId, Guid userId, OasProductionDeclarationRequestDto request)
@@ -79,7 +76,15 @@ public class OasDeclarationService : IOasDeclarationService
 
         if (request.QuantityOk < 0 || request.QuantityNok < 0) return (false, "invalid_quantity", null);
 
-        var sessionError = await ValidateSessionAsync(request.PostSessionId);
+        var timeError = ValidateOccurredAt(request.OccurredAt);
+        if (timeError is not null) return (false, timeError, null);
+
+        // BL-012 perimeter on the WRITE path too — reads were already scoped
+        // (GetAsync/GetOneAsync) but a line-scoped operator could still
+        // declare against any post in the tenant.
+        if (!await IsPostInScopeAsync(request.PostId)) return (false, "post_out_of_scope", null);
+
+        var sessionError = await ValidateSessionAsync(request.PostSessionId, request.PostId);
         if (sessionError is not null) return (false, sessionError, null);
 
         var declaration = new OasDeclaration
@@ -106,7 +111,12 @@ public class OasDeclarationService : IOasDeclarationService
         // quantity posted with no cause used to be silently accepted.
         if (request.QuantityNok > 0 && request.ScrapCauseId is null) return (false, "scrap_cause_required", null);
 
-        var sessionError = await ValidateSessionAsync(request.PostSessionId);
+        var timeError = ValidateOccurredAt(request.OccurredAt);
+        if (timeError is not null) return (false, timeError, null);
+
+        if (!await IsPostInScopeAsync(request.PostId)) return (false, "post_out_of_scope", null);
+
+        var sessionError = await ValidateSessionAsync(request.PostSessionId, request.PostId);
         if (sessionError is not null) return (false, sessionError, null);
 
         var declaration = new OasDeclaration
@@ -124,17 +134,18 @@ public class OasDeclarationService : IOasDeclarationService
 
     /// <summary>
     /// Closing-lock check (BL gap fix): a declaration must land in a still-open
-    /// session. PostSessionId is required going forward (DTO-level [Required]
-    /// backs this up too, but this check stays as a defensive backstop for any
-    /// caller that bypasses model validation). If the referenced session row
-    /// doesn't exist at all, that's left to the FK — this only blocks the
-    /// specific case of a session that exists and is already closed.
+    /// session that belongs to the SAME post. A missing session row used to be
+    /// left to the FK, which surfaced as a raw 500 for a corrupted offline queue
+    /// item; it now returns a clean domain error the tablet can drop instead of
+    /// retrying forever.
     /// </summary>
-    private async Task<string?> ValidateSessionAsync(Guid? postSessionId)
+    private async Task<string?> ValidateSessionAsync(Guid? postSessionId, Guid postId)
     {
         if (postSessionId is null) return "post_session_required";
         var session = await _db.Set<OasPostSession>().FindAsync(postSessionId.Value);
-        if (session is not null && session.EndedAt is not null) return "session_already_closed";
+        if (session is null) return "post_session_not_found";
+        if (session.EndedAt is not null) return "session_already_closed";
+        if (session.PostId != postId) return "post_session_post_mismatch";
         return null;
     }
 
@@ -146,6 +157,8 @@ public class OasDeclarationService : IOasDeclarationService
         var original = await _db.Set<OasDeclaration>().FindAsync(id);
         if (original is null) return (false, "not_found", null);
 
+        if (!await IsPostInScopeAsync(original.PostId)) return (false, "post_out_of_scope", null);
+
         var isPrivileged = actorRole is "admin" or "supervisor";
         if (!isPrivileged && original.CreatedBy != actorId)
         {
@@ -156,6 +169,7 @@ public class OasDeclarationService : IOasDeclarationService
         {
             return (false, "correction_window_expired", null);
         }
+
 
         // Append-only (spec §5.1 trigger): a correction is a NEW row, the
         // original's QuantityOk/QuantityNok/OccurredAt are never touched —

@@ -23,12 +23,24 @@ public interface IOasQualityService
 public class OasQualityService : IOasQualityService
 {
     private readonly OasDbContext _db;
-    public OasQualityService(OasDbContext db) => _db = db;
+    private readonly MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver _scope;
+    public OasQualityService(OasDbContext db, MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver scope)
+    {
+        _db = db;
+        _scope = scope;
+    }
 
     public async Task<(bool success, string? error, OasQualityCheckDto? dto)> CreateCheckAsync(int tenantId, Guid inspectorId, OasQualityCheckRequestDto request)
     {
         var existing = await _db.Set<OasQualityCheck>().FirstOrDefaultAsync(c => c.ClientEventId == request.ClientEventId);
         if (existing is not null) return (true, null, ToDto(existing));
+
+        // BL-012 perimeter — this module had no scope enforcement at all, so a
+        // line-scoped operator could record (and list) checks on any post.
+        if (!await _scope.IsPostInScopeAsync(request.PostId))
+        {
+            return (false, "post_out_of_scope", null);
+        }
 
         if (request.QuantityChecked < 0) return (false, "quantity_checked_negative", null);
         if (request.QuantityRejected < 0) return (false, "quantity_rejected_negative", null);
@@ -60,6 +72,8 @@ public class OasQualityService : IOasQualityService
     public async Task<IReadOnlyList<OasQualityCheckDto>> GetChecksAsync(int tenantId, Guid? postId)
     {
         var q = _db.Set<OasQualityCheck>().AsQueryable();
+        var scopedPostIds = await _scope.ScopedPostIdsAsync();
+        if (scopedPostIds is not null) q = q.Where(c => scopedPostIds.Contains(c.PostId));
         if (postId is not null) q = q.Where(c => c.PostId == postId);
         var rows = await q.OrderByDescending(c => c.OccurredAt).ToListAsync();
         return rows.Select(ToDto).ToList();

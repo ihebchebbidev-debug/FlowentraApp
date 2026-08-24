@@ -56,11 +56,15 @@ public class OasKpiService : IOasKpiService
 
         var declRows = await _db.Database.SqlQueryRaw<DeclAgg>(
             """
+            -- is_corrected = false: a correction is an append-only NEW row
+            -- (trg_oas_decl_correction flags the original), so summing both
+            -- double-counted the superseded quantities in every KPI.
             select coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok"
             from oas_declarations
             where tenant_id = {0}
               and ({1}::uuid is null or post_id = {1})
               and occurred_at >= {2} and occurred_at < {3}
+              and is_corrected = false
             """, tenantId, postId, fromTs, toTs).FirstOrDefaultAsync() ?? new DeclAgg();
 
         var openingMin = await ResolveOpeningMinAsync(tenantId, postId, lineId, from);
@@ -137,6 +141,7 @@ public class OasKpiService : IOasKpiService
                 select coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok"
                 from oas_declarations d join oas_posts p on p.id = d.post_id
                 where d.tenant_id = {0} and p.line_id = {1} and d.occurred_at >= {2} and d.occurred_at < {3}
+                  and d.is_corrected = false
                 """, tenantId, line.Id, fromTs, toTs).FirstOrDefaultAsync() ?? new DeclAgg();
 
             var total = scrapAgg.Ok + scrapAgg.Nok;
@@ -181,7 +186,7 @@ public class OasKpiService : IOasKpiService
         foreach (var post in posts)
         {
             var declAgg = await _db.Database.SqlQueryRaw<DeclAgg>(
-                """select coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok" from oas_declarations where tenant_id = {0} and post_id = {1} and occurred_at >= {2} and occurred_at < {3}""",
+                """select coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok" from oas_declarations where tenant_id = {0} and post_id = {1} and occurred_at >= {2} and occurred_at < {3} and is_corrected = false""",
                 tenantId, post.Id, fromTs, toTs).FirstOrDefaultAsync() ?? new DeclAgg();
             var actual = declAgg.Ok + declAgg.Nok;
             if (actual == 0) continue;

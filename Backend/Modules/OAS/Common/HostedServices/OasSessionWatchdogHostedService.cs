@@ -25,6 +25,15 @@ public class OasSessionWatchdogHostedService : BackgroundService
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan GracePeriod = TimeSpan.FromMinutes(15);
 
+    /// <summary>
+    /// Hard ceiling for a session with no ShiftTemplateId. Those sessions were
+    /// skipped entirely by the sweep (the query required ShiftTemplateId != null),
+    /// so a tablet that opened a session without picking a shift — or that died
+    /// mid-shift — left the post's partial unique index occupied FOREVER, and no
+    /// other operator could ever open that post again.
+    /// </summary>
+    private static readonly TimeSpan MaxUnshiftedSessionAge = TimeSpan.FromHours(16);
+
     private readonly IOasDbContextFactory _dbFactory;
     private readonly IOasSseBroadcaster _broadcaster;
     private readonly ILogger<OasSessionWatchdogHostedService> _logger;
@@ -56,11 +65,11 @@ public class OasSessionWatchdogHostedService : BackgroundService
             await using var db = _dbFactory.CreateDbContext(oasSlug);
 
             var activeSessions = await db.Set<OasPostSession>()
-                .Where(s => s.EndedAt == null && s.ShiftTemplateId != null)
+                .Where(s => s.EndedAt == null)
                 .ToListAsync(ct);
             if (activeSessions.Count == 0) return;
 
-            var shiftIds = activeSessions.Select(s => s.ShiftTemplateId!.Value).Distinct().ToList();
+            var shiftIds = activeSessions.Where(s => s.ShiftTemplateId is not null).Select(s => s.ShiftTemplateId!.Value).Distinct().ToList();
             var shifts = await db.Set<OasShiftTemplate>().Where(t => shiftIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
 
             var now = DateTimeOffset.UtcNow;
@@ -68,7 +77,18 @@ public class OasSessionWatchdogHostedService : BackgroundService
 
             foreach (var session in activeSessions)
             {
-                if (!shifts.TryGetValue(session.ShiftTemplateId!.Value, out var shift)) continue;
+                // Orphan sweep: no shift template (or a template that has since
+                // been deleted) means there is no shift end to measure from, so
+                // fall back to an absolute age cap.
+                if (session.ShiftTemplateId is null || !shifts.TryGetValue(session.ShiftTemplateId.Value, out var shift))
+                {
+                    if (now - session.StartedAt < MaxUnshiftedSessionAge) continue;
+
+                    session.EndedAt = now;
+                    closedCount++;
+                    _broadcaster.Publish(oasSlug, session.TenantId, "session.reminder", new { sessionId = session.Id, reason = "stale_session" });
+                    continue;
+                }
 
                 var shiftEndUtc = ShiftEndUtc(session.StartedAt, shift);
                 if (now < shiftEndUtc.Add(GracePeriod)) continue;

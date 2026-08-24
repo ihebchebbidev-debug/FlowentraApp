@@ -75,6 +75,7 @@ public static class OasModuleRegistration
         services.AddSingleton<IOasDbContextFactory, OasDbContextFactory>();
         services.AddSingleton<IOasSseBroadcaster, OasSseBroadcaster>();
         services.AddScoped<IOasScopeFilter, OasScopeFilter>();
+        services.AddScoped<Scope.IOasPostScopeResolver, Scope.OasPostScopeResolver>();
         services.AddScoped<IOasPluginActivationService, OasPluginActivationService>();
         services.AddScoped<IOasAuthService, OasAuthService>();
         services.AddScoped<IOasUserJitSyncService, OasUserJitSyncService>();

@@ -32,40 +32,47 @@ public class OasChangeoverService : IOasChangeoverService
     };
 
     private readonly OasDbContext _db;
-    private readonly System.Security.Claims.ClaimsPrincipal? _user;
+    private readonly MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver _scope;
 
-    public OasChangeoverService(OasDbContext db, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
+    public OasChangeoverService(OasDbContext db, MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver scope)
     {
         _db = db;
-        _user = httpContextAccessor.HttpContext?.User;
+        _scope = scope;
     }
 
-    private Guid? CallerScopeClaim(string type)
+    /// <summary>BL-012 perimeter — shared implementation in Common/Scope/OasPostScopeResolver.</summary>
+    private Task<Guid[]?> ScopedPostIdsAsync() => _scope.ScopedPostIdsAsync();
+
+    /// <summary>
+    /// Merges an incoming checklist onto the stored one instead of replacing it.
+    /// Two operators (or the same operator on tablet + relay device) tick steps
+    /// concurrently on a shared post; a wholesale Steps overwrite made the last
+    /// writer's stale snapshot win and silently UN-tick steps someone had
+    /// already completed — which then blocks FinishAsync's completeness check.
+    /// Done is monotonic (once ticked, only an explicit new changeover clears
+    /// it), unknown incoming steps are appended, and stored steps missing from
+    /// the payload are preserved.
+    /// </summary>
+    private static string MergeSteps(string storedJson, List<OasChangeoverStepDto> incoming)
     {
-        var claim = _user?.FindFirst(type)?.Value;
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
+        var stored = JsonSerializer.Deserialize<List<OasChangeoverStepDto>>(storedJson) ?? new();
+        var byId = stored.ToDictionary(s => s.Id, StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Same BL-012 site/zone/line perimeter as OasDeclarationService.ScopedPostIdsAsync — this module had NO scope filtering at all before this fix (unlike Declarations/Events).</summary>
-    private async Task<Guid[]?> ScopedPostIdsAsync()
-    {
-        var siteId = CallerScopeClaim("oas_scope_site_id");
-        var zoneId = CallerScopeClaim("oas_scope_zone_id");
-        var lineId = CallerScopeClaim("oas_scope_line_id");
-        if (siteId is null && zoneId is null && lineId is null) return null; // unrestricted
-
-        if (lineId is not null)
-            return await _db.Set<OasPost>().Where(p => p.LineId == lineId).Select(p => p.Id).ToArrayAsync();
-
-        var lines = _db.Set<OasLine>().AsQueryable();
-        if (zoneId is not null) lines = lines.Where(l => l.ZoneId == zoneId);
-        else if (siteId is not null)
+        foreach (var step in incoming)
         {
-            var zoneIds = await _db.Set<OasZone>().Where(z => z.SiteId == siteId).Select(z => z.Id).ToArrayAsync();
-            lines = lines.Where(l => zoneIds.Contains(l.ZoneId));
+            if (byId.TryGetValue(step.Id, out var existing))
+            {
+                existing.Done = existing.Done || step.Done;
+                if (!string.IsNullOrWhiteSpace(step.Label)) existing.Label = step.Label;
+            }
+            else
+            {
+                stored.Add(step);
+                byId[step.Id] = step;
+            }
         }
-        var lineIds = await lines.Select(l => l.Id).ToArrayAsync();
-        return await _db.Set<OasPost>().Where(p => lineIds.Contains(p.LineId)).Select(p => p.Id).ToArrayAsync();
+
+        return JsonSerializer.Serialize(stored);
     }
 
     public async Task<(bool success, string? error, OasChangeoverDto? dto)> CreateOrUpdateAsync(int tenantId, Guid userId, OasChangeoverRequestDto request)
@@ -74,10 +81,11 @@ public class OasChangeoverService : IOasChangeoverService
         if (existing is not null)
         {
             if (existing.EndedAt is not null) return (true, null, ToDto(existing)); // already finished — idempotent no-op
-            if (request.Steps is not null) existing.Steps = JsonSerializer.Serialize(request.Steps);
+            if (request.Steps is not null) existing.Steps = MergeSteps(existing.Steps, request.Steps);
             await _db.SaveChangesAsync();
             return (true, null, ToDto(existing));
         }
+
 
         var scopedPostIds = await ScopedPostIdsAsync();
         if (scopedPostIds is not null && !scopedPostIds.Contains(request.PostId))

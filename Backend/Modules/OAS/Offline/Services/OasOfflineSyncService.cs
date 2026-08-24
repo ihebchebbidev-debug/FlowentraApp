@@ -26,7 +26,12 @@ public interface IOasOfflineSyncService
 public class OasOfflineSyncService : IOasOfflineSyncService
 {
     private readonly OasDbContext _db;
-    public OasOfflineSyncService(OasDbContext db) => _db = db;
+    private readonly Microsoft.Extensions.Logging.ILogger<OasOfflineSyncService> _logger;
+    public OasOfflineSyncService(OasDbContext db, Microsoft.Extensions.Logging.ILogger<OasOfflineSyncService> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
 
     public async Task<OasSyncPushResponseDto> PushAsync(int tenantId, OasSyncPushRequestDto request)
     {
@@ -80,25 +85,38 @@ public class OasOfflineSyncService : IOasOfflineSyncService
                     Status = "rejected",
                     ReceivedAt = DateTimeOffset.UtcNow,
                     Attempts = 1,
-                    Error = ex.Message,
+                    // Never echo ex.Message: a DbUpdateException surfaces raw
+                    // Postgres detail (table/column/constraint names, and the
+                    // conflicting row's values) straight to the tablet. Log
+                    // the detail server-side, return a stable code.
+                    Error = "sync_item_rejected",
                 });
+                _logger.LogWarning(ex, "OAS offline sync rejected item {ClientEventId} ({Entity}) for tenant {TenantId}", item.ClientEventId, item.Entity, tenantId);
             }
         }
 
         return response;
     }
 
-    /// <summary>Lightweight combined feed of what changed since a timestamp — events and post-states are what a reconnecting device most urgently needs to catch up on.</summary>
+    /// <summary>
+    /// Lightweight combined feed of what changed since a timestamp — events and
+    /// post-states are what a reconnecting device most urgently needs to catch
+    /// up on. This is raw SQL, so OasDbContext's global IOasTenantEntity query
+    /// filter does NOT apply: tenant_id must be in the predicate explicitly or
+    /// every device pulls the change feed of every company on the instance.
+    /// </summary>
     public async Task<OasSyncPullResponseDto> PullAsync(int tenantId, DateTimeOffset since, int limit)
     {
         var rows = await _db.Database.SqlQueryRaw<PullRow>(
             """
-            (select 'event' as entity, id, updated_at from oas_events where updated_at > {0})
+            (select 'event' as entity, id, updated_at from oas_events
+                where updated_at > {0} and tenant_id = {2})
             union all
-            (select 'post_state' as entity, post_id as id, updated_at from oas_post_states where updated_at > {0})
+            (select 'post_state' as entity, post_id as id, updated_at from oas_post_states
+                where updated_at > {0} and tenant_id = {2})
             order by updated_at desc
             limit {1}
-            """, since, limit).ToListAsync();
+            """, since, limit, tenantId).ToListAsync();
 
         return new OasSyncPullResponseDto
         {

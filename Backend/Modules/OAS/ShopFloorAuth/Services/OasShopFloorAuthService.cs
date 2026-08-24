@@ -28,13 +28,21 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
     private readonly IOasUserJitSyncService _jitSync;
     private readonly IOasTokenService _tokenService;
     private readonly ILogger<OasShopFloorAuthService> _logger;
+    private readonly System.Security.Claims.ClaimsPrincipal? _caller;
 
-    public OasShopFloorAuthService(OasDbContext db, IOasUserJitSyncService jitSync, IOasTokenService tokenService, ILogger<OasShopFloorAuthService> logger)
+    public OasShopFloorAuthService(OasDbContext db, IOasUserJitSyncService jitSync, IOasTokenService tokenService, ILogger<OasShopFloorAuthService> logger, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
     {
         _db = db;
         _jitSync = jitSync;
         _tokenService = tokenService;
         _logger = logger;
+        _caller = httpContextAccessor.HttpContext?.User;
+    }
+
+    private Guid? CallerScopeClaim(string type)
+    {
+        var value = _caller?.FindFirst(type)?.Value;
+        return Guid.TryParse(value, out var id) ? id : null;
     }
 
     public async Task<OasAuthResponseDto> LoginAsync(string oasSlug, int tenantId, OasShopFloorLoginRequestDto request)
@@ -82,6 +90,13 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
             if (OasPinHasher.LooksLikeHash(user.Pin))
             {
                 pinValid = OasPinHasher.Verify(request.Pin, user.Pin);
+                // Same transparent-upgrade idea applied to the KDF cost: a row
+                // hashed at the old iteration count is re-hashed at the current
+                // one while the plaintext PIN is still in hand.
+                if (pinValid && OasPinHasher.NeedsRehash(user.Pin))
+                {
+                    user.Pin = OasPinHasher.Hash(request.Pin);
+                }
             }
             else if (user.Pin == request.Pin)
             {
@@ -182,6 +197,32 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
 
         var user = await _db.Users.FindAsync(targetUserId);
         if (user is null) return new OasPinRegenerateResponseDto { Success = false, Message = "Operator not found." };
+
+        // A supervisor is scoped to a perimeter (BL-012) but this endpoint only
+        // checked the role, so any supervisor could reset — and therefore read —
+        // the PIN of any operator in the tenant, including another site's admin.
+        // Admin stays unrestricted; supervisors are held to their own scope.
+        if (string.Equals(actorRole, "supervisor", StringComparison.OrdinalIgnoreCase))
+        {
+            if (user.Role == OasAppRole.admin)
+            {
+                return new OasPinRegenerateResponseDto { Success = false, Message = "Not permitted for this operator." };
+            }
+
+            var actorSiteId = CallerScopeClaim("oas_scope_site_id");
+            var actorZoneId = CallerScopeClaim("oas_scope_zone_id");
+            var actorLineId = CallerScopeClaim("oas_scope_line_id");
+
+            var outOfScope =
+                (actorLineId is not null && user.ScopeLineId != actorLineId)
+                || (actorLineId is null && actorZoneId is not null && user.ScopeZoneId != actorZoneId)
+                || (actorLineId is null && actorZoneId is null && actorSiteId is not null && user.ScopeSiteId != actorSiteId);
+
+            if (outOfScope)
+            {
+                return new OasPinRegenerateResponseDto { Success = false, Message = "Not permitted for this operator." };
+            }
+        }
 
         var newPin = RandomNumberGenerator.GetInt32(0, 10_000).ToString("D4");
         user.Pin = OasPinHasher.Hash(newPin);

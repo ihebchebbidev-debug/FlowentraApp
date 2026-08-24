@@ -25,16 +25,25 @@ public class OasPostSessionsController : OasControllerBase
     [HttpPost("{id}/relay")]
     public async Task<IActionResult> Relay(Guid id, [FromBody] OasRelaySessionRequestDto request)
     {
-        var (success, error, dto) = await _service.RelayAsync(CurrentTenantId, id, request);
-        if (!success) return error == "not_found" ? NotFound() : Problem(statusCode: 409, title: error);
+        var (success, error, dto) = await _service.RelayAsync(CurrentTenantId, CurrentOasUserId, CurrentOasRole, id, request);
+        if (!success) return error switch
+        {
+            "not_found" => NotFound(),
+            "post_out_of_scope" or "not_your_session" => Problem(statusCode: 403, title: error),
+            _ => Problem(statusCode: 409, title: error),
+        };
         return Ok(dto);
     }
 
     [HttpPost("{id}/close")]
     public async Task<IActionResult> Close(Guid id, [FromBody] OasCloseSessionRequestDto request)
     {
-        var (success, error, dto) = await _service.CloseAsync(CurrentTenantId, id, request);
-        if (!success) return NotFound();
+        var (success, error, dto) = await _service.CloseAsync(CurrentTenantId, CurrentOasUserId, CurrentOasRole, id, request);
+        if (!success) return error switch
+        {
+            "post_out_of_scope" or "not_your_session" => Problem(statusCode: 403, title: error),
+            _ => NotFound(),
+        };
         return Ok(dto);
     }
 

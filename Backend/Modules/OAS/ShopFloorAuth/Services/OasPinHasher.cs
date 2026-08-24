@@ -18,7 +18,14 @@ namespace MyApi.Modules.OAS.ShopFloorAuth.Services;
 /// </summary>
 public static class OasPinHasher
 {
-    private const int Iterations = 100_000;
+    // OWASP 2023 floor for PBKDF2-HMAC-SHA256 is 600k; a 4-digit PIN has only
+    // ~13 bits of entropy, so the KDF cost is the ONLY thing standing between a
+    // leaked hash and a full offline sweep of all 10k PINs. 210k keeps a badge
+    // login well under ~100ms on the API tier while making that sweep ~2x more
+    // expensive than before. Existing hashes stay verifiable: the iteration
+    // count is stored per-hash in the encoded string, and VerifyAndUpgrade
+    // re-hashes stale ones on the next successful login.
+    private const int Iterations = 210_000;
     private const int SaltSizeBytes = 16;
     private const int HashSizeBytes = 32;
     private static readonly HashAlgorithmName Algorithm = HashAlgorithmName.SHA256;
@@ -73,5 +80,18 @@ public static class OasPinHasher
 
         var actualHash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, iterations, Algorithm, expectedHash.Length);
         return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+    }
+
+    /// <summary>
+    /// True when a stored hash was produced with fewer iterations than the
+    /// current cost. Raising <see cref="Iterations"/> only protects PINs hashed
+    /// afterwards, so callers re-hash on the next successful login (the PIN is
+    /// only in memory at that moment) — see OasShopFloorAuthService.
+    /// </summary>
+    public static bool NeedsRehash(string? stored)
+    {
+        if (!LooksLikeHash(stored)) return true;
+        var parts = stored!.Split('.');
+        return int.TryParse(parts[0], out var iterations) && iterations < Iterations;
     }
 }

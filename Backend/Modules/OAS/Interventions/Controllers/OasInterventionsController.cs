@@ -18,13 +18,28 @@ public class OasInterventionsController : OasControllerBase
     public async Task<ActionResult<IReadOnlyList<OasInterventionDto>>> Inbox() => Ok(await _service.GetInboxAsync(CurrentTenantId, CurrentOasUserId));
 
     [HttpPost]
-    public async Task<ActionResult<OasInterventionDto>> Create([FromBody] OasCreateInterventionRequestDto request) => Ok(await _service.CreateAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasInterventionDto>> Create([FromBody] OasCreateInterventionRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateAsync(CurrentTenantId, request);
+        if (!success) return error switch
+        {
+            "event_not_found" => NotFound(),
+            "post_out_of_scope" => Problem(statusCode: 403, title: error),
+            _ => Problem(statusCode: 409, title: error),
+        };
+        return Ok(dto);
+    }
 
     [HttpPost("{id}/assign")]
     public async Task<IActionResult> Assign(Guid id)
     {
         var (success, error) = await _service.AssignAsync(CurrentTenantId, CurrentOasUserId, id);
-        if (!success) return error == "not_found" ? NotFound() : Problem(statusCode: 409, title: error);
+        if (!success) return error switch
+        {
+            "not_found" => NotFound(),
+            "post_out_of_scope" => Problem(statusCode: 403, title: error),
+            _ => Problem(statusCode: 409, title: error),
+        };
         return Ok(new { success = true });
     }
 
@@ -32,7 +47,12 @@ public class OasInterventionsController : OasControllerBase
     public async Task<IActionResult> Start(Guid id)
     {
         var (success, error) = await _service.StartAsync(CurrentTenantId, id);
-        if (!success) return error == "not_found" ? NotFound() : Problem(statusCode: 409, title: error);
+        if (!success) return error switch
+        {
+            "not_found" => NotFound(),
+            "post_out_of_scope" => Problem(statusCode: 403, title: error),
+            _ => Problem(statusCode: 409, title: error),
+        };
         return Ok(new { success = true });
     }
 
@@ -40,7 +60,12 @@ public class OasInterventionsController : OasControllerBase
     public async Task<IActionResult> Close(Guid id)
     {
         var (success, error) = await _service.CloseAsync(CurrentTenantId, CurrentOasUserId, id);
-        if (!success) return error == "not_found" ? NotFound() : Problem(statusCode: 409, title: error);
+        if (!success) return error switch
+        {
+            "not_found" => NotFound(),
+            "post_out_of_scope" => Problem(statusCode: 403, title: error),
+            _ => Problem(statusCode: 409, title: error),
+        };
         return Ok(new { success = true });
     }
 }

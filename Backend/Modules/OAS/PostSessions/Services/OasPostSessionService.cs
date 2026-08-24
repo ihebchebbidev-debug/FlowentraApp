@@ -9,8 +9,8 @@ namespace MyApi.Modules.OAS.PostSessions.Services;
 public interface IOasPostSessionService
 {
     Task<(bool success, string? error, OasPostSessionDto? dto)> OpenAsync(int tenantId, Guid userId, OasOpenSessionRequestDto request);
-    Task<(bool success, string? error, OasPostSessionDto? dto)> RelayAsync(int tenantId, Guid sessionId, OasRelaySessionRequestDto request);
-    Task<(bool success, string? error, OasPostSessionDto? dto)> CloseAsync(int tenantId, Guid sessionId, OasCloseSessionRequestDto request);
+    Task<(bool success, string? error, OasPostSessionDto? dto)> RelayAsync(int tenantId, Guid actorId, string actorRole, Guid sessionId, OasRelaySessionRequestDto request);
+    Task<(bool success, string? error, OasPostSessionDto? dto)> CloseAsync(int tenantId, Guid actorId, string actorRole, Guid sessionId, OasCloseSessionRequestDto request);
     Task<OasPostSessionDto?> GetActiveAsync(int tenantId, Guid userId);
     Task<OasScanResultDto> ScanAsync(int tenantId, OasScanRequestDto request);
 }
@@ -27,41 +27,17 @@ public interface IOasPostSessionService
 public class OasPostSessionService : IOasPostSessionService
 {
     private readonly OasDbContext _db;
-    private readonly System.Security.Claims.ClaimsPrincipal? _user;
+    private readonly MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver _scope;
 
-    public OasPostSessionService(OasDbContext db, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
+    public OasPostSessionService(OasDbContext db, MyApi.Modules.OAS.Common.Scope.IOasPostScopeResolver scope)
     {
         _db = db;
-        _user = httpContextAccessor.HttpContext?.User;
+        _scope = scope;
     }
 
-    private Guid? CallerScopeClaim(string type)
-    {
-        var claim = _user?.FindFirst(type)?.Value;
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
+    /// <summary>BL-012 perimeter — shared implementation in Common/Scope/OasPostScopeResolver.</summary>
+    private Task<Guid[]?> ScopedPostIdsAsync() => _scope.ScopedPostIdsAsync();
 
-    /// <summary>Same BL-012 site/zone/line perimeter as OasDeclarationService.ScopedPostIdsAsync — mirrored here rather than shared because OasDbContext-scoped services don't share a common base for this helper.</summary>
-    private async Task<Guid[]?> ScopedPostIdsAsync()
-    {
-        var siteId = CallerScopeClaim("oas_scope_site_id");
-        var zoneId = CallerScopeClaim("oas_scope_zone_id");
-        var lineId = CallerScopeClaim("oas_scope_line_id");
-        if (siteId is null && zoneId is null && lineId is null) return null; // unrestricted
-
-        if (lineId is not null)
-            return await _db.Set<OasPost>().Where(p => p.LineId == lineId).Select(p => p.Id).ToArrayAsync();
-
-        var lines = _db.Set<OasLine>().AsQueryable();
-        if (zoneId is not null) lines = lines.Where(l => l.ZoneId == zoneId);
-        else if (siteId is not null)
-        {
-            var zoneIds = await _db.Set<OasZone>().Where(z => z.SiteId == siteId).Select(z => z.Id).ToArrayAsync();
-            lines = lines.Where(l => zoneIds.Contains(l.ZoneId));
-        }
-        var lineIds = await lines.Select(l => l.Id).ToArrayAsync();
-        return await _db.Set<OasPost>().Where(p => lineIds.Contains(p.LineId)).Select(p => p.Id).ToArrayAsync();
-    }
 
     public async Task<(bool success, string? error, OasPostSessionDto? dto)> OpenAsync(int tenantId, Guid userId, OasOpenSessionRequestDto request)
     {
@@ -125,11 +101,43 @@ public class OasPostSessionService : IOasPostSessionService
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is Npgsql.PostgresException { SqlState: "23505" };
 
-    public async Task<(bool success, string? error, OasPostSessionDto? dto)> RelayAsync(int tenantId, Guid sessionId, OasRelaySessionRequestDto request)
+    /// <summary>
+    /// Mutating a session by id used to require only a valid token: any
+    /// authenticated operator could relay a colleague's session to themselves
+    /// (stealing in-flight production) or close someone else's session by
+    /// guessing/observing its id. A caller may act on a session only when it
+    /// is their own, or when they are admin/supervisor — and in every case the
+    /// session's post must sit inside their BL-012 perimeter.
+    /// </summary>
+    private async Task<string?> AuthorizeSessionAsync(OasPostSession session, Guid actorId, string actorRole)
+    {
+        var scopedPostIds = await ScopedPostIdsAsync();
+        if (scopedPostIds is not null && !scopedPostIds.Contains(session.PostId)) return "post_out_of_scope";
+
+        var isPrivileged = actorRole is "admin" or "supervisor";
+        if (!isPrivileged && session.UserId != actorId) return "not_your_session";
+        return null;
+    }
+
+    public async Task<(bool success, string? error, OasPostSessionDto? dto)> RelayAsync(int tenantId, Guid actorId, string actorRole, Guid sessionId, OasRelaySessionRequestDto request)
     {
         var session = await _db.Set<OasPostSession>().FindAsync(sessionId);
         if (session is null) return (false, "not_found", null);
         if (session.EndedAt is not null) return (false, "session_already_closed", null);
+
+        var authError = await AuthorizeSessionAsync(session, actorId, actorRole);
+        if (authError is not null) return (false, authError, null);
+
+        // The incoming operator must exist in this tenant and be free —
+        // relaying onto a user who already holds another open session would
+        // put them on two posts at once and break ux_oas_post_sessions_active.
+        var incoming = await _db.Set<MyApi.Modules.OAS.ShopFloorAuth.Models.OasUser>()
+            .FirstOrDefaultAsync(u => u.Id == request.NewUserId && u.IsActive);
+        if (incoming is null) return (false, "new_user_not_found", null);
+
+        var incomingActive = await _db.Set<OasPostSession>()
+            .FirstOrDefaultAsync(s => s.UserId == request.NewUserId && s.EndedAt == null && s.Id != sessionId);
+        if (incomingActive is not null) return (false, "new_user_already_has_active_session", null);
 
         // Relay keeps the SAME session row (and therefore its post,
         // production order, and any declarations already tied to it) —
@@ -140,10 +148,13 @@ public class OasPostSessionService : IOasPostSessionService
         return (true, null, ToDto(session));
     }
 
-    public async Task<(bool success, string? error, OasPostSessionDto? dto)> CloseAsync(int tenantId, Guid sessionId, OasCloseSessionRequestDto request)
+    public async Task<(bool success, string? error, OasPostSessionDto? dto)> CloseAsync(int tenantId, Guid actorId, string actorRole, Guid sessionId, OasCloseSessionRequestDto request)
     {
         var session = await _db.Set<OasPostSession>().FindAsync(sessionId);
         if (session is null) return (false, "not_found", null);
+
+        var authError = await AuthorizeSessionAsync(session, actorId, actorRole);
+        if (authError is not null) return (false, authError, null);
 
         if (session.EndedAt is not null) return (true, null, ToDto(session)); // idempotent
 
@@ -171,9 +182,15 @@ public class OasPostSessionService : IOasPostSessionService
         // scanned QR badge could never resolve.
         var post = await _db.Set<OasPost>().FirstOrDefaultAsync(p => p.QrToken == extracted)
             ?? await _db.Set<OasPost>().FirstOrDefaultAsync(p => p.Code == extracted);
-        return post is null
-            ? new OasScanResultDto { Resolved = false }
-            : new OasScanResultDto { Resolved = true, PostId = post.Id, PostCode = post.Code };
+        if (post is null) return new OasScanResultDto { Resolved = false };
+
+        // Scan is the pre-step to opening a session, so it must answer with
+        // the same perimeter OpenAsync enforces — otherwise it doubles as a
+        // post-code oracle for the whole tenant and the operator only
+        // discovers the refusal after scanning.
+        if (!await _scope.IsPostInScopeAsync(post.Id)) return new OasScanResultDto { Resolved = false };
+
+        return new OasScanResultDto { Resolved = true, PostId = post.Id, PostCode = post.Code };
     }
 
     /// <summary>Mirrors the 4 formats `parsePostCode` (session.ts:141) accepts: raw value, `oas://post/&lt;value&gt;`, a URL with `?post=`/`?code=`, or the value embedded as the last path segment. The extracted value may be either a QrToken (scanned badge) or a Code (manual entry) — the caller tries both.</summary>
