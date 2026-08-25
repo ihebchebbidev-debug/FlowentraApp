@@ -15,7 +15,12 @@ public class OasLinesController : OasControllerBase
     [HttpGet] public async Task<ActionResult<IReadOnlyList<OasLineDto>>> GetAll([FromQuery] Guid? zoneId, [FromQuery] bool includeArchived = false) => Ok(await _service.GetLinesAsync(CurrentTenantId, zoneId, includeArchived));
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasLineDto>> Create([FromBody] OasLineRequestDto request) => Ok(await _service.CreateLineAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasLineDto>> Create([FromBody] OasLineRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateLineAsync(CurrentTenantId, request);
+        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        return Ok(dto);
+    }
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasLineRequestDto request)

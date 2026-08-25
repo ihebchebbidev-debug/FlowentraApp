@@ -43,7 +43,12 @@ public class OasProductionOrdersController : OasControllerBase
     [HttpGet] public async Task<ActionResult<IReadOnlyList<OasProductionOrderDto>>> GetAll() => Ok(await _service.GetOrdersAsync(CurrentTenantId));
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasProductionOrderDto>> Create([FromBody] OasProductionOrderRequestDto request) => Ok(await _service.CreateOrderAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasProductionOrderDto>> Create([FromBody] OasProductionOrderRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateOrderAsync(CurrentTenantId, request);
+        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        return Ok(dto);
+    }
 
     [HttpPut("{id}/status")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> SetStatus(Guid id, [FromBody] OasProductionOrderStatusRequestDto request)

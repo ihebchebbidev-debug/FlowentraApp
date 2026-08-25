@@ -16,7 +16,12 @@ public class OasEquipmentsController : OasControllerBase
 
     // GetAll deliberately unrestricted — reloadAll() calls equipmentsApi.list() as part of the shared referentials load mobile's DeclareStop also triggers.
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasEquipmentDto>> Create([FromBody] OasEquipmentRequestDto request) => Ok(await _service.CreateAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasEquipmentDto>> Create([FromBody] OasEquipmentRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateAsync(CurrentTenantId, request);
+        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        return Ok(dto);
+    }
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasEquipmentRequestDto request)

@@ -76,16 +76,27 @@ public class OasOperatorService : IOasOperatorService
         }
 
         var email = request.Email.Trim().ToLowerInvariant();
-        if (await _db.Users.AnyAsync(u => u.Email == email))
+        // IgnoreQueryFilters: oas_users is soft-deletable, so a deactivated/archived account
+        // still holds the unique (tenant_id, email) index entry but is invisible to a filtered
+        // check — recreating that email used to blow up as a raw 500 instead of a clean 409.
+        if (await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.TenantId == tenantId && u.Email == email))
         {
             return (false, "email_already_exists", null);
+        }
+
+        var employeeCode = request.EmployeeCode?.Trim();
+        // Same story for the unique (tenant_id, employee_code) index.
+        if (!string.IsNullOrEmpty(employeeCode)
+            && await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.TenantId == tenantId && u.EmployeeCode == employeeCode))
+        {
+            return (false, "employee_code_already_exists", null);
         }
 
         var user = new OasUser
         {
             TenantId = tenantId,
             Email = email,
-            EmployeeCode = request.EmployeeCode?.Trim(),
+            EmployeeCode = employeeCode,
             DisplayName = request.DisplayName,
             Phone = request.Phone,
             Role = role,

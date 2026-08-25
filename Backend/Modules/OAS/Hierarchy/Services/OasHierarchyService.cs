@@ -72,12 +72,27 @@ public class OasHierarchyService : IOasHierarchyService
         return sites.Select(ToSiteDto).ToList();
     }
 
-    public async Task<OasSiteDto> CreateSiteAsync(int tenantId, OasSiteRequestDto request)
+    // Every hierarchy table has a unique (tenant_id, code) index while rows are only ever
+    // soft-deleted, so the archived row keeps holding its code. Creating that code again used
+    // to hit the index and surface as a raw 500 — instead the archived row is revived in place,
+    // and a genuinely live duplicate is reported as a 409 by the controller.
+    public async Task<(bool success, string? error, OasSiteDto? dto)> CreateSiteAsync(int tenantId, OasSiteRequestDto request)
     {
+        var existing = await _db.Set<OasSite>().IgnoreQueryFilters().FirstOrDefaultAsync(s => s.TenantId == tenantId && s.Code == request.Code);
+        if (existing is not null && !existing.IsDeleted) return (false, "duplicate_code", null);
+        if (existing is not null)
+        {
+            existing.IsDeleted = false; existing.ArchivedAt = null;
+            existing.Name = request.Name;
+            if (request.Timezone is not null) existing.Timezone = request.Timezone;
+            if (request.Address is not null) existing.Address = request.Address;
+            await _db.SaveChangesAsync();
+            return (true, null, ToSiteDto(existing));
+        }
         var site = new OasSite { TenantId = tenantId, Code = request.Code, Name = request.Name, Timezone = request.Timezone ?? "Africa/Tunis", Address = request.Address };
         _db.Set<OasSite>().Add(site);
         await _db.SaveChangesAsync();
-        return ToSiteDto(site);
+        return (true, null, ToSiteDto(site));
     }
 
     public async Task<bool> UpdateSiteAsync(int tenantId, Guid id, OasSiteRequestDto request)
@@ -150,12 +165,22 @@ public class OasHierarchyService : IOasHierarchyService
         return zones.Select(ToZoneDto).ToList();
     }
 
-    public async Task<OasZoneDto> CreateZoneAsync(int tenantId, OasZoneRequestDto request)
+    public async Task<(bool success, string? error, OasZoneDto? dto)> CreateZoneAsync(int tenantId, OasZoneRequestDto request)
     {
+        var existing = await _db.Set<OasZone>().IgnoreQueryFilters().FirstOrDefaultAsync(z => z.TenantId == tenantId && z.Code == request.Code);
+        if (existing is not null && !existing.IsDeleted) return (false, "duplicate_code", null);
+        if (existing is not null)
+        {
+            existing.IsDeleted = false; existing.ArchivedAt = null;
+            existing.SiteId = request.SiteId; existing.Name = request.Name;
+            if (request.SortOrder is not null) existing.SortOrder = request.SortOrder.Value;
+            await _db.SaveChangesAsync();
+            return (true, null, ToZoneDto(existing));
+        }
         var zone = new OasZone { TenantId = tenantId, SiteId = request.SiteId, Code = request.Code, Name = request.Name, SortOrder = request.SortOrder ?? 0 };
         _db.Set<OasZone>().Add(zone);
         await _db.SaveChangesAsync();
-        return ToZoneDto(zone);
+        return (true, null, ToZoneDto(zone));
     }
 
     public async Task<bool> UpdateZoneAsync(int tenantId, Guid id, OasZoneRequestDto request)
@@ -213,12 +238,23 @@ public class OasHierarchyService : IOasHierarchyService
         return lines.Select(ToLineDto).ToList();
     }
 
-    public async Task<OasLineDto> CreateLineAsync(int tenantId, OasLineRequestDto request)
+    public async Task<(bool success, string? error, OasLineDto? dto)> CreateLineAsync(int tenantId, OasLineRequestDto request)
     {
+        var existing = await _db.Set<OasLine>().IgnoreQueryFilters().FirstOrDefaultAsync(l => l.TenantId == tenantId && l.Code == request.Code);
+        if (existing is not null && !existing.IsDeleted) return (false, "duplicate_code", null);
+        if (existing is not null)
+        {
+            existing.IsDeleted = false; existing.ArchivedAt = null;
+            existing.ZoneId = request.ZoneId; existing.Name = request.Name;
+            if (request.SortOrder is not null) existing.SortOrder = request.SortOrder.Value;
+            if (request.TargetOee is not null) existing.TargetOee = request.TargetOee;
+            await _db.SaveChangesAsync();
+            return (true, null, ToLineDto(existing));
+        }
         var line = new OasLine { TenantId = tenantId, ZoneId = request.ZoneId, Code = request.Code, Name = request.Name, SortOrder = request.SortOrder ?? 0, TargetOee = request.TargetOee };
         _db.Set<OasLine>().Add(line);
         await _db.SaveChangesAsync();
-        return ToLineDto(line);
+        return (true, null, ToLineDto(line));
     }
 
     public async Task<bool> UpdateLineAsync(int tenantId, Guid id, OasLineRequestDto request)
@@ -288,8 +324,18 @@ public class OasHierarchyService : IOasHierarchyService
         return post is null ? null : ToPostDto(post);
     }
 
-    public async Task<OasPostDto> CreatePostAsync(int tenantId, OasPostRequestDto request)
+    public async Task<(bool success, string? error, OasPostDto? dto)> CreatePostAsync(int tenantId, OasPostRequestDto request)
     {
+        var existing = await _db.Set<OasPost>().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Code == request.Code);
+        if (existing is not null && !existing.IsDeleted) return (false, "duplicate_code", null);
+        if (existing is not null)
+        {
+            existing.IsDeleted = false; existing.ArchivedAt = null;
+            existing.LineId = request.LineId; existing.Name = request.Name; existing.PostType = request.PostType;
+            if (request.SortOrder is not null) existing.SortOrder = request.SortOrder.Value;
+            await _db.SaveChangesAsync();
+            return (true, null, ToPostDto(existing));
+        }
         var post = new OasPost
         {
             TenantId = tenantId,
@@ -302,7 +348,7 @@ public class OasHierarchyService : IOasHierarchyService
         };
         _db.Set<OasPost>().Add(post);
         await _db.SaveChangesAsync();
-        return ToPostDto(post);
+        return (true, null, ToPostDto(post));
     }
 
     public async Task<bool> UpdatePostAsync(int tenantId, Guid id, OasPostRequestDto request)

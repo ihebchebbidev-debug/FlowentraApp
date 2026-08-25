@@ -8,7 +8,7 @@ namespace MyApi.Modules.OAS.Equipments.Services;
 public interface IOasEquipmentService
 {
     Task<IReadOnlyList<OasEquipmentDto>> GetAllAsync(int tenantId, Guid? postId);
-    Task<OasEquipmentDto> CreateAsync(int tenantId, OasEquipmentRequestDto request);
+    Task<(bool success, string? error, OasEquipmentDto? dto)> CreateAsync(int tenantId, OasEquipmentRequestDto request);
     Task<bool> UpdateAsync(int tenantId, Guid id, OasEquipmentRequestDto request);
     Task<bool> DeleteAsync(int tenantId, Guid id);
 }
@@ -26,17 +26,36 @@ public class OasEquipmentService : IOasEquipmentService
         return rows.Select(ToDto).ToList();
     }
 
-    public async Task<OasEquipmentDto> CreateAsync(int tenantId, OasEquipmentRequestDto request)
+    public async Task<(bool success, string? error, OasEquipmentDto? dto)> CreateAsync(int tenantId, OasEquipmentRequestDto request)
     {
+        // oas_equipments has a unique (tenant_id, code) index. IgnoreQueryFilters is required
+        // because the soft-delete filter hides archived rows from this pre-check while the
+        // unique index still sees them — recreating an archived code would otherwise 500.
+        var existing = await _db.Set<OasEquipment>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.Code == request.Code);
+        if (existing is not null && !existing.IsDeleted) return (false, "duplicate_code", null);
+
+        var criticality = Enum.Parse<OasCriticality>(request.Criticality, ignoreCase: true);
+
+        if (existing is not null)
+        {
+            existing.IsDeleted = false; existing.ArchivedAt = null;
+            existing.PostId = request.PostId; existing.Name = request.Name;
+            existing.SerialNumber = request.SerialNumber; existing.Manufacturer = request.Manufacturer;
+            existing.CommissionedAt = request.CommissionedAt; existing.Criticality = criticality;
+            await _db.SaveChangesAsync();
+            return (true, null, ToDto(existing));
+        }
+
         var eq = new OasEquipment
         {
             TenantId = tenantId, PostId = request.PostId, Code = request.Code, Name = request.Name,
             SerialNumber = request.SerialNumber, Manufacturer = request.Manufacturer, CommissionedAt = request.CommissionedAt,
-            Criticality = Enum.Parse<OasCriticality>(request.Criticality, ignoreCase: true),
+            Criticality = criticality,
         };
         _db.Set<OasEquipment>().Add(eq);
         await _db.SaveChangesAsync();
-        return ToDto(eq);
+        return (true, null, ToDto(eq));
     }
 
     public async Task<bool> UpdateAsync(int tenantId, Guid id, OasEquipmentRequestDto request)

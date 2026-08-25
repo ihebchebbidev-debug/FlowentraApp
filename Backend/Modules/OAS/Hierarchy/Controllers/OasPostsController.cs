@@ -29,7 +29,12 @@ public class OasPostsController : OasControllerBase
     }
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasPostDto>> Create([FromBody] OasPostRequestDto request) => Ok(await _service.CreatePostAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasPostDto>> Create([FromBody] OasPostRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreatePostAsync(CurrentTenantId, request);
+        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        return Ok(dto);
+    }
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasPostRequestDto request)

@@ -21,7 +21,12 @@ public class OasSitesController : OasControllerBase
     [HttpGet] public async Task<ActionResult<IReadOnlyList<OasSiteDto>>> GetAll([FromQuery] bool includeArchived = false) => Ok(await _service.GetSitesAsync(CurrentTenantId, includeArchived));
 
     [HttpPost] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
-    public async Task<ActionResult<OasSiteDto>> Create([FromBody] OasSiteRequestDto request) => Ok(await _service.CreateSiteAsync(CurrentTenantId, request));
+    public async Task<ActionResult<OasSiteDto>> Create([FromBody] OasSiteRequestDto request)
+    {
+        var (success, error, dto) = await _service.CreateSiteAsync(CurrentTenantId, request);
+        if (!success) return Problem(statusCode: 409, title: error ?? "conflict");
+        return Ok(dto);
+    }
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasSiteRequestDto request)
