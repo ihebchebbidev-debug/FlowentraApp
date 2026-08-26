@@ -36,8 +36,8 @@ public class OasSlaService : IOasSlaService
     {
         var rule = new OasSlaRule
         {
-            TenantId = tenantId, EventType = Enum.Parse<OasEventType>(request.EventType, true),
-            Criticality = string.IsNullOrEmpty(request.Criticality) ? null : Enum.Parse<OasCriticality>(request.Criticality, true),
+            TenantId = tenantId, EventType = ParseEventType(request.EventType),
+            Criticality = string.IsNullOrEmpty(request.Criticality) ? null : ParseCriticality(request.Criticality),
             LineId = request.LineId, TargetMin = request.TargetMin, Priority = request.Priority,
         };
         _db.Set<OasSlaRule>().Add(rule);
@@ -49,8 +49,8 @@ public class OasSlaService : IOasSlaService
     {
         var rule = await _db.Set<OasSlaRule>().FindAsync(id);
         if (rule is null) return false;
-        rule.EventType = Enum.Parse<OasEventType>(request.EventType, true);
-        rule.Criticality = string.IsNullOrEmpty(request.Criticality) ? null : Enum.Parse<OasCriticality>(request.Criticality, true);
+        rule.EventType = ParseEventType(request.EventType);
+        rule.Criticality = string.IsNullOrEmpty(request.Criticality) ? null : ParseCriticality(request.Criticality);
         rule.LineId = request.LineId; rule.TargetMin = request.TargetMin; rule.Priority = request.Priority;
         await _db.SaveChangesAsync();
         return true;
@@ -110,4 +110,12 @@ public class OasSlaService : IOasSlaService
         Id = r.Id, EventType = r.EventType.ToString(), Criticality = r.Criticality?.ToString(),
         LineId = r.LineId, TargetMin = r.TargetMin, Priority = r.Priority, IsActive = r.IsActive,
     };
+
+    // Enum.Parse threw on unknown values, turning a typo into a raw 500;
+    // ArgumentException is mapped to a readable 400 by the global middleware.
+    private static OasEventType ParseEventType(string value)
+        => Enum.TryParse<OasEventType>(value, true, out var parsed) ? parsed : throw new ArgumentException($"invalid_event_type:{value}", nameof(value));
+
+    private static OasCriticality ParseCriticality(string value)
+        => Enum.TryParse<OasCriticality>(value, true, out var parsed) ? parsed : throw new ArgumentException($"invalid_criticality:{value}", nameof(value));
 }

@@ -155,8 +155,16 @@ public class OasQualityService : IOasQualityService
         return rows.Select(ToItemDto).ToList();
     }
 
+    /// <summary>`oas_quality_check_template_items.value_type` has a check constraint — an unknown value surfaced as a 500 from the DB instead of a 400 from validation.</summary>
+    private static readonly string[] AllowedValueTypes = { "boolean", "numeric", "text" };
+
     public async Task PutTemplateItemsAsync(int tenantId, Guid templateId, IReadOnlyList<OasQualityCheckTemplateItemRequestDto> items)
     {
+        foreach (var invalid in items.Where(i => !AllowedValueTypes.Contains(i.ValueType)))
+        {
+            throw new ArgumentException($"invalid_value_type:{invalid.ValueType}", nameof(items));
+        }
+
         var existing = await _db.Set<OasQualityCheckTemplateItem>().Where(i => i.TemplateId == templateId).ToListAsync();
         _db.Set<OasQualityCheckTemplateItem>().RemoveRange(existing);
 

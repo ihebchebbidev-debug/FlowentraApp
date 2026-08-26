@@ -60,17 +60,25 @@ public class OasCauseService : IOasCauseService
         var cause = await _db.Set<OasCause>().FindAsync(id);
         if (cause is null) return false;
         cause.LabelFr = request.LabelFr; cause.LabelAr = request.LabelAr; cause.Code = request.Code;
-        if (!string.IsNullOrEmpty(request.EventType)) cause.EventType = Enum.Parse<OasEventType>(request.EventType, true);
-        cause.DefaultCriticality = Enum.Parse<OasCriticality>(request.DefaultCriticality, true);
+        // Unknown enum values used to throw out of Enum.Parse and surface as a 500;
+        // ArgumentException is mapped to a readable 400 by the global middleware.
+        if (!string.IsNullOrEmpty(request.EventType)) cause.EventType = ParseEventType(request.EventType);
+        cause.DefaultCriticality = ParseCriticality(request.DefaultCriticality);
         await _db.SaveChangesAsync();
         return true;
     }
+
+    private static OasEventType ParseEventType(string value)
+        => Enum.TryParse<OasEventType>(value, true, out var parsed) ? parsed : throw new ArgumentException($"invalid_event_type:{value}", nameof(value));
+
+    private static OasCriticality ParseCriticality(string value)
+        => Enum.TryParse<OasCriticality>(value, true, out var parsed) ? parsed : throw new ArgumentException($"invalid_criticality:{value}", nameof(value));
 
     public async Task<bool> SetKindAsync(int tenantId, Guid id, string eventType)
     {
         var cause = await _db.Set<OasCause>().FindAsync(id);
         if (cause is null) return false;
-        cause.EventType = string.IsNullOrEmpty(eventType) ? null : Enum.Parse<OasEventType>(eventType, true);
+        cause.EventType = string.IsNullOrEmpty(eventType) ? null : ParseEventType(eventType);
         await _db.SaveChangesAsync();
         return true;
     }
@@ -79,10 +87,11 @@ public class OasCauseService : IOasCauseService
     {
         var cause = await _db.Set<OasCause>().FindAsync(id);
         if (cause is null) return false;
-        cause.DefaultCriticality = Enum.Parse<OasCriticality>(criticality, true);
+        cause.DefaultCriticality = ParseCriticality(criticality);
         await _db.SaveChangesAsync();
         return true;
     }
+
 
     public async Task<bool> SetActiveAsync(int tenantId, Guid id, bool isActive)
     {
@@ -233,17 +242,27 @@ public class OasCauseService : IOasCauseService
     {
         cause = null;
         if (!Enum.TryParse<OasCauseDomain>(request.Domain, true, out var domain)) { error = "invalid_domain"; return false; }
+        // Enum.Parse here used to throw on an unknown eventType/criticality, so a
+        // typo'd value surfaced as a raw 500 instead of a readable 400.
+        OasEventType? eventType = null;
+        if (!string.IsNullOrEmpty(request.EventType))
+        {
+            if (!Enum.TryParse<OasEventType>(request.EventType, true, out var parsedType)) { error = "invalid_event_type"; return false; }
+            eventType = parsedType;
+        }
+        if (!Enum.TryParse<OasCriticality>(request.DefaultCriticality, true, out var criticality)) { error = "invalid_criticality"; return false; }
 
         cause = new OasCause
         {
             TenantId = tenantId, ParentId = request.ParentId, Domain = domain, Code = request.Code,
             LabelFr = request.LabelFr, LabelAr = request.LabelAr,
-            EventType = string.IsNullOrEmpty(request.EventType) ? null : Enum.Parse<OasEventType>(request.EventType, true),
-            DefaultCriticality = Enum.Parse<OasCriticality>(request.DefaultCriticality, true),
+            EventType = eventType,
+            DefaultCriticality = criticality,
         };
         error = null;
         return true;
     }
+
 
     private static OasCauseDto ToDto(OasCause c) => new()
     {
