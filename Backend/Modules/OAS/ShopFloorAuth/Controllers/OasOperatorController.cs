@@ -47,13 +47,14 @@ public class OasOperatorController : OasControllerBase
     [OasAuthorize(Roles = "admin,supervisor")]
     public async Task<IActionResult> SetActive(Guid id, [FromBody] OasSetActiveRequestDto request)
     {
-        var (success, error) = await _operators.SetActiveAsync(CurrentTenantId, id, request.IsActive, CurrentOasRole);
+        var (success, error) = await _operators.SetActiveAsync(CurrentTenantId, id, request.IsActive, CurrentOasRole, CurrentOasUserId);
         if (!success)
         {
             return error switch
             {
                 "not_found" => NotFound(),
                 "admin_target_requires_admin_caller" => Problem(statusCode: 403, title: error),
+                "cannot_deactivate_self" => Problem(statusCode: 409, title: error),
                 _ => BadRequest(new { error }),
             };
         }

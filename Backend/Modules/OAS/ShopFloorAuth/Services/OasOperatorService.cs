@@ -119,10 +119,17 @@ public class OasOperatorService : IOasOperatorService
         return (true, null, ToDto(user));
     }
 
-    public async Task<(bool success, string? error)> SetActiveAsync(int tenantId, Guid id, bool isActive, string callerRole)
+    public async Task<(bool success, string? error)> SetActiveAsync(int tenantId, Guid id, bool isActive, string callerRole, Guid callerId = default)
     {
         var user = await _db.Users.FindAsync(id);
         if (user is null) return (false, "not_found");
+        // Self-lockout guard: deactivating your own account revokes your own
+        // console access, and if you are the last admin nobody can undo it
+        // (the one-time /setup bootstrap refuses once an admin row exists).
+        if (!isActive && callerId != default && callerId == user.Id)
+        {
+            return (false, "cannot_deactivate_self");
+        }
         // A supervisor could otherwise deactivate (or reactivate) an admin
         // account — the same "supervisor touches an admin" gap already
         // closed on Create/SetRole for this controller.
