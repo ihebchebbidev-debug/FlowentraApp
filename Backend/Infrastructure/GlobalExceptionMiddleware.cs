@@ -34,12 +34,20 @@ public class GlobalExceptionMiddleware
             _logger.LogDebug("Request cancelled by client: {Method} {Path}", context.Request.Method, context.Request.Path);
             context.Response.StatusCode = 499; // Client Closed Request
         }
+        catch (ArgumentException ex) when (ex is not ArgumentNullException)
+        {
+            // Invalid caller input (bad enum value, out-of-range argument) → 400,
+            // never a 500: these are typos in the request, not server faults.
+            _logger.LogWarning(ex, "Invalid argument: {Message}", ex.Message);
+            await WriteErrorResponse(context, HttpStatusCode.BadRequest, ex.Message);
+        }
         catch (InvalidOperationException ex)
         {
             // Business logic errors → 400 Bad Request
             _logger.LogWarning(ex, "Business rule violation: {Message}", ex.Message);
             await WriteErrorResponse(context, HttpStatusCode.BadRequest, ex.Message);
         }
+
         catch (UnauthorizedAccessException ex)
         {
             _logger.LogWarning(ex, "Unauthorized access attempt: {Path}", context.Request.Path);
