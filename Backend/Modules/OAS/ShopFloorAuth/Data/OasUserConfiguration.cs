@@ -49,6 +49,12 @@ public class OasUserConfiguration : IEntityTypeConfiguration<OasUser>
         b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
         b.Property(x => x.RefreshToken).HasColumnName("refresh_token");
         b.Property(x => x.RefreshTokenExpiresAt).HasColumnName("refresh_token_expires_at");
+        b.Property(x => x.PasswordResetOtpHash).HasColumnName("password_reset_otp_hash").HasMaxLength(128);
+        b.Property(x => x.PasswordResetOtpExpiresAt).HasColumnName("password_reset_otp_expires_at");
+        b.Property(x => x.PasswordResetOtpAttempts).HasColumnName("password_reset_otp_attempts");
+        b.Property(x => x.PasswordResetOtpLastSentAt).HasColumnName("password_reset_otp_last_sent_at");
+        b.Property(x => x.PasswordResetToken).HasColumnName("password_reset_token").HasMaxLength(128);
+        b.Property(x => x.PasswordResetTokenExpiresAt).HasColumnName("password_reset_token_expires_at");
 
         b.HasIndex(x => new { x.TenantId, x.Email }).IsUnique();
         b.HasIndex(x => new { x.TenantId, x.EmployeeCode }).IsUnique().HasFilter("employee_code IS NOT NULL");

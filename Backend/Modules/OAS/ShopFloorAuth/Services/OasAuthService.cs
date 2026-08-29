@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using MyApi.Modules.OAS.Common;
 using MyApi.Modules.OAS.ShopFloorAuth.DTOs;
 using MyApi.Modules.OAS.ShopFloorAuth.Models;
+using MyApi.Modules.Shared.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -31,14 +32,16 @@ public class OasAuthService : IOasAuthService
     private readonly IOasUserJitSyncService _jitSync;
     private readonly IOasTokenService _tokenService;
     private readonly ILogger<OasAuthService> _logger;
+    private readonly IForgotEmailService _forgotEmailService;
     private readonly string _oasSlug;
 
-    public OasAuthService(OasDbContext db, IOasUserJitSyncService jitSync, IOasTokenService tokenService, ILogger<OasAuthService> logger, IHttpContextAccessor httpContextAccessor)
+    public OasAuthService(OasDbContext db, IOasUserJitSyncService jitSync, IOasTokenService tokenService, ILogger<OasAuthService> logger, IForgotEmailService forgotEmailService, IHttpContextAccessor httpContextAccessor)
     {
         _db = db;
         _jitSync = jitSync;
         _tokenService = tokenService;
         _logger = logger;
+        _forgotEmailService = forgotEmailService;
         _oasSlug = httpContextAccessor.HttpContext?.Items["OasSlug"] as string
             ?? throw new InvalidOperationException("OasSlug not resolved on HttpContext — OasTenantMiddleware must run before this service is used.");
     }
@@ -53,6 +56,13 @@ public class OasAuthService : IOasAuthService
     /// index would reject re-creating the same address. Tenant +
     /// soft-delete scoping comes from OasDbContext's query filter.
     /// </summary>
+    /// <summary>
+    /// True when this tenant already has an admin account (tenant +
+    /// soft-delete scoping comes from OasDbContext's query filter, so a
+    /// retired admin from ResetAdminsAsync correctly reads as "none").
+    /// </summary>
+    public Task<bool> HasAdminAsync() => _db.Users.AnyAsync(u => u.Role == OasAppRole.admin);
+
     public async Task<int> ResetAdminsAsync()
     {
         var admins = await _db.Users.Where(u => u.Role == OasAppRole.admin).ToListAsync();
@@ -238,9 +248,158 @@ public class OasAuthService : IOasAuthService
         return new OasAuthResponseDto { Success = true, Message = "Password changed." };
     }
 
+    // ── Password reset by emailed OTP ───────────────────────────────────────
+    // Same three-step shape as the socle (POST forgot-password → OTP email →
+    // verify-otp → reset-password) and the same sender: IForgotEmailService,
+    // i.e. the shared Flowentra support mailbox over OVH SMTP. Differences
+    // from the socle, deliberately: the 6-digit code is stored hashed, has a
+    // 5-attempt cap, and a 60 s resend throttle. Responses are always
+    // non-enumerable ("if an account exists…") like spec §8.3.
+
+    private const int ResetOtpMaxAttempts = 5;
+    private static readonly TimeSpan ResetOtpLifetime = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan ResetTokenLifetime = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan ResetOtpResendCooldown = TimeSpan.FromSeconds(60);
+
+    private const string GenericForgotMessage = "If an account with this email exists, a code has been sent.";
+
+    private static string GenerateOtp() => RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+
+    private static string HashOtp(string code) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));
+
+    private static string GenerateResetToken() =>
+        Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
+    public async Task<OasAuthResponseDto> ForgotPasswordAsync(OasForgotPasswordRequestDto request)
+    {
+        var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
+        if (email.Length < 3) return new OasAuthResponseDto { Success = false, Message = "Email is required." };
+
+        // Tenant + soft-delete scoping comes from OasDbContext's query filter.
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
+
+        // Unknown address, an operator-only account with no password, or an
+        // inactive one: same generic answer, so this can't enumerate accounts.
+        if (user is null || !user.IsActive || string.IsNullOrEmpty(user.PasswordHash))
+        {
+            _logger.LogInformation("🏭 [OAS/AUTH] forgot-password for unknown/ineligible email on tenant '{Slug}'", _oasSlug);
+            return new OasAuthResponseDto { Success = true, Message = GenericForgotMessage };
+        }
+
+        if (user.PasswordResetOtpLastSentAt is { } sentAt && DateTimeOffset.UtcNow - sentAt < ResetOtpResendCooldown)
+        {
+            return new OasAuthResponseDto { Success = true, Message = GenericForgotMessage };
+        }
+
+        var otp = GenerateOtp();
+        user.PasswordResetOtpHash = HashOtp(otp);
+        user.PasswordResetOtpExpiresAt = DateTimeOffset.UtcNow.Add(ResetOtpLifetime);
+        user.PasswordResetOtpAttempts = 0;
+        user.PasswordResetOtpLastSentAt = DateTimeOffset.UtcNow;
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var language = string.IsNullOrWhiteSpace(request.Language) ? "en" : request.Language!.ToLowerInvariant();
+        var sent = await _forgotEmailService.SendOtpEmailAsync(user.Email, otp, user.DisplayName ?? "User", language);
+        if (!sent)
+        {
+            _logger.LogWarning("🏭 [OAS/AUTH] ⚠️ reset OTP email failed for {Email} (code stored, user can retry)", user.Email);
+        }
+
+        return new OasAuthResponseDto { Success = true, Message = GenericForgotMessage };
+    }
+
+    public async Task<OasVerifyResetOtpResponseDto> VerifyResetOtpAsync(OasVerifyResetOtpRequestDto request)
+    {
+        var email = (request.Email ?? string.Empty).Trim().ToLowerInvariant();
+        var code = (request.OtpCode ?? string.Empty).Trim();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
+
+        if (user is null || string.IsNullOrEmpty(user.PasswordResetOtpHash) || user.PasswordResetOtpExpiresAt is null)
+        {
+            return new OasVerifyResetOtpResponseDto { Success = false, Message = "No code pending. Request a new one." };
+        }
+
+        if (DateTimeOffset.UtcNow > user.PasswordResetOtpExpiresAt)
+        {
+            ClearResetOtp(user);
+            await _db.SaveChangesAsync();
+            return new OasVerifyResetOtpResponseDto { Success = false, Message = "Code expired. Request a new one." };
+        }
+
+        if (user.PasswordResetOtpAttempts >= ResetOtpMaxAttempts)
+        {
+            ClearResetOtp(user);
+            await _db.SaveChangesAsync();
+            return new OasVerifyResetOtpResponseDto { Success = false, Message = "Too many attempts. Request a new code." };
+        }
+
+        if (!CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(HashOtp(code)),
+                Encoding.UTF8.GetBytes(user.PasswordResetOtpHash)))
+        {
+            user.PasswordResetOtpAttempts += 1;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync();
+            return new OasVerifyResetOtpResponseDto { Success = false, Message = "Invalid code." };
+        }
+
+        var token = GenerateResetToken();
+        ClearResetOtp(user);
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.Add(ResetTokenLifetime);
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return new OasVerifyResetOtpResponseDto { Success = true, Message = "Code verified.", ResetToken = token };
+    }
+
+    public async Task<OasAuthResponseDto> ResetPasswordAsync(OasResetPasswordRequestDto request)
+    {
+        var token = (request.ResetToken ?? string.Empty).Trim();
+        var password = request.NewPassword ?? string.Empty;
+        if (token.Length == 0 || password.Length < 8)
+        {
+            return new OasAuthResponseDto { Success = false, Message = "Password must be at least 8 characters." };
+        }
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token);
+        if (user is null || user.PasswordResetTokenExpiresAt is null || DateTimeOffset.UtcNow > user.PasswordResetTokenExpiresAt)
+        {
+            return new OasAuthResponseDto { Success = false, Message = "Reset link expired. Start over." };
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, BCrypt.Net.BCrypt.GenerateSalt(12));
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        ClearResetOtp(user);
+        // Reset unlocks the account and drops other sessions — a forgotten
+        // password often means a locked-out or compromised account.
+        user.FailedLoginAttempts = 0;
+        user.LockedUntil = null;
+        user.RefreshToken = null;
+        user.RefreshTokenExpiresAt = null;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("🏭 [OAS/AUTH] password reset completed for {Email} on tenant '{Slug}'", user.Email, _oasSlug);
+        return new OasAuthResponseDto { Success = true, Message = "Password updated. You can sign in now." };
+    }
+
+    private static void ClearResetOtp(OasUser user)
+    {
+        user.PasswordResetOtpHash = null;
+        user.PasswordResetOtpExpiresAt = null;
+        user.PasswordResetOtpAttempts = 0;
+        user.PasswordResetOtpLastSentAt = null;
+    }
+
     private async Task<(string accessToken, string refreshToken, DateTimeOffset expiresAt)> IssueTokensAsync(OasUser user)
     {
-        var (accessToken, refreshToken, expiresAt) = _tokenService.IssueTokens(user);
+        var (accessToken, refreshToken, expiresAt) = _tokenService.IssueTokens(user, _oasSlug);
         user.RefreshToken = refreshToken;
         user.RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();

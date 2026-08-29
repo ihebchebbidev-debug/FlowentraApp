@@ -108,6 +108,25 @@ public class OasTenantMiddleware
         }
 
         context.Items["OasSlug"] = slug;
+
+        // OAS access tokens are tenant-bound. Without this explicit check, a
+        // token minted for tenant A could be replayed with tenant B's header
+        // and would be rejected only incidentally when its user GUID was not
+        // found in B's database. Legacy tokens without the claim are rejected
+        // and must refresh/sign in again.
+        var tokenUserId = context.User.FindFirst("oas_user_id")?.Value;
+        if (!string.IsNullOrEmpty(tokenUserId))
+        {
+            var tokenSlug = context.User.FindFirst("oas_slug")?.Value;
+            if (!string.Equals(tokenSlug, slug, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("🏭 OAS-TENANT: rejected token tenant mismatch on {Path}", path);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "oas_tenant_mismatch" });
+                return;
+            }
+        }
+
         await _next(context);
     }
 }

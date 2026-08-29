@@ -29,6 +29,7 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
     private readonly IOasTokenService _tokenService;
     private readonly ILogger<OasShopFloorAuthService> _logger;
     private readonly System.Security.Claims.ClaimsPrincipal? _caller;
+    private readonly string _oasSlug;
 
     public OasShopFloorAuthService(OasDbContext db, IOasUserJitSyncService jitSync, IOasTokenService tokenService, ILogger<OasShopFloorAuthService> logger, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
     {
@@ -37,6 +38,8 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
         _tokenService = tokenService;
         _logger = logger;
         _caller = httpContextAccessor.HttpContext?.User;
+        _oasSlug = httpContextAccessor.HttpContext?.Items["OasSlug"] as string
+            ?? throw new InvalidOperationException("OasSlug not resolved on HttpContext — OasTenantMiddleware must run before this service is used.");
     }
 
     private Guid? CallerScopeClaim(string type)
@@ -160,7 +163,7 @@ public class OasShopFloorAuthService : IOasShopFloorAuthService
         user.LockedUntil = null;
         user.LastLoginAt = DateTimeOffset.UtcNow;
 
-        var (accessToken, refreshToken, expiresAt) = _tokenService.IssueTokens(user);
+        var (accessToken, refreshToken, expiresAt) = _tokenService.IssueTokens(user, _oasSlug);
         user.RefreshToken = refreshToken;
         user.RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();

@@ -61,4 +61,17 @@ public class OasUser : IOasTenantEntity, IOasSoftDeletable
     // OAS-native identity, never on the socle's User.
     public string? RefreshToken { get; set; }
     public DateTimeOffset? RefreshTokenExpiresAt { get; set; }
+
+    // Password reset by emailed OTP — same flow as the socle's
+    // AuthService.ForgotPassword/VerifyOtp/ResetPassword (MainAdminUsers /
+    // Users), reproduced on the OAS-native identity. The 6-digit code is
+    // stored as a SHA-256 hash (never in clear, unlike the socle columns) and
+    // is single-use: verifying it clears the code and mints a short-lived
+    // reset token that the reset call consumes.
+    public string? PasswordResetOtpHash { get; set; }
+    public DateTimeOffset? PasswordResetOtpExpiresAt { get; set; }
+    public int PasswordResetOtpAttempts { get; set; }
+    public DateTimeOffset? PasswordResetOtpLastSentAt { get; set; }
+    public string? PasswordResetToken { get; set; }
+    public DateTimeOffset? PasswordResetTokenExpiresAt { get; set; }
 }

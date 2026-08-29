@@ -53,3 +53,32 @@ public class OasUserDto
     public Guid? ScopeZoneId { get; set; }
     public Guid? ScopeLineId { get; set; }
 }
+
+/// <summary>Step 1 of the emailed-OTP password reset (mirrors the socle's ForgotPasswordRequestDto).</summary>
+public class OasForgotPasswordRequestDto
+{
+    public string Email { get; set; } = string.Empty;
+    /// <summary>Email language: "en" or "fr" (defaults to "en").</summary>
+    public string? Language { get; set; }
+}
+
+/// <summary>Step 2: exchange the 6-digit emailed code for a short-lived reset token.</summary>
+public class OasVerifyResetOtpRequestDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
+}
+
+public class OasVerifyResetOtpResponseDto
+{
+    public bool Success { get; set; }
+    public string? Message { get; set; }
+    public string? ResetToken { get; set; }
+}
+
+/// <summary>Step 3: set the new password using the reset token from step 2.</summary>
+public class OasResetPasswordRequestDto
+{
+    public string ResetToken { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}

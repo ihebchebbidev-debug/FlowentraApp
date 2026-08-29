@@ -10,7 +10,7 @@ namespace MyApi.Modules.OAS.ShopFloorAuth.Services;
 
 public interface IOasTokenService
 {
-    (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user);
+    (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user, string oasSlug);
 }
 
 /// <summary>Shared JWT issuance for both console (OasAuthService) and shopfloor (OasShopFloorAuthService) logins — one implementation so the two never drift (spec §3.3, §8.2).</summary>
@@ -21,7 +21,7 @@ public class OasTokenService : IOasTokenService
 
     public OasTokenService(IConfiguration configuration) => _configuration = configuration;
 
-    public (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user)
+    public (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user, string oasSlug)
     {
         // Falls back to the built-in OAS key when 'Jwt__Key' is not configured,
         // matching OasModuleRegistration so tokens stay verifiable.
@@ -36,6 +36,7 @@ public class OasTokenService : IOasTokenService
         var claims = new List<Claim>
         {
             new("oas_user_id", user.Id.ToString()),
+            new("oas_slug", oasSlug.Trim().ToLowerInvariant()),
             new("oas_role", user.Role.ToString()),
             new("oas_workspace", user.Workspace.ToString()),
             new(ClaimTypes.Email, user.Email),

@@ -34,6 +34,20 @@ public class OasAuthController : ControllerBase
     }
 
     /// <summary>
+    /// Non-authenticated bootstrap probe: tells the console whether this
+    /// tenant still needs its first admin, so the login screen can show the
+    /// sign-up form instead of sign-in (and hide it forever afterwards).
+    /// Leaks nothing beyond "an admin exists" — no emails, no names.
+    /// </summary>
+    [HttpGet("setup/status")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SetupStatus()
+    {
+        var hasAdmin = await _authService.HasAdminAsync();
+        return Ok(new { success = true, hasAdmin, needsSetup = !hasAdmin });
+    }
+
+    /// <summary>
     /// Maintenance escape hatch: deletes the tenant's admin account(s) so
     /// POST /oas/setup can be replayed after the original credentials are
     /// lost. Gated by the `X-Oas-Setup-Secret` header, which must match the
@@ -98,4 +112,33 @@ public class OasAuthController : ControllerBase
         var result = await _authService.ChangePasswordAsync(id, request);
         return result.Success ? Ok(result) : BadRequest(result);
     }
+
+    // ── Forgot password (emailed OTP, spec §8.2) ────────────────────────────
+    // Anonymous by design — the caller has lost access. All three steps answer
+    // without revealing whether the address exists.
+
+    [HttpPost("auth/forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OasAuthResponseDto>> ForgotPassword([FromBody] OasForgotPasswordRequestDto request)
+    {
+        var result = await _authService.ForgotPasswordAsync(request);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("auth/verify-reset-otp")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OasVerifyResetOtpResponseDto>> VerifyResetOtp([FromBody] OasVerifyResetOtpRequestDto request)
+    {
+        var result = await _authService.VerifyResetOtpAsync(request);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("auth/reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OasAuthResponseDto>> ResetPassword([FromBody] OasResetPasswordRequestDto request)
+    {
+        var result = await _authService.ResetPasswordAsync(request);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
 }
+

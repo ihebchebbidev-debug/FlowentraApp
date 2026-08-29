@@ -53,6 +53,16 @@ public class OasPostSessionService : IOasPostSessionService
         var activeForUser = await _db.Set<OasPostSession>().FirstOrDefaultAsync(s => s.UserId == userId && s.EndedAt == null);
         var activeForPost = await _db.Set<OasPostSession>().FirstOrDefaultAsync(s => s.PostId == request.PostId && s.EndedAt == null && s.UserId != userId);
 
+        // Reconnect / app-reload resume: the operator already holds an open
+        // session on THIS post but lost their local copy, so they arrive with a
+        // fresh ClientEventId and the idempotent replay above cannot match. That
+        // is not a conflict — hand their own running session back instead of
+        // 409'ing them out of production they are still doing.
+        if (activeForUser is not null && activeForUser.PostId == request.PostId)
+        {
+            return (true, null, ToDto(activeForUser));
+        }
+
         if (activeForPost is not null && !request.ForceRelay)
         {
             return (false, "post_already_has_active_session", null);
@@ -63,6 +73,7 @@ public class OasPostSessionService : IOasPostSessionService
             if (!request.ForceRelay) return (false, "user_already_has_active_session", null);
             activeForUser.EndedAt = DateTimeOffset.UtcNow;
         }
+
 
         if (activeForPost is not null && request.ForceRelay)
         {
