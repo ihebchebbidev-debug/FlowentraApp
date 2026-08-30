@@ -38,10 +38,9 @@ public class OasKpiController : OasControllerBase
         if (ids.Count == 0) return BadRequest(new { success = false, message = "postIds is required." });
         if (ids.Count > 500) return BadRequest(new { success = false, message = "Too many postIds (max 500)." });
         var (f, t) = Range(from, to);
-        var results = new List<OasPostKpiDailyDto>(ids.Count);
-        foreach (var id in ids)
-            results.Add(new OasPostKpiDailyDto { PostId = id, Kpi = await _service.GetDailyAsync(CurrentTenantId, id, null, f, t) });
-        return Ok(results);
+        // Set-based: 4 grouped queries for the whole batch (was one GetDailyAsync
+        // — ~5 sequential queries — per post, i.e. 500+ round trips per sweep).
+        return Ok(await _service.GetDailyBatchAsync(CurrentTenantId, ids, f, t));
     }
 
     /// <summary>Batched per-post trend series — same rationale as daily-batch.</summary>
@@ -52,10 +51,9 @@ public class OasKpiController : OasControllerBase
         if (ids.Count == 0) return BadRequest(new { success = false, message = "postIds is required." });
         if (ids.Count > 500) return BadRequest(new { success = false, message = "Too many postIds (max 500)." });
         var (f, t) = Range(from, to);
-        var results = new List<OasPostTrendDto>(ids.Count);
-        foreach (var id in ids)
-            results.Add(new OasPostTrendDto { PostId = id, Points = await _service.GetTrendAsync(CurrentTenantId, id, null, f, t) });
-        return Ok(results);
+        // Set-based per (post, day): 4 grouped queries instead of posts × days
+        // daily computations — that N×D fan-out is what left the TRS trend blank.
+        return Ok(await _service.GetTrendBatchAsync(CurrentTenantId, ids, f, t));
     }
 
     private static List<Guid> ParseIds(string? raw)

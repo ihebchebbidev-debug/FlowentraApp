@@ -11,6 +11,10 @@ public interface IOasKpiService
     Task<OasKpiDailyDto> GetDailyAsync(int tenantId, Guid? postId, Guid? lineId, DateOnly from, DateOnly to);
     Task<IReadOnlyList<OasParetoEntryDto>> GetParetoAsync(int tenantId, Guid? postId, DateOnly from, DateOnly to);
     Task<IReadOnlyList<OasTrendPointDto>> GetTrendAsync(int tenantId, Guid? postId, Guid? lineId, DateOnly from, DateOnly to);
+    /// <summary>Set-based per-post KPI for many posts — 4 grouped queries total instead of ~5 per post.</summary>
+    Task<IReadOnlyList<OasPostKpiDailyDto>> GetDailyBatchAsync(int tenantId, IReadOnlyList<Guid> postIds, DateOnly from, DateOnly to);
+    /// <summary>Set-based per-post/per-day OEE series — 4 grouped queries total instead of one per post per day.</summary>
+    Task<IReadOnlyList<OasPostTrendDto>> GetTrendBatchAsync(int tenantId, IReadOnlyList<Guid> postIds, DateOnly from, DateOnly to);
     Task<IReadOnlyList<OasLineComparisonEntryDto>> GetLineComparisonAsync(int tenantId, DateOnly from, DateOnly to);
     Task<IReadOnlyList<OasSlaSummaryEntryDto>> GetSlaSummaryAsync(int tenantId, DateOnly from, DateOnly to);
     Task<IReadOnlyList<OasCadenceGapEntryDto>> GetCadenceGapAsync(int tenantId, DateOnly from, DateOnly to);
@@ -116,6 +120,11 @@ public class OasKpiService : IOasKpiService
 
     public async Task<IReadOnlyList<OasTrendPointDto>> GetTrendAsync(int tenantId, Guid? postId, Guid? lineId, DateOnly from, DateOnly to)
     {
+        // Single-post trend: one set-based pass instead of one daily computation per day.
+        if (postId is not null && lineId is null)
+            return (await GetTrendBatchAsync(tenantId, new[] { postId.Value }, from, to)).FirstOrDefault()?.Points
+                   ?? new List<OasTrendPointDto>();
+
         var points = new List<OasTrendPointDto>();
         for (var d = from; d <= to; d = d.AddDays(1))
         {
@@ -269,6 +278,167 @@ public class OasKpiService : IOasKpiService
         return rate is > 0 ? (rate.Value, true) : (DefaultCadence, false);
     }
 
+    /* ---------------------------------------------------------------- */
+    /* Set-based batches — the dashboard's only fast path                */
+    /* ---------------------------------------------------------------- */
+
+    public async Task<IReadOnlyList<OasPostKpiDailyDto>> GetDailyBatchAsync(int tenantId, IReadOnlyList<Guid> postIds, DateOnly from, DateOnly to)
+    {
+        var ids = postIds.ToArray();
+        if (ids.Length == 0) return new List<OasPostKpiDailyDto>();
+        var (fromTs, toTs) = ToRange(from, to);
+
+        var stops = (await _db.Database.SqlQueryRaw<PostStopRow>(
+            """
+            select post_id as "PostId",
+                   coalesce(sum(coalesce(duration_sec, extract(epoch from (coalesce(closed_at, now()) - declared_at))::int)), 0)::int as "StopSeconds",
+                   count(*)::int as "StopsCount"
+            from oas_events
+            where tenant_id = {0} and post_id = any({1})
+              and declared_at >= {2} and declared_at < {3} and status = 'closed'
+            group by post_id
+            """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => r.PostId);
+
+        var decls = (await _db.Database.SqlQueryRaw<PostDeclRow>(
+            """
+            select post_id as "PostId", coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok"
+            from oas_declarations
+            where tenant_id = {0} and post_id = any({1})
+              and occurred_at >= {2} and occurred_at < {3} and is_corrected = false
+            group by post_id
+            """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => r.PostId);
+
+        var openings = await LoadOpeningsAsync(ids, fromTs, toTs);
+        var cadences = await LoadCadencesAsync(ids);
+
+        return ids.Select(id =>
+        {
+            var stop = stops.GetValueOrDefault(id);
+            var decl = decls.GetValueOrDefault(id);
+            var cadence = cadences.GetValueOrDefault(id);
+            return new OasPostKpiDailyDto
+            {
+                PostId = id,
+                Kpi = Compose(openings.GetValueOrDefault(id, DefaultOpeningMin), stop?.StopSeconds ?? 0, stop?.StopsCount ?? 0,
+                    decl?.Ok ?? 0, decl?.Nok ?? 0, cadence > 0 ? cadence : DefaultCadence, cadence > 0),
+            };
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<OasPostTrendDto>> GetTrendBatchAsync(int tenantId, IReadOnlyList<Guid> postIds, DateOnly from, DateOnly to)
+    {
+        var ids = postIds.ToArray();
+        if (ids.Length == 0) return new List<OasPostTrendDto>();
+        var (fromTs, toTs) = ToRange(from, to);
+
+        var stops = (await _db.Database.SqlQueryRaw<PostDayStopRow>(
+            """
+            select post_id as "PostId", (declared_at at time zone 'UTC')::date as "Day",
+                   coalesce(sum(coalesce(duration_sec, extract(epoch from (coalesce(closed_at, now()) - declared_at))::int)), 0)::int as "StopSeconds",
+                   count(*)::int as "StopsCount"
+            from oas_events
+            where tenant_id = {0} and post_id = any({1})
+              and declared_at >= {2} and declared_at < {3} and status = 'closed'
+            group by post_id, (declared_at at time zone 'UTC')::date
+            """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
+
+        var decls = (await _db.Database.SqlQueryRaw<PostDayDeclRow>(
+            """
+            select post_id as "PostId", (occurred_at at time zone 'UTC')::date as "Day",
+                   coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok"
+            from oas_declarations
+            where tenant_id = {0} and post_id = any({1})
+              and occurred_at >= {2} and occurred_at < {3} and is_corrected = false
+            group by post_id, (occurred_at at time zone 'UTC')::date
+            """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
+
+        var openings = (await _db.Database.SqlQueryRaw<PostDayOpeningRow>(
+            """
+            select distinct on (ps.post_id, (ps.started_at at time zone 'UTC')::date)
+                   ps.post_id as "PostId", (ps.started_at at time zone 'UTC')::date as "Day",
+                   case when st.crosses_midnight
+                        then (extract(epoch from (st.end_time - st.start_time)) / 60 + 1440)::int - st.break_minutes
+                        else (extract(epoch from (st.end_time - st.start_time)) / 60)::int - st.break_minutes
+                   end as "Minutes"
+            from oas_post_sessions ps
+            join oas_shift_templates st on st.id = ps.shift_template_id
+            where ps.post_id = any({0}) and ps.started_at >= {1} and ps.started_at < {2}
+            order by ps.post_id, (ps.started_at at time zone 'UTC')::date, ps.started_at desc
+            """, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => (r.PostId, r.Day), r => r.Minutes);
+
+        var cadences = await LoadCadencesAsync(ids);
+
+        return ids.Select(id =>
+        {
+            var points = new List<OasTrendPointDto>();
+            for (var d = from; d <= to; d = d.AddDays(1))
+            {
+                var day = d;
+                var stop = stops.GetValueOrDefault((id, day));
+                var decl = decls.GetValueOrDefault((id, day));
+                var cadence = cadences.GetValueOrDefault(id);
+                var opening = openings.TryGetValue((id, day), out var m) && m > 0 ? m : DefaultOpeningMin;
+                var kpi = Compose(opening, stop?.StopSeconds ?? 0, stop?.StopsCount ?? 0, decl?.Ok ?? 0, decl?.Nok ?? 0,
+                    cadence > 0 ? cadence : DefaultCadence, cadence > 0);
+                points.Add(new OasTrendPointDto { Date = day, Oee = kpi.Oee });
+            }
+            return new OasPostTrendDto { PostId = id, Points = points };
+        }).ToList();
+    }
+
+    private async Task<Dictionary<Guid, int>> LoadOpeningsAsync(Guid[] ids, DateTime fromTs, DateTime toTs)
+        => (await _db.Database.SqlQueryRaw<PostOpeningRow>(
+            """
+            select distinct on (ps.post_id) ps.post_id as "PostId",
+                   case when st.crosses_midnight
+                        then (extract(epoch from (st.end_time - st.start_time)) / 60 + 1440)::int - st.break_minutes
+                        else (extract(epoch from (st.end_time - st.start_time)) / 60)::int - st.break_minutes
+                   end as "Minutes"
+            from oas_post_sessions ps
+            join oas_shift_templates st on st.id = ps.shift_template_id
+            where ps.post_id = any({0}) and ps.started_at >= {1} and ps.started_at < {2}
+            order by ps.post_id, ps.started_at desc
+            """, ids, fromTs, toTs).ToListAsync())
+            .Where(r => r.Minutes > 0)
+            .ToDictionary(r => r.PostId, r => r.Minutes);
+
+    private async Task<Dictionary<Guid, decimal>> LoadCadencesAsync(Guid[] ids)
+        => (await _db.Database.SqlQueryRaw<PostCadenceRow>(
+            """
+            select distinct on (post_id) post_id as "PostId", rate as "Rate"
+            from oas_routings
+            where post_id = any({0})
+            order by post_id, updated_at desc
+            """, ids).ToListAsync())
+            .ToDictionary(r => r.PostId, r => r.Rate ?? 0);
+
+    /// <summary>The single OEE formula — shared by the per-post path and both batches so they can never drift.</summary>
+    private static OasKpiDailyDto Compose(int openingMin, int stopSeconds, int stopsCount, decimal ok, decimal nok, decimal cadence, bool cadenceKnown)
+    {
+        var stopMinutes = stopSeconds / 60;
+        var availability = Clamp0100(((double)(openingMin - stopMinutes) / Math.Max(1, openingMin)) * 100);
+        var totalQty = ok + nok;
+        var quality = Clamp0100((double)(ok / Math.Max(1, totalQty)) * 100);
+
+        double? performance = null;
+        if (cadenceKnown)
+        {
+            var runHours = Math.Max(0, openingMin - stopMinutes) / 60.0;
+            var theoretical = Math.Max(1, (decimal)runHours * cadence);
+            performance = Clamp0100((double)(totalQty / theoretical) * 100);
+        }
+
+        return new OasKpiDailyDto
+        {
+            OpeningMin = openingMin, Availability = availability, Quality = quality, Performance = performance,
+            CadenceKnown = cadenceKnown,
+            Oee = performance is null ? null : Clamp0100((availability * performance.Value * quality) / 10_000),
+            StopMinutes = stopMinutes, StopsCount = stopsCount,
+            Mttr = stopsCount == 0 ? 0 : Math.Max(1, (int)Math.Round((double)stopMinutes / stopsCount)),
+            ProducedOk = ok, ProducedNok = nok,
+        };
+    }
+
     private static double Clamp0100(double value) => Math.Clamp(value, 0, 100);
 
     // DateOnly.ToDateTime always returns DateTimeKind.Unspecified — Npgsql's
@@ -285,4 +455,11 @@ public class OasKpiService : IOasKpiService
     private sealed class DeclAgg { public decimal Ok { get; set; } public decimal Nok { get; set; } }
     private sealed class ParetoRow { public Guid? CauseId { get; set; } public int LostMinutes { get; set; } }
     private sealed class SlaRow { public string EventType { get; set; } = string.Empty; public int Total { get; set; } public int OnTime { get; set; } }
+    private sealed class PostStopRow { public Guid PostId { get; set; } public int StopSeconds { get; set; } public int StopsCount { get; set; } }
+    private sealed class PostDeclRow { public Guid PostId { get; set; } public decimal Ok { get; set; } public decimal Nok { get; set; } }
+    private sealed class PostOpeningRow { public Guid PostId { get; set; } public int Minutes { get; set; } }
+    private sealed class PostCadenceRow { public Guid PostId { get; set; } public decimal? Rate { get; set; } }
+    private sealed class PostDayStopRow { public Guid PostId { get; set; } public DateOnly Day { get; set; } public int StopSeconds { get; set; } public int StopsCount { get; set; } }
+    private sealed class PostDayDeclRow { public Guid PostId { get; set; } public DateOnly Day { get; set; } public decimal Ok { get; set; } public decimal Nok { get; set; } }
+    private sealed class PostDayOpeningRow { public Guid PostId { get; set; } public DateOnly Day { get; set; } public int Minutes { get; set; } }
 }
