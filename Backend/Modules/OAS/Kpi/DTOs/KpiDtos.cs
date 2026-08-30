@@ -27,3 +27,17 @@ public class OasCadenceGapEntryDto { public Guid PostId { get; set; } public dec
 
 public class OasAndonMessageDto { public Guid? LineId { get; set; } public string Message { get; set; } = string.Empty; }
 public class OasAndonMessageRequestDto { public Guid? LineId { get; set; } public string Message { get; set; } = string.Empty; }
+
+/// <summary>One row of <c>GET /api/oas/kpi/daily-batch</c>.</summary>
+public class OasPostKpiDailyDto
+{
+    public Guid PostId { get; set; }
+    public OasKpiDailyDto Kpi { get; set; } = new();
+}
+
+/// <summary>One row of <c>GET /api/oas/kpi/trend-batch</c>.</summary>
+public class OasPostTrendDto
+{
+    public Guid PostId { get; set; }
+    public IReadOnlyList<OasTrendPointDto> Points { get; set; } = new List<OasTrendPointDto>();
+}

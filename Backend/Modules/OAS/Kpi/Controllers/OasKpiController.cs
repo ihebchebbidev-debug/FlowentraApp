@@ -25,6 +25,48 @@ public class OasKpiController : OasControllerBase
         return Ok(await _service.GetDailyAsync(CurrentTenantId, postId, lineId, f, t));
     }
 
+    /// <summary>
+    /// Batched per-post KPI: one HTTP call instead of one per post. The
+    /// console rolls plant/line figures up client-side, and browsers cap
+    /// HTTP/1.1 at 6 connections per origin, so the fan-out was the single
+    /// biggest source of dashboard latency.
+    /// </summary>
+    [HttpGet("daily-batch")]
+    public async Task<ActionResult<IReadOnlyList<OasPostKpiDailyDto>>> DailyBatch([FromQuery] string? postIds, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
+    {
+        var ids = ParseIds(postIds);
+        if (ids.Count == 0) return BadRequest(new { success = false, message = "postIds is required." });
+        if (ids.Count > 500) return BadRequest(new { success = false, message = "Too many postIds (max 500)." });
+        var (f, t) = Range(from, to);
+        var results = new List<OasPostKpiDailyDto>(ids.Count);
+        foreach (var id in ids)
+            results.Add(new OasPostKpiDailyDto { PostId = id, Kpi = await _service.GetDailyAsync(CurrentTenantId, id, null, f, t) });
+        return Ok(results);
+    }
+
+    /// <summary>Batched per-post trend series — same rationale as daily-batch.</summary>
+    [HttpGet("trend-batch")] [OasWorkspace("web")]
+    public async Task<ActionResult<IReadOnlyList<OasPostTrendDto>>> TrendBatch([FromQuery] string? postIds, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
+    {
+        var ids = ParseIds(postIds);
+        if (ids.Count == 0) return BadRequest(new { success = false, message = "postIds is required." });
+        if (ids.Count > 500) return BadRequest(new { success = false, message = "Too many postIds (max 500)." });
+        var (f, t) = Range(from, to);
+        var results = new List<OasPostTrendDto>(ids.Count);
+        foreach (var id in ids)
+            results.Add(new OasPostTrendDto { PostId = id, Points = await _service.GetTrendAsync(CurrentTenantId, id, null, f, t) });
+        return Ok(results);
+    }
+
+    private static List<Guid> ParseIds(string? raw)
+    {
+        var ids = new List<Guid>();
+        if (string.IsNullOrWhiteSpace(raw)) return ids;
+        foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            if (Guid.TryParse(part, out var g) && !ids.Contains(g)) ids.Add(g);
+        return ids;
+    }
+
     [HttpGet("pareto")]
     public async Task<ActionResult<IReadOnlyList<OasParetoEntryDto>>> Pareto([FromQuery] Guid? postId, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
