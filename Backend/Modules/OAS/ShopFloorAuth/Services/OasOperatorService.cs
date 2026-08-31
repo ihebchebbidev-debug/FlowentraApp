@@ -119,6 +119,63 @@ public class OasOperatorService : IOasOperatorService
         return (true, null, ToDto(user));
     }
 
+    /// <summary>Identity-fields edit (name / email / badge / phone). Mirrors SetActiveAsync's "a supervisor can't touch an admin" guard, and CreateAsync's uniqueness checks on (tenant, email) and (tenant, employee_code) — both with IgnoreQueryFilters, since a soft-deleted row still occupies the unique index.</summary>
+    public async Task<(bool success, string? error, OasOperatorDto? operatorDto)> UpdateAsync(int tenantId, Guid id, OasUpdateOperatorRequestDto request, string callerRole)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user is null) return (false, "not_found", null);
+        if (user.Role == OasAppRole.admin && !string.Equals(callerRole, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return (false, "admin_target_requires_admin_caller", null);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var email = request.Email.Trim().ToLowerInvariant();
+            if (email != user.Email
+                && await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.TenantId == tenantId && u.Email == email && u.Id != id))
+            {
+                return (false, "email_already_exists", null);
+            }
+            user.Email = email;
+        }
+
+        if (request.DisplayName is not null)
+        {
+            var displayName = request.DisplayName.Trim();
+            if (displayName.Length == 0) return (false, "display_name_required", null);
+            user.DisplayName = displayName;
+        }
+
+        if (request.EmployeeCode is not null)
+        {
+            var employeeCode = request.EmployeeCode.Trim();
+            if (employeeCode.Length == 0)
+            {
+                user.EmployeeCode = null;
+            }
+            else
+            {
+                if (employeeCode != user.EmployeeCode
+                    && await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.TenantId == tenantId && u.EmployeeCode == employeeCode && u.Id != id))
+                {
+                    return (false, "employee_code_already_exists", null);
+                }
+                user.EmployeeCode = employeeCode;
+            }
+        }
+
+        if (request.Phone is not null)
+        {
+            var phone = request.Phone.Trim();
+            user.Phone = phone.Length == 0 ? null : phone;
+        }
+
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync();
+        return (true, null, ToDto(user));
+    }
+
     public async Task<(bool success, string? error)> SetActiveAsync(int tenantId, Guid id, bool isActive, string callerRole, Guid callerId = default)
     {
         var user = await _db.Users.FindAsync(id);

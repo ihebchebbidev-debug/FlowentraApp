@@ -10,6 +10,8 @@ public interface IOasAuthService
     Task<bool> HasAdminAsync();
     Task<OasAuthResponseDto> LoginAsync(string oasSlug, int tenantId, OasLoginRequestDto request);
     Task<OasUserDto?> GetCurrentUserAsync(Guid oasUserId);
+    /// <summary>Self-service profile edit (display name / email / phone) for the signed-in user.</summary>
+    Task<OasAuthResponseDto> UpdateProfileAsync(Guid oasUserId, OasUpdateProfileRequestDto request);
     Task<OasAuthResponseDto> RefreshAsync(OasRefreshRequestDto request);
     Task<bool> LogoutAsync(Guid oasUserId);
     Task<OasAuthResponseDto> ChangePasswordAsync(Guid oasUserId, OasChangePasswordRequestDto request);

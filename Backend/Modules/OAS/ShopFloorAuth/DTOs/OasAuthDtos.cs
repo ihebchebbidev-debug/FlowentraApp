@@ -26,6 +26,14 @@ public class OasChangePasswordRequestDto
     [Required, MinLength(8)] public string NewPassword { get; set; } = string.Empty;
 }
 
+/// <summary>Self-service profile edit (PUT /api/oas/auth/me) — the signed-in user's own identity fields. Role, scope and active flag are deliberately NOT editable here: those stay admin-only via /api/oas/operators/*.</summary>
+public class OasUpdateProfileRequestDto
+{
+    [EmailAddress] public string? Email { get; set; }
+    public string? DisplayName { get; set; }
+    public string? Phone { get; set; }
+}
+
 public class OasAuthResponseDto
 {
     public bool Success { get; set; }
@@ -46,6 +54,7 @@ public class OasUserDto
     public Guid Id { get; set; }
     public string Email { get; set; } = string.Empty;
     public string? DisplayName { get; set; }
+    public string? Phone { get; set; }
     public string Role { get; set; } = string.Empty;
     public string Workspace { get; set; } = string.Empty;
     public bool IsActive { get; set; }

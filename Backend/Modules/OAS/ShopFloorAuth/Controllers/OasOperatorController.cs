@@ -43,6 +43,25 @@ public class OasOperatorController : OasControllerBase
         return Ok(dto);
     }
 
+    /// <summary>Identity-fields edit — the console's user-edit dialog. Role, scope and active state keep their own routes below so each guard stays explicit.</summary>
+    [HttpPut("{id}")]
+    [OasAuthorize(Roles = "admin,supervisor")]
+    public async Task<ActionResult<OasOperatorDto>> Update(Guid id, [FromBody] OasUpdateOperatorRequestDto request)
+    {
+        var (success, error, dto) = await _operators.UpdateAsync(CurrentTenantId, id, request, CurrentOasRole);
+        if (!success)
+        {
+            return error switch
+            {
+                "not_found" => NotFound(),
+                "admin_target_requires_admin_caller" => Problem(statusCode: 403, title: error),
+                "email_already_exists" or "employee_code_already_exists" => Problem(statusCode: 409, title: error),
+                _ => BadRequest(new { error }),
+            };
+        }
+        return Ok(dto);
+    }
+
     [HttpPut("{id}/active")]
     [OasAuthorize(Roles = "admin,supervisor")]
     public async Task<IActionResult> SetActive(Guid id, [FromBody] OasSetActiveRequestDto request)

@@ -186,6 +186,41 @@ public class OasAuthService : IOasAuthService
         return user is null ? null : ToDto(user);
     }
 
+    /// <summary>Self-service identity edit. Email is normalised and uniqueness-checked against the tenant (IgnoreQueryFilters, like OasOperatorService.CreateAsync, so a soft-deleted row holding the unique index entry yields a clean conflict instead of a 500). Never touches role/scope/active — privilege fields stay admin-only.</summary>
+    public async Task<OasAuthResponseDto> UpdateProfileAsync(Guid oasUserId, OasUpdateProfileRequestDto request)
+    {
+        var user = await _db.Users.FindAsync(oasUserId);
+        if (user is null) return new OasAuthResponseDto { Success = false, Message = "User not found." };
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var email = request.Email.Trim().ToLowerInvariant();
+            if (email != user.Email
+                && await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.TenantId == user.TenantId && u.Email == email && u.Id != user.Id))
+            {
+                return new OasAuthResponseDto { Success = false, Message = "email_already_exists" };
+            }
+            user.Email = email;
+        }
+
+        if (request.DisplayName is not null)
+        {
+            var displayName = request.DisplayName.Trim();
+            if (displayName.Length == 0) return new OasAuthResponseDto { Success = false, Message = "display_name_required" };
+            user.DisplayName = displayName;
+        }
+
+        if (request.Phone is not null)
+        {
+            var phone = request.Phone.Trim();
+            user.Phone = phone.Length == 0 ? null : phone;
+        }
+
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync();
+        return new OasAuthResponseDto { Success = true, Message = "Profile updated.", User = ToDto(user) };
+    }
+
     public async Task<OasAuthResponseDto> RefreshAsync(OasRefreshRequestDto request)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
@@ -411,6 +446,7 @@ public class OasAuthService : IOasAuthService
         Id = u.Id,
         Email = u.Email,
         DisplayName = u.DisplayName,
+        Phone = u.Phone,
         Role = u.Role.ToString(),
         Workspace = u.Workspace.ToString(),
         IsActive = u.IsActive,

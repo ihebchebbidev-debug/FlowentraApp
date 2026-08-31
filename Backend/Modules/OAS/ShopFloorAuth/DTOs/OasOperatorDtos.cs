@@ -33,6 +33,15 @@ public class OasCreateOperatorRequestDto
     [MinLength(8)] public string? Password { get; set; }
 }
 
+/// <summary>Console user-edit dialog (UsersPanel.tsx) — identity fields only; role/scope/active keep their own dedicated routes so their guards stay explicit. Every field is optional: an omitted (null) property leaves the stored value untouched.</summary>
+public class OasUpdateOperatorRequestDto
+{
+    [EmailAddress] public string? Email { get; set; }
+    public string? DisplayName { get; set; }
+    public string? EmployeeCode { get; set; }
+    public string? Phone { get; set; }
+}
+
 public class OasSetActiveRequestDto { public bool IsActive { get; set; } }
 public class OasSetRoleRequestDto { [Required] public string Role { get; set; } = string.Empty; }
 public class OasSetScopeRequestDto

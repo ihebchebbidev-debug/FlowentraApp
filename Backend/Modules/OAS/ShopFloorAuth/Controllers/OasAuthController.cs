@@ -85,6 +85,18 @@ public class OasAuthController : ControllerBase
         return user is null ? NotFound() : Ok(user);
     }
 
+    /// <summary>Self-service profile edit — the signed-in user's own display name / email / phone. Privilege fields (role, scope, active) are deliberately absent: those stay on api/oas/operators/*, admin-gated.</summary>
+    [HttpPut("auth/me")]
+    [Authorize(AuthenticationSchemes = OasAuthSchemes.SchemeName)]
+    public async Task<ActionResult<OasAuthResponseDto>> UpdateMe([FromBody] OasUpdateProfileRequestDto request)
+    {
+        var idClaim = User.FindFirst("oas_user_id")?.Value;
+        if (!Guid.TryParse(idClaim, out var id)) return Unauthorized();
+        var result = await _authService.UpdateProfileAsync(id, request);
+        if (result.Success) return Ok(result);
+        return result.Message == "email_already_exists" ? Conflict(result) : BadRequest(result);
+    }
+
     [HttpPost("auth/refresh")]
     [AllowAnonymous]
     public async Task<ActionResult<OasAuthResponseDto>> Refresh([FromBody] OasRefreshRequestDto request)
