@@ -3,6 +3,7 @@ using MyApi.Modules.OAS.Common;
 using MyApi.Modules.OAS.Hierarchy.Models;
 using MyApi.Modules.OAS.Kpi.DTOs;
 using MyApi.Modules.OAS.Kpi.Models;
+using MyApi.Modules.OAS.Settings.Services;
 
 namespace MyApi.Modules.OAS.Kpi.Services;
 
@@ -44,7 +45,8 @@ public class OasKpiService : IOasKpiService
 
     public async Task<OasKpiDailyDto> GetDailyAsync(int tenantId, Guid? postId, Guid? lineId, DateOnly from, DateOnly to)
     {
-        var (fromTs, toTs) = ToRange(from, to);
+        var shiftHour = await ShiftStartHourAsync();
+        var (fromTs, toTs) = ToRange(from, to, shiftHour);
 
         var stopRows = await _db.Database.SqlQueryRaw<StopAgg>(
             """
@@ -101,7 +103,8 @@ public class OasKpiService : IOasKpiService
 
     public async Task<IReadOnlyList<OasParetoEntryDto>> GetParetoAsync(int tenantId, Guid? postId, DateOnly from, DateOnly to)
     {
-        var (fromTs, toTs) = ToRange(from, to);
+        var shiftHour = await ShiftStartHourAsync();
+        var (fromTs, toTs) = ToRange(from, to, shiftHour);
         var rows = await _db.Database.SqlQueryRaw<ParetoRow>(
             """
             select cause_id as "CauseId",
@@ -144,7 +147,8 @@ public class OasKpiService : IOasKpiService
         foreach (var line in lines)
         {
             var daily = await GetDailyAsync(tenantId, postId: null, lineId: line.Id, from, to);
-            var (fromTs, toTs) = ToRange(from, to);
+            var shiftHour = await ShiftStartHourAsync();
+            var (fromTs, toTs) = ToRange(from, to, shiftHour);
             var scrapAgg = await _db.Database.SqlQueryRaw<DeclAgg>(
                 """
                 select coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok"
@@ -168,7 +172,8 @@ public class OasKpiService : IOasKpiService
 
     public async Task<IReadOnlyList<OasSlaSummaryEntryDto>> GetSlaSummaryAsync(int tenantId, DateOnly from, DateOnly to)
     {
-        var (fromTs, toTs) = ToRange(from, to);
+        var shiftHour = await ShiftStartHourAsync();
+        var (fromTs, toTs) = ToRange(from, to, shiftHour);
         var rows = await _db.Database.SqlQueryRaw<SlaRow>(
             """
             select event_type::text as "EventType",
@@ -188,7 +193,8 @@ public class OasKpiService : IOasKpiService
 
     public async Task<IReadOnlyList<OasCadenceGapEntryDto>> GetCadenceGapAsync(int tenantId, DateOnly from, DateOnly to)
     {
-        var (fromTs, toTs) = ToRange(from, to);
+        var shiftHour = await ShiftStartHourAsync();
+        var (fromTs, toTs) = ToRange(from, to, shiftHour);
         var posts = await _db.Set<OasPost>().Where(p => p.IsActive).ToListAsync();
         var results = new List<OasCadenceGapEntryDto>();
 
@@ -261,10 +267,10 @@ public class OasKpiService : IOasKpiService
             join oas_posts p on p.id = ps.post_id
             where ({0}::uuid is null or ps.post_id = {0})
               and ({1}::uuid is null or p.line_id = {1})
-              and ps.started_at::date = {2}
+              and ((ps.started_at - make_interval(hours => {3})) at time zone 'UTC')::date = {2}
             order by ps.started_at desc
             limit 1
-            """, postId, lineId, DateTime.SpecifyKind(date.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)).FirstOrDefaultAsync();
+            """, postId, lineId, date, await ShiftStartHourAsync()).FirstOrDefaultAsync();
 
         return minutes is > 0 ? minutes.Value : DefaultOpeningMin;
     }
@@ -286,7 +292,8 @@ public class OasKpiService : IOasKpiService
     {
         var ids = postIds.ToArray();
         if (ids.Length == 0) return new List<OasPostKpiDailyDto>();
-        var (fromTs, toTs) = ToRange(from, to);
+        var shiftHour = await ShiftStartHourAsync();
+        var (fromTs, toTs) = ToRange(from, to, shiftHour);
 
         var stops = (await _db.Database.SqlQueryRaw<PostStopRow>(
             """
@@ -329,33 +336,34 @@ public class OasKpiService : IOasKpiService
     {
         var ids = postIds.ToArray();
         if (ids.Length == 0) return new List<OasPostTrendDto>();
-        var (fromTs, toTs) = ToRange(from, to);
+        var shiftHour = await ShiftStartHourAsync();
+        var (fromTs, toTs) = ToRange(from, to, shiftHour);
 
         var stops = (await _db.Database.SqlQueryRaw<PostDayStopRow>(
             """
-            select post_id as "PostId", (declared_at at time zone 'UTC')::date as "Day",
+            select post_id as "PostId", ((declared_at - make_interval(hours => {4})) at time zone 'UTC')::date as "Day",
                    coalesce(sum(coalesce(duration_sec, extract(epoch from (coalesce(closed_at, now()) - declared_at))::int)), 0)::int as "StopSeconds",
                    count(*)::int as "StopsCount"
             from oas_events
             where tenant_id = {0} and post_id = any({1})
               and declared_at >= {2} and declared_at < {3} and status = 'closed'
-            group by post_id, (declared_at at time zone 'UTC')::date
-            """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
+            group by post_id, ((declared_at - make_interval(hours => {4})) at time zone 'UTC')::date
+            """, tenantId, ids, fromTs, toTs, shiftHour).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
 
         var decls = (await _db.Database.SqlQueryRaw<PostDayDeclRow>(
             """
-            select post_id as "PostId", (occurred_at at time zone 'UTC')::date as "Day",
+            select post_id as "PostId", ((occurred_at - make_interval(hours => {4})) at time zone 'UTC')::date as "Day",
                    coalesce(sum(quantity_ok), 0) as "Ok", coalesce(sum(quantity_nok), 0) as "Nok"
             from oas_declarations
             where tenant_id = {0} and post_id = any({1})
               and occurred_at >= {2} and occurred_at < {3} and is_corrected = false
-            group by post_id, (occurred_at at time zone 'UTC')::date
-            """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
+            group by post_id, ((occurred_at - make_interval(hours => {4})) at time zone 'UTC')::date
+            """, tenantId, ids, fromTs, toTs, shiftHour).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
 
         var openings = (await _db.Database.SqlQueryRaw<PostDayOpeningRow>(
             """
-            select distinct on (ps.post_id, (ps.started_at at time zone 'UTC')::date)
-                   ps.post_id as "PostId", (ps.started_at at time zone 'UTC')::date as "Day",
+            select distinct on (ps.post_id, ((ps.started_at - make_interval(hours => {3})) at time zone 'UTC')::date)
+                   ps.post_id as "PostId", ((ps.started_at - make_interval(hours => {3})) at time zone 'UTC')::date as "Day",
                    case when st.crosses_midnight
                         then (extract(epoch from (st.end_time - st.start_time)) / 60 + 1440)::int - st.break_minutes
                         else (extract(epoch from (st.end_time - st.start_time)) / 60)::int - st.break_minutes
@@ -363,8 +371,8 @@ public class OasKpiService : IOasKpiService
             from oas_post_sessions ps
             join oas_shift_templates st on st.id = ps.shift_template_id
             where ps.post_id = any({0}) and ps.started_at >= {1} and ps.started_at < {2}
-            order by ps.post_id, (ps.started_at at time zone 'UTC')::date, ps.started_at desc
-            """, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => (r.PostId, r.Day), r => r.Minutes);
+            order by ps.post_id, ((ps.started_at - make_interval(hours => {3})) at time zone 'UTC')::date, ps.started_at desc
+            """, ids, fromTs, toTs, shiftHour).ToListAsync()).ToDictionary(r => (r.PostId, r.Day), r => r.Minutes);
 
         var cadences = await LoadCadencesAsync(ids);
 
@@ -447,9 +455,23 @@ public class OasKpiService : IOasKpiService
     // supported"), so every raw-SQL call below using this range would throw
     // on every request. Confirmed by direct reproduction against a real
     // database with the exact production package versions.
-    private static (DateTime from, DateTime to) ToRange(DateOnly from, DateOnly to)
-        => (DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc),
-            DateTime.SpecifyKind(to.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc));
+    //
+    // EF-M7-01/02 shift day: a 3x8 plant's production day runs 06:00 -> 06:00
+    // (configurable via the ShiftDayStartHour setting), NOT midnight. Cutting
+    // at UTC midnight split every night shift across two reported days, so
+    // "yesterday's TRS" mixed half of one night shift with half of another
+    // and no daily figure ever matched what the shift actually produced.
+    // Every window and every per-day grouping in this service is therefore
+    // offset by `shiftStartHour` hours.
+    private static (DateTime from, DateTime to) ToRange(DateOnly from, DateOnly to, int shiftStartHour)
+        => (DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc).AddHours(shiftStartHour),
+            DateTime.SpecifyKind(to.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc).AddHours(shiftStartHour));
+
+    private int? _shiftStartHour;
+
+    /// <summary>Tenant's configured shift-day start hour (UTC), read once per request scope.</summary>
+    private async Task<int> ShiftStartHourAsync()
+        => _shiftStartHour ??= await OasSettingsReader.GetIntAsync(_db, OasSettingKeys.ShiftDayStartHour);
 
     private sealed class StopAgg { public int StopSeconds { get; set; } public int StopsCount { get; set; } }
     private sealed class DeclAgg { public decimal Ok { get; set; } public decimal Nok { get; set; } }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyApi.Modules.OAS.Common;
+using MyApi.Modules.OAS.Devices.Models;
 using MyApi.Modules.OAS.ShopFloorAuth.DTOs;
 using MyApi.Modules.OAS.ShopFloorAuth.Models;
 using MyApi.Modules.Shared.Services;
@@ -156,7 +157,10 @@ public class OasAuthService : IOasAuthService
         user.LockedUntil = null;
         user.LastLoginAt = DateTimeOffset.UtcNow;
 
-        var (accessToken, refreshToken, expiresAt) = await IssueTokensAsync(user);
+        var (deviceId, deviceRevoked) = await RegisterDeviceAsync(user, request.DeviceId, request.DeviceLabel, request.DevicePlatform);
+        if (deviceRevoked) return new OasAuthResponseDto { Success = false, Message = "This device has been revoked. Contact your administrator." };
+
+        var (accessToken, refreshToken, expiresAt) = await IssueTokensAsync(user, deviceId);
 
         return new OasAuthResponseDto
         {
@@ -432,9 +436,54 @@ public class OasAuthService : IOasAuthService
         user.PasswordResetOtpLastSentAt = null;
     }
 
-    private async Task<(string accessToken, string refreshToken, DateTimeOffset expiresAt)> IssueTokensAsync(OasUser user)
+
+    /// <summary>
+    /// EF-M2-09: records the device the login came from and binds the token to
+    /// it. Returns null when the client sent no device id (tokens then behave
+    /// exactly as before) or when the tenant DB has not yet received the 008
+    /// upgrade — never blocks a legitimate login on registry bookkeeping.
+    /// A device an admin revoked cannot log in again: `revoked` is returned so
+    /// the caller can reject the attempt outright instead of minting a token
+    /// that the authorization filter would refuse on the very next request.
+    /// </summary>
+    private async Task<(string? deviceId, bool revoked)> RegisterDeviceAsync(OasUser user, string? deviceId, string? label, string? platform)
     {
-        var (accessToken, refreshToken, expiresAt) = _tokenService.IssueTokens(user, _oasSlug);
+        if (string.IsNullOrWhiteSpace(deviceId)) return (null, false);
+        deviceId = deviceId.Trim();
+
+        try
+        {
+            var device = await _db.Set<OasDeviceToken>().FirstOrDefaultAsync(d => d.UserId == user.Id && d.DeviceId == deviceId);
+            if (device is not null && device.RevokedAt is not null) return (deviceId, true);
+
+            if (device is null)
+            {
+                device = new OasDeviceToken
+                {
+                    TenantId = user.TenantId,
+                    UserId = user.Id,
+                    DeviceId = deviceId,
+                    Token = $"{user.Id}:{deviceId}",
+                };
+                _db.Set<OasDeviceToken>().Add(device);
+            }
+
+            device.Label = label ?? device.Label;
+            device.Platform = platform is "android" or "ios" or "web" ? platform : (device.Platform ?? "web");
+            device.LastSeenAt = DateTimeOffset.UtcNow;
+        }
+        catch (Npgsql.PostgresException ex)
+        {
+            _logger.LogWarning(ex, "🏭 OAS-AUTH: device registry unavailable (008 upgrade pending?) — continuing without device binding");
+            return (null, false);
+        }
+
+        return (deviceId, false);
+    }
+
+    private async Task<(string accessToken, string refreshToken, DateTimeOffset expiresAt)> IssueTokensAsync(OasUser user, string? deviceId = null)
+    {
+        var (accessToken, refreshToken, expiresAt) = _tokenService.IssueTokens(user, _oasSlug, deviceId);
         user.RefreshToken = refreshToken;
         user.RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(30);
         await _db.SaveChangesAsync();

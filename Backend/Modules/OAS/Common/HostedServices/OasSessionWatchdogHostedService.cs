@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Infrastructure;
 using MyApi.Modules.OAS.Common.Realtime;
 using MyApi.Modules.OAS.PostSessions.Models;
+using MyApi.Modules.OAS.Settings.Services;
 using MyApi.Modules.OAS.Shifts.Models;
 
 namespace MyApi.Modules.OAS.Common.HostedServices;
@@ -35,13 +36,13 @@ public class OasSessionWatchdogHostedService : BackgroundService
     private static readonly TimeSpan MaxUnshiftedSessionAge = TimeSpan.FromHours(16);
 
     private readonly IOasDbContextFactory _dbFactory;
-    private readonly IOasSseBroadcaster _broadcaster;
+    private readonly IOasNotificationGrouper _grouper;
     private readonly ILogger<OasSessionWatchdogHostedService> _logger;
 
-    public OasSessionWatchdogHostedService(IOasDbContextFactory dbFactory, IOasSseBroadcaster broadcaster, ILogger<OasSessionWatchdogHostedService> logger)
+    public OasSessionWatchdogHostedService(IOasDbContextFactory dbFactory, IOasNotificationGrouper grouper, ILogger<OasSessionWatchdogHostedService> logger)
     {
         _dbFactory = dbFactory;
-        _broadcaster = broadcaster;
+        _grouper = grouper;
         _logger = logger;
     }
 
@@ -74,6 +75,10 @@ public class OasSessionWatchdogHostedService : BackgroundService
 
             var now = DateTimeOffset.UtcNow;
             var closedCount = 0;
+            // EF-M5-13 anti-rafale: a shift ending closes every post on the
+            // line at once — that is one notification, not thirty.
+            var groupWindow = TimeSpan.FromSeconds(
+                await OasSettingsReader.GetIntAsync(db, OasSettingKeys.NotificationGroupWindowSeconds, ct));
 
             foreach (var session in activeSessions)
             {
@@ -85,8 +90,10 @@ public class OasSessionWatchdogHostedService : BackgroundService
                     if (now - session.StartedAt < MaxUnshiftedSessionAge) continue;
 
                     session.EndedAt = now;
+                    session.ClosedReason = "stale";
                     closedCount++;
-                    _broadcaster.Publish(oasSlug, session.TenantId, "session.reminder", new { sessionId = session.Id, reason = "stale_session" });
+                    _grouper.Publish(oasSlug, session.TenantId, "session.reminder:stale_session", "session.reminder",
+                        new { sessionId = session.Id, reason = "stale_session" }, groupWindow);
                     continue;
                 }
 
@@ -94,8 +101,10 @@ public class OasSessionWatchdogHostedService : BackgroundService
                 if (now < shiftEndUtc.Add(GracePeriod)) continue;
 
                 session.EndedAt = now;
+                session.ClosedReason = "shift_end";
                 closedCount++;
-                _broadcaster.Publish(oasSlug, session.TenantId, "session.reminder", new { sessionId = session.Id, reason = "shift_ended" });
+                _grouper.Publish(oasSlug, session.TenantId, "session.reminder:shift_ended", "session.reminder",
+                    new { sessionId = session.Id, reason = "shift_ended" }, groupWindow);
             }
 
             if (closedCount > 0)

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Infrastructure;
 using MyApi.Modules.OAS.Common.Realtime;
 using MyApi.Modules.OAS.Events.Models;
+using MyApi.Modules.OAS.Settings.Services;
 using MyApi.Modules.OAS.Sla.Models;
 
 namespace MyApi.Modules.OAS.Common.HostedServices;
@@ -28,13 +29,13 @@ public class OasEscalationSweepHostedService : BackgroundService
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(30);
 
     private readonly IOasDbContextFactory _dbFactory;
-    private readonly IOasSseBroadcaster _broadcaster;
+    private readonly IOasNotificationGrouper _grouper;
     private readonly ILogger<OasEscalationSweepHostedService> _logger;
 
-    public OasEscalationSweepHostedService(IOasDbContextFactory dbFactory, IOasSseBroadcaster broadcaster, ILogger<OasEscalationSweepHostedService> logger)
+    public OasEscalationSweepHostedService(IOasDbContextFactory dbFactory, IOasNotificationGrouper grouper, ILogger<OasEscalationSweepHostedService> logger)
     {
         _dbFactory = dbFactory;
-        _broadcaster = broadcaster;
+        _grouper = grouper;
         _logger = logger;
     }
 
@@ -59,6 +60,13 @@ public class OasEscalationSweepHostedService : BackgroundService
 
             var escalated = await db.Database.SqlQueryRaw<EscalatedRow>(
                 "select * from oas_job_check_sla()").ToListAsync(ct);
+            if (escalated.Count == 0) return;
+
+            // EF-M5-13 anti-rafale: one line going down escalates a dozen
+            // events in the same sweep. The first push goes out live, the
+            // rest of the burst is coalesced into a single grouped push.
+            var groupWindow = TimeSpan.FromSeconds(
+                await OasSettingsReader.GetIntAsync(db, OasSettingKeys.NotificationGroupWindowSeconds, ct));
 
             foreach (var row in escalated)
             {
@@ -69,7 +77,8 @@ public class OasEscalationSweepHostedService : BackgroundService
                     Reason = "sla_sweep",
                 });
 
-                _broadcaster.Publish(oasSlug, row.tenant_id, "event.escalated", new { eventId = row.event_id, level = row.new_level });
+                _grouper.Publish(oasSlug, row.tenant_id, $"escalation:{row.new_level}", "event.escalated",
+                    new { eventId = row.event_id, level = row.new_level }, groupWindow);
             }
 
             if (escalated.Count > 0)

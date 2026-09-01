@@ -104,12 +104,20 @@ public static class OasModuleRegistration
         services.AddScoped<Kpi.Services.IOasKpiService, Kpi.Services.OasKpiService>();
         services.AddScoped<Audit.Services.IOasAuditService, Audit.Services.OasAuditService>();
         services.AddScoped<Integrations.Services.IOasIntegrationService, Integrations.Services.OasIntegrationService>();
+        services.AddScoped<Settings.Services.IOasSettingsService, Settings.Services.OasSettingsService>();
+        services.AddScoped<Devices.Services.IOasDeviceService, Devices.Services.OasDeviceService>();
+        // Burst coalescing must be a singleton so its state spans ticks and
+        // tenants. (Settings reads outside a request scope go through the
+        // static OasSettingsReader helper — no registration needed.)
+        services.AddSingleton<Realtime.IOasNotificationGrouper, Realtime.OasNotificationGrouper>();
         services.AddHttpClient("oas-integration-delivery");
 
         // Hosted services (spec §6.3) — replace the browser-tab timers
         // (eventStore.ts 30s sweep, session.ts 60s watchdog) with real
         // server-side background work that runs regardless of any tab
         // being open, across every provisioned *oas tenant database.
+        // Must run before anything queries the new tables (008 upgrade).
+        services.AddHostedService<HostedServices.OasSchemaUpgradeHostedService>();
         services.AddHostedService<HostedServices.OasEscalationSweepHostedService>();
         services.AddHostedService<HostedServices.OasSessionWatchdogHostedService>();
         services.AddHostedService<Integrations.HostedServices.OasIntegrationDeliveryHostedService>();

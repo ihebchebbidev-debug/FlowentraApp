@@ -97,8 +97,25 @@ public class OasImportService : IOasImportService
         var lines = await _db.Set<OasImportLine>().Where(l => l.ImportId == id).OrderBy(l => l.RowNumber).ToListAsync();
         var ok = 0; var errors = 0;
 
+        // Per-row isolation (EF-M6-08). Previously every row was only staged
+        // with Add() and a single SaveChangesAsync ran at the very end, so a
+        // row that passed the in-memory mapping but violated a DB constraint
+        // (duplicate reference, bad enum, FK) threw at flush time and rolled
+        // back the ENTIRE sheet — 4999 valid rows lost because of one typo,
+        // while the per-line "error" statuses this code carefully computed
+        // were rolled back with it.
+        //
+        // Now each row is written inside its own savepoint: a failing row is
+        // rolled back to the savepoint alone, marked "error" with its message,
+        // and the import continues. Partial success is the documented
+        // behaviour — the caller sees rowsOk / rowsError and can fix and
+        // re-import only the rejected rows.
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
         foreach (var line in lines)
         {
+            const string savepoint = "oas_import_row";
+            await tx.CreateSavepointAsync(savepoint);
             try
             {
                 var row = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(line.Raw) ?? new();
@@ -108,13 +125,20 @@ public class OasImportService : IOasImportService
                     case "causes": CommitCauseRow(tenantId, row); break;
                     case "equipment": CommitEquipmentRow(tenantId, row); break;
                 }
+                await _db.SaveChangesAsync();
+                await tx.ReleaseSavepointAsync(savepoint);
                 line.Status = "ok";
                 ok++;
             }
             catch (Exception ex)
             {
+                await tx.RollbackToSavepointAsync(savepoint);
+                // The failed entity is still tracked as Added after a rollback
+                // and would be retried (and fail again) on the next flush —
+                // detach everything still pending so the next row starts clean.
+                DetachPending();
                 line.Status = "error";
-                line.Error = ex.Message;
+                line.Error = RootMessage(ex);
                 errors++;
             }
         }
@@ -124,8 +148,26 @@ public class OasImportService : IOasImportService
         import.Status = OasImportStatus.committed;
         import.CommittedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return (true, null, ToDto(import));
+    }
+
+    /// <summary>Drops entities staged by a row that failed, so they don't leak into the next row's flush.</summary>
+    private void DetachPending()
+    {
+        foreach (var entry in _db.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
+    /// <summary>Postgres puts the actionable text (constraint name, detail) on the inner exception; EF's own wrapper message is generic.</summary>
+    private static string RootMessage(Exception ex)
+    {
+        var inner = ex;
+        while (inner.InnerException is not null) inner = inner.InnerException;
+        return inner.Message.Length > 500 ? inner.Message[..500] : inner.Message;
     }
 
     private static string RequireString(Dictionary<string, JsonElement> row, string key)

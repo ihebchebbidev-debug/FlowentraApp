@@ -12,6 +12,10 @@ public class OasPostSessionDto
     public Guid? ShiftTemplateId { get; set; }
     public DateTimeOffset StartedAt { get; set; }
     public DateTimeOffset? EndedAt { get; set; }
+    /// <summary>manual | relay | shift_end | stale — null while the session is open.</summary>
+    public string? ClosedReason { get; set; }
+    public Guid? ClosedBy { get; set; }
+    public Guid? RelayedFromUserId { get; set; }
 }
 
 public class OasOpenSessionRequestDto

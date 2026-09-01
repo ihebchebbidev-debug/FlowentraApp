@@ -72,12 +72,16 @@ public class OasPostSessionService : IOasPostSessionService
         {
             if (!request.ForceRelay) return (false, "user_already_has_active_session", null);
             activeForUser.EndedAt = DateTimeOffset.UtcNow;
+            activeForUser.ClosedReason = "relay";
+            activeForUser.ClosedBy = userId;
         }
 
 
         if (activeForPost is not null && request.ForceRelay)
         {
             activeForPost.EndedAt = DateTimeOffset.UtcNow;
+            activeForPost.ClosedReason = "relay";
+            activeForPost.ClosedBy = userId;
         }
 
         var session = new OasPostSession
@@ -154,6 +158,7 @@ public class OasPostSessionService : IOasPostSessionService
         // production order, and any declarations already tied to it) —
         // only the operator changes. This is what actually preserves
         // in-flight work across a handover, unlike close+reopen.
+        session.RelayedFromUserId = session.UserId;
         session.UserId = request.NewUserId;
         await _db.SaveChangesAsync();
         return (true, null, ToDto(session));
@@ -170,6 +175,8 @@ public class OasPostSessionService : IOasPostSessionService
         if (session.EndedAt is not null) return (true, null, ToDto(session)); // idempotent
 
         session.EndedAt = DateTimeOffset.UtcNow;
+        session.ClosedReason = "manual";
+        session.ClosedBy = actorId;
         await _db.SaveChangesAsync();
         return (true, null, ToDto(session));
     }
@@ -233,5 +240,6 @@ public class OasPostSessionService : IOasPostSessionService
         Id = s.Id, PostId = s.PostId, UserId = s.UserId, AssignmentId = s.AssignmentId,
         ProductionOrderId = s.ProductionOrderId, ShiftTemplateId = s.ShiftTemplateId,
         StartedAt = s.StartedAt, EndedAt = s.EndedAt,
+        ClosedReason = s.ClosedReason, ClosedBy = s.ClosedBy, RelayedFromUserId = s.RelayedFromUserId,
     };
 }

@@ -13,6 +13,11 @@ public class OasLoginRequestDto
 {
     [Required, EmailAddress] public string Email { get; set; } = string.Empty;
     [Required] public string Password { get; set; } = string.Empty;
+    /// <summary>Optional stable device id (EF-M2-09): registers the device and binds the issued token to it so it can be revoked individually.</summary>
+    [MaxLength(128)] public string? DeviceId { get; set; }
+    public string? DeviceLabel { get; set; }
+    /// <summary>android | ios | web</summary>
+    public string? DevicePlatform { get; set; }
 }
 
 public class OasRefreshRequestDto

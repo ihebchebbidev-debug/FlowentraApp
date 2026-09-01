@@ -10,7 +10,8 @@ namespace MyApi.Modules.OAS.ShopFloorAuth.Services;
 
 public interface IOasTokenService
 {
-    (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user, string oasSlug);
+    /// <param name="deviceId">Stable device identifier sent at login; embedded as the `oas_device_id` claim so a single device can later be revoked (EF-M2-09). Null when the client did not identify itself.</param>
+    (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user, string oasSlug, string? deviceId = null);
 }
 
 /// <summary>Shared JWT issuance for both console (OasAuthService) and shopfloor (OasShopFloorAuthService) logins — one implementation so the two never drift (spec §3.3, §8.2).</summary>
@@ -21,7 +22,7 @@ public class OasTokenService : IOasTokenService
 
     public OasTokenService(IConfiguration configuration) => _configuration = configuration;
 
-    public (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user, string oasSlug)
+    public (string accessToken, string refreshToken, DateTimeOffset expiresAt) IssueTokens(OasUser user, string oasSlug, string? deviceId = null)
     {
         // Falls back to the built-in OAS key when 'Jwt__Key' is not configured,
         // matching OasModuleRegistration so tokens stay verifiable.
@@ -41,6 +42,7 @@ public class OasTokenService : IOasTokenService
             new("oas_workspace", user.Workspace.ToString()),
             new(ClaimTypes.Email, user.Email),
         };
+        if (!string.IsNullOrWhiteSpace(deviceId)) claims.Add(new Claim("oas_device_id", deviceId.Trim()));
         if (user.ScopeSiteId is not null) claims.Add(new Claim("oas_scope_site_id", user.ScopeSiteId.Value.ToString()));
         if (user.ScopeZoneId is not null) claims.Add(new Claim("oas_scope_zone_id", user.ScopeZoneId.Value.ToString()));
         if (user.ScopeLineId is not null) claims.Add(new Claim("oas_scope_line_id", user.ScopeLineId.Value.ToString()));

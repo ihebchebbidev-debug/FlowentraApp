@@ -21,6 +21,9 @@ public class OasPostSessionConfiguration : IEntityTypeConfiguration<OasPostSessi
         b.Property(x => x.StartedAt).HasColumnName("started_at");
         b.Property(x => x.EndedAt).HasColumnName("ended_at");
         b.Property(x => x.StartedVia).HasColumnName("started_via");
+        b.Property(x => x.ClosedReason).HasColumnName("closed_reason");
+        b.Property(x => x.ClosedBy).HasColumnName("closed_by");
+        b.Property(x => x.RelayedFromUserId).HasColumnName("relayed_from_user_id");
         b.Property(x => x.ReceivedAt).HasColumnName("received_at");
         b.Property(x => x.CreatedAt).HasColumnName("created_at");
         b.Ignore(x => x.UpdatedAt);

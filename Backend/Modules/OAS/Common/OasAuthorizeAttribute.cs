@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using MyApi.Modules.OAS.Devices.Models;
+using MyApi.Modules.OAS.Devices.Services;
 using MyApi.Modules.OAS.ShopFloorAuth.Models;
 
 namespace MyApi.Modules.OAS.Common;
@@ -85,6 +87,48 @@ public class OasAuthorizeAttribute : Attribute, IAsyncAuthorizationFilter
         if (!isActive)
         {
             context.Result = new Microsoft.AspNetCore.Mvc.UnauthorizedResult();
+            return;
+        }
+
+        // EF-M2-09 per-device revocation. Account deactivation (above) is
+        // all-or-nothing; a lost/stolen tablet has to lose access WITHOUT
+        // locking its operator out of every other terminal. Tokens minted
+        // for a registered device carry `oas_device_id`; if that device has
+        // been revoked, the token stops working immediately (cached for the
+        // same 60s window as the active-status check, and invalidated
+        // outright by OasDeviceService the moment an admin revokes).
+        var deviceId = user.FindFirst("oas_device_id")?.Value;
+        if (string.IsNullOrEmpty(deviceId)) return;
+
+        var deviceCacheKey = OasDeviceRevocation.CacheKey(deviceId);
+        if (!cache.TryGetValue(deviceCacheKey, out bool isRevoked))
+        {
+            var db = context.HttpContext.RequestServices.GetRequiredService<OasDbContext>();
+            try
+            {
+                isRevoked = await db.Set<OasDeviceToken>().AsNoTracking()
+                    .AnyAsync(d => d.UserId == oasUserId && d.DeviceId == deviceId && d.RevokedAt != null);
+            }
+            catch (Npgsql.PostgresException)
+            {
+                // Columns not provisioned yet on this tenant DB (008 pending):
+                // fail OPEN on revocation rather than locking every user out.
+                isRevoked = false;
+            }
+
+            cache.Set(deviceCacheKey, isRevoked, new MemoryCacheEntryOptions
+            {
+                Size = 1,
+                AbsoluteExpirationRelativeToNow = OasDeviceRevocation.CacheTtl,
+            });
+        }
+
+        if (isRevoked)
+        {
+            context.Result = new Microsoft.AspNetCore.Mvc.ObjectResult(new { title = "device_revoked", status = 401 })
+            {
+                StatusCode = 401
+            };
         }
     }
 }

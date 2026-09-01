@@ -14,6 +14,11 @@ public class OasShopFloorLoginRequestDto
     public string? Badge { get; set; }
     public string? Pin { get; set; }
     public string? Token { get; set; }
+    /// <summary>Optional stable device id (EF-M2-09) — the tablet identifies itself so it can be revoked individually if lost.</summary>
+    [MaxLength(128)] public string? DeviceId { get; set; }
+    public string? DeviceLabel { get; set; }
+    /// <summary>android | ios | web</summary>
+    public string? DevicePlatform { get; set; }
 }
 
 public class OasPinRegenerateResponseDto
