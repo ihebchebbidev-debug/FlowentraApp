@@ -15,6 +15,8 @@ public class OasLookupValueConfiguration : IEntityTypeConfiguration<OasLookupVal
         b.Property(x => x.Type).HasColumnName("type").IsRequired();
         b.Property(x => x.Code).HasColumnName("code").IsRequired();
         b.Property(x => x.Label).HasColumnName("label").IsRequired();
+        b.Property(x => x.LabelEn).HasColumnName("label_en");
+        b.Property(x => x.LabelAr).HasColumnName("label_ar");
         b.Property(x => x.Color).HasColumnName("color");
         b.Property(x => x.SortOrder).HasColumnName("sort_order");
         b.Property(x => x.IsDefault).HasColumnName("is_default");

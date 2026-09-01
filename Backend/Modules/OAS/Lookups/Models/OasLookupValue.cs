@@ -9,12 +9,18 @@ namespace MyApi.Modules.OAS.Lookups.Models;
 /// ImportSource, ShiftLabel, SiteType, ZoneType — one table, `type`
 /// discriminates. The socle's LookupsController is read-only and
 /// hardcoded (spec §3.2: never extended); this is OAS's own.
+///
+/// Labels are bilingual+ (same pattern as cause labels): <see cref="Label"/>
+/// is the default (FR) wording, <see cref="LabelEn"/> / <see cref="LabelAr"/>
+/// are optional overrides picked by the client from the current UI language.
 /// </summary>
 public class OasLookupValue : OasEntityBase
 {
     public string Type { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
+    public string? LabelEn { get; set; }
+    public string? LabelAr { get; set; }
     public string? Color { get; set; }
     public int SortOrder { get; set; }
     public bool IsDefault { get; set; }

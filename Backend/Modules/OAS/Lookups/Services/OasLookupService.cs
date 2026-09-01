@@ -29,6 +29,7 @@ public class OasLookupService : IOasLookupService
         var value = new OasLookupValue
         {
             TenantId = tenantId, Type = type, Code = request.Code, Label = request.Label,
+            LabelEn = Trim(request.LabelEn), LabelAr = Trim(request.LabelAr),
             Color = request.Color, SortOrder = request.SortOrder, IsDefault = request.IsDefault,
         };
         _db.Set<OasLookupValue>().Add(value);
@@ -41,6 +42,7 @@ public class OasLookupService : IOasLookupService
         var value = await _db.Set<OasLookupValue>().FirstOrDefaultAsync(v => v.Id == id && v.Type == type);
         if (value is null) return false;
         value.Code = request.Code; value.Label = request.Label; value.Color = request.Color;
+        value.LabelEn = Trim(request.LabelEn); value.LabelAr = Trim(request.LabelAr);
         value.SortOrder = request.SortOrder; value.IsDefault = request.IsDefault;
         await _db.SaveChangesAsync();
         return true;
@@ -55,8 +57,12 @@ public class OasLookupService : IOasLookupService
         return true;
     }
 
+    /// <summary>Empty translation inputs are stored as NULL so the client falls back to the default label.</summary>
+    private static string? Trim(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     private static OasLookupValueDto ToDto(OasLookupValue v) => new()
     {
-        Id = v.Id, Type = v.Type, Code = v.Code, Label = v.Label, Color = v.Color, SortOrder = v.SortOrder, IsDefault = v.IsDefault,
+        Id = v.Id, Type = v.Type, Code = v.Code, Label = v.Label, LabelEn = v.LabelEn, LabelAr = v.LabelAr,
+        Color = v.Color, SortOrder = v.SortOrder, IsDefault = v.IsDefault,
     };
 }
