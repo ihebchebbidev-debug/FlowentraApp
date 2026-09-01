@@ -10,6 +10,7 @@ public interface IOasTeamService
     Task<IReadOnlyList<OasTeamDto>> GetAllAsync(int tenantId);
     Task<OasTeamDto> CreateAsync(int tenantId, OasTeamRequestDto request);
     Task<bool> SetMembersAsync(int tenantId, Guid teamId, OasTeamMembersRequestDto request);
+    Task<bool> DeleteAsync(int tenantId, Guid teamId);
 }
 
 public class OasTeamService : IOasTeamService
@@ -62,6 +63,19 @@ public class OasTeamService : IOasTeamService
             _db.Set<OasTeamMember>().Add(new OasTeamMember { TenantId = tenantId, TeamId = teamId, UserId = userId, ValidFrom = today });
         }
 
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>Removes a team and its membership rows. Memberships are child records with no history value once the team is gone, so they are hard-deleted in the same transaction rather than left orphaned.</summary>
+    public async Task<bool> DeleteAsync(int tenantId, Guid teamId)
+    {
+        var team = await _db.Set<OasTeam>().FindAsync(teamId);
+        if (team is null) return false;
+
+        var members = await _db.Set<OasTeamMember>().Where(m => m.TeamId == teamId).ToListAsync();
+        if (members.Count > 0) _db.Set<OasTeamMember>().RemoveRange(members);
+        _db.Set<OasTeam>().Remove(team);
         await _db.SaveChangesAsync();
         return true;
     }

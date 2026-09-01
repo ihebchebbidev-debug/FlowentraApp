@@ -23,6 +23,10 @@ public class OasTeamsController : OasControllerBase
     }
 
 
+    [HttpDelete("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
+    public async Task<IActionResult> Delete(Guid id)
+        => await _service.DeleteAsync(CurrentTenantId, id) ? Ok(new { success = true }) : NotFound();
+
     [HttpPut("{id}/members")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> SetMembers(Guid id, [FromBody] OasTeamMembersRequestDto request)
         => await _service.SetMembersAsync(CurrentTenantId, id, request) ? Ok(new { success = true }) : NotFound();
