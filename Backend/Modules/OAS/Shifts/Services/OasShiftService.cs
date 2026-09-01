@@ -39,6 +39,12 @@ public class OasShiftService : IOasShiftService
         if (request.StartTime == request.EndTime) return (false, "start_and_end_must_differ", null);
         if (!Enum.TryParse<OasShiftCode>(request.Code, true, out var code)) code = OasShiftCode.custom;
 
+        // A duplicate (site, code) hits the unique index and surfaced as a raw
+        // 500; it is a plain user-facing conflict, so detect it up front.
+        var duplicate = await _db.Set<OasShiftTemplate>()
+            .AnyAsync(s => s.SiteId == request.SiteId && s.Code == code && s.Name == request.Name);
+        if (duplicate) return (false, "code_already_exists", null);
+
         var template = new OasShiftTemplate
         {
             TenantId = tenantId, SiteId = request.SiteId, Code = code, Name = request.Name,
@@ -56,6 +62,10 @@ public class OasShiftService : IOasShiftService
         if (request.StartTime == request.EndTime) return (false, "start_and_end_must_differ");
         var template = await _db.Set<OasShiftTemplate>().FindAsync(id);
         if (template is null) return (false, "not_found");
+
+        var clash = await _db.Set<OasShiftTemplate>()
+            .AnyAsync(s => s.Id != id && s.SiteId == request.SiteId && s.Code == template.Code && s.Name == request.Name);
+        if (clash) return (false, "code_already_exists");
 
         template.SiteId = request.SiteId; template.Name = request.Name;
         template.StartTime = request.StartTime; template.EndTime = request.EndTime;

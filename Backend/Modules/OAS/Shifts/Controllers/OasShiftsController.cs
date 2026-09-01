@@ -18,14 +18,17 @@ public class OasShiftsController : OasControllerBase
     public async Task<IActionResult> Create([FromBody] OasShiftTemplateRequestDto request)
     {
         var (success, error, dto) = await _service.CreateTemplateAsync(CurrentTenantId, request);
-        return success ? Ok(dto) : BadRequest(new { error });
+        if (success) return Ok(dto);
+        return error == "code_already_exists" ? Conflict(new { error }) : BadRequest(new { error });
     }
 
     [HttpPut("{id}")] [OasAuthorize(Roles = "admin,supervisor")] [OasWorkspace("web")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OasShiftTemplateRequestDto request)
     {
         var (success, error) = await _service.UpdateTemplateAsync(CurrentTenantId, id, request);
-        if (!success) return error == "not_found" ? NotFound() : BadRequest(new { error });
+        if (!success) return error == "not_found" ? NotFound()
+            : error == "code_already_exists" ? Conflict(new { error })
+            : BadRequest(new { error });
         return Ok(new { success = true });
     }
 
