@@ -20,6 +20,12 @@ public interface IOasKpiService
     Task<IReadOnlyList<OasSlaSummaryEntryDto>> GetSlaSummaryAsync(int tenantId, DateOnly from, DateOnly to);
     Task<IReadOnlyList<OasCadenceGapEntryDto>> GetCadenceGapAsync(int tenantId, DateOnly from, DateOnly to);
 
+    /// <summary>
+    /// Calendar date of the production day that contains <paramref name="at"/>,
+    /// i.e. the UTC instant shifted back by the tenant's ShiftDayStartHour.
+    /// </summary>
+    Task<DateOnly> GetProductionDayAsync(DateTime at);
+
     Task<OasAndonMessageDto?> GetAndonMessageAsync(int tenantId, Guid? lineId);
     Task<OasAndonMessageDto> SetAndonMessageAsync(int tenantId, Guid? actorId, OasAndonMessageRequestDto request);
 }
@@ -466,6 +472,9 @@ public class OasKpiService : IOasKpiService
     private static (DateTime from, DateTime to) ToRange(DateOnly from, DateOnly to, int shiftStartHour)
         => (DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc).AddHours(shiftStartHour),
             DateTime.SpecifyKind(to.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc).AddHours(shiftStartHour));
+
+    public async Task<DateOnly> GetProductionDayAsync(DateTime at)
+        => DateOnly.FromDateTime(at.ToUniversalTime().AddHours(-await ShiftStartHourAsync()));
 
     private int? _shiftStartHour;
 

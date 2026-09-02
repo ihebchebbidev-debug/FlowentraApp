@@ -2,9 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Modules.OAS.Causes.Models;
 using MyApi.Modules.OAS.Common;
 using MyApi.Modules.OAS.Equipments.Models;
+using MyApi.Modules.OAS.Hierarchy.Models;
 using MyApi.Modules.OAS.Imports.DTOs;
 using MyApi.Modules.OAS.Imports.Models;
 using MyApi.Modules.OAS.Products.Models;
+using MyApi.Modules.OAS.Shifts.Models;
+using System.Globalization;
 using System.Text.Json;
 
 namespace MyApi.Modules.OAS.Imports.Services;
@@ -26,7 +29,7 @@ public interface IOasImportService
 /// </summary>
 public class OasImportService : IOasImportService
 {
-    private static readonly HashSet<string> SupportedKinds = new(StringComparer.OrdinalIgnoreCase) { "products", "causes", "equipment" };
+    private static readonly HashSet<string> SupportedKinds = new(StringComparer.OrdinalIgnoreCase) { "products", "causes", "equipment", "shiftcalendar" };
 
     /// <summary>Hard cap on rows accepted per import — <see cref="OasImportCreateRequestDto.Rows"/> had no size limit, so an unbounded payload could be posted straight into <c>oas_import_lines</c> (one row per line) before any processing even begins.</summary>
     private const int MaxRows = 5_000;
@@ -124,6 +127,7 @@ public class OasImportService : IOasImportService
                     case "products": CommitProductRow(tenantId, row); break;
                     case "causes": CommitCauseRow(tenantId, row); break;
                     case "equipment": CommitEquipmentRow(tenantId, row); break;
+                    case "shiftcalendar": await CommitShiftCalendarRowAsync(tenantId, row); break;
                 }
                 await _db.SaveChangesAsync();
                 await tx.ReleaseSavepointAsync(savepoint);
@@ -201,6 +205,109 @@ public class OasImportService : IOasImportService
             TenantId = tenantId, Code = RequireString(row, "code"), Name = RequireString(row, "name"),
             SerialNumber = OptString(row, "serialNumber"), Manufacturer = OptString(row, "manufacturer"),
         });
+    }
+
+    /// <summary>
+    /// One row = one shift on one date for one site. The shift template is
+    /// looked up by name (or code) on that site and created on the fly from
+    /// the times carried by the sheet when it does not exist yet, so a plant
+    /// can define its whole working calendar from a single file. The calendar
+    /// entry is upserted per (site, template, date) — re-importing a corrected
+    /// sheet updates instead of duplicating.
+    /// </summary>
+    private async Task CommitShiftCalendarRowAsync(int tenantId, Dictionary<string, JsonElement> row)
+    {
+        var siteCode = RequireString(row, "siteCode");
+        var site = await _db.Set<OasSite>().FirstOrDefaultAsync(s => s.Code == siteCode)
+            ?? throw new InvalidOperationException($"unknown site '{siteCode}'");
+
+        var shiftName = RequireString(row, "shiftName");
+        var workDate = ParseDate(RequireString(row, "workDate"));
+        var codeText = OptString(row, "shiftCode");
+        if (!Enum.TryParse<OasShiftCode>(codeText, true, out var shiftCode)) shiftCode = OasShiftCode.custom;
+
+        var template = await _db.Set<OasShiftTemplate>()
+            .FirstOrDefaultAsync(s => s.SiteId == site.Id && s.Name == shiftName);
+
+        var start = ParseTime(OptString(row, "startTime"));
+        var end = ParseTime(OptString(row, "endTime"));
+        var breakMinutes = ParseInt(OptString(row, "breakMinutes"));
+
+        if (template is null)
+        {
+            if (start is null || end is null)
+                throw new InvalidOperationException($"shift '{shiftName}' does not exist yet — startTime and endTime are required to create it");
+            if (start == end) throw new InvalidOperationException("startTime and endTime must differ");
+
+            template = new OasShiftTemplate
+            {
+                TenantId = tenantId, SiteId = site.Id, Code = shiftCode, Name = shiftName,
+                StartTime = start.Value, EndTime = end.Value, CrossesMidnight = end < start,
+                BreakMinutes = breakMinutes ?? 0, IsActive = true,
+            };
+            _db.Set<OasShiftTemplate>().Add(template);
+        }
+        else
+        {
+            // Keep an existing template in sync with the sheet when it carries times.
+            if (start is not null && end is not null)
+            {
+                if (start == end) throw new InvalidOperationException("startTime and endTime must differ");
+                template.StartTime = start.Value;
+                template.EndTime = end.Value;
+                template.CrossesMidnight = end < start;
+            }
+            if (breakMinutes is not null) template.BreakMinutes = breakMinutes.Value;
+            if (codeText is not null) template.Code = shiftCode;
+        }
+
+        var isWorkingDay = ParseBool(OptString(row, "isWorkingDay")) ?? true;
+        var existing = await _db.Set<OasShiftCalendarEntry>()
+            .FirstOrDefaultAsync(e => e.SiteId == site.Id && e.ShiftTemplateId == template.Id && e.WorkDate == workDate);
+
+        if (existing is null)
+        {
+            _db.Set<OasShiftCalendarEntry>().Add(new OasShiftCalendarEntry
+            {
+                TenantId = tenantId, SiteId = site.Id, ShiftTemplateId = template.Id,
+                WorkDate = workDate, IsWorkingDay = isWorkingDay,
+            });
+        }
+        else
+        {
+            existing.IsWorkingDay = isWorkingDay;
+        }
+    }
+
+    private static DateOnly ParseDate(string raw)
+        => DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            || DateOnly.TryParse(raw, CultureInfo.CurrentCulture, DateTimeStyles.None, out d)
+            ? d
+            : throw new InvalidOperationException($"invalid workDate '{raw}' — expected YYYY-MM-DD");
+
+    private static TimeOnly? ParseTime(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (TimeOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var t)) return t;
+        throw new InvalidOperationException($"invalid time '{raw}' — expected HH:mm");
+    }
+
+    private static int? ParseInt(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) && n >= 0) return n;
+        throw new InvalidOperationException($"invalid number '{raw}'");
+    }
+
+    private static bool? ParseBool(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        return raw.Trim().ToLowerInvariant() switch
+        {
+            "1" or "true" or "yes" or "y" or "oui" or "o" or "worked" => true,
+            "0" or "false" or "no" or "n" or "non" or "off" => false,
+            _ => throw new InvalidOperationException($"invalid boolean '{raw}'"),
+        };
     }
 
     private static OasImportDto ToDto(OasImport i) => new()

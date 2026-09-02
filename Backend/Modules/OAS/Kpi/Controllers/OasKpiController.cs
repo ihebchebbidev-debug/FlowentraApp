@@ -12,16 +12,26 @@ public class OasKpiController : OasControllerBase
     private readonly IOasKpiService _service;
     public OasKpiController(IOasKpiService service) => _service = service;
 
-    private static (DateOnly from, DateOnly to) Range(DateOnly? from, DateOnly? to)
+    /// <summary>
+    /// Default window when the caller passes no dates. "Today" MUST be the
+    /// current *production* day (shift-day start hour, ShiftDayStartHour —
+    /// 06:00 by default), not the UTC calendar day: on a 3x8 site the night
+    /// shift running at 02:00 UTC still belongs to the previous production
+    /// day, and returning the calendar day made every unparameterised call
+    /// (mobile TRS du poste, Andon rail, shop-floor board) report a window
+    /// the shop floor never worked.
+    /// </summary>
+    private async Task<(DateOnly from, DateOnly to)> RangeAsync(DateOnly? from, DateOnly? to)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (from is not null && to is not null) return (from.Value, to.Value);
+        var today = await _service.GetProductionDayAsync(DateTime.UtcNow);
         return (from ?? today, to ?? today);
     }
 
     [HttpGet("daily")]
     public async Task<ActionResult<OasKpiDailyDto>> Daily([FromQuery] Guid? postId, [FromQuery] Guid? lineId, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         return Ok(await _service.GetDailyAsync(CurrentTenantId, postId, lineId, f, t));
     }
 
@@ -37,7 +47,7 @@ public class OasKpiController : OasControllerBase
         var ids = ParseIds(postIds);
         if (ids.Count == 0) return BadRequest(new { success = false, message = "postIds is required." });
         if (ids.Count > 500) return BadRequest(new { success = false, message = "Too many postIds (max 500)." });
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         // Set-based: 4 grouped queries for the whole batch (was one GetDailyAsync
         // — ~5 sequential queries — per post, i.e. 500+ round trips per sweep).
         return Ok(await _service.GetDailyBatchAsync(CurrentTenantId, ids, f, t));
@@ -50,7 +60,7 @@ public class OasKpiController : OasControllerBase
         var ids = ParseIds(postIds);
         if (ids.Count == 0) return BadRequest(new { success = false, message = "postIds is required." });
         if (ids.Count > 500) return BadRequest(new { success = false, message = "Too many postIds (max 500)." });
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         // Set-based per (post, day): 4 grouped queries instead of posts × days
         // daily computations — that N×D fan-out is what left the TRS trend blank.
         return Ok(await _service.GetTrendBatchAsync(CurrentTenantId, ids, f, t));
@@ -68,7 +78,7 @@ public class OasKpiController : OasControllerBase
     [HttpGet("pareto")]
     public async Task<ActionResult<IReadOnlyList<OasParetoEntryDto>>> Pareto([FromQuery] Guid? postId, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         return Ok(await _service.GetParetoAsync(CurrentTenantId, postId, f, t));
     }
 
@@ -76,21 +86,21 @@ public class OasKpiController : OasControllerBase
     [HttpGet("trend")] [OasWorkspace("web")]
     public async Task<ActionResult<IReadOnlyList<OasTrendPointDto>>> Trend([FromQuery] Guid? postId, [FromQuery] Guid? lineId, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         return Ok(await _service.GetTrendAsync(CurrentTenantId, postId, lineId, f, t));
     }
 
     [HttpGet("line-comparison")]
     public async Task<ActionResult<IReadOnlyList<OasLineComparisonEntryDto>>> LineComparison([FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         return Ok(await _service.GetLineComparisonAsync(CurrentTenantId, f, t));
     }
 
     [HttpGet("sla-summary")]
     public async Task<ActionResult<IReadOnlyList<OasSlaSummaryEntryDto>>> SlaSummary([FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         return Ok(await _service.GetSlaSummaryAsync(CurrentTenantId, f, t));
     }
 
@@ -98,7 +108,7 @@ public class OasKpiController : OasControllerBase
     [HttpGet("cadence-gap")] [OasWorkspace("web")]
     public async Task<ActionResult<IReadOnlyList<OasCadenceGapEntryDto>>> CadenceGap([FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var (f, t) = Range(from, to);
+        var (f, t) = await RangeAsync(from, to);
         return Ok(await _service.GetCadenceGapAsync(CurrentTenantId, f, t));
     }
 }
