@@ -42,6 +42,7 @@ public class OasEscalationSweepHostedService : BackgroundService
         _logger = logger;
     }
 
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(Interval);
@@ -68,11 +69,9 @@ public class OasEscalationSweepHostedService : BackgroundService
             // every sweep and the exception was swallowed into a log line,
             // which is why no long-open stop ever escalated in production.
             var escalated = await ReadEscalatedAsync(db, ct);
-            if (escalated.Count == 0)
-            {
-                _diagnostics.RecordSuccess(oasSlug, 0);
-                return;
-            }
+            _diagnostics.RecordRun(oasSlug, escalated.Count);
+            if (escalated.Count == 0) return;
+
 
 
             // EF-M5-13 anti-rafale: one line going down escalates a dozen
@@ -116,7 +115,6 @@ public class OasEscalationSweepHostedService : BackgroundService
             if (escalated.Count > 0)
             {
                 await db.SaveChangesAsync(ct);
-                _diagnostics.RecordSuccess(oasSlug, escalated.Count);
                 _logger.LogInformation("🏭 OAS-SLA-SWEEP: {Count} event(s) escalated on '{Slug}'", escalated.Count, oasSlug);
             }
         }
@@ -126,9 +124,10 @@ public class OasEscalationSweepHostedService : BackgroundService
         }
         catch (Exception ex)
         {
-            _diagnostics.RecordFailure(oasSlug, ex);
+            _diagnostics.RecordError(oasSlug, ex.Message);
             _logger.LogError(ex, "🏭 OAS-SLA-SWEEP: failed for tenant '{Slug}'", oasSlug);
         }
+
     }
 
     /// <summary>

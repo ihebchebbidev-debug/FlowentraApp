@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using MyApi.Modules.OAS.Common.Realtime;
-using MyApi.Modules.OAS.Common.HostedServices;
 using System.Threading.Channels;
 
 namespace MyApi.Modules.OAS.Common;
@@ -34,7 +33,7 @@ public static class OasEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> HealthAsync(HttpContext context, IOasDbContextFactory dbFactory, OasSweepDiagnostics sweepDiagnostics, ILoggerFactory loggerFactory)
+    private static async Task<IResult> HealthAsync(HttpContext context, IOasDbContextFactory dbFactory, HostedServices.OasSweepDiagnostics sweepDiagnostics, ILoggerFactory loggerFactory)
     {
         var slug = context.Request.Headers[Infrastructure.TenantMiddleware.TenantHeaderName].FirstOrDefault()?.Trim().ToLowerInvariant();
 
@@ -96,7 +95,19 @@ public static class OasEndpoints
                 tenant = slug,
                 tablesPresent = present,
                 tablesMissing = missing,
-                slaSweep = sweepDiagnostics.Get(slug),
+                // Observability for the 30s SLA escalation sweep: without it a
+                // background failure looks exactly like "nothing is overdue".
+                slaSweep = sweepDiagnostics.Get(slug) is { } sweep
+                    ? new
+                    {
+                        lastRunUtc = sweep.LastRunUtc,
+                        lastEscalationUtc = sweep.LastEscalationUtc,
+                        lastEscalatedCount = sweep.LastEscalatedCount,
+                        totalRuns = sweep.TotalRuns,
+                        totalEscalated = sweep.TotalEscalated,
+                        lastError = sweep.LastError,
+                    }
+                    : null,
             }, statusCode: missing.Count == 0 ? 200 : 503);
         }
         catch (OasTenantNotProvisionedException ex)

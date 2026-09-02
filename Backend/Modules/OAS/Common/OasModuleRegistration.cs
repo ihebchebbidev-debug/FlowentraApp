@@ -110,7 +110,6 @@ public static class OasModuleRegistration
         // tenants. (Settings reads outside a request scope go through the
         // static OasSettingsReader helper — no registration needed.)
         services.AddSingleton<Realtime.IOasNotificationGrouper, Realtime.OasNotificationGrouper>();
-        services.AddSingleton<HostedServices.OasSweepDiagnostics>();
         services.AddHttpClient("oas-integration-delivery");
 
         // Hosted services (spec §6.3) — replace the browser-tab timers
@@ -118,6 +117,7 @@ public static class OasModuleRegistration
         // server-side background work that runs regardless of any tab
         // being open, across every provisioned *oas tenant database.
         // Must run before anything queries the new tables (008 upgrade).
+        services.AddSingleton<HostedServices.OasSweepDiagnostics>();
         services.AddHostedService<HostedServices.OasSchemaUpgradeHostedService>();
         services.AddHostedService<HostedServices.OasEscalationSweepHostedService>();
         services.AddHostedService<HostedServices.OasSessionWatchdogHostedService>();
