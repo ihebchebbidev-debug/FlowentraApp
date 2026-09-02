@@ -31,12 +31,14 @@ public class OasEscalationSweepHostedService : BackgroundService
 
     private readonly IOasDbContextFactory _dbFactory;
     private readonly IOasNotificationGrouper _grouper;
+    private readonly OasSweepDiagnostics _diagnostics;
     private readonly ILogger<OasEscalationSweepHostedService> _logger;
 
-    public OasEscalationSweepHostedService(IOasDbContextFactory dbFactory, IOasNotificationGrouper grouper, ILogger<OasEscalationSweepHostedService> logger)
+    public OasEscalationSweepHostedService(IOasDbContextFactory dbFactory, IOasNotificationGrouper grouper, OasSweepDiagnostics diagnostics, ILogger<OasEscalationSweepHostedService> logger)
     {
         _dbFactory = dbFactory;
         _grouper = grouper;
+        _diagnostics = diagnostics;
         _logger = logger;
     }
 
@@ -66,7 +68,11 @@ public class OasEscalationSweepHostedService : BackgroundService
             // every sweep and the exception was swallowed into a log line,
             // which is why no long-open stop ever escalated in production.
             var escalated = await ReadEscalatedAsync(db, ct);
-            if (escalated.Count == 0) return;
+            if (escalated.Count == 0)
+            {
+                _diagnostics.RecordSuccess(oasSlug, 0);
+                return;
+            }
 
 
             // EF-M5-13 anti-rafale: one line going down escalates a dozen
@@ -110,6 +116,7 @@ public class OasEscalationSweepHostedService : BackgroundService
             if (escalated.Count > 0)
             {
                 await db.SaveChangesAsync(ct);
+                _diagnostics.RecordSuccess(oasSlug, escalated.Count);
                 _logger.LogInformation("🏭 OAS-SLA-SWEEP: {Count} event(s) escalated on '{Slug}'", escalated.Count, oasSlug);
             }
         }
@@ -119,6 +126,7 @@ public class OasEscalationSweepHostedService : BackgroundService
         }
         catch (Exception ex)
         {
+            _diagnostics.RecordFailure(oasSlug, ex);
             _logger.LogError(ex, "🏭 OAS-SLA-SWEEP: failed for tenant '{Slug}'", oasSlug);
         }
     }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApi.Modules.OAS.Common.Realtime;
+using MyApi.Modules.OAS.Common.HostedServices;
 using System.Threading.Channels;
 
 namespace MyApi.Modules.OAS.Common;
@@ -33,7 +34,7 @@ public static class OasEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> HealthAsync(HttpContext context, IOasDbContextFactory dbFactory, ILoggerFactory loggerFactory)
+    private static async Task<IResult> HealthAsync(HttpContext context, IOasDbContextFactory dbFactory, OasSweepDiagnostics sweepDiagnostics, ILoggerFactory loggerFactory)
     {
         var slug = context.Request.Headers[Infrastructure.TenantMiddleware.TenantHeaderName].FirstOrDefault()?.Trim().ToLowerInvariant();
 
@@ -95,6 +96,7 @@ public static class OasEndpoints
                 tenant = slug,
                 tablesPresent = present,
                 tablesMissing = missing,
+                slaSweep = sweepDiagnostics.Get(slug),
             }, statusCode: missing.Count == 0 ? 200 : 503);
         }
         catch (OasTenantNotProvisionedException ex)

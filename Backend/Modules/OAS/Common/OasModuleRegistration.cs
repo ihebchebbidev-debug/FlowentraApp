@@ -110,6 +110,7 @@ public static class OasModuleRegistration
         // tenants. (Settings reads outside a request scope go through the
         // static OasSettingsReader helper — no registration needed.)
         services.AddSingleton<Realtime.IOasNotificationGrouper, Realtime.OasNotificationGrouper>();
+        services.AddSingleton<HostedServices.OasSweepDiagnostics>();
         services.AddHttpClient("oas-integration-delivery");
 
         // Hosted services (spec §6.3) — replace the browser-tab timers
