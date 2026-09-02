@@ -59,9 +59,15 @@ public class OasEscalationSweepHostedService : BackgroundService
         {
             await using var db = _dbFactory.CreateDbContext(oasSlug);
 
-            var escalated = await db.Database.SqlQueryRaw<EscalatedRow>(
-                "select * from oas_job_check_sla()").ToListAsync(ct);
+            // Read via raw ADO instead of EF's SqlQueryRaw<T>: the function
+            // returns THREE columns and `new_level` is a Postgres enum
+            // (oas_escalation_level, mapped on the data source) — EF's
+            // SqlQuery only projects scalar types, so the old call threw on
+            // every sweep and the exception was swallowed into a log line,
+            // which is why no long-open stop ever escalated in production.
+            var escalated = await ReadEscalatedAsync(db, ct);
             if (escalated.Count == 0) return;
+
 
             // EF-M5-13 anti-rafale: one line going down escalates a dozen
             // events in the same sweep. The first push goes out live, the
@@ -117,6 +123,33 @@ public class OasEscalationSweepHostedService : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Calls oas_job_check_sla() and materialises its
+    /// TABLE(event_id uuid, tenant_id int, new_level oas_escalation_level)
+    /// rows. `new_level` is cast to text in SQL so the read never depends on
+    /// the enum mapping being present on this data source.
+    /// </summary>
+    private static async Task<List<EscalatedRow>> ReadEscalatedAsync(OasDbContext db, CancellationToken ct)
+    {
+        var rows = new List<EscalatedRow>();
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "select event_id, tenant_id, new_level::text as new_level from public.oas_job_check_sla()";
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            rows.Add(new EscalatedRow
+            {
+                event_id = reader.GetGuid(0),
+                tenant_id = reader.GetInt32(1),
+                new_level = reader.GetString(2),
+            });
+        }
+        return rows;
+    }
+
     // Matches oas_job_check_sla()'s TABLE(event_id uuid, tenant_id int, new_level oas_escalation_level) return shape.
     private sealed class EscalatedRow
     {
@@ -124,4 +157,5 @@ public class OasEscalationSweepHostedService : BackgroundService
         public int tenant_id { get; set; }
         public string new_level { get; set; } = string.Empty;
     }
+
 }
