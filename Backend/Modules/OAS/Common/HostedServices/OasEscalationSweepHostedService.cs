@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Infrastructure;
 using MyApi.Modules.OAS.Common.Realtime;
 using MyApi.Modules.OAS.Events.Models;
+using MyApi.Modules.OAS.Hierarchy.Models;
 using MyApi.Modules.OAS.Settings.Services;
 using MyApi.Modules.OAS.Sla.Models;
 
@@ -68,8 +69,21 @@ public class OasEscalationSweepHostedService : BackgroundService
             var groupWindow = TimeSpan.FromSeconds(
                 await OasSettingsReader.GetIntAsync(db, OasSettingKeys.NotificationGroupWindowSeconds, ct));
 
+            // The admin console renders a toast for every escalation — a bare
+            // {eventId, level} makes that toast unreadable ("an event escalated"),
+            // so resolve the post code once per sweep and ship it in the payload.
+            var ids = escalated.Select(r => r.event_id).ToList();
+            // IgnoreQueryFilters: the sweep runs outside any request scope
+            // (no ambient tenant) and an archived post must still name its stop.
+            var postByEvent = await (from e in db.Set<OasEvent>().IgnoreQueryFilters()
+                                     join po in db.Set<OasPost>().IgnoreQueryFilters() on e.PostId equals po.Id
+                                     where ids.Contains(e.Id)
+                                     select new { e.Id, po.Code, e.EventType })
+                                    .ToDictionaryAsync(x => x.Id, x => x, ct);
+
             foreach (var row in escalated)
             {
+                postByEvent.TryGetValue(row.event_id, out var meta);
                 db.Set<OasEscalation>().Add(new OasEscalation
                 {
                     TenantId = row.tenant_id, EventId = row.event_id,
@@ -78,7 +92,13 @@ public class OasEscalationSweepHostedService : BackgroundService
                 });
 
                 _grouper.Publish(oasSlug, row.tenant_id, $"escalation:{row.new_level}", "event.escalated",
-                    new { eventId = row.event_id, level = row.new_level }, groupWindow);
+                    new
+                    {
+                        eventId = row.event_id,
+                        level = row.new_level,
+                        postCode = meta?.Code,
+                        eventType = meta?.EventType.ToString(),
+                    }, groupWindow);
             }
 
             if (escalated.Count > 0)
