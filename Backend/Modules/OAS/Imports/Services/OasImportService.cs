@@ -98,7 +98,6 @@ public class OasImportService : IOasImportService
         }
 
         var lines = await _db.Set<OasImportLine>().Where(l => l.ImportId == id).OrderBy(l => l.RowNumber).ToListAsync();
-        var ok = 0; var errors = 0;
 
         // Per-row isolation (EF-M6-08). Previously every row was only staged
         // with Add() and a single SaveChangesAsync ran at the very end, so a
@@ -113,49 +112,60 @@ public class OasImportService : IOasImportService
         // and the import continues. Partial success is the documented
         // behaviour — the caller sees rowsOk / rowsError and can fix and
         // re-import only the rejected rows.
-        await using var tx = await _db.Database.BeginTransactionAsync();
-
-        foreach (var line in lines)
+        //
+        // Npgsql's retrying execution strategy refuses user-initiated
+        // transactions unless the whole unit runs through the strategy, so the
+        // transaction body lives inside ExecuteAsync and is fully re-runnable
+        // (counters reset on every attempt).
+        var strategy = _db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            const string savepoint = "oas_import_row";
-            await tx.CreateSavepointAsync(savepoint);
-            try
-            {
-                var row = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(line.Raw) ?? new();
-                switch (import.Kind.ToLowerInvariant())
-                {
-                    case "products": CommitProductRow(tenantId, row); break;
-                    case "causes": CommitCauseRow(tenantId, row); break;
-                    case "equipment": CommitEquipmentRow(tenantId, row); break;
-                    case "shiftcalendar": await CommitShiftCalendarRowAsync(tenantId, row); break;
-                }
-                await _db.SaveChangesAsync();
-                await tx.ReleaseSavepointAsync(savepoint);
-                line.Status = "ok";
-                ok++;
-            }
-            catch (Exception ex)
-            {
-                await tx.RollbackToSavepointAsync(savepoint);
-                // The failed entity is still tracked as Added after a rollback
-                // and would be retried (and fail again) on the next flush —
-                // detach everything still pending so the next row starts clean.
-                DetachPending();
-                line.Status = "error";
-                line.Error = RootMessage(ex);
-                errors++;
-            }
-        }
+            var ok = 0; var errors = 0;
+            await using var tx = await _db.Database.BeginTransactionAsync();
 
-        import.RowsOk = ok;
-        import.RowsError = errors;
-        import.Status = OasImportStatus.committed;
-        import.CommittedAt = DateTimeOffset.UtcNow;
-        await _db.SaveChangesAsync();
-        await tx.CommitAsync();
+            foreach (var line in lines)
+            {
+                const string savepoint = "oas_import_row";
+                await tx.CreateSavepointAsync(savepoint);
+                try
+                {
+                    var row = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(line.Raw) ?? new();
+                    switch (import.Kind.ToLowerInvariant())
+                    {
+                        case "products": CommitProductRow(tenantId, row); break;
+                        case "causes": CommitCauseRow(tenantId, row); break;
+                        case "equipment": CommitEquipmentRow(tenantId, row); break;
+                        case "shiftcalendar": await CommitShiftCalendarRowAsync(tenantId, row); break;
+                    }
+                    await _db.SaveChangesAsync();
+                    await tx.ReleaseSavepointAsync(savepoint);
+                    line.Status = "ok";
+                    ok++;
+                }
+                catch (Exception ex)
+                {
+                    await tx.RollbackToSavepointAsync(savepoint);
+                    // The failed entity is still tracked as Added after a rollback
+                    // and would be retried (and fail again) on the next flush —
+                    // detach everything still pending so the next row starts clean.
+                    DetachPending();
+                    line.Status = "error";
+                    line.Error = RootMessage(ex);
+                    errors++;
+                }
+            }
+
+            import.RowsOk = ok;
+            import.RowsError = errors;
+            import.Status = OasImportStatus.committed;
+            import.CommittedAt = DateTimeOffset.UtcNow;
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+        });
 
         return (true, null, ToDto(import));
     }
+
 
     /// <summary>Drops entities staged by a row that failed, so they don't leak into the next row's flush.</summary>
     private void DetachPending()
