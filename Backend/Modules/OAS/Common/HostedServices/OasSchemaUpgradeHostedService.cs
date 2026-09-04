@@ -44,7 +44,8 @@ public class OasSchemaUpgradeHostedService : IHostedService
             await using var db = _dbFactory.CreateDbContext(oasSlug);
             await db.Database.ExecuteSqlRawAsync(Ddl, ct);
             await db.Database.ExecuteSqlRawAsync(EscalationDdl, ct);
-            _logger.LogInformation("🏭 OAS-SCHEMA: additive upgrades 008 + 009 applied on '{Slug}'", oasSlug);
+            await db.Database.ExecuteSqlRawAsync(PostStateDdl, ct);
+            _logger.LogInformation("🏭 OAS-SCHEMA: additive upgrades 008 + 009 + 010 applied on '{Slug}'", oasSlug);
         }
         catch (OasTenantNotProvisionedException)
         {
@@ -180,9 +181,7 @@ public class OasSchemaUpgradeHostedService : IHostedService
         --    of silently going quiet like before.
         create or replace function public.oas_job_check_sla()
         returns table(event_id uuid, tenant_id int, new_level public.oas_escalation_level)
-        language plpgsql set search_path = public as $$
-        begin
-          return query
+        language sql set search_path = public as $$
           with due as (
             select e.id,
                    coalesce(e.sla_due_at,
@@ -213,13 +212,140 @@ public class OasSchemaUpgradeHostedService : IHostedService
                        then 'level_1'
                      else e.escalation_level
                    end::public.oas_escalation_level)
-            returning e.id, e.tenant_id, e.escalation_level
+            returning e.id as ev_id, e.tenant_id as ev_tenant_id, e.escalation_level as ev_level
           )
-          select id, tenant_id, escalation_level from breached;
-        end $$;
+          -- Aliased on purpose: the function's OUT parameters are named
+          -- event_id/tenant_id/new_level, so selecting bare `tenant_id`
+          -- raised 42702 "column reference tenant_id is ambiguous" on every
+          -- sweep — the whole reason no stop ever escalated after deploy.
+          select b.ev_id, b.ev_tenant_id, b.ev_level from breached b;
+        $$;
 
 
         insert into public.oas_schema_migrations (filename) values ('009_escalation_rules.sql')
+          on conflict (filename) do nothing;
+        """;
+
+    /// <summary>Kept byte-for-byte equivalent to public/OAS-SQL/010_post_state_triggers.sql — 003_triggers.sql was never applied on provisioned tenants, so oas_post_states stayed empty and the board showed every post idle/0 min.</summary>
+    private const string PostStateDdl = """
+        -- =====================================================================
+        -- OAS · 010 — Derived post state triggers (additive, idempotent)
+        --
+        -- Same class of bug as 009: `003_triggers.sql` was never applied on the
+        -- already-provisioned tenant databases, so `public.oas_post_states` stayed
+        -- EMPTY forever. Consequences observed live:
+        --   * `/api/oas/post-states` returns `[]`
+        --   * the shop-floor board shows every post as "idle" and "0 min" even with
+        --     a stop open for hours (the client falls back to `Date.now()`)
+        --   * `oas_post_state_history` never records anything, so state durations
+        --     and the shift report's state timeline are always empty.
+        --
+        -- This script (re)creates the recompute function, its trigger wrapper, the
+        -- three triggers, and then BACKFILLS one row per post — seeding `since`
+        -- from the driving event/session/changeover start instead of `now()`, so
+        -- currently running stops immediately show their real age.
+        --
+        -- Safe to run repeatedly.
+        -- =====================================================================
+
+        create or replace function public.oas_recompute_post_state(_post_id uuid)
+        returns void language plpgsql set search_path = public as $$
+        declare
+          _tenant int; _state public.oas_post_state := 'unassigned';
+          _ev record; _co record; _se record; _prev public.oas_post_state;
+          _since timestamptz := now();
+        begin
+          select tenant_id into _tenant from public.oas_posts where id = _post_id;
+          if _tenant is null then return; end if;
+
+          select * into _se from public.oas_post_sessions
+           where post_id = _post_id and ended_at is null limit 1;
+          select * into _co from public.oas_changeovers
+           where post_id = _post_id and ended_at is null limit 1;
+          select * into _ev from public.oas_events
+           where post_id = _post_id and status not in ('closed','cancelled')
+           order by case event_type
+                      when 'technical_stop' then 1 when 'quality_stop' then 2
+                      when 'material_wait'  then 3 else 4 end
+           limit 1;
+
+          if _ev.id is not null then
+            _state := case _ev.event_type
+                        when 'technical_stop' then 'technical_stop'
+                        when 'quality_stop'   then 'quality_stop'
+                        when 'material_wait'  then 'material_wait'
+                        else 'changeover' end::public.oas_post_state;
+            _since := coalesce(_ev.declared_at, now());
+          elsif _co.id is not null then
+            _state := 'changeover';
+            _since := coalesce(_co.started_at, now());
+          elsif _se.id is not null then
+            _state := 'production';
+            _since := coalesce(_se.started_at, now());
+          end if;
+
+          select state into _prev from public.oas_post_states where post_id = _post_id;
+
+          insert into public.oas_post_states(post_id, tenant_id, state, since, active_event_id,
+                                             active_session_id, active_changeover_id,
+                                             current_user_id, current_order_id, updated_at)
+          values (_post_id, _tenant, _state, _since, _ev.id, _se.id, _co.id,
+                  _se.user_id, _se.production_order_id, now())
+          on conflict (post_id) do update
+            set state                = excluded.state,
+                -- Keep the existing `since` while the state is unchanged, otherwise
+                -- adopt the driving row's real start (not `now()`): a stop declared
+                -- hours ago must read as hours old the first time it is recorded.
+                since                = case when public.oas_post_states.state = excluded.state
+                                            then public.oas_post_states.since else excluded.since end,
+                active_event_id      = excluded.active_event_id,
+                active_session_id    = excluded.active_session_id,
+                active_changeover_id = excluded.active_changeover_id,
+                current_user_id      = excluded.current_user_id,
+                current_order_id     = excluded.current_order_id,
+                updated_at           = now();
+
+          if _prev is distinct from _state then
+            update public.oas_post_state_history
+               set ended_at = now(),
+                   duration_sec = extract(epoch from (now() - started_at))::int
+             where post_id = _post_id and ended_at is null;
+
+            insert into public.oas_post_state_history(tenant_id, post_id, state, started_at, event_id, session_id)
+            values (_tenant, _post_id, _state, _since, _ev.id, _se.id);
+          end if;
+        end $$;
+
+        create or replace function public.oas_trg_recompute_post_state()
+        returns trigger language plpgsql set search_path = public as $$
+        begin
+          perform public.oas_recompute_post_state(coalesce(new.post_id, old.post_id));
+          return coalesce(new, old);
+        end $$;
+
+        drop trigger if exists trg_oas_state_events on public.oas_events;
+        create trigger trg_oas_state_events after insert or update on public.oas_events
+          for each row execute function public.oas_trg_recompute_post_state();
+
+        drop trigger if exists trg_oas_state_sessions on public.oas_post_sessions;
+        create trigger trg_oas_state_sessions after insert or update on public.oas_post_sessions
+          for each row execute function public.oas_trg_recompute_post_state();
+
+        drop trigger if exists trg_oas_state_changeovers on public.oas_changeovers;
+        create trigger trg_oas_state_changeovers after insert or update on public.oas_changeovers
+          for each row execute function public.oas_trg_recompute_post_state();
+
+        -- Backfill every post once so the board is correct without waiting for the
+        -- next event/session write.
+        do $$
+        declare p record;
+        begin
+          for p in select id from public.oas_posts loop
+            perform public.oas_recompute_post_state(p.id);
+          end loop;
+        end $$;
+
+        insert into public.oas_schema_migrations (filename) values ('010_post_state_triggers.sql')
           on conflict (filename) do nothing;
         """;
 }

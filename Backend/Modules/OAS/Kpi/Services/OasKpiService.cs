@@ -54,17 +54,29 @@ public class OasKpiService : IOasKpiService
         var shiftHour = await ShiftStartHourAsync();
         var (fromTs, toTs) = ToRange(from, to, shiftHour);
 
+        // Downtime is the OVERLAP of each stop with the requested window, not
+        // the duration of stops that merely *started* inside it. The previous
+        // query filtered `status = 'closed'`, so a stop still open right now
+        // counted as zero downtime (a stopped post reported Availability
+        // 100%), and a stop that began before the production day contributed
+        // nothing at all while a stop closing after the window contributed its
+        // full length. Cancelled events are excluded; everything else counts
+        // for the time it actually held the post down.
         var stopRows = await _db.Database.SqlQueryRaw<StopAgg>(
             """
-            select coalesce(sum(coalesce(duration_sec, extract(epoch from (coalesce(closed_at, now()) - declared_at))::int)), 0)::int as "StopSeconds",
+            select coalesce(sum(greatest(0, extract(epoch from (
+                       least(coalesce(closed_at, now()), {4}) - greatest(declared_at, {3})
+                   )))), 0)::int as "StopSeconds",
                    count(*)::int as "StopsCount"
             from oas_events
             where tenant_id = {0}
               and ({1}::uuid is null or post_id = {1})
               and ({2}::uuid is null or line_id = {2})
-              and declared_at >= {3} and declared_at < {4}
-              and status = 'closed'
+              and status <> 'cancelled'
+              and declared_at < {4}
+              and coalesce(closed_at, now()) > {3}
             """, tenantId, postId, lineId, fromTs, toTs).FirstOrDefaultAsync() ?? new StopAgg();
+
 
         var declRows = await _db.Database.SqlQueryRaw<DeclAgg>(
             """
@@ -111,18 +123,26 @@ public class OasKpiService : IOasKpiService
     {
         var shiftHour = await ShiftStartHourAsync();
         var (fromTs, toTs) = ToRange(from, to, shiftHour);
+        // Same window-overlap rule as GetDailyAsync: the Pareto must add up to
+        // the downtime the availability figure is based on, so a stop still
+        // open (or one straddling the window edge) contributes the minutes it
+        // actually cost inside the window.
         var rows = await _db.Database.SqlQueryRaw<ParetoRow>(
             """
             select cause_id as "CauseId",
-                   coalesce(sum(greatest(1, round(extract(epoch from (coalesce(closed_at, now()) - declared_at)) / 60)))::int, 0) as "LostMinutes"
+                   coalesce(sum(greatest(1, round(extract(epoch from (
+                       least(coalesce(closed_at, now()), {3}) - greatest(declared_at, {2})
+                   )) / 60)))::int, 0) as "LostMinutes"
             from oas_events
             where tenant_id = {0}
               and ({1}::uuid is null or post_id = {1})
-              and declared_at >= {2} and declared_at < {3}
-              and status = 'closed'
+              and status <> 'cancelled'
+              and declared_at < {3}
+              and coalesce(closed_at, now()) > {2}
             group by cause_id
             order by "LostMinutes" desc
             """, tenantId, postId, fromTs, toTs).ToListAsync();
+
 
         return rows.Select(r => new OasParetoEntryDto { CauseId = r.CauseId, LostMinutes = r.LostMinutes }).ToList();
     }
@@ -301,16 +321,23 @@ public class OasKpiService : IOasKpiService
         var shiftHour = await ShiftStartHourAsync();
         var (fromTs, toTs) = ToRange(from, to, shiftHour);
 
+        // Window-overlap downtime — same rule as GetDailyAsync, so the
+        // shop-floor board and the single-post screen never disagree about a
+        // post that is stopped right now.
         var stops = (await _db.Database.SqlQueryRaw<PostStopRow>(
             """
             select post_id as "PostId",
-                   coalesce(sum(coalesce(duration_sec, extract(epoch from (coalesce(closed_at, now()) - declared_at))::int)), 0)::int as "StopSeconds",
+                   coalesce(sum(greatest(0, extract(epoch from (
+                       least(coalesce(closed_at, now()), {3}) - greatest(declared_at, {2})
+                   )))), 0)::int as "StopSeconds",
                    count(*)::int as "StopsCount"
             from oas_events
             where tenant_id = {0} and post_id = any({1})
-              and declared_at >= {2} and declared_at < {3} and status = 'closed'
+              and status <> 'cancelled'
+              and declared_at < {3} and coalesce(closed_at, now()) > {2}
             group by post_id
             """, tenantId, ids, fromTs, toTs).ToListAsync()).ToDictionary(r => r.PostId);
+
 
         var decls = (await _db.Database.SqlQueryRaw<PostDeclRow>(
             """
@@ -345,16 +372,24 @@ public class OasKpiService : IOasKpiService
         var shiftHour = await ShiftStartHourAsync();
         var (fromTs, toTs) = ToRange(from, to, shiftHour);
 
+        // Trend keeps its per-production-day bucket (the day the stop was
+        // declared) but, like the other KPI queries, counts stops that are
+        // still open and clips every duration to the requested window instead
+        // of dropping everything that is not yet closed.
         var stops = (await _db.Database.SqlQueryRaw<PostDayStopRow>(
             """
             select post_id as "PostId", ((declared_at - make_interval(hours => {4})) at time zone 'UTC')::date as "Day",
-                   coalesce(sum(coalesce(duration_sec, extract(epoch from (coalesce(closed_at, now()) - declared_at))::int)), 0)::int as "StopSeconds",
+                   coalesce(sum(greatest(0, extract(epoch from (
+                       least(coalesce(closed_at, now()), {3}) - declared_at
+                   )))), 0)::int as "StopSeconds",
                    count(*)::int as "StopsCount"
             from oas_events
             where tenant_id = {0} and post_id = any({1})
-              and declared_at >= {2} and declared_at < {3} and status = 'closed'
+              and declared_at >= {2} and declared_at < {3}
+              and status <> 'cancelled'
             group by post_id, ((declared_at - make_interval(hours => {4})) at time zone 'UTC')::date
             """, tenantId, ids, fromTs, toTs, shiftHour).ToListAsync()).ToDictionary(r => (r.PostId, r.Day));
+
 
         var decls = (await _db.Database.SqlQueryRaw<PostDayDeclRow>(
             """
