@@ -989,7 +989,9 @@ namespace MyApi.Modules.Auth.Services
                 new Claim("login_type", "admin")
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+            if (keyBytes.Length < 32) throw new InvalidOperationException("Configuration error: Jwt:Key must be at least 32 bytes (256 bits). Set Jwt__Key in environment with a secure random value.");
+            var key = new SymmetricSecurityKey(keyBytes);
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // Long-lived token (10 years) — matches ValidateLifetime=false so users
