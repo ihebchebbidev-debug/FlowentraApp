@@ -310,8 +310,8 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
     { id: 'users', labelKey: 'nav.users', icon: Users, section: 'admin', visible: false },
     { id: 'roles', labelKey: 'nav.roles', icon: Shield, section: 'admin', visible: false },
     { id: 'userGroups', labelKey: 'nav.userGroups', icon: Users, section: 'admin', visible: false },
-    { id: 'integrations', labelKey: 'nav.integrations', icon: Link2, section: 'admin', visible: false },
     { id: 'syncHistory', labelKey: 'nav.syncHistory', icon: RefreshCw, section: 'admin', visible: false },
+    { id: 'integrations', labelKey: 'nav.integrations', icon: Link2, section: 'personal', visible: true },
   ];
 
   const personalItems = navItems.filter(i => i.section === 'personal' && i.visible);
