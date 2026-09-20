@@ -299,12 +299,12 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
   const navItems: NavItem[] = [
     { id: 'profile', labelKey: 'nav.profile', icon: User, section: 'personal', visible: true },
     { id: 'security', labelKey: 'nav.security', icon: Lock, section: 'personal', visible: true },
+    { id: 'system', labelKey: 'nav.system', icon: Monitor, section: 'personal', visible: canViewSystem },
     { id: 'company', labelKey: 'nav.company', icon: Building2, section: 'general', visible: true },
     // Preferences merged into the Company section; kept hidden here for direct-URL back-compat.
     { id: 'preferences', labelKey: 'nav.preferences', icon: Palette, section: 'general', visible: false },
     { id: 'subscription', labelKey: 'nav.subscription', icon: CreditCard, section: 'general', visible: isMainAdmin },
     { id: 'offline', labelKey: 'nav.offline', icon: WifiOff, section: 'general', visible: true },
-    { id: 'system', labelKey: 'nav.system', icon: Monitor, section: 'general', visible: canViewSystem },
     // Reachable via direct URL from the Administration workspace sidebar:
     { id: 'companies', labelKey: 'nav.companies', icon: Layers, section: 'general', visible: isMainAdmin },
     { id: 'users', labelKey: 'nav.users', icon: Users, section: 'admin', visible: false },
