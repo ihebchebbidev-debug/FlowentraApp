@@ -85,7 +85,19 @@ export const customEmailService = {
   },
 
   /** Remove a custom email account */
-  removeAccount(id: string): boolean {
+  async removeAccount(id: string): Promise<boolean> {
+    try {
+      // The id might be "custom-123", we need to pass "123" to the backend
+      const backendId = id.startsWith('custom-') ? id.replace('custom-', '') : id;
+      
+      // Import api dynamically or use fetch directly since emailAccountsApi is in another folder
+      const { emailAccountsApi } = await import('@/services/api/emailAccountsApi');
+      await emailAccountsApi.deleteCustom(backendId);
+    } catch (err) {
+      console.warn('Failed to delete custom account from backend:', err);
+      // Proceed to remove locally even if backend fails
+    }
+
     const accounts = loadCustomAccounts();
     const filtered = accounts.filter(a => a.id !== id);
     if (filtered.length === accounts.length) return false;

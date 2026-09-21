@@ -49,6 +49,22 @@ export function IntegrationsTabContent() {
 
 
 
+  const handleDisconnectProvider = async (providerId: string) => {
+    if (providerId === 'gmail' || providerId === 'google-calendar') {
+      const accs = accounts.filter(a => a.provider === 'google');
+      accs.forEach(a => disconnectAccount(a.id));
+    } else if (providerId === 'outlook' || providerId === 'outlook-calendar') {
+      const accs = accounts.filter(a => a.provider === 'microsoft');
+      accs.forEach(a => disconnectAccount(a.id));
+    } else if (providerId === 'custom-smtp') {
+      const customAccs = customEmailService.getAll();
+      await Promise.all(customAccs.map(a => customEmailService.removeAccount(a.id)));
+      window.location.reload();
+    } else if (providerId === 'openrouter') {
+      setShowOpenRouterSettings(true);
+    }
+  };
+
   const catalog = useMemo(() => {
     return INTEGRATIONS_CATALOG.map(item => {
       let status = item.status;
@@ -218,7 +234,15 @@ export function IntegrationsTabContent() {
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {items.map(item => (
-                      <IntegrationCard key={item.id} item={item} t={t} onConnect={connectAccount} onOpenCustomDialog={() => setCustomDialogOpen(true)} onOpenOpenRouter={() => setShowOpenRouterSettings(!showOpenRouterSettings)} />
+                      <IntegrationCard 
+                        key={item.id} 
+                        item={item} 
+                        t={t} 
+                        onConnect={connectAccount} 
+                        onDisconnectProvider={handleDisconnectProvider}
+                        onOpenCustomDialog={() => setCustomDialogOpen(true)} 
+                        onOpenOpenRouter={() => setShowOpenRouterSettings(!showOpenRouterSettings)} 
+                      />
                     ))}
                   </div>
                 </div>
@@ -238,7 +262,7 @@ export function IntegrationsTabContent() {
   );
 }
 
-function IntegrationCard({ item, t, onConnect, onOpenCustomDialog, onOpenOpenRouter }: { item: IntegrationItem; t: (key: string) => string; onConnect: (provider: any) => void; onOpenCustomDialog: () => void; onOpenOpenRouter: () => void }) {
+function IntegrationCard({ item, t, onConnect, onDisconnectProvider, onOpenCustomDialog, onOpenOpenRouter }: { item: IntegrationItem; t: (key: string) => string; onConnect: (provider: any) => void; onDisconnectProvider: (id: string) => void; onOpenCustomDialog: () => void; onOpenOpenRouter: () => void }) {
   const statusConfig = {
     connected: { badge: t('integrations.status.connected'), className: 'bg-success/10 text-success border-success/20', icon: <CheckCircle2 className="h-3 w-3" /> },
     available: { badge: t('integrations.status.available'), className: 'bg-primary/10 text-primary border-primary/20', icon: null },
@@ -246,10 +270,10 @@ function IntegrationCard({ item, t, onConnect, onOpenCustomDialog, onOpenOpenRou
   };
 
   const { badge, className, icon } = statusConfig[item.status];
-  const isClickable = (item.status === 'available' || item.status === 'connected') && item.hasConnectFlow;
+  const isClickable = (item.status === 'available') && item.hasConnectFlow;
 
   const handleClick = () => {
-    if (!item.hasConnectFlow) return;
+    if (!isClickable) return;
     if (item.id === 'openrouter') {
       onOpenOpenRouter();
     } else if (item.id === 'custom-smtp') {
@@ -261,10 +285,15 @@ function IntegrationCard({ item, t, onConnect, onOpenCustomDialog, onOpenOpenRou
     }
   };
 
+  const handleDisconnect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDisconnectProvider(item.id);
+  };
+
   return (
-    <button
+    <div
       onClick={handleClick}
-      disabled={!isClickable && item.status !== 'connected'}
+      role={isClickable ? "button" : "presentation"}
       className={`group text-left w-full flex items-center gap-3 p-3 rounded-lg border border-border/40 transition-all duration-150
         ${isClickable ? 'hover:bg-accent/50 hover:border-border cursor-pointer' : ''}
         ${item.status === 'connected' ? 'bg-success/[0.03] border-success/20' : ''}
@@ -325,9 +354,21 @@ function IntegrationCard({ item, t, onConnect, onOpenCustomDialog, onOpenOpenRou
         <p className="text-px-11 text-muted-foreground truncate mt-0.5">{item.description}</p>
       </div>
 
-      {isClickable && (
+      {item.status === 'connected' ? (
+        <button
+          onClick={handleDisconnect}
+          className="p-1.5 text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0"
+          title={t('integrations.disconnect')}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+          </svg>
+        </button>
+      ) : isClickable ? (
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-      )}
-    </button>
+      ) : null}
+    </div>
   );
 }

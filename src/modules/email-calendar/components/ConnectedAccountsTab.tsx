@@ -124,8 +124,8 @@ export function ConnectedAccountsTab({ accounts, onConnect, onDisconnect, onCust
     toast({ title: t('customEmail.successTitle'), description: t('customEmail.successDescription') });
   };
 
-  const handleCustomDisconnect = (id: string) => {
-    customEmailService.removeAccount(id);
+  const handleCustomDisconnect = async (id: string) => {
+    await customEmailService.removeAccount(id);
     setCustomAccounts(customEmailService.getAll());
     onCustomAccountRemoved?.(id);
   };
