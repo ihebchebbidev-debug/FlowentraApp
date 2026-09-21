@@ -223,7 +223,6 @@ export function IntegrationsTabContent() {
                         onConnect={connectAccount} 
                         onDisconnectProvider={handleDisconnectProvider}
                         onOpenCustomDialog={() => setCustomDialogOpen(true)} 
-                        onOpenOpenRouter={() => setShowOpenRouterSettings(!showOpenRouterSettings)} 
                       />
                     ))}
                   </div>
@@ -244,7 +243,7 @@ export function IntegrationsTabContent() {
   );
 }
 
-function IntegrationCard({ item, t, onConnect, onDisconnectProvider, onOpenCustomDialog, onOpenOpenRouter }: { item: IntegrationItem; t: (key: string) => string; onConnect: (provider: any) => void; onDisconnectProvider: (id: string) => void; onOpenCustomDialog: () => void; onOpenOpenRouter: () => void }) {
+function IntegrationCard({ item, t, onConnect, onDisconnectProvider, onOpenCustomDialog }: { item: IntegrationItem; t: (key: string) => string; onConnect: (provider: any) => void; onDisconnectProvider: (id: string) => void; onOpenCustomDialog: () => void; }) {
   const statusConfig = {
     connected: { badge: t('integrations.status.connected'), className: 'bg-success/10 text-success border-success/20', icon: <CheckCircle2 className="h-3 w-3" /> },
     available: { badge: t('integrations.status.available'), className: 'bg-primary/10 text-primary border-primary/20', icon: null },
@@ -256,9 +255,7 @@ function IntegrationCard({ item, t, onConnect, onDisconnectProvider, onOpenCusto
 
   const handleClick = () => {
     if (!isClickable) return;
-    if (item.id === 'openrouter') {
-      onOpenOpenRouter();
-    } else if (item.id === 'custom-smtp') {
+    if (item.id === 'custom-smtp') {
       onOpenCustomDialog();
     } else if (item.id === 'gmail' || item.id === 'google-calendar') {
       onConnect('google');
@@ -307,15 +304,6 @@ function IntegrationCard({ item, t, onConnect, onDisconnectProvider, onOpenCusto
             <path d="M2 7l8.913 5.486a2 2 0 002.174 0L22 7" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground"/>
             <circle cx="18" cy="17" r="4" fill="hsl(var(--primary))" opacity="0.15"/>
             <path d="M16.5 17h3M18 15.5v3" stroke="hsl(var(--primary))" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
-        ) : item.id === 'openrouter' ? (
-          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none">
-            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="hsl(var(--primary))" strokeWidth="1.5" fill="hsl(var(--primary))" fillOpacity="0.08"/>
-            <circle cx="12" cy="9" r="2.5" stroke="hsl(var(--primary))" strokeWidth="1.3"/>
-            <path d="M12 11.5v2" stroke="hsl(var(--primary))" strokeWidth="1.3"/>
-            <circle cx="8" cy="16" r="1.5" stroke="hsl(var(--primary))" strokeWidth="1.1"/>
-            <circle cx="16" cy="16" r="1.5" stroke="hsl(var(--primary))" strokeWidth="1.1"/>
-            <path d="M10.5 14l-1.5 1M13.5 14l1.5 1" stroke="hsl(var(--primary))" strokeWidth="1.1" strokeLinecap="round"/>
           </svg>
         ) : (
           <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none">
