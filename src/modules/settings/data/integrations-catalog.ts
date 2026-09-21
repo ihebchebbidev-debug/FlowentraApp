@@ -33,5 +33,4 @@ export const INTEGRATIONS_CATALOG: IntegrationItem[] = [
   { id: 'gmail', name: 'Gmail', description: '', category: 'email', status: 'available', hasConnectFlow: true, tags: ['google', 'email', 'oauth'] },
   { id: 'outlook', name: 'Outlook', description: '', category: 'email', status: 'available', hasConnectFlow: true, tags: ['microsoft', 'email', 'oauth'] },
   { id: 'custom-smtp', name: 'Custom Email (SMTP/IMAP)', description: '', category: 'email', status: 'available', hasConnectFlow: true, tags: ['smtp', 'imap', 'ovh', 'ionos', 'godaddy', 'zoho', 'yahoo', 'custom'] },
-  { id: 'openrouter', name: 'OpenRouter', description: '', category: 'ai', status: 'available', hasConnectFlow: true, tags: ['ai', 'llm', 'openrouter', 'gpt', 'claude', 'gemini', 'llama'] },
 ];

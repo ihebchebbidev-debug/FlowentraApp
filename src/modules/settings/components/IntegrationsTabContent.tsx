@@ -11,7 +11,6 @@ import { CustomEmailConfigDialog } from '@/modules/email-calendar/components/Cus
 import { customEmailService } from '@/modules/email-calendar/services/customEmailService';
 import type { CustomEmailConfig } from '@/modules/email-calendar/types';
 import { useConnectedAccounts } from '@/modules/email-calendar/hooks/useConnectedAccounts';
-import { OpenRouterSettings } from './OpenRouterSettings';
 import {
   INTEGRATIONS_CATALOG,
   CATEGORY_META,
@@ -33,14 +32,6 @@ export function IntegrationsTabContent() {
   const [selectedCategory, setSelectedCategory] = useState<IntegrationCategory | 'all'>('all');
   const [showConnected, setShowConnected] = useState(false);
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
-  const [showOpenRouterSettings, setShowOpenRouterSettings] = useState(false);
-  const [openRouterKeyCount, setOpenRouterKeyCount] = useState(0);
-
-  useEffect(() => {
-    import('@/services/openRouterModelsService').then(mod => 
-      mod.getOpenRouterKeys().then(keys => setOpenRouterKeyCount(keys.length))
-    );
-  }, [showOpenRouterSettings]);
 
   const handleCustomConnect = async (config: CustomEmailConfig) => {
     await customEmailService.addAccount(config);
@@ -60,8 +51,6 @@ export function IntegrationsTabContent() {
       const customAccs = customEmailService.getAll();
       await Promise.all(customAccs.map(a => customEmailService.removeAccount(a.id)));
       window.location.reload();
-    } else if (providerId === 'openrouter') {
-      setShowOpenRouterSettings(true);
     }
   };
 
@@ -90,16 +79,13 @@ export function IntegrationsTabContent() {
       if (item.id === 'custom-smtp') {
         status = accounts.some(a => a.provider === 'custom' && a.syncStatus !== 'failed') ? 'connected' : item.status;
       }
-      if (item.id === 'openrouter') {
-        status = openRouterKeyCount > 0 ? 'connected' : item.status;
-      }
 
       const name = t(`integrations.items.${item.id}.name`, item.name);
       const description = t(`integrations.items.${item.id}.description`, item.description);
 
       return { ...item, status, name, description };
     });
-  }, [accounts, openRouterKeyCount, t]);
+  }, [accounts, t]);
 
   const filtered = useMemo(() => {
     let items = catalog;
@@ -169,10 +155,6 @@ export function IntegrationsTabContent() {
                 onDisconnect={disconnectAccount}
               />
             </div>
-          )}
-
-          {showOpenRouterSettings && (
-            <OpenRouterSettings />
           )}
 
           <div className="space-y-3">
